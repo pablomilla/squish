@@ -94,9 +94,10 @@ app.post('/api/coach', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🫧  Squish API on http://localhost:${PORT}`);
-  console.log(
-    hasCredentials()
-      ? `    Claude vision enabled (${process.env.SQUISH_MODEL ?? 'claude-opus-5'})`
-      : '    No ANTHROPIC_API_KEY found — serving offline estimates.',
-  );
+  if (hasCredentials()) {
+    console.log(`    Claude vision enabled (${process.env.SQUISH_MODEL ?? 'claude-opus-5'})`);
+  } else {
+    console.log('    No Anthropic credentials found — serving offline estimates.');
+    console.log('    To enable photo analysis: put ANTHROPIC_API_KEY=sk-ant-... in .env and restart.');
+  }
 });

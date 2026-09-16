@@ -46,16 +46,37 @@ npm run dev          # web on :5173, API on :8787
 
 Then open http://localhost:5173.
 
-For real photo analysis, give the **server** an Anthropic key (the browser never sees it):
+### Turning on the real photo analysis
 
-```bash
-cp .env.example .env   # add ANTHROPIC_API_KEY=sk-ant-...
-npm run dev
-```
+Photo and text analysis need an Anthropic API key. It goes on the **server** — the browser never
+sees it.
 
-Without a key the app still runs end to end: the API server falls back to a local estimator built
-on the bundled food table, and anything it produces is labelled **Offline estimate** in the UI
-rather than passed off as a real analysis.
+1. Sign in at [console.anthropic.com](https://console.anthropic.com) and put credit on the account
+   (**Billing** → buy credits; the API is prepaid and separate from a Claude.ai subscription).
+2. **Settings → API keys → Create key**. Copy it then and there — it is shown once. Keys look like
+   `sk-ant-api03-…`.
+3. Drop it into `.env` at the repo root:
+
+   ```bash
+   cp .env.example .env    # then edit: ANTHROPIC_API_KEY=sk-ant-api03-...
+   npm run dev
+   ```
+
+`npm run dev` loads `.env` via Node's `--env-file-if-exists`, so no restart dance and no `dotenv`
+dependency. `.env` is gitignored — keep it that way, and rotate the key in the console if one ever
+lands in a commit.
+
+You can tell which mode you are in three ways: the API server prints it on startup, `curl
+localhost:8787/api/health` returns `"ai": true`, and **You → Squish AI** shows *Connected* with the
+model name.
+
+If you already use the `ant` CLI, `ant auth login` works too — the SDK falls back to that profile
+when no key is set, and a key in the environment takes precedence over it.
+
+Without any credentials the app still runs end to end: the API server falls back to a local
+estimator built on the bundled food table, and anything it produces is labelled **Offline estimate**
+in the UI rather than passed off as a real analysis. The same fallback catches a bad key, an outage
+or a rate limit at request time, with the reason logged server-side.
 
 | Script | What it does |
 | --- | --- |
