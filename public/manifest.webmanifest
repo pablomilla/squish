@@ -1,0 +1,12 @@
+{
+  "name": "Squish — Your little health buddy",
+  "short_name": "Squish",
+  "description": "Smarter nutrition. Happier habits.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF6EC",
+  "theme_color": "#FDF6EC",
+  "icons": [
+    { "src": "/squish-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

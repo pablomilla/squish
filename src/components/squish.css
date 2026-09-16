@@ -1,0 +1,60 @@
+.squish {
+  --squish-skin-0: #fffaf4;
+  --squish-skin-1: #fdeadc;
+  --squish-skin-2: #f6d7c4;
+  --squish-ink: #2b2340;
+  --squish-blush: rgba(244, 137, 159, 0.42);
+  --squish-pink: #f4899f;
+  --squish-spark: #f2c84b;
+  --squish-shadow: rgba(107, 95, 224, 0.13);
+  overflow: visible;
+  display: block;
+}
+
+:root[data-theme='dark'] .squish {
+  --squish-skin-0: #fdf3ea;
+  --squish-skin-1: #f4ddcc;
+  --squish-skin-2: #e2bfa9;
+  --squish-shadow: rgba(0, 0, 0, 0.32);
+}
+
+.squish--bob { animation: squish-bob 3.4s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes squish-bob {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  45% { transform: translateY(-5px) scale(0.985, 1.015); }
+  70% { transform: translateY(1px) scale(1.02, 0.98); }
+}
+
+.squish-eyes { animation: squish-blink 6s infinite; transform-origin: 50% 47%; }
+@keyframes squish-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.08); }
+}
+
+.squish-heart { animation: squish-beat 2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes squish-beat {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  55% { transform: scale(0.98); }
+}
+
+.squish-zzz { animation: squish-float 2.6s ease-in-out infinite; }
+@keyframes squish-float {
+  0%, 100% { opacity: 0.35; transform: translateY(2px); }
+  50% { opacity: 1; transform: translateY(-4px); }
+}
+
+.squish-think circle { animation: squish-think 1.4s ease-in-out infinite; }
+.squish-think circle:nth-child(2) { animation-delay: 0.18s; }
+.squish-think circle:nth-child(3) { animation-delay: 0.36s; }
+@keyframes squish-think {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
+}
+
+.squish--cheering, .squish--excited { animation: squish-bounce 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes squish-bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+  60% { transform: translateY(0) scaleY(0.97); }
+}

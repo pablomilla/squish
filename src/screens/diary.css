@@ -1,0 +1,18 @@
+.diary { display: flex; flex-direction: column; gap: 12px; }
+.date-strip { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 6px; scroll-snap-type: x proximity; }
+.date-pill {
+  flex: none; width: 48px; padding: 9px 0 8px; border-radius: var(--r-md);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); scroll-snap-align: end;
+}
+.date-pill b { font-size: 16px; color: var(--ink); }
+.date-pill.is-on { background: var(--brand); border-color: transparent; color: rgba(255, 255, 255, 0.78); }
+.date-pill.is-on b { color: #fff; }
+.date-dot { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
+.date-dot.is-on { background: var(--mint); }
+.date-pill.is-on .date-dot.is-on { background: #fff; }
+
+.diary-summary { padding: 16px 14px; }
+.slot-empty { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.diary-tracker { padding: 9px 0; border-bottom: 1px solid var(--line); }
+.diary-tracker:last-child { border-bottom: none; }

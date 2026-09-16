@@ -1,0 +1,115 @@
+/* Squish design tokens — pastel, friendly, accessible in both themes. */
+:root {
+  color-scheme: light;
+
+  /* Brand surfaces */
+  --bg: #fdf6ec;
+  --bg-tint: #f7eee2;
+  --surface: #fffdfa;
+  --surface-2: #fbf4ea;
+  --surface-sunk: #f4ece0;
+  --line: #ece0d0;
+  --line-strong: #dccdb8;
+
+  /* Ink */
+  --ink: #2b2340;
+  --ink-2: #6b6480;
+  --ink-3: #9a93ab;
+  --on-brand: #ffffff;
+
+  /* Brand + pastels from the Squish palette */
+  --brand: #6b5fe0;
+  --brand-ink: #4a3fc0;
+  --brand-soft: #e6e2fb;
+  --brand-soft-2: #d4ceff;
+  --pink: #f4899f;
+  --pink-soft: #fbdce3;
+  --peach: #f7b98a;
+  --peach-soft: #fde4cf;
+  --mint: #7dc79a;
+  --mint-soft: #d6efdf;
+  --yellow: #f2c84b;
+  --yellow-soft: #fbeec4;
+
+  /* Status */
+  --good: #15803d;
+  --warn: #b45309;
+  --bad: #be123c;
+  --good-soft: #dcf0e3;
+  --warn-soft: #fbe7cd;
+  --bad-soft: #fbdbe3;
+
+  /* Data viz — validated for CVD separation + 3:1 contrast on light surfaces.
+     Fixed categorical order: protein, carbs, fat, fibre. Never cycled. */
+  --dv-protein: #5b5bd6;
+  --dv-carbs: #d97706;
+  --dv-fat: #db2777;
+  --dv-fibre: #15803d;
+  --dv-cal: #6b5fe0;
+  --dv-grid: #e8ddcd;
+  --dv-axis: #9a93ab;
+
+  /* Shape + motion */
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-xl: 34px;
+  --r-pill: 999px;
+  --shadow-sm: 0 2px 8px rgba(70, 52, 40, 0.07);
+  --shadow-md: 0 8px 24px rgba(70, 52, 40, 0.1);
+  --shadow-lg: 0 18px 40px rgba(53, 38, 72, 0.16);
+  --ease: cubic-bezier(0.34, 1.32, 0.48, 1);
+
+  --tab-h: 74px;
+  --max-w: 480px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #17151f;
+  --bg-tint: #1d1a27;
+  --surface: #221f2e;
+  --surface-2: #2a2639;
+  --surface-sunk: #1b1826;
+  --line: #342f45;
+  --line-strong: #453e5c;
+
+  --ink: #f4f0ff;
+  --ink-2: #b7afd0;
+  --ink-3: #857da0;
+  --on-brand: #ffffff;
+
+  --brand: #8b80f5;
+  --brand-ink: #b3aaff;
+  --brand-soft: #2e2a48;
+  --brand-soft-2: #3a3459;
+  --pink: #f2839c;
+  --pink-soft: #3d2733;
+  --peach: #e9a878;
+  --peach-soft: #3b2d25;
+  --mint: #6dbb8d;
+  --mint-soft: #223529;
+  --yellow: #e4bd4c;
+  --yellow-soft: #3a3320;
+
+  --good: #6dbb8d;
+  --warn: #e2a24e;
+  --bad: #ef7a94;
+  --good-soft: #21331f;
+  --warn-soft: #362a1c;
+  --bad-soft: #3a2029;
+
+  /* Dark-mode steps are chosen, not flipped — revalidated on the dark surface. */
+  --dv-protein: #7a6fe0;
+  --dv-carbs: #c58322;
+  --dv-fat: #d9508b;
+  --dv-fibre: #2f8a48;
+  --dv-cal: #8b80f5;
+  --dv-grid: #322d43;
+  --dv-axis: #857da0;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 10px 26px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 44px rgba(0, 0, 0, 0.55);
+}
