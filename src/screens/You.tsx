@@ -47,7 +47,7 @@ export default function You() {
         <div>
           <h1>{profile.name || 'You'}</h1>
           <p className="muted small">
-            {streak} day streak · {meals.length} meals logged · {Object.keys(unlocked).length} badges
+            {streak} day streak · {meals.length} meals · {Object.keys(unlocked).length} badges
           </p>
         </div>
       </header>

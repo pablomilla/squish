@@ -1,5 +1,5 @@
 .you { display: flex; flex-direction: column; gap: 14px; }
 .you-head { display: flex; align-items: center; gap: 12px; }
-.you-head h1 { font-size: 23px; }
+.you-head h1 { font-size: var(--text-display); }
 .you-plan { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
-.you-footer { font-size: 20px; color: var(--ink-2); margin-top: 4px; }
+.you-footer { font-size: 22px; color: var(--ink-2); margin-top: 4px; }

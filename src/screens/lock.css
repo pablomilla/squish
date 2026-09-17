@@ -6,5 +6,5 @@
 .lock-logo { font-size: 42px; font-weight: 700; letter-spacing: -0.03em; }
 .lock-field { width: 100%; max-width: 280px; margin-top: 14px; }
 .lock-field .input { font-size: 18px; letter-spacing: 0.14em; }
-.lock-error { color: var(--bad); font-size: 13px; text-align: center; margin-top: 2px; }
+.lock-error { color: var(--bad); font-size: var(--text-caption); text-align: center; margin-top: 2px; }
 .lock .btn { max-width: 280px; margin-top: 4px; }

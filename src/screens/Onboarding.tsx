@@ -194,7 +194,7 @@ export default function Onboarding() {
             <div className="card">
               <div className="row-between" style={{ marginBottom: 10 }}>
                 <span className="muted small">Daily energy</span>
-                <b style={{ fontSize: 24 }}>{targets.calories} kcal</b>
+                <b style={{ fontSize: 28 }}>{targets.calories} kcal</b>
               </div>
               <MacroBars totals={{ calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }} targets={targets} compact />
               <div className="divider" />

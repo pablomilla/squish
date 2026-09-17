@@ -3,5 +3,5 @@
   min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; padding: 24px; animation: fade-in 0.4s ease both;
 }
-.waking-body h1 { font-size: 22px; color: var(--ink-2); }
+.waking-body h1 { font-size: 24px; color: var(--ink-2); }
 .waking-note { max-width: 280px; font-size: 14px; animation: fade-in 0.5s ease both; }

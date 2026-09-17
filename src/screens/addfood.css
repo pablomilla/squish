@@ -1,5 +1,5 @@
 .addfood { display: flex; flex-direction: column; gap: 14px; padding-bottom: 110px; }
-.addfood h2 { font-size: 18px; }
+.addfood h2 { font-size: var(--text-section); }
 .quick-add { margin-top: 4px; }
 .describe-hero { display: flex; align-items: center; gap: 10px; }
 .describe-hero .speech { flex: 1; }

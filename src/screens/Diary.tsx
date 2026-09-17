@@ -180,7 +180,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             <div className="row" style={{ gap: 12 }}>
               <ScoreMeter score={selected.score} size={54} />
               <div>
-                <b style={{ fontSize: 20 }}>{Math.round(selected.nutrients.calories)} kcal</b>
+                <b style={{ fontSize: 24 }}>{Math.round(selected.nutrients.calories)} kcal</b>
                 <p className="tiny muted">
                   {selected.time} · {selected.slot} · {selected.source === 'photo' ? 'photo analysis' : 'logged by hand'}
                 </p>

@@ -185,7 +185,7 @@ export default function Insights() {
       <section className="card">
         <div className="card-title">
           <h3>Average day</h3>
-          <span className="tiny muted">across logged days</span>
+          <span className="tiny muted">per logged day</span>
         </div>
         <MacroSplitBar totals={{ calories: weekTotals.calories, protein: weekTotals.protein, carbs: weekTotals.carbs, fat: weekTotals.fat, fibre: weekTotals.fibre }} />
         <div className="divider" />
@@ -194,8 +194,11 @@ export default function Insights() {
             <div key={key} className="avg-cell">
               <span className="tiny muted">{MACRO_LABEL[key]}</span>
               <b>{avg} g</b>
-              <span className={`tiny ${avg >= target * 0.9 ? 'avg-on' : 'avg-off'}`}>
-                {avg >= target * 0.9 ? 'on target' : `${Math.round((avg / target) * 100)}% of goal`}
+              <span
+                className={`tiny ${avg >= target * 0.9 ? 'avg-on' : 'avg-off'}`}
+                aria-label={`${Math.round((avg / target) * 100)} per cent of the ${MACRO_LABEL[key]} goal`}
+              >
+                {avg >= target * 0.9 ? 'on target' : `${Math.round((avg / target) * 100)}%`}
               </span>
             </div>
           ))}
