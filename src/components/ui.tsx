@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { CloseIcon } from './icons';
 
 /* ---------------- Bottom sheet ---------------- */
@@ -30,7 +31,7 @@ export function Sheet({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="sheet-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-grip" />
@@ -45,7 +46,8 @@ export function Sheet({
         {children}
         {footer && <div style={{ marginTop: 16 }}>{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -70,14 +72,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="toast-layer" aria-live="polite">
-        {toasts.map((toast) => (
-          <div className="toast" key={toast.id}>
-            {toast.emoji && <span aria-hidden="true">{toast.emoji}</span>}
-            <span>{toast.message}</span>
-          </div>
-        ))}
-      </div>
+      {createPortal(
+        <div className="toast-layer" aria-live="polite">
+          {toasts.map((toast) => (
+            <div className="toast" key={toast.id}>
+              {toast.emoji && <span aria-hidden="true">{toast.emoji}</span>}
+              <span>{toast.message}</span>
+            </div>
+          ))}
+        </div>,
+        document.body,
+      )}
     </ToastContext.Provider>
   );
 }
