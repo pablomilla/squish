@@ -38,7 +38,12 @@ interface SquishState {
   favourites: FoodItem[];
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
-  lastCoachNote: { date: string; message: string } | null;
+  /**
+   * The nudge is cached against the situation it described, not just the day —
+   * keyed on the date alone, the morning's "nothing logged yet" would still be
+   * on screen after dinner.
+   */
+  lastCoachNote: { date: string; message: string; mealsLogged: number } | null;
   photoAnalyses: number;
 
   setProfile: (patch: Partial<Profile>) => void;
@@ -61,7 +66,7 @@ interface SquishState {
   unlock: (id: string) => void;
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
-  rememberCoachNote: (message: string) => void;
+  rememberCoachNote: (message: string, mealsLogged: number) => void;
   resetAll: () => void;
 }
 
@@ -166,7 +171,7 @@ export const useSquish = create<SquishState>()(
 
       setTheme: (theme) => set({ theme }),
 
-      rememberCoachNote: (message) => set({ lastCoachNote: { date: isoDate(), message } }),
+      rememberCoachNote: (message, mealsLogged) => set({ lastCoachNote: { date: isoDate(), message, mealsLogged } }),
 
       resetAll: () =>
         set({

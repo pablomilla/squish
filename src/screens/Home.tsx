@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { Route } from '../App';
 import Squish from '../components/Squish';
 import MealCard from '../components/MealCard';
@@ -15,7 +15,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
   const { profile, targets, meals, days, unlock, setWater, setSteps, lastCoachNote, rememberCoachNote } = useSquish();
   const day = days[today];
-  const [nudge, setNudge] = useState<string | null>(lastCoachNote?.date === today ? lastCoachNote.message : null);
 
   const totals = useMemo(() => totalsOn(meals, today), [meals, today]);
   const todaysMeals = useMemo(() => mealsOn(meals, today), [meals, today]);
@@ -41,6 +40,13 @@ export default function Home({ go }: { go: (route: Route) => void }) {
     if (streak >= 30) unlock('streak-30');
   }, [totals.protein, totals.fibre, targets.protein, targets.fibre, streak, unlock]);
 
+  // The stored note counts only while it still describes the day it was written
+  // about. Log a meal and it is stale, so a fresh one is asked for and the live
+  // fallback below covers the gap.
+  const mealsLogged = todaysMeals.length;
+  const nudge =
+    lastCoachNote?.date === today && lastCoachNote.mealsLogged === mealsLogged ? lastCoachNote.message : null;
+
   useEffect(() => {
     if (nudge) return;
     let live = true;
@@ -55,19 +61,19 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       fibre: totals.fibre,
       water: day?.water ?? 0,
       waterTarget: targets.water,
-      mealsLogged: todaysMeals.length,
+      mealsLogged,
       timeOfDay: slotForNow(),
       recentMeals: todaysMeals.map((m) => m.title),
     }).then((message) => {
       if (!live || !message) return;
-      setNudge(message);
-      rememberCoachNote(message);
+      rememberCoachNote(message, mealsLogged);
     });
     return () => {
       live = false;
     };
-    // Deliberately asked once per mount — the note is cached in the store for the rest of the day.
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Asked once per change of situation, not once per render: the rest of the
+    // context is read fresh at call time.
+  }, [nudge, mealsLogged, today]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fallbackNudge = todaysMeals.length
     ? `${remaining(targets.calories, totals.calories)} kcal left today — and ${remaining(targets.protein, totals.protein)} g of protein to go.`
