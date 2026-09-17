@@ -16,5 +16,7 @@
 .slot-empty { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
 /* An empty slot is a prompt, not a section — keep it to one compact row. */
 .card--quiet .card-title { margin-bottom: var(--s2); }
-.diary-tracker { padding: 9px 0; border-bottom: 1px solid var(--line); }
+.diary-tracker { padding: var(--s2) 0; border-bottom: 1px solid var(--line); }
+.diary-tracker--field { display: flex; flex-direction: column; gap: var(--s1); }
+.diary-tracker--field .field > label { display: none; }
 .diary-tracker:last-child { border-bottom: none; }

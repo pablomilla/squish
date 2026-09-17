@@ -10,7 +10,7 @@ import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { scoreLabel } from '../lib/nutrition';
-import { kgToPounds, poundsToKg } from '../lib/units';
+import { WeightField } from '../components/fields';
 import './diary.css';
 
 const SLOTS: { key: MealSlot; label: string; emoji: string }[] = [
@@ -139,27 +139,16 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <span className="small">👟 Steps</span>
           <Stepper value={day?.steps ?? 0} step={500} min={0} max={50000} onChange={(v) => setSteps(date, v)} />
         </div>
-        <div className="row-between diary-tracker">
+        <div className="diary-tracker diary-tracker--field">
           <span className="small">⚖️ Weight</span>
-          {profile.units === 'metric' ? (
-            <Stepper
-              value={day?.weightKg ?? profile.weightKg}
-              step={0.1}
-              min={30}
-              max={300}
-              onChange={(v) => setWeight(date, v)}
-              suffix="kg"
-            />
-          ) : (
-            <Stepper
-              value={kgToPounds(day?.weightKg ?? profile.weightKg)}
-              step={1}
-              min={66}
-              max={660}
-              onChange={(pounds) => setWeight(date, poundsToKg(pounds))}
-              suffix="lb"
-            />
-          )}
+          {/* The shared field, so stones stay stones — the diary used to be the
+              one place that insisted on plain pounds. */}
+          <WeightField
+            label="Weight"
+            kg={day?.weightKg ?? profile.weightKg}
+            units={profile.units}
+            onChange={(kg) => setWeight(date, kg)}
+          />
         </div>
       </section>
 

@@ -59,3 +59,11 @@
 .habit b { color: var(--ink); }
 
 .home-footer { text-align: center; font-size: 21px; color: var(--ink-3); margin: var(--s3) 0 var(--s2); }
+
+.weigh-row {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: var(--s3) var(--s4); text-align: left; color: var(--ink);
+  transition: transform 0.16s var(--ease);
+}
+.weigh-row:active { transform: scale(0.99); }
+.weigh-row svg { color: var(--ink-3); }

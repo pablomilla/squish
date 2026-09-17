@@ -1,12 +1,15 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Route } from '../App';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
 import MealCard from '../components/MealCard';
 import { MacroBars, MacroSplitBar, ProgressRing, StreakDots } from '../components/charts';
-import { CameraIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
+import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
+import { WeightField } from '../components/fields';
+import { Sheet } from '../components/ui';
+import { formatWeight } from '../lib/units';
 import { useSquish } from '../store/useSquish';
-import { greeting, isoDate, slotForNow, weekOf } from '../lib/date';
+import { friendlyDate, greeting, isoDate, slotForNow, weekOf } from '../lib/date';
 import { habitCount, habitsOn, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
 import { pct, remaining } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
@@ -14,7 +17,9 @@ import './home.css';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
-  const { profile, targets, meals, days, unlock, setWater, setSteps, lastCoachNote, rememberCoachNote } = useSquish();
+  const { profile, targets, meals, days, unlock, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote } =
+    useSquish();
+  const [weighing, setWeighing] = useState(false);
   const day = days[today];
 
   const totals = useMemo(() => totalsOn(meals, today), [meals, today]);
@@ -22,6 +27,13 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const streak = useMemo(() => streakOf(meals, today), [meals, today]);
   const habits = habitsOn(meals, days, targets, today);
   const week = weekOf(today);
+  const lastWeighIn = useMemo(
+    () =>
+      Object.values(days)
+        .filter((entry) => entry.weightKg && entry.date !== today)
+        .sort((a, b) => b.date.localeCompare(a.date))[0] as { date: string; weightKg: number } | undefined,
+    [days, today],
+  );
   const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);
 
   const situation = {
@@ -150,6 +162,8 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </section>
 
+      <p className="section-label">Today's habits</p>
+
       <section className="home-trackers">
         <div className="card card--quiet tracker">
           <div className="row-between">
@@ -209,6 +223,17 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </section>
 
+      <button type="button" className="card card--quiet weigh-row" onClick={() => setWeighing(true)}>
+        <span className="row" style={{ gap: 8 }}>
+          <span aria-hidden="true">⚖️</span>
+          <span className="small">Weight</span>
+        </span>
+        <span className="row" style={{ gap: 6 }}>
+          <b className="small">{day?.weightKg ? formatWeight(day.weightKg, profile.units) : 'Tap to log'}</b>
+          <ChevronIcon size={16} />
+        </span>
+      </button>
+
       <section className="card card--quiet">
         <div className="card-title">
           <h3>This week</h3>
@@ -260,6 +285,25 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       </section>
 
       <p className="script home-footer">Good food. Brighter days. ♡</p>
+
+      <Sheet open={weighing} onClose={() => setWeighing(false)} title="Today's weight">
+        <div className="stack">
+          <WeightField
+            label="Weight"
+            kg={day?.weightKg ?? profile.weightKg}
+            units={profile.units}
+            onChange={(kg) => setWeight(today, kg)}
+          />
+          <p className="tiny muted">
+            {lastWeighIn
+              ? `Last logged ${formatWeight(lastWeighIn.weightKg, profile.units)} on ${friendlyDate(lastWeighIn.date)}.`
+              : 'Weigh yourself at the same time of day — first thing is the steadiest.'}
+          </p>
+          <button type="button" className="btn btn--block" onClick={() => setWeighing(false)}>
+            Done
+          </button>
+        </div>
+      </Sheet>
 
     </div>
   );
