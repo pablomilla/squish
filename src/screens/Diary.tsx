@@ -10,6 +10,7 @@ import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { scoreLabel } from '../lib/nutrition';
+import { kgToPounds, poundsToKg } from '../lib/units';
 import './diary.css';
 
 const SLOTS: { key: MealSlot; label: string; emoji: string }[] = [
@@ -134,14 +135,25 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         </div>
         <div className="row-between diary-tracker">
           <span className="small">⚖️ Weight</span>
-          <Stepper
-            value={day?.weightKg ?? profile.weightKg}
-            step={0.1}
-            min={30}
-            max={300}
-            onChange={(v) => setWeight(date, v)}
-            suffix="kg"
-          />
+          {profile.units === 'metric' ? (
+            <Stepper
+              value={day?.weightKg ?? profile.weightKg}
+              step={0.1}
+              min={30}
+              max={300}
+              onChange={(v) => setWeight(date, v)}
+              suffix="kg"
+            />
+          ) : (
+            <Stepper
+              value={kgToPounds(day?.weightKg ?? profile.weightKg)}
+              step={1}
+              min={66}
+              max={660}
+              onChange={(pounds) => setWeight(date, poundsToKg(pounds))}
+              suffix="lb"
+            />
+          )}
         </div>
       </section>
 

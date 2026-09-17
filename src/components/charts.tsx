@@ -4,6 +4,7 @@ import { MACROS } from '../types';
 import { MACRO_LABEL, pct } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
+import { formatWeight, type Units } from '../lib/units';
 import './charts.css';
 
 export const MACRO_COLOR: Record<MacroKey, string> = {
@@ -233,7 +234,15 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal' 
 /* ------------------------------------------------------------------ *
  * Weight trend — 2px line, 8px markers, hover readout.
  * ------------------------------------------------------------------ */
-export function WeightTrend({ points, goalKg }: { points: { date: string; weightKg: number }[]; goalKg?: number }) {
+export function WeightTrend({
+  points,
+  goalKg,
+  units = 'metric',
+}: {
+  points: { date: string; weightKg: number }[];
+  goalKg?: number;
+  units?: Units;
+}) {
   const [active, setActive] = useState<number | null>(null);
   if (points.length < 2) {
     return <p className="empty">Log your weight on a couple of days and the trend will show up here.</p>;
@@ -284,9 +293,9 @@ export function WeightTrend({ points, goalKg }: { points: { date: string; weight
         ))}
       </svg>
       <figcaption className="chart-readout">
-        <b>{points[current].weightKg.toFixed(1)} kg</b>
+        <b>{formatWeight(points[current].weightKg, units)}</b>
         <span className="muted"> · {shortDate(points[current].date)}</span>
-        {goalKg && <span className="muted"> · goal {goalKg} kg</span>}
+        {goalKg && <span className="muted"> · goal {formatWeight(goalKg, units)}</span>}
       </figcaption>
     </figure>
   );

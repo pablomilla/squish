@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import { Segmented } from '../components/ui';
 import { MacroBars } from '../components/charts';
+import { HeightField, NumberField, WeightField } from '../components/fields';
 import { useSquish, DEFAULT_PROFILE } from '../store/useSquish';
 import { ACTIVITY_LABEL, computeTargets } from '../lib/nutrition';
 import type { Activity, Goal, Profile, Sex } from '../types';
+import type { Units } from '../lib/units';
 import './onboarding.css';
 
 const STEPS = ['welcome', 'about', 'goal', 'activity', 'plan'] as const;
@@ -83,17 +85,32 @@ export default function Onboarding() {
                 options={[
                   { value: 'female', label: 'Female' },
                   { value: 'male', label: 'Male' },
-                  { value: 'other', label: 'Prefer not to say' },
+                  { value: 'other', label: 'Rather not' },
                 ]}
               />
             </div>
 
-            <div className="onboard-grid">
-              <NumberField label="Age" value={draft.age} suffix="yrs" min={14} max={100} onChange={(age) => set({ age })} />
-              <NumberField label="Height" value={draft.heightCm} suffix="cm" min={120} max={220} onChange={(heightCm) => set({ heightCm })} />
-              <NumberField label="Weight" value={draft.weightKg} suffix="kg" min={35} max={250} step={0.5} onChange={(weightKg) => set({ weightKg })} />
-              <NumberField label="Goal weight" value={draft.targetWeightKg} suffix="kg" min={35} max={250} step={0.5} onChange={(targetWeightKg) => set({ targetWeightKg })} />
+            <div className="field">
+              <label>Units</label>
+              <Segmented<Units>
+                value={draft.units}
+                onChange={(units) => set({ units })}
+                options={[
+                  { value: 'metric', label: 'cm / kg' },
+                  { value: 'imperial', label: 'ft / st' },
+                ]}
+              />
             </div>
+
+            <NumberField label="Age" value={draft.age} suffix="yrs" min={14} max={100} onChange={(age) => set({ age })} />
+            <HeightField cm={draft.heightCm} units={draft.units} onChange={(heightCm) => set({ heightCm })} />
+            <WeightField label="Weight" kg={draft.weightKg} units={draft.units} onChange={(weightKg) => set({ weightKg })} />
+            <WeightField
+              label="Goal weight"
+              kg={draft.targetWeightKg}
+              units={draft.units}
+              onChange={(targetWeightKg) => set({ targetWeightKg })}
+            />
           </div>
         )}
 
@@ -205,44 +222,6 @@ export default function Onboarding() {
             </button>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  onChange,
-  suffix,
-  min,
-  max,
-  step = 1,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  suffix: string;
-  min: number;
-  max: number;
-  step?: number;
-}) {
-  return (
-    <div className="field">
-      <label htmlFor={`f-${label}`}>{label}</label>
-      <div className="input-suffix">
-        <input
-          id={`f-${label}`}
-          className="input"
-          type="number"
-          inputMode="decimal"
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || min)))}
-        />
-        <span>{suffix}</span>
       </div>
     </div>
   );

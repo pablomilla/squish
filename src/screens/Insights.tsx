@@ -16,7 +16,8 @@ import {
   totalsOn,
   weightSeries,
 } from '../lib/selectors';
-import { MACRO_LABEL, round1 } from '../lib/nutrition';
+import { MACRO_LABEL } from '../lib/nutrition';
+import { formatWeight, formatWeightDelta } from '../lib/units';
 import type { MacroKey } from '../types';
 import './insights.css';
 
@@ -24,8 +25,6 @@ type Range = '7' | '30' | 'all';
 type Metric = 'calories' | 'protein' | 'fibre' | 'score';
 
 const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', fibre: 'g', score: 'pts' };
-
-const signed = (value: number) => (value > 0 ? `+${value}` : `${value}`);
 
 export default function Insights() {
   const { meals, days, targets, unlocked, profile, unlock } = useSquish();
@@ -206,12 +205,13 @@ export default function Insights() {
       <section className="card">
         <div className="card-title">
           <h3>Weight</h3>
-          <span className="tiny muted">goal {round1(profile.targetWeightKg)} kg</span>
+          <span className="tiny muted">goal {formatWeight(profile.targetWeightKg, profile.units)}</span>
         </div>
-        <WeightTrend points={weights} goalKg={profile.targetWeightKg} />
+        <WeightTrend points={weights} goalKg={profile.targetWeightKg} units={profile.units} />
         {weights.length >= 2 && (
           <p className="tiny muted" style={{ marginTop: 6 }}>
-            {signed(round1(weights[weights.length - 1].weightKg - weights[0].weightKg))} kg since {shortDate(weights[0].date)}
+            {formatWeightDelta(weights[weights.length - 1].weightKg - weights[0].weightKg, profile.units)} since{' '}
+            {shortDate(weights[0].date)}
           </p>
         )}
       </section>

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
+import { HeightField, NumberField, WeightField } from '../components/fields';
+import { formatHeight, formatWeight } from '../lib/units';
 import { SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, computeTargets, tdee } from '../lib/nutrition';
@@ -91,9 +93,9 @@ export default function You() {
         </div>
         <Row label="Goal" value={profile.goal === 'lose' ? 'Lose weight' : profile.goal === 'gain' ? 'Build up' : 'Stay steady'} />
         <Row label="Pace" value={profile.goal === 'maintain' ? '—' : `${profile.pace} kg / week`} />
-        <Row label="Weight" value={`${profile.weightKg} kg`} />
-        <Row label="Goal weight" value={`${profile.targetWeightKg} kg`} />
-        <Row label="Height" value={`${profile.heightCm} cm`} />
+        <Row label="Weight" value={formatWeight(profile.weightKg, profile.units)} />
+        <Row label="Goal weight" value={formatWeight(profile.targetWeightKg, profile.units)} />
+        <Row label="Height" value={formatHeight(profile.heightCm, profile.units)} />
         <Row label="Age" value={`${profile.age}`} />
         <Row label="Activity" value={ACTIVITY_LABEL[profile.activity]} />
       </section>
@@ -126,17 +128,6 @@ export default function You() {
             { value: 'system' as const, label: 'Auto' },
           ]}
         />
-        <div style={{ marginTop: 12 }}>
-          <Segmented
-            label="Units"
-            value={profile.units}
-            onChange={(units) => setProfile({ units })}
-            options={[
-              { value: 'metric' as const, label: 'Metric' },
-              { value: 'imperial' as const, label: 'Imperial' },
-            ]}
-          />
-        </div>
       </section>
 
       <section className="card">
@@ -180,22 +171,26 @@ export default function You() {
               <Stepper value={profile.pace} step={0.1} min={0.1} max={1} onChange={(pace) => setProfile({ pace })} />
             </div>
           )}
-          <div className="row-between">
-            <span className="small">Weight</span>
-            <Stepper value={profile.weightKg} step={0.5} min={35} max={250} onChange={(weightKg) => setProfile({ weightKg })} suffix="kg" />
+          <div className="field">
+            <label>Units</label>
+            <Segmented
+              value={profile.units}
+              onChange={(units) => setProfile({ units })}
+              options={[
+                { value: 'metric' as const, label: 'cm / kg' },
+                { value: 'imperial' as const, label: 'ft / st' },
+              ]}
+            />
           </div>
-          <div className="row-between">
-            <span className="small">Goal weight</span>
-            <Stepper value={profile.targetWeightKg} step={0.5} min={35} max={250} onChange={(targetWeightKg) => setProfile({ targetWeightKg })} suffix="kg" />
-          </div>
-          <div className="row-between">
-            <span className="small">Height</span>
-            <Stepper value={profile.heightCm} min={120} max={220} onChange={(heightCm) => setProfile({ heightCm })} suffix="cm" />
-          </div>
-          <div className="row-between">
-            <span className="small">Age</span>
-            <Stepper value={profile.age} min={14} max={100} onChange={(age) => setProfile({ age })} />
-          </div>
+          <WeightField label="Weight" kg={profile.weightKg} units={profile.units} onChange={(weightKg) => setProfile({ weightKg })} />
+          <WeightField
+            label="Goal weight"
+            kg={profile.targetWeightKg}
+            units={profile.units}
+            onChange={(targetWeightKg) => setProfile({ targetWeightKg })}
+          />
+          <HeightField cm={profile.heightCm} units={profile.units} onChange={(heightCm) => setProfile({ heightCm })} />
+          <NumberField label="Age" value={profile.age} suffix="yrs" min={14} max={100} onChange={(age) => setProfile({ age })} />
           <div className="field">
             <label>Sex (for the energy formula)</label>
             <Segmented<Sex>

@@ -156,13 +156,3 @@ export function pct(current: number, target: number): number {
   if (target <= 0) return 0;
   return Math.min(1.5, current / target);
 }
-
-export function kg(lbOrKg: number, units: 'metric' | 'imperial'): string {
-  return units === 'metric' ? `${round1(lbOrKg)} kg` : `${Math.round(lbOrKg * 2.20462)} lb`;
-}
-
-export function cm(value: number, units: 'metric' | 'imperial'): string {
-  if (units === 'metric') return `${Math.round(value)} cm`;
-  const inches = value / 2.54;
-  return `${Math.floor(inches / 12)}′${Math.round(inches % 12)}″`;
-}
