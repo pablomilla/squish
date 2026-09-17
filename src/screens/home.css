@@ -25,7 +25,12 @@
 .action--primary { background: var(--brand); color: var(--on-brand); border-color: transparent; box-shadow: 0 8px 20px rgba(107, 95, 224, 0.28); }
 
 .home-trackers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+/* Without min-width:0 a grid item refuses to shrink below its content, so one
+   unwrappable row inside widens the column and shoves the whole page sideways. */
+.home-trackers > * { min-width: 0; }
 .tracker { padding: 14px; }
+.tracker .row-between { flex-wrap: wrap; }
+.tracker .row-between b { white-space: nowrap; }
 .glasses { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .glass {
   width: 16px; height: 24px; border-radius: 4px 4px 9px 9px;

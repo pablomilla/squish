@@ -183,10 +183,16 @@ export default function Home({ go }: { go: (route: Route) => void }) {
               style={{ width: `${Math.min(100, ((day?.steps ?? 0) / targets.steps) * 100)}%`, background: 'var(--mint)' }}
             />
           </div>
-          <div className="row" style={{ gap: 6, marginTop: 10 }}>
+          <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
             {[1000, 2500, 5000].map((add) => (
-              <button key={add} type="button" className="chip" onClick={() => setSteps(today, (day?.steps ?? 0) + add)}>
-                +{add.toLocaleString()}
+              <button
+                key={add}
+                type="button"
+                className="chip"
+                aria-label={`Add ${add.toLocaleString()} steps`}
+                onClick={() => setSteps(today, (day?.steps ?? 0) + add)}
+              >
+                +{add >= 1000 ? `${add / 1000}k` : add}
               </button>
             ))}
             {(day?.steps ?? 0) > 0 && (
