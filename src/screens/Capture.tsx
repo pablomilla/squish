@@ -17,6 +17,16 @@ interface Props {
   go: (route: Route) => void;
 }
 
+type CameraState = 'requesting' | 'ready' | 'denied' | 'unavailable' | 'unsupported';
+
+const CAMERA_MESSAGE: Record<Exclude<CameraState, 'ready'>, string> = {
+  requesting: 'Just checking I can use the camera…',
+  denied:
+    'The camera is blocked for this site. Allow it in your browser settings, or pick a photo from your library instead.',
+  unavailable: 'I could not open the camera. Pick a photo from your library, or describe the meal and I will work it out.',
+  unsupported: 'This browser will not give me a camera. Pick a photo from your library, or describe the meal instead.',
+};
+
 const THINKING_LINES = [
   'Looking at your plate…',
   'Spotting the ingredients…',
@@ -33,30 +43,59 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
 
   const [mealSlot, setMealSlot] = useState<MealSlot>(slot ?? slotForNow());
   const [preview, setPreview] = useState<string | null>(null);
-  const [cameraReady, setCameraReady] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [camera, setCamera] = useState<CameraState>('requesting');
   const [busy, setBusy] = useState(false);
   const [line, setLine] = useState(0);
+  const cameraReady = camera === 'ready';
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCamera('unsupported');
+      return;
+    }
+
     navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-      .then((stream) => {
+      .getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then((media) => {
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          media.getTracks().forEach((track) => track.stop());
           return;
         }
-        streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
-        setCameraReady(true);
+        streamRef.current = media;
+        setStream(media);
+        setCamera('ready');
       })
-      .catch(() => setCameraReady(false));
+      .catch((error: unknown) => {
+        const name = error instanceof Error ? error.name : '';
+        setCamera(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable');
+      });
 
     return () => {
       cancelled = true;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
+
+  /**
+   * Attach the stream once the element exists.
+   *
+   * This cannot be done where the stream arrives: the video element is only in
+   * the DOM once the camera reports ready, so the ref is still null at that
+   * point and the picture never appears — a black screen with a live camera
+   * behind it. Safari also will not always autoplay a stream attached after
+   * mount, hence the explicit play().
+   */
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !stream) return;
+    video.srcObject = stream;
+    video.play().catch(() => {
+      /* a rejected play leaves the poster frame; the shutter still works */
+    });
+  }, [stream]);
 
   useEffect(() => {
     if (!busy) return;
@@ -127,13 +166,18 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
   return (
     <div className="capture">
       <div className="capture-stage">
-        {cameraReady ? (
-          <video ref={videoRef} autoPlay playsInline muted className="capture-video" />
-        ) : (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`capture-video ${cameraReady ? '' : 'is-hidden'}`}
+        />
+        {!cameraReady && (
           <div className="capture-fallback">
-            <Squish mood="calm" size={128} />
+            <Squish mood={camera === 'requesting' ? 'thinking' : 'calm'} size={128} />
             <p className="small muted center" style={{ maxWidth: 260 }}>
-              No camera here — pick a photo from your library, or describe the meal and I'll work it out.
+              {CAMERA_MESSAGE[camera]}
             </p>
           </div>
         )}
