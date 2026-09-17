@@ -223,7 +223,9 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
           ref={fileRef}
           type="file"
           accept="image/*"
-          capture="environment"
+          // No `capture` attribute: it sends the browser straight to the camera
+          // and skips the photo picker, which is the one thing this button is
+          // for. Squish has its own camera a few pixels to the left.
           className="visually-hidden"
           onChange={(e) => void pick(e.target.files?.[0])}
         />
