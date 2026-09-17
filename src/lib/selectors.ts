@@ -42,6 +42,27 @@ export function habitsOn(
   };
 }
 
+/** How many days in a range each habit was met — the "4 of 7" on the week card. */
+export function habitTally(
+  meals: MealEntry[],
+  days: Record<string, DayLog>,
+  targets: Targets,
+  dates: string[],
+): Record<keyof HabitState, number> {
+  return dates.reduce(
+    (tally, date) => {
+      const met = habitsOn(meals, days, targets, date);
+      return {
+        meals: tally.meals + Number(met.meals),
+        protein: tally.protein + Number(met.protein),
+        water: tally.water + Number(met.water),
+        movement: tally.movement + Number(met.movement),
+      };
+    },
+    { meals: 0, protein: 0, water: 0, movement: 0 },
+  );
+}
+
 export function habitCount(h: HabitState): number {
   return Number(h.meals) + Number(h.protein) + Number(h.water) + Number(h.movement);
 }

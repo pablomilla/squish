@@ -133,7 +133,7 @@ function Shell() {
             </button>
           ))}
           <button type="button" className="tab-fab" onClick={() => go({ name: 'capture' })} aria-label="Log a meal">
-            <CameraIcon size={24} />
+            <CameraIcon size={28} />
           </button>
           {TABS.slice(2).map(({ name, label, Icon }) => (
             <button key={name} type="button" aria-current={route.name === name ? 'page' : undefined} onClick={() => go({ name } as Route)}>

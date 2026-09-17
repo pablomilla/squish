@@ -50,13 +50,14 @@
 .glass:active { transform: scale(0.9); }
 
 .habit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2); }
+.habit-caption { margin-bottom: var(--s2); }
 .habit {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s2) var(--s1);
   border-radius: var(--r-md); background: var(--surface-2); color: var(--ink-2);
 }
 .habit.is-on { background: var(--mint-soft); color: var(--good); }
-.habit-check { font-size: 15px; font-weight: 700; }
-.habit b { color: var(--ink); }
+.habit b { color: var(--ink); font-size: var(--text-body); }
+.habit.is-on b { color: var(--good); }
 
 .home-footer { text-align: center; font-size: 21px; color: var(--ink-3); margin: var(--s3) 0 var(--s2); }
 

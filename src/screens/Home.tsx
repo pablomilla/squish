@@ -10,7 +10,7 @@ import { Sheet } from '../components/ui';
 import { formatWeight } from '../lib/units';
 import { useSquish } from '../store/useSquish';
 import { friendlyDate, greeting, isoDate, slotForNow, weekOf } from '../lib/date';
-import { habitCount, habitsOn, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
+import { habitCount, habitsOn, habitTally, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
 import { pct, remaining } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
 import './home.css';
@@ -27,6 +27,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const streak = useMemo(() => streakOf(meals, today), [meals, today]);
   const habits = habitsOn(meals, days, targets, today);
   const week = weekOf(today);
+  // Counted across the whole week, which is what the card is headed — these
+  // used to show today's status inside a card called "This week".
+  const tally = useMemo(() => habitTally(meals, days, targets, week), [meals, days, targets, week]);
   const lastWeighIn = useMemo(
     () =>
       Object.values(days)
@@ -241,17 +244,23 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
         <StreakDots dates={week} done={loggedThisWeek} />
         <div className="divider" />
+        <p className="tiny muted habit-caption">Targets hit, out of seven days</p>
         <div className="habit-grid">
-          {[
-            { key: 'meals', label: 'Meals', value: `${todaysMeals.length}/3`, on: habits.meals },
-            { key: 'protein', label: 'Protein', value: `${Math.round(pct(totals.protein, targets.protein) * 100)}%`, on: habits.protein },
-            { key: 'water', label: 'Water', value: `${day?.water ?? 0}/${targets.water}`, on: habits.water },
-            { key: 'movement', label: 'Movement', value: `${Math.round(pct(day?.steps ?? 0, targets.steps) * 100)}%`, on: habits.movement },
-          ].map((habit) => (
-            <div key={habit.key} className={`habit ${habit.on ? 'is-on' : ''}`}>
-              <span className="habit-check" aria-hidden="true">{habit.on ? '✓' : '○'}</span>
-              <span className="tiny">{habit.label}</span>
-              <b className="small">{habit.value}</b>
+          {(
+            [
+              { key: 'meals', label: 'Meals' },
+              { key: 'protein', label: 'Protein' },
+              { key: 'water', label: 'Water' },
+              { key: 'movement', label: 'Movement' },
+            ] as const
+          ).map(({ key, label }) => (
+            <div
+              key={key}
+              className={`habit ${tally[key] >= 5 ? 'is-on' : ''}`}
+              aria-label={`${label} target met on ${tally[key]} of 7 days`}
+            >
+              <span className="tiny">{label}</span>
+              <b>{tally[key]}/7</b>
             </div>
           ))}
         </div>

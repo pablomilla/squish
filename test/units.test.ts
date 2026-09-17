@@ -79,3 +79,27 @@ test('a weight change is signed, so a loss reads as a loss', () => {
   assert.equal(formatWeightDelta(1.3, 'metric'), '+1.3 kg');
   assert.match(formatWeightDelta(-1.3, 'imperial'), /^-2\.9 lb$/);
 });
+
+test('habit tallies count days met across the week, not today', async () => {
+  const { habitTally } = await import('../src/lib/selectors');
+  const dates = ['2026-09-14', '2026-09-15', '2026-09-16'];
+  const targets = { calories: 2100, protein: 100, carbs: 200, fat: 65, fibre: 29, water: 8, steps: 8000 };
+
+  const meal = (date: string, protein: number) => ({
+    id: `${date}-${protein}`, date, time: '12:00', slot: 'lunch' as const, title: 'Test',
+    items: [], nutrients: { calories: 700, protein, carbs: 60, fat: 20, fibre: 8 }, score: 75, source: 'manual' as const,
+  });
+
+  // Protein target met on two of the three days; water on one.
+  const meals = [meal('2026-09-14', 100), meal('2026-09-15', 100), meal('2026-09-16', 10)];
+  const days = { '2026-09-14': { date: '2026-09-14', water: 8, steps: 0 } };
+
+  const tally = habitTally(meals, days, targets, dates);
+  assert.equal(tally.protein, 2, 'two days cleared the protein target');
+  assert.equal(tally.water, 1, 'only one day hit the water target');
+  assert.equal(tally.movement, 0);
+  assert.equal(tally.meals, 0, 'one meal a day is not three');
+
+  // And an empty week tallies zero rather than throwing.
+  assert.deepEqual(habitTally([], {}, targets, dates), { meals: 0, protein: 0, water: 0, movement: 0 });
+});
