@@ -99,6 +99,22 @@ or a rate limit at request time, with the reason logged server-side.
 | `npm run lint` | oxlint over app, server and tests |
 | `npm run typecheck` | `tsc -b` across both projects |
 
+## Putting it online
+
+The server serves the built app as well as the API, so it deploys as one service.
+`render.yaml` is a Render blueprint: **New → Blueprint → pick this repo**, and it asks for the two
+secrets rather than you editing any files.
+
+| Setting | What it is |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Your key. Lives in the host's dashboard, never in the repo. |
+| `SQUISH_PASSCODE` | **Set this.** Without it, anyone who finds the URL spends your credit. |
+| `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
+
+With a passcode set, the app opens on a lock screen and every analysis endpoint returns 401 until it
+is entered. It is a shared passcode, not a login — everyone who knows it shares one Squish. Render's
+free tier sleeps after inactivity, so the first visit takes ~50s to wake.
+
 ## How the AI part works
 
 `server/claude.ts` sends the image (or description) to `claude-opus-5` with

@@ -1,0 +1,20 @@
+# One-click deploy config. In Render: New → Blueprint → pick this repo.
+# It reads this file, then asks for the two secrets below.
+services:
+  - type: web
+    name: squish
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      # Your Anthropic key. Typed into Render's dashboard, never into the repo.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Anyone with the URL needs this to use the app — without it, strangers
+      # spend your Anthropic credit.
+      - key: SQUISH_PASSCODE
+        sync: false
+      - key: NODE_VERSION
+        value: 22.12.0

@@ -4,7 +4,7 @@ import type { AnalysisResult, MealSlot } from '../types';
 import Squish from '../components/Squish';
 import { Segmented, useToast } from '../components/ui';
 import { CameraIcon, CloseIcon, ImageIcon, PenIcon } from '../components/icons';
-import { analysePhoto, shrinkImage } from '../lib/api';
+import { analysePhoto, shrinkImage, SquishApiError } from '../lib/api';
 import { useSquish } from '../store/useSquish';
 import { slotForNow } from '../lib/date';
 import './capture.css';
@@ -73,8 +73,11 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
         countPhotoAnalysis();
         streamRef.current?.getTracks().forEach((t) => t.stop());
         onAnalysed(analysis, { photo: dataUrl, slot: analysis.slot ?? mealSlot, date });
-      } catch {
-        toast('I could not read that photo — try again or describe it instead.', '😅');
+      } catch (error) {
+        toast(
+          error instanceof SquishApiError ? error.message : 'I could not read that photo — try again or describe it instead.',
+          '😅',
+        );
         setBusy(false);
         setPreview(null);
       }

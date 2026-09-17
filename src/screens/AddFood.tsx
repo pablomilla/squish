@@ -6,7 +6,7 @@ import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../compon
 import { useSquish } from '../store/useSquish';
 import { searchFoods, toFoodItem } from '../lib/foods';
 import { qualityScore, sumNutrients } from '../lib/nutrition';
-import { analyseText } from '../lib/api';
+import { analyseText, SquishApiError } from '../lib/api';
 import { slotForNow } from '../lib/date';
 import './addfood.css';
 
@@ -77,8 +77,8 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         return;
       }
       onReady(analysis, { slot: analysis.slot ?? mealSlot, date });
-    } catch {
-      toast('That did not work — give it another go.', '😕');
+    } catch (error) {
+      toast(error instanceof SquishApiError ? error.message : 'That did not work — give it another go.', '😕');
       setBusy(false);
     }
   };

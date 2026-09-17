@@ -3,6 +3,7 @@ import type { AnalysisResult, MealEntry, MealSlot } from './types';
 import { useSquish } from './store/useSquish';
 import { ToastProvider, useAppliedTheme } from './components/ui';
 import { HomeIcon, InsightsIcon, MealsIcon, PlusIcon, YouIcon } from './components/icons';
+import Lock from './screens/Lock';
 import Onboarding from './screens/Onboarding';
 import Home from './screens/Home';
 import Capture from './screens/Capture';
@@ -12,6 +13,7 @@ import Insights from './screens/Insights';
 import You from './screens/You';
 import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
+import { aiStatus, onLocked, storedPasscode } from './lib/api';
 
 export interface Draft {
   analysis: AnalysisResult;
@@ -38,10 +40,29 @@ const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'you', label: 'You', Icon: YouIcon },
 ];
 
+/** undefined while we are still asking the server whether a passcode is needed. */
+function useLockState(): [boolean | undefined, () => void] {
+  const [locked, setLocked] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    let live = true;
+    onLocked(() => setLocked(true));
+    aiStatus().then((status) => {
+      if (live) setLocked(Boolean(status.locked) && !storedPasscode());
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return [locked, () => setLocked(false)];
+}
+
 function Shell() {
   const onboarded = useSquish((s) => s.profile.onboarded);
   const theme = useSquish((s) => s.theme);
   useAppliedTheme(theme);
+  const [locked, unlockApp] = useLockState();
 
   const [route, setRoute] = useState<Route>({ name: 'home' });
   const isTab = useMemo(() => TABS.some((t) => t.name === route.name), [route]);
@@ -55,6 +76,8 @@ function Shell() {
     return () => window.removeEventListener('popstate', onPop);
   }, [isTab, route.name]);
 
+  if (locked === undefined) return <div className="app" />;
+  if (locked) return <Lock onUnlocked={unlockApp} />;
   if (!onboarded) return <Onboarding />;
 
   const go = (next: Route) => setRoute(next);

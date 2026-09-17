@@ -2,17 +2,78 @@ import type { AnalysisResult, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
 
 const TIMEOUT_MS = 45_000;
+const PASS_KEY = 'squish-pass';
+
+/**
+ * Errors the user needs to see rather than silently absorb. A locked or
+ * rate-limited request must not quietly turn into an offline estimate — that
+ * would look like a working analysis.
+ */
+export class SquishApiError extends Error {
+  kind: 'locked' | 'rate_limited';
+
+  constructor(kind: 'locked' | 'rate_limited', message: string) {
+    super(message);
+    this.name = 'SquishApiError';
+    this.kind = kind;
+  }
+}
+
+export function storedPasscode(): string {
+  try {
+    return localStorage.getItem(PASS_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function rememberPasscode(passcode: string): void {
+  try {
+    localStorage.setItem(PASS_KEY, passcode);
+  } catch {
+    /* private browsing — the passcode is simply asked for again */
+  }
+}
+
+export function forgetPasscode(): void {
+  try {
+    localStorage.removeItem(PASS_KEY);
+  } catch {
+    /* nothing to do */
+  }
+}
+
+let onLockedHandler: (() => void) | null = null;
+
+/** The app registers here so a rejected passcode sends it back to the lock screen. */
+export function onLocked(handler: () => void): void {
+  onLockedHandler = handler;
+}
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
+    const passcode = storedPasscode();
     const response = await fetch(path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(passcode ? { 'x-squish-pass': passcode } : {}),
+      },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+
+    if (response.status === 401) {
+      forgetPasscode();
+      onLockedHandler?.();
+      throw new SquishApiError('locked', 'This Squish needs its passcode again.');
+    }
+    if (response.status === 429) {
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      throw new SquishApiError('rate_limited', payload.message ?? 'Too many meals in one hour — try again shortly.');
+    }
     if (!response.ok) throw new Error(`${path} responded ${response.status}`);
     return (await response.json()) as T;
   } finally {
@@ -24,6 +85,24 @@ export interface AiStatus {
   ok: boolean;
   ai: boolean;
   model: string;
+  /** True when the server was started with a passcode set. */
+  locked?: boolean;
+}
+
+/** Check a passcode against the server. Remembers it on success. */
+export async function unlock(passcode: string): Promise<boolean> {
+  try {
+    const response = await fetch('/api/unlock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passcode }),
+    });
+    if (!response.ok) return false;
+    rememberPasscode(passcode);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function aiStatus(): Promise<AiStatus> {
@@ -40,7 +119,8 @@ export async function aiStatus(): Promise<AiStatus> {
 export async function analysePhoto(dataUrl: string, slot?: MealSlot, hint?: string): Promise<AnalysisResult> {
   try {
     return await post<AnalysisResult>('/api/analyse/photo', { image: dataUrl, slot, hint });
-  } catch {
+  } catch (error) {
+    if (error instanceof SquishApiError) throw error;
     return demoEstimateFromPhoto(dataUrl.slice(-256), slot);
   }
 }
@@ -49,7 +129,8 @@ export async function analysePhoto(dataUrl: string, slot?: MealSlot, hint?: stri
 export async function analyseText(description: string, slot?: MealSlot): Promise<AnalysisResult> {
   try {
     return await post<AnalysisResult>('/api/analyse/text', { description, slot });
-  } catch {
+  } catch (error) {
+    if (error instanceof SquishApiError) throw error;
     return estimateFromText(description, slot);
   }
 }
