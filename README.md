@@ -39,12 +39,17 @@ choose to analyse. Export the lot as JSON from **You → Your data**.
 
 ## Running it
 
+Needs **Node 20.19+ or 22.12+** (Vite 8's floor) — check with `node -v`, and grab a current release
+from [nodejs.org](https://nodejs.org) or `nvm install 22` if yours is older.
+
 ```bash
+git clone https://github.com/pablomilla/squish.git
+cd squish
 npm install
 npm run dev          # web on :5173, API on :8787
 ```
 
-Then open http://localhost:5173.
+Then open http://localhost:5173. Every command below assumes you are inside the `squish` folder.
 
 ### Turning on the real photo analysis
 
