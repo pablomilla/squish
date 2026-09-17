@@ -6,7 +6,7 @@ import { MacroBars, MacroSplitBar, ProgressRing, StreakDots } from '../component
 import { CameraIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { greeting, isoDate, slotForNow, weekOf } from '../lib/date';
-import { habitCount, habitsOn, mealsOn, moodFor, moodLine, streakOf, totalsOn } from '../lib/selectors';
+import { habitCount, habitsOn, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
 import { MACRO_LABEL, pct, remaining } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
 import './home.css';
@@ -23,13 +23,14 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const week = weekOf(today);
   const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);
 
-  const mood = moodFor({
+  const situation = {
     hour: new Date().getHours(),
     mealsToday: todaysMeals.length,
     caloriesPct: pct(totals.calories, targets.calories),
     habits: habitCount(habits),
     streak,
-  });
+  };
+  const mood = moodFor(situation);
 
   // Daily achievements are awarded from live totals rather than at save time.
   useEffect(() => {
@@ -96,7 +97,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       <section className="home-hero card card--brand">
         <div className="home-hero-text">
           <p className="speech speech--right">{nudge ?? fallbackNudge}</p>
-          <p className="script home-mood">{moodLine(mood)}</p>
+          <p className="script home-mood">{statusLine(situation)}</p>
         </div>
         <Squish mood={mood} size={116} />
       </section>

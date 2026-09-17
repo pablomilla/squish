@@ -164,25 +164,26 @@ export function moodFor(options: {
   return 'excited';
 }
 
-export function moodLine(mood: Mood): string {
-  switch (mood) {
-    case 'excited':
-      return 'You hit your goal!';
-    case 'nomnom':
-      return 'That looks delicious!';
-    case 'calm':
-      return "You're doing great.";
-    case 'sleepy':
-      return 'Rest helps too.';
-    case 'proud':
-      return 'Look at your progress!';
-    case 'cheering':
-      return "You've got this!";
-    case 'thinking':
-      return 'Let me have a look…';
-    default:
-      return '';
-  }
+/**
+ * The line under the greeting. It reports the day, so it has to be true — the
+ * mascot's own captions ("You hit your goal!") were being shown regardless of
+ * whether any goal had been hit.
+ */
+export function statusLine(options: {
+  mealsToday: number;
+  caloriesPct: number;
+  habits: number;
+  streak: number;
+  hour: number;
+}): string {
+  const { mealsToday, caloriesPct, habits, streak, hour } = options;
+  if (habits >= 4) return "Every habit ticked off. You've got this!";
+  if (caloriesPct >= 0.9 && caloriesPct <= 1.08 && mealsToday >= 3) return 'Right on target today!';
+  if (caloriesPct > 1.15) return 'Over today — tomorrow is a fresh start.';
+  if (mealsToday === 0) return hour >= 20 ? 'Nothing logged yet today.' : 'Ready when you are.';
+  if (streak >= 3) return `Day ${streak} of your streak — nice going!`;
+  if (mealsToday >= 3) return 'Three meals in. Lovely.';
+  return "You're doing great.";
 }
 
 export function scoreOfItems(nutrients: Nutrients): number {

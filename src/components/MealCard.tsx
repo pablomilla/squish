@@ -22,12 +22,13 @@ export function MealCard({ meal, onClick }: { meal: MealEntry; onClick?: () => v
       )}
       <span className="meal-card-body">
         <span className="meal-card-title">
-          {meal.title}
+          {/* The ellipsis needs a non-flex box to happen in. */}
+          <span className="meal-card-name">{meal.title}</span>
           {meal.source === 'photo' && <SparkIcon size={14} className="meal-card-ai" />}
         </span>
         <span className="tiny muted">
-          {meal.time} · {Math.round(meal.nutrients.calories)} kcal · P {Math.round(meal.nutrients.protein)}g · C{' '}
-          {Math.round(meal.nutrients.carbs)}g · F {Math.round(meal.nutrients.fat)}g
+          {meal.time} · {Math.round(meal.nutrients.calories)} kcal · P{Math.round(meal.nutrients.protein)} · C
+          {Math.round(meal.nutrients.carbs)} · F{Math.round(meal.nutrients.fat)}
         </span>
       </span>
       <ScoreMeter score={meal.score} size={40} />
