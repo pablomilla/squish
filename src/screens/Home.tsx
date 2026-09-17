@@ -165,7 +165,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </section>
 
-      <p className="section-label">Today's habits</p>
+      <p className="section-label">Daily check-ins</p>
 
       <section className="home-trackers">
         <div className="card card--quiet tracker">
