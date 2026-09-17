@@ -21,10 +21,10 @@ export const HomeIcon = ({ size = 22, className }: IconProps) => (
   </svg>
 );
 
-export const MealsIcon = ({ size = 22, className }: IconProps) => (
+export const DiaryIcon = ({ size = 22, className }: IconProps) => (
   <svg {...base(size)} className={className}>
-    <path d="M6 3v8a2.5 2.5 0 0 0 5 0V3M8.5 11v10" />
-    <path d="M17.5 3c-1.4 1.6-2 3.4-2 5.5 0 1.6.7 2.6 2 3V21" />
+    <path d="M12 7a3 3 0 0 0-3-2.5H4.6a1 1 0 0 0-1 1v11.4a1 1 0 0 0 1 1H9a3 3 0 0 1 3 2.1" />
+    <path d="M12 7a3 3 0 0 1 3-2.5h4.4a1 1 0 0 1 1 1v11.4a1 1 0 0 1-1 1H15a3 3 0 0 0-3 2.1" />
   </svg>
 );
 

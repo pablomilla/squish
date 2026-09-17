@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AnalysisResult, MealEntry, MealSlot } from './types';
 import { useSquish } from './store/useSquish';
 import { ToastProvider, useAppliedTheme } from './components/ui';
-import { CameraIcon, HomeIcon, InsightsIcon, MealsIcon, YouIcon } from './components/icons';
+import { CameraIcon, DiaryIcon, HomeIcon, InsightsIcon, YouIcon } from './components/icons';
 import Lock from './screens/Lock';
 import Onboarding from './screens/Onboarding';
 import Waking from './screens/Waking';
@@ -36,7 +36,7 @@ export type Route =
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'home', label: 'Home', Icon: HomeIcon },
-  { name: 'meals', label: 'Meals', Icon: MealsIcon },
+  { name: 'meals', label: 'Diary', Icon: DiaryIcon },
   { name: 'insights', label: 'Insights', Icon: InsightsIcon },
   { name: 'you', label: 'You', Icon: YouIcon },
 ];

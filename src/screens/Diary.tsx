@@ -129,7 +129,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
 
       <section className="card">
         <div className="card-title">
-          <h3>Rest of the day</h3>
+          <h3>Habits</h3>
+          <span className="tiny muted">water, movement, weight</span>
         </div>
         <div className="row-between diary-tracker">
           <span className="small">💧 Water</span>
