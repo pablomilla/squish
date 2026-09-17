@@ -166,6 +166,13 @@ bench/            Your benchmark photos and their real figures (gitignored)
 test/             Node test-runner suite for the maths and parsing
 ```
 
+## Planned work
+
+- [`docs/health-integration.md`](docs/health-integration.md) — reading weight and steps from Apple
+  Health and Health Connect, and writing meals back. Both hubs are native-only, so it depends on a
+  Capacitor wrap; the plan covers the provenance and write-loop problems worth solving on paper
+  first.
+
 ## Design notes
 
 The palette, the mascot moods and the layout follow the Squish concept sheet: cream surfaces,
