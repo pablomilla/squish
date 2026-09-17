@@ -5,6 +5,7 @@ import { ToastProvider, useAppliedTheme } from './components/ui';
 import { HomeIcon, InsightsIcon, MealsIcon, PlusIcon, YouIcon } from './components/icons';
 import Lock from './screens/Lock';
 import Onboarding from './screens/Onboarding';
+import Waking from './screens/Waking';
 import Home from './screens/Home';
 import Capture from './screens/Capture';
 import Review from './screens/Review';
@@ -76,7 +77,7 @@ function Shell() {
     return () => window.removeEventListener('popstate', onPop);
   }, [isTab, route.name]);
 
-  if (locked === undefined) return <div className="app" />;
+  if (locked === undefined) return <Waking />;
   if (locked) return <Lock onUnlocked={unlockApp} />;
   if (!onboarded) return <Onboarding />;
 

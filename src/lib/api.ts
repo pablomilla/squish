@@ -105,13 +105,22 @@ export async function unlock(passcode: string): Promise<boolean> {
   }
 }
 
+/** Generous: a sleeping free-tier host can take the best part of a minute to wake. */
+const HEALTH_TIMEOUT_MS = 90_000;
+
 export async function aiStatus(): Promise<AiStatus> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
   try {
-    const response = await fetch('/api/health');
+    const response = await fetch('/api/health', { signal: controller.signal });
     if (!response.ok) throw new Error(String(response.status));
     return (await response.json()) as AiStatus;
   } catch {
+    // Unreachable or too slow — let the app open anyway. It works offline, and
+    // a locked server will send the user to the lock screen on the first call.
     return { ok: false, ai: false, model: 'offline' };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
