@@ -36,8 +36,27 @@ export interface DetailedAnalysis {
 
 let client: Anthropic | null = null;
 
+/**
+ * True when the SDK will be able to authenticate, by any of the routes it
+ * resolves: an API key, an auth token, or workload identity federation — where
+ * the host mints a short-lived identity token and there is no key at all.
+ * Miss the federation case and the app quietly serves offline estimates.
+ */
 export function hasCredentials(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+  if (process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN) return true;
+  return Boolean(
+    process.env.ANTHROPIC_FEDERATION_RULE_ID &&
+      process.env.ANTHROPIC_ORGANIZATION_ID &&
+      process.env.ANTHROPIC_SERVICE_ACCOUNT_ID &&
+      (process.env.ANTHROPIC_IDENTITY_TOKEN_FILE || process.env.ANTHROPIC_IDENTITY_TOKEN),
+  );
+}
+
+/** How the SDK will authenticate, for the startup banner and the check script. */
+export function credentialSource(): 'api-key' | 'auth-token' | 'federation' | 'none' {
+  if (process.env.ANTHROPIC_API_KEY) return 'api-key';
+  if (process.env.ANTHROPIC_AUTH_TOKEN) return 'auth-token';
+  return hasCredentials() ? 'federation' : 'none';
 }
 
 function getClient(): Anthropic {

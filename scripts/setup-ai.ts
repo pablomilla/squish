@@ -8,6 +8,7 @@
  * history and in the process list. Nothing here prints the key back in full.
  */
 import Anthropic from '@anthropic-ai/sdk';
+import { credentialSource } from '../server/claude';
 import { chmod, readFile, writeFile } from 'node:fs/promises';
 import { createInterface } from 'node:readline/promises';
 import { resolve } from 'node:path';
@@ -192,6 +193,16 @@ function report(result: CheckResult): void {
 }
 
 async function runCheck(): Promise<void> {
+  // Federation has no key to show — the SDK exchanges a host-issued token.
+  if (credentialSource() === 'federation') {
+    console.log(`  Using workload identity federation against ${bold(MODEL)}…`);
+    const result = await check();
+    report(result);
+    console.log('');
+    process.exitCode = result.ok ? 0 : 1;
+    return;
+  }
+
   const configured =
     process.env.ANTHROPIC_API_KEY?.trim() ||
     process.env.ANTHROPIC_AUTH_TOKEN?.trim() ||

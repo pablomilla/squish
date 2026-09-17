@@ -71,3 +71,36 @@ test('a cheap model can rescue a subscription that a dear one loses money on', (
   assert.ok(opusish.netAtStandard < 0, 'a heavy user on the dear model loses money at 30%');
   assert.ok(haikuish.netAtStandard > 2, 'the cheap model keeps the same user profitable');
 });
+
+test('federation counts as credentials, so the app does not silently go offline', async () => {
+  const { hasCredentials, credentialSource } = await import('../server/claude');
+  const saved = { ...process.env };
+  const clear = () => {
+    for (const key of Object.keys(process.env)) {
+      if (key.startsWith('ANTHROPIC_')) delete process.env[key];
+    }
+  };
+
+  try {
+    clear();
+    assert.equal(hasCredentials(), false);
+    assert.equal(credentialSource(), 'none');
+
+    // A half-configured federation is not credentials — it would fail at the API.
+    process.env.ANTHROPIC_FEDERATION_RULE_ID = 'rule';
+    process.env.ANTHROPIC_ORGANIZATION_ID = 'org';
+    assert.equal(hasCredentials(), false, 'incomplete federation must not count');
+
+    process.env.ANTHROPIC_SERVICE_ACCOUNT_ID = 'svc';
+    process.env.ANTHROPIC_IDENTITY_TOKEN_FILE = '/var/run/token';
+    assert.equal(hasCredentials(), true);
+    assert.equal(credentialSource(), 'federation');
+
+    // An explicit key outranks federation in the SDK, so it should here too.
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    assert.equal(credentialSource(), 'api-key');
+  } finally {
+    clear();
+    Object.assign(process.env, saved);
+  }
+});

@@ -16,7 +16,7 @@ import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import type { MealSlot } from '../src/types';
 import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
-import { analysePhoto, analyseText, coachMessage, hasCredentials, type CoachContext } from './claude';
+import { analysePhoto, analyseText, coachMessage, credentialSource, hasCredentials, type CoachContext } from './claude';
 
 const app = express();
 app.use(cors());
@@ -210,9 +210,10 @@ if (SERVE_APP) {
 
 app.listen(PORT, () => {
   console.log(`🫧  Squish on http://localhost:${PORT}`);
+  const source = credentialSource();
   console.log(
     hasCredentials()
-      ? `    Claude vision enabled (${process.env.SQUISH_MODEL ?? 'claude-opus-5'})`
+      ? `    Claude vision enabled (${process.env.SQUISH_MODEL ?? 'claude-opus-5'}, via ${source})`
       : '    No Anthropic credentials found — serving offline estimates.',
   );
   if (!hasCredentials()) {

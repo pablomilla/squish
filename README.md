@@ -80,6 +80,13 @@ in `ANTHROPIC_API_KEY` works exactly the same; `npm run dev` loads `.env` throug
 commit. If you already use the `ant` CLI, `ant auth login` works too: the SDK falls back to that
 profile when no key is set, and a key in the environment takes precedence over it.
 
+**Workload identity federation** works without any code change: set `ANTHROPIC_FEDERATION_RULE_ID`,
+`ANTHROPIC_ORGANIZATION_ID`, `ANTHROPIC_SERVICE_ACCOUNT_ID` and `ANTHROPIC_IDENTITY_TOKEN_FILE`
+instead of a key, and the SDK exchanges the host-issued token itself. Worth moving to once the host
+can mint one — a short-lived, auto-rotating credential is worth far less to a thief than a key
+sitting in a dashboard. Note an API key in the environment outranks federation, so remove it when
+you switch.
+
 You can confirm the mode three ways: the API server prints it on startup, `curl
 localhost:8787/api/health` returns `"ai": true`, and **You → Squish AI** shows *Connected* with the
 model name.
