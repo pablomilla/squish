@@ -49,6 +49,22 @@
   --dv-grid: #e8ddcd;
   --dv-axis: #9a93ab;
 
+  /* Type scale — four levels, used everywhere. More than this is noise. */
+  --text-display: 26px;   /* screen title */
+  --text-hero: 34px;      /* the one number a screen is about */
+  --text-section: 16px;   /* card heading */
+  --text-body: 15px;
+  --text-label: 13px;     /* field labels, secondary rows */
+  --text-caption: 12px;   /* units, timestamps, hints */
+
+  /* Spacing — related things 8/12 apart, sections 20 apart. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 28px;
+
   /* Shape + motion */
   --r-sm: 12px;
   --r-md: 18px;

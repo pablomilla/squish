@@ -52,7 +52,7 @@ export default function You() {
         </div>
       </header>
 
-      <section className="card">
+      <section className="card card--hero">
         <div className="card-title">
           <h3>Your plan</h3>
           <button type="button" className="btn--quiet small" onClick={() => setEditingTargets(true)}>
@@ -100,7 +100,7 @@ export default function You() {
         <Row label="Activity" value={ACTIVITY_LABEL[profile.activity]} />
       </section>
 
-      <section className="card">
+      <section className="card card--quiet">
         <div className="card-title">
           <h3>Squish AI</h3>
           <span className={`badge ${status?.ai ? 'badge--good' : 'badge--warn'}`}>
@@ -114,7 +114,7 @@ export default function You() {
         </p>
       </section>
 
-      <section className="card">
+      <section className="card card--quiet">
         <div className="card-title">
           <h3>Appearance</h3>
         </div>
@@ -130,7 +130,7 @@ export default function You() {
         />
       </section>
 
-      <section className="card">
+      <section className="card card--quiet">
         <div className="card-title">
           <h3>Your data</h3>
         </div>

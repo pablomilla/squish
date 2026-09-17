@@ -154,7 +154,7 @@ export default function Insights() {
           metric={metric}
           unit={METRIC_UNIT[metric]}
         />
-        <div className="row wrap" style={{ gap: 6, marginTop: 8 }}>
+        <div className="metric-row">
           {(['calories', 'protein', 'fibre', 'score'] as Metric[]).map((m) => (
             <button key={m} type="button" className="chip" aria-pressed={metric === m} onClick={() => setMetric(m)}>
               {m === 'score' ? 'Quality' : m[0].toUpperCase() + m.slice(1)}
@@ -217,7 +217,7 @@ export default function Insights() {
       </section>
 
       {topFoods.length > 0 && (
-        <section className="card">
+        <section className="card card--quiet">
           <div className="card-title">
             <h3>You eat a lot of…</h3>
           </div>
@@ -233,7 +233,7 @@ export default function Insights() {
         </section>
       )}
 
-      <section className="card">
+      <section className="card card--quiet">
         <div className="card-title">
           <h3>Achievements</h3>
           <span className="tiny muted">{Object.keys(unlocked).length}/{ACHIEVEMENTS.length}</span>

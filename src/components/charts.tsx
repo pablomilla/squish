@@ -39,18 +39,20 @@ export function ProgressRing({ value, target, size = 190, label = 'left', unit =
     <div className="ring" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--surface-sunk)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={over ? 'var(--warn)' : color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${circumference * fraction} ${circumference}`}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          className="ring-arc"
-        />
+        {fraction > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={over ? 'var(--warn)' : color}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${circumference * fraction} ${circumference}`}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            className="ring-arc"
+          />
+        )}
       </svg>
       <div className="ring-center">
         {children ?? (

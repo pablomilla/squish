@@ -26,9 +26,9 @@ export function MealCard({ meal, onClick }: { meal: MealEntry; onClick?: () => v
           <span className="meal-card-name">{meal.title}</span>
           {meal.source === 'photo' && <SparkIcon size={14} className="meal-card-ai" />}
         </span>
-        <span className="tiny muted">
-          {meal.time} · {Math.round(meal.nutrients.calories)} kcal · P{Math.round(meal.nutrients.protein)} · C
-          {Math.round(meal.nutrients.carbs)} · F{Math.round(meal.nutrients.fat)}
+        <span className="tiny muted meal-card-macros">
+          {meal.time} · {Math.round(meal.nutrients.calories)} kcal · P{Math.round(meal.nutrients.protein)}{' '}
+          C{Math.round(meal.nutrients.carbs)} F{Math.round(meal.nutrients.fat)}
         </span>
       </span>
       <ScoreMeter score={meal.score} size={40} />

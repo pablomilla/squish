@@ -1,13 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import type { Route } from '../App';
 import Squish from '../components/Squish';
+import EmptyState from '../components/EmptyState';
 import MealCard from '../components/MealCard';
 import { MacroBars, MacroSplitBar, ProgressRing, StreakDots } from '../components/charts';
 import { CameraIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { greeting, isoDate, slotForNow, weekOf } from '../lib/date';
 import { habitCount, habitsOn, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
-import { MACRO_LABEL, pct, remaining } from '../lib/nutrition';
+import { pct, remaining } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
 import './home.css';
 
@@ -102,58 +103,55 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         <Squish mood={mood} size={116} />
       </section>
 
-      <section className="card home-rings">
-        <div className="row-between" style={{ alignItems: 'flex-start' }}>
-          <div>
-            <h3>Today</h3>
-            <p className="tiny muted">
-              {Math.round(totals.calories)} of {targets.calories} kcal
-            </p>
-          </div>
-          <span className="badge">{todaysMeals.length} meal{todaysMeals.length === 1 ? '' : 's'}</span>
+      <section className="card card--hero home-today">
+        <div className="card-title">
+          <h3>Today</h3>
+          <span className="badge">
+            {todaysMeals.length} meal{todaysMeals.length === 1 ? '' : 's'}
+          </span>
         </div>
-        <div className="home-ring-row">
-          <ProgressRing value={totals.calories} target={targets.calories} size={168} />
-          <div className="home-ring-side">
-            {(['protein', 'fibre'] as const).map((key) => (
-              <div key={key} className="pill-stat">
-                <span className="tiny muted">{MACRO_LABEL[key]}</span>
-                <b>
-                  {Math.round(totals[key])}
-                  <span className="tiny muted"> / {targets[key]}g</span>
-                </b>
-              </div>
-            ))}
-          </div>
+
+        <div className="home-ring-wrap">
+          <ProgressRing value={totals.calories} target={targets.calories} size={196} />
+          <p className="tiny muted home-ring-caption">
+            {Math.round(totals.calories)} of {targets.calories} kcal
+          </p>
         </div>
-        <div style={{ marginTop: 14 }}>
-          <MacroBars totals={totals} targets={targets} compact />
-        </div>
-        <div className="divider" />
-        <MacroSplitBar totals={totals} />
+
+        {/* The macro bars already carry protein and fibre with their numbers —
+            the stat pills that used to sit beside the ring said it twice. */}
+        <MacroBars totals={totals} targets={targets} compact />
+        {totals.calories > 0 && (
+          <>
+            <div className="divider" />
+            <MacroSplitBar totals={totals} />
+          </>
+        )}
       </section>
 
       <section className="home-actions">
         <button type="button" className="action action--primary" onClick={() => go({ name: 'capture' })}>
-          <CameraIcon size={24} />
+          <CameraIcon size={22} />
           Snap a meal
         </button>
-        <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'describe' })}>
-          <PenIcon size={22} />
-          Describe it
-        </button>
-        <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'search' })}>
-          <SearchIcon size={22} />
-          Search food
-        </button>
-        <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'favourites' })}>
-          <HeartIcon size={22} />
-          Favourites
-        </button>
+        <div className="home-actions-row">
+          <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'describe' })}>
+            <PenIcon size={20} />
+            Describe
+          </button>
+          <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'search' })}>
+            <SearchIcon size={20} />
+            Search
+          </button>
+          <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'favourites' })}>
+            <HeartIcon size={20} />
+            Saved
+          </button>
+        </div>
       </section>
 
       <section className="home-trackers">
-        <div className="card tracker">
+        <div className="card card--quiet tracker">
           <div className="row-between">
             <span className="row tiny muted" style={{ gap: 6 }}>
               <DropIcon size={16} /> Water
@@ -175,7 +173,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           </div>
         </div>
 
-        <div className="card tracker">
+        <div className="card card--quiet tracker">
           <div className="row-between">
             <span className="row tiny muted" style={{ gap: 6 }}>
               <ShoeIcon size={16} /> Movement
@@ -211,7 +209,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </section>
 
-      <section className="card">
+      <section className="card card--quiet">
         <div className="card-title">
           <h3>This week</h3>
           <span className="tiny muted">{loggedThisWeek.filter(Boolean).length}/7 days logged</span>
@@ -242,10 +240,16 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           </button>
         </div>
         {todaysMeals.length === 0 ? (
-          <div className="empty">
-            <Squish mood="calm" size={82} bob={false} />
-            <p style={{ marginTop: 6 }}>Nothing logged yet. Snap your first meal and I'll do the maths.</p>
-          </div>
+          <EmptyState
+            mood="calm"
+            action={
+              <button type="button" className="btn btn--soft btn--sm" onClick={() => go({ name: 'capture' })}>
+                Snap your first meal
+              </button>
+            }
+          >
+            Nothing logged yet today — snap a meal and I'll do the maths.
+          </EmptyState>
         ) : (
           <div className="stack">
             {todaysMeals.slice(-4).reverse().map((meal) => (
@@ -257,16 +261,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
       <p className="script home-footer">Good food. Brighter days. ♡</p>
 
-      <div className="home-quick-slot">
-        {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((slot) => (
-          <button key={slot} type="button" className="chip" onClick={() => go({ name: 'capture', slot })}>
-            + {slot}
-          </button>
-        ))}
-      </div>
-      <p className="tiny muted center" style={{ marginTop: 8 }}>
-        Next up: {slotForNow()}
-      </p>
     </div>
   );
 }

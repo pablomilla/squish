@@ -1,4 +1,4 @@
-.diary { display: flex; flex-direction: column; gap: 12px; }
+.diary { display: flex; flex-direction: column; gap: var(--s3); }
 .date-strip { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 6px; scroll-snap-type: x proximity; }
 .date-pill {
   flex: none; width: 48px; padding: 9px 0 8px; border-radius: var(--r-md);
@@ -12,7 +12,9 @@
 .date-dot.is-on { background: var(--mint); }
 .date-pill.is-on .date-dot.is-on { background: #fff; }
 
-.diary-summary { padding: 16px 14px; }
-.slot-empty { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.diary-summary { padding: var(--s5) var(--s4); border-radius: var(--r-xl); }
+.slot-empty { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+/* An empty slot is a prompt, not a section — keep it to one compact row. */
+.card--quiet .card-title { margin-bottom: var(--s2); }
 .diary-tracker { padding: 9px 0; border-bottom: 1px solid var(--line); }
 .diary-tracker:last-child { border-bottom: none; }

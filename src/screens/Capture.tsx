@@ -19,6 +19,9 @@ interface Props {
 
 type CameraState = 'requesting' | 'ready' | 'denied' | 'unavailable' | 'unsupported';
 
+/** navigator.mediaDevices is genuinely absent on insecure origins, whatever the types say. */
+const cameraSupported = () => typeof navigator.mediaDevices?.getUserMedia === 'function';
+
 const CAMERA_MESSAGE: Record<Exclude<CameraState, 'ready'>, string> = {
   requesting: 'Just checking I can use the camera…',
   denied:
@@ -44,7 +47,10 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
   const [mealSlot, setMealSlot] = useState<MealSlot>(slot ?? slotForNow());
   const [preview, setPreview] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [camera, setCamera] = useState<CameraState>('requesting');
+  // Support is knowable at first render — no need to spend a render to find out.
+  const [camera, setCamera] = useState<CameraState>(() =>
+    cameraSupported() ? 'requesting' : 'unsupported',
+  );
   const [busy, setBusy] = useState(false);
   const [line, setLine] = useState(0);
   const cameraReady = camera === 'ready';
@@ -52,10 +58,7 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
   useEffect(() => {
     let cancelled = false;
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCamera('unsupported');
-      return;
-    }
+    if (!cameraSupported()) return;
 
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: 'environment' }, audio: false })

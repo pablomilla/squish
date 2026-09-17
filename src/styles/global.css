@@ -15,10 +15,10 @@ body {
   overscroll-behavior-y: none;
 }
 
-h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
-h1 { font-size: 26px; }
+h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.015em; }
+h1 { font-size: var(--text-display); line-height: 1.15; }
 h2 { font-size: 20px; }
-h3 { font-size: 17px; }
+h3 { font-size: var(--text-section); }
 p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { border: none; background: none; cursor: pointer; padding: 0; }
@@ -29,8 +29,8 @@ a { color: var(--brand-ink); }
 
 .script { font-family: 'Caveat', 'Fredoka', cursive; font-weight: 700; letter-spacing: 0.01em; }
 .muted { color: var(--ink-2); }
-.tiny { font-size: 12px; }
-.small { font-size: 13px; }
+.tiny { font-size: var(--text-caption); }
+.small { font-size: var(--text-label); }
 .center { text-align: center; }
 .row { display: flex; align-items: center; gap: 10px; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -86,14 +86,19 @@ a { color: var(--brand-ink); }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 16px;
+  padding: var(--s4) var(--s4);
   box-shadow: var(--shadow-sm);
 }
+/* The one card a screen is about: more room, more lift. */
+.card--hero { padding: var(--s5) var(--s4); border-radius: var(--r-xl); box-shadow: var(--shadow-md); }
+/* Supporting detail: recedes, so the hero reads first. */
+.card--quiet { background: var(--surface-2); box-shadow: none; border-color: transparent; }
 .card--flat { box-shadow: none; }
 .card--tint { background: var(--surface-2); }
 .card--brand { background: var(--brand-soft); border-color: transparent; }
-.card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.card-title h3 { font-size: 16px; }
+.card-title { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s3); }
+.card-title h3 { font-size: var(--text-section); }
+.card-title .tiny { flex: none; }
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -201,7 +206,10 @@ a { color: var(--brand-ink); }
 .badge--warn { background: var(--warn-soft); color: var(--warn); }
 .badge--bad { background: var(--bad-soft); color: var(--bad); }
 .divider { height: 1px; background: var(--line); margin: 14px 0; }
-.empty { text-align: center; padding: 22px 12px; color: var(--ink-2); font-size: 14px; }
+.empty { text-align: center; padding: var(--s5) var(--s3); color: var(--ink-2); font-size: 14px; }
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: var(--s2); padding: var(--s5) var(--s3); text-align: center; }
+.empty-state p { color: var(--ink-2); font-size: 14px; max-width: 34ch; }
+.empty-state .btn { margin-top: var(--s1); }
 
 .speech {
   position: relative; background: var(--surface); border: 1px solid var(--line);
@@ -239,4 +247,5 @@ a { color: var(--brand-ink); }
 .meal-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .meal-card-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .meal-card-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meal-card-macros { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meal-card-ai { color: var(--brand); flex: none; }

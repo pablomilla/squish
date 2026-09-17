@@ -77,7 +77,13 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <div className="grow stack">
             <div className="row-between">
               <span className="small muted">Day score</span>
-              <span className={`badge badge--${verdict.tone}`}>{score || '—'} {verdict.label}</span>
+              {score > 0 ? (
+                <span className={`badge badge--${verdict.tone}`}>
+                  {score} {verdict.label}
+                </span>
+              ) : (
+                <span className="badge">Nothing logged</span>
+              )}
             </div>
             <MacroBars totals={totals} targets={targets} compact />
           </div>
@@ -88,7 +94,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         const list = dayMeals.filter((m) => m.slot === key);
         const kcal = Math.round(list.reduce((sum, m) => sum + m.nutrients.calories, 0));
         return (
-          <section className="card" key={key}>
+          <section className={`card ${list.length ? '' : 'card--quiet'}`} key={key}>
             <div className="card-title">
               <h3>
                 <span aria-hidden="true">{emoji}</span> {label}
@@ -97,7 +103,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             </div>
             {list.length === 0 ? (
               <div className="slot-empty">
-                <p className="tiny muted">Nothing here yet</p>
+                <p className="tiny muted">Nothing yet</p>
                 <div className="row" style={{ gap: 8 }}>
                   <button type="button" className="chip" onClick={() => go({ name: 'capture', slot: key, date })}>
                     <CameraIcon size={15} /> Snap

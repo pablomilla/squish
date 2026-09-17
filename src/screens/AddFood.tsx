@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AnalysisResult, FoodItem, MealSlot } from '../types';
 import Squish from '../components/Squish';
+import EmptyState from '../components/EmptyState';
 import { Segmented, Stepper, useToast } from '../components/ui';
 import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -222,10 +223,9 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
       {tab === 'favourites' && (
         <div className="stack">
           {favourites.length === 0 ? (
-            <div className="empty">
-              <Squish mood="calm" size={92} bob={false} />
-              <p style={{ marginTop: 8 }}>No favourites yet. Tap the heart on any food you log and it will live here.</p>
-            </div>
+            <EmptyState mood="calm">
+              No favourites yet. Tap the heart on any food you log and it will live here.
+            </EmptyState>
           ) : (
             favourites.map((item) => (
               <button key={item.id} type="button" className="meal-card" onClick={() => add({ ...item, id: `${item.id}-${Date.now()}` })}>
