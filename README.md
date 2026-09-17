@@ -126,6 +126,22 @@ only trusted when it is present and sane, otherwise the local scorer runs.
 The key stays on the server. `POST /api/analyse/photo`, `/api/analyse/text` and `/api/coach` are
 the only endpoints, and each one degrades to the offline estimator rather than failing.
 
+## Measuring accuracy and cost
+
+`npm run bench` runs your own meal photos through several models and reports how close each one gets
+and what it costs, because both decide whether this can be a product:
+
+```bash
+cp bench/manifest.example.json bench/manifest.json   # your photos and their real figures
+npm run bench                                        # opus-5 vs sonnet-5 vs haiku-4-5
+npm run bench -- --runs 3 --sub 4.99                 # spread across repeats, margin at £4.99
+```
+
+It writes `bench/report.md` with accuracy per model, a per-meal breakdown of what each one saw, and
+what a subscriber costs per month at two, three and five meals a day — before and after a store's
+cut. `bench/README.md` covers how to build a test set whose numbers you can trust; the answer is only
+as good as the ground truth you feed it. Your photos, manifest and results are gitignored.
+
 ## Layout
 
 ```
@@ -138,7 +154,8 @@ src/
   lib/            Nutrition maths, food table, offline estimator, selectors, dates, API client
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
-scripts/          Credential setup and check
+scripts/          Credential setup, and the accuracy/cost benchmark
+bench/            Your benchmark photos and their real figures (gitignored)
 test/             Node test-runner suite for the maths and parsing
 ```
 

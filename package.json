@@ -13,6 +13,7 @@
     "dev:api": "tsx watch --env-file-if-exists=.env server/index.ts",
     "setup:ai": "tsx --env-file-if-exists=.env scripts/setup-ai.ts",
     "check:ai": "tsx --env-file-if-exists=.env scripts/setup-ai.ts --check",
+    "bench": "tsx --env-file-if-exists=.env scripts/bench.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "oxlint src server test scripts",

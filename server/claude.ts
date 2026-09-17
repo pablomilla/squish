@@ -11,6 +11,29 @@ import { qualityScore } from '../src/lib/nutrition';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
+/** USD per million tokens. Used to price a run, not to bill anyone. */
+const PRICING: Record<string, { input: number; output: number }> = {
+  'claude-opus-5': { input: 5, output: 25 },
+  'claude-opus-4-8': { input: 5, output: 25 },
+  'claude-sonnet-5': { input: 2, output: 10 },
+  'claude-haiku-4-5': { input: 1, output: 5 },
+  'claude-fable-5-1': { input: 10, output: 50 },
+};
+
+export interface ModelUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  costUsd: number | null;
+  latencyMs: number;
+}
+
+export interface DetailedAnalysis {
+  analysis: AnalysisResult;
+  usage: ModelUsage;
+}
+
 let client: Anthropic | null = null;
 
 export function hasCredentials(): boolean {
@@ -157,18 +180,41 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
   };
 }
 
-async function requestMeal(content: Anthropic.ContentBlockParam[], fallbackSlot?: MealSlot): Promise<AnalysisResult> {
+/**
+ * Haiku predates adaptive thinking and rejects output_config.effort, so the
+ * request shape is per model family rather than one size fits all.
+ */
+function tuningFor(model: string): Pick<Anthropic.MessageCreateParamsNonStreaming, 'thinking' | 'output_config'> {
+  const format = { type: 'json_schema', schema: MEAL_SCHEMA } as const;
+  if (model.startsWith('claude-haiku')) {
+    return { output_config: { format } };
+  }
+  return {
+    thinking: { type: 'adaptive' },
+    output_config: { effort: 'medium', format },
+  };
+}
+
+function priceOf(model: string, inputTokens: number, outputTokens: number): number | null {
+  const rate = PRICING[model];
+  if (!rate) return null;
+  return (inputTokens * rate.input + outputTokens * rate.output) / 1_000_000;
+}
+
+async function requestMeal(
+  content: Anthropic.ContentBlockParam[],
+  fallbackSlot?: MealSlot,
+  model: string = MODEL,
+): Promise<DetailedAnalysis> {
+  const startedAt = Date.now();
   const response = await getClient().messages.create({
-    model: MODEL,
+    model,
     max_tokens: 8000,
     system: SYSTEM,
-    thinking: { type: 'adaptive' },
-    output_config: {
-      effort: 'medium',
-      format: { type: 'json_schema', schema: MEAL_SCHEMA },
-    },
     messages: [{ role: 'user', content }],
+    ...tuningFor(model),
   });
+  const latencyMs = Date.now() - startedAt;
 
   if (response.stop_reason === 'refusal') {
     throw new Error('The model declined to analyse this image.');
@@ -179,15 +225,30 @@ async function requestMeal(content: Anthropic.ContentBlockParam[], fallbackSlot?
     .map((block) => block.text)
     .join('');
 
-  return toAnalysis(JSON.parse(text) as ModelMeal, fallbackSlot);
+  const inputTokens = response.usage.input_tokens;
+  const outputTokens = response.usage.output_tokens;
+
+  return {
+    analysis: toAnalysis(JSON.parse(text) as ModelMeal, fallbackSlot),
+    usage: {
+      model: response.model,
+      inputTokens,
+      outputTokens,
+      cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+      costUsd: priceOf(model, inputTokens, outputTokens),
+      latencyMs,
+    },
+  };
 }
 
-export async function analysePhoto(
+/** Full result including what the call cost — used by the benchmark. */
+export async function analysePhotoDetailed(
   imageBase64: string,
   mediaType: string,
   slot?: MealSlot,
   hint?: string,
-): Promise<AnalysisResult> {
+  model: string = MODEL,
+): Promise<DetailedAnalysis> {
   const supported = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const media = (supported.includes(mediaType) ? mediaType : 'image/jpeg') as
     | 'image/jpeg'
@@ -210,11 +271,22 @@ export async function analysePhoto(
       },
     ],
     slot,
+    model,
   );
 }
 
+export async function analysePhoto(
+  imageBase64: string,
+  mediaType: string,
+  slot?: MealSlot,
+  hint?: string,
+): Promise<AnalysisResult> {
+  const { analysis } = await analysePhotoDetailed(imageBase64, mediaType, slot, hint);
+  return analysis;
+}
+
 export async function analyseText(description: string, slot?: MealSlot): Promise<AnalysisResult> {
-  return requestMeal(
+  const { analysis } = await requestMeal(
     [
       {
         type: 'text',
@@ -223,6 +295,7 @@ export async function analyseText(description: string, slot?: MealSlot): Promise
     ],
     slot,
   );
+  return analysis;
 }
 
 export interface CoachContext {

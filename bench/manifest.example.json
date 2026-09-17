@@ -1,0 +1,32 @@
+[
+  {
+    "file": "01-porridge.jpg",
+    "name": "Porridge with blueberries",
+    "calories": 412,
+    "protein": 14.2,
+    "carbs": 62.0,
+    "fat": 10.1,
+    "slot": "breakfast",
+    "source": "weighed: 50g oats, 200ml semi-skimmed, 80g blueberries"
+  },
+  {
+    "file": "02-ready-meal.jpg",
+    "name": "Supermarket chicken tikka",
+    "calories": 520,
+    "protein": 34.0,
+    "carbs": 58.0,
+    "fat": 15.0,
+    "slot": "dinner",
+    "source": "back-of-pack label, whole tray"
+  },
+  {
+    "file": "03-pub-burger.jpg",
+    "name": "Pub burger and chips",
+    "calories": 1140,
+    "protein": 48.0,
+    "carbs": 96.0,
+    "fat": 62.0,
+    "slot": "lunch",
+    "source": "chain's published nutrition page"
+  }
+]

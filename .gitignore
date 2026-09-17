@@ -4,3 +4,9 @@ dist
 .env.local
 *.local
 .DS_Store
+
+# Benchmark: your meals, your results — not the repo's business
+bench/photos/
+bench/manifest.json
+bench/results-*.json
+bench/report.md
