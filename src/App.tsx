@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AnalysisResult, MealEntry, MealSlot } from './types';
 import { useSquish } from './store/useSquish';
 import { ToastProvider, useAppliedTheme } from './components/ui';
-import { HomeIcon, InsightsIcon, MealsIcon, PlusIcon, YouIcon } from './components/icons';
+import { CameraIcon, HomeIcon, InsightsIcon, MealsIcon, YouIcon } from './components/icons';
 import Lock from './screens/Lock';
 import Onboarding from './screens/Onboarding';
 import Waking from './screens/Waking';
@@ -133,7 +133,7 @@ function Shell() {
             </button>
           ))}
           <button type="button" className="tab-fab" onClick={() => go({ name: 'capture' })} aria-label="Log a meal">
-            <PlusIcon size={26} />
+            <CameraIcon size={24} />
           </button>
           {TABS.slice(2).map(({ name, label, Icon }) => (
             <button key={name} type="button" aria-current={route.name === name ? 'page' : undefined} onClick={() => go({ name } as Route)}>

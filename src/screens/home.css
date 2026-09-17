@@ -33,16 +33,16 @@
   font-size: var(--text-body); font-weight: 600; box-shadow: 0 8px 20px rgba(107, 95, 224, 0.28);
 }
 
-.home-trackers { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); align-items: start; }
+.home-trackers { display: grid; grid-template-columns: 1fr; gap: var(--s2); }
 /* Without min-width:0 a grid item refuses to shrink below its content, so one
    unwrappable row inside widens the column and shoves the whole page sideways. */
 .home-trackers > * { min-width: 0; }
 .tracker { padding: var(--s3); }
 .tracker .row-between { flex-wrap: wrap; }
 .tracker .row-between b { white-space: nowrap; }
-.glasses { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.glasses { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s2); }
 .glass {
-  width: 16px; height: 24px; border-radius: 4px 4px 9px 9px;
+  width: 22px; height: 28px; border-radius: 4px 4px 9px 9px;
   background: var(--surface-sunk); border: 2px solid var(--line-strong);
   transition: background 0.2s ease, transform 0.16s var(--ease);
 }

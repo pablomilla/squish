@@ -193,7 +193,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
               <ShoeIcon size={16} /> Movement
             </span>
             <b className="small">
-              {(day?.steps ?? 0).toLocaleString()}/{targets.steps.toLocaleString()}
+              {(day?.steps ?? 0).toLocaleString()} / {targets.steps.toLocaleString()}
             </b>
           </div>
           <div className="macro-track" style={{ marginTop: 10 }}>
