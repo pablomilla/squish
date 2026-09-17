@@ -154,3 +154,18 @@ test('mood follows the moment', () => {
   assert.equal(moodFor({ hour: 12, mealsToday: 0, caloriesPct: 0, habits: 0, streak: 0 }), 'calm');
   assert.equal(moodFor({ hour: 19, mealsToday: 3, caloriesPct: 1, habits: 4, streak: 2 }), 'cheering');
 });
+
+test('writing the key preserves the rest of .env', async () => {
+  const { upsertKey, mask } = await import('../scripts/setup-ai');
+
+  assert.equal(upsertKey('', 'sk-ant-new'), 'ANTHROPIC_API_KEY=sk-ant-new\n');
+
+  const withComments = '# Squish\nSQUISH_MODEL=claude-sonnet-5\nANTHROPIC_API_KEY=sk-ant-old\nPORT=9000\n';
+  assert.equal(
+    upsertKey(withComments, 'sk-ant-new'),
+    '# Squish\nSQUISH_MODEL=claude-sonnet-5\nANTHROPIC_API_KEY=sk-ant-new\nPORT=9000\n',
+  );
+
+  assert.equal(upsertKey('PORT=9000\n', 'sk-ant-new'), 'PORT=9000\nANTHROPIC_API_KEY=sk-ant-new\n');
+  assert.ok(!mask('sk-ant-api03-abcdefghijklmnop').includes('efghijkl'), 'the middle of the key stays hidden');
+});

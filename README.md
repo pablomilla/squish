@@ -53,25 +53,31 @@ sees it.
 
 1. Sign in at [console.anthropic.com](https://console.anthropic.com) and put credit on the account
    (**Billing** → buy credits; the API is prepaid and separate from a Claude.ai subscription).
-2. **Settings → API keys → Create key**. Copy it then and there — it is shown once. Keys look like
+2. **Settings → API keys → Create key**. Copy it there and then — it is shown once. Keys look like
    `sk-ant-api03-…`.
-3. Drop it into `.env` at the repo root:
+3. Hand it to the setup script:
 
    ```bash
-   cp .env.example .env    # then edit: ANTHROPIC_API_KEY=sk-ant-api03-...
-   npm run dev
+   npm run setup:ai
    ```
 
-`npm run dev` loads `.env` via Node's `--env-file-if-exists`, so no restart dance and no `dotenv`
-dependency. `.env` is gitignored — keep it that way, and rotate the key in the console if one ever
-lands in a commit.
+   It prompts for the key without echoing it, spends one token checking that it actually works,
+   and only then writes `.env` with owner-only permissions. Passing a key as a command argument
+   would put it in your shell history, so the script does not accept one.
 
-You can tell which mode you are in three ways: the API server prints it on startup, `curl
+`npm run check:ai` re-checks whatever is configured at any time. Both tell you *which* thing is
+wrong — key rejected, no credit on the account, model not available to the workspace, network
+unreachable — rather than a bare failure. Prefer editing by hand? `cp .env.example .env` and fill
+in `ANTHROPIC_API_KEY` works exactly the same; `npm run dev` loads `.env` through Node's
+`--env-file-if-exists`.
+
+`.env` is gitignored — keep it that way, and rotate the key in the console if one ever lands in a
+commit. If you already use the `ant` CLI, `ant auth login` works too: the SDK falls back to that
+profile when no key is set, and a key in the environment takes precedence over it.
+
+You can confirm the mode three ways: the API server prints it on startup, `curl
 localhost:8787/api/health` returns `"ai": true`, and **You → Squish AI** shows *Connected* with the
 model name.
-
-If you already use the `ant` CLI, `ant auth login` works too — the SDK falls back to that profile
-when no key is set, and a key in the environment takes precedence over it.
 
 Without any credentials the app still runs end to end: the API server falls back to a local
 estimator built on the bundled food table, and anything it produces is labelled **Offline estimate**
@@ -81,6 +87,8 @@ or a rate limit at request time, with the reason logged server-side.
 | Script | What it does |
 | --- | --- |
 | `npm run dev` | Vite dev server + API server together |
+| `npm run setup:ai` | Prompt for an Anthropic key, verify it, write `.env` |
+| `npm run check:ai` | Check whatever credentials are configured |
 | `npm run build` | Typecheck and build the PWA to `dist/` |
 | `npm test` | Unit tests for the nutrition maths, estimator and selectors |
 | `npm run lint` | oxlint over app, server and tests |
@@ -109,6 +117,7 @@ src/
   lib/            Nutrition maths, food table, offline estimator, selectors, dates, API client
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
+scripts/          Credential setup and check
 test/             Node test-runner suite for the maths and parsing
 ```
 

@@ -7,9 +7,11 @@
     "dev": "concurrently -n web,api -c magenta,cyan \"vite\" \"npm:dev:api\"",
     "dev:web": "vite",
     "dev:api": "tsx watch --env-file-if-exists=.env server/index.ts",
+    "setup:ai": "tsx --env-file-if-exists=.env scripts/setup-ai.ts",
+    "check:ai": "tsx --env-file-if-exists=.env scripts/setup-ai.ts --check",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "oxlint src server test",
+    "lint": "oxlint src server test scripts",
     "typecheck": "tsc -b",
     "test": "tsx --test test/*.test.ts"
   },
