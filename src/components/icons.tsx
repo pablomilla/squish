@@ -125,6 +125,28 @@ export const ImageIcon = ({ size = 22, className }: IconProps) => (
   </svg>
 );
 
+export const FlashIcon = ({ size = 22, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M13 2.5 5 13.5h5.5L11 21.5l8-11h-5.5z" />
+  </svg>
+);
+
+export const FlipIcon = ({ size = 22, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H9l1.3-2h3.4L15 6h3.5A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z" />
+    <path d="M9.5 13a2.5 2.5 0 0 1 4.3-1.7M14.5 13a2.5 2.5 0 0 1-4.3 1.7" />
+    <path d="m13.4 10.6.4 1.5M10.6 15.4l-.4-1.5" />
+  </svg>
+);
+
+export const HelpIcon = ({ size = 22, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M9.7 9.6a2.4 2.4 0 0 1 4.6.8c0 1.6-2.3 1.9-2.3 3.4" />
+    <path d="M12 17.2v.01" />
+  </svg>
+);
+
 export const PenIcon = ({ size = 20, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z" />

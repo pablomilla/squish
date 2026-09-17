@@ -2,16 +2,16 @@
 /* Sections breathe more than the cards inside them. */
 .home > section + section { margin-top: var(--s2); }
 .home-top { display: flex; align-items: center; justify-content: space-between; }
-.home-top h1 { font-size: 24px; }
+.home-top h1 { font-size: var(--text-display); }
 .home-streak {
   display: flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: var(--r-pill);
   background: var(--peach-soft); color: var(--warn); font-weight: 600;
 }
-.home-streak b { font-size: 17px; }
+.home-streak b { font-size: 20px; }
 
 .home-hero { display: flex; align-items: center; gap: var(--s2); padding: var(--s4) var(--s3); }
 .home-hero-text { flex: 1; min-width: 0; }
-.home-mood { margin-top: var(--s3); font-size: 19px; color: var(--brand-ink); line-height: 1.2; }
+.home-mood { margin-top: var(--s3); font-size: 22px; color: var(--brand-ink); line-height: 1.2; }
 
 .home-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--s2); margin: var(--s2) 0 var(--s5); }
 .home-ring-caption { margin-top: -2px; }
@@ -59,7 +59,7 @@
 .habit b { color: var(--ink); font-size: var(--text-body); }
 .habit.is-on b { color: var(--good); }
 
-.home-footer { text-align: center; font-size: 21px; color: var(--ink-3); margin: var(--s3) 0 var(--s2); }
+.home-footer { text-align: center; font-size: 22px; color: var(--ink-3); margin: var(--s3) 0 var(--s2); }
 
 .weigh-row {
   display: flex; align-items: center; justify-content: space-between;

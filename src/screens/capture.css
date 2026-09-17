@@ -4,31 +4,52 @@
    percentage cannot resolve against, so the video fell back to its natural
    4:3 size and left a black band below it. */
 .capture-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* A selfie camera should read like a mirror, as every camera app does. */
+.capture-video.is-mirrored { transform: scaleX(-1); }
 .capture-fallback { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: radial-gradient(circle at 50% 35%, #2b2540, #100e18); }
 .capture-fallback .muted { color: rgba(255, 255, 255, 0.66); }
 
-.capture-frame { position: absolute; inset: 14% 10%; pointer-events: none; }
+.capture-frame { position: absolute; inset: 16% 10% 22%; pointer-events: none; }
 .capture-frame span { position: absolute; width: 34px; height: 34px; border: 3px solid rgba(255, 255, 255, 0.85); }
 .capture-frame span:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 14px 0 0 0; }
 .capture-frame span:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 14px 0 0; }
 .capture-frame span:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 14px; }
 .capture-frame span:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 14px 0; }
 
-.capture-close {
-  position: absolute; top: max(14px, env(safe-area-inset-top)); left: 14px; width: 40px; height: 40px;
-  border-radius: 50%; background: rgba(20, 16, 30, 0.55); color: #fff; display: grid; place-items: center;
-  backdrop-filter: blur(6px);
+.capture-top {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: 14px; right: 14px;
+  display: flex; align-items: center; justify-content: space-between;
 }
-.capture-slot { position: absolute; left: 14px; right: 14px; bottom: 16px; }
+.capture-wordmark { color: #fff; font-weight: 600; font-size: var(--text-body); letter-spacing: -0.01em; }
+.capture-round {
+  width: 40px; height: 40px; border-radius: 50%; background: rgba(20, 16, 30, 0.55); color: #fff;
+  display: grid; place-items: center; backdrop-filter: blur(6px);
+}
+.capture-guide {
+  position: absolute; left: 24px; right: 24px; bottom: 82px;
+  text-align: center; color: rgba(255, 255, 255, 0.82); font-size: var(--text-label);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+.capture-slot { position: absolute; left: 14px; right: 14px; bottom: 14px; }
 .capture-slot .segmented { background: rgba(20, 16, 30, 0.55); border-color: rgba(255, 255, 255, 0.16); backdrop-filter: blur(8px); }
 .capture-slot .segmented button { color: rgba(255, 255, 255, 0.72); }
 .capture-slot .segmented button[aria-selected='true'] { background: #fff; color: #2b2340; }
 
 .capture-controls {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 22px 34px calc(26px + env(safe-area-inset-bottom));
+  padding: 20px 34px 8px;
 }
-.capture-side { display: flex; flex-direction: column; align-items: center; gap: 4px; color: rgba(255, 255, 255, 0.8); }
+.capture-side {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.capture-side.is-on { color: var(--yellow); }
+.capture-side--empty { visibility: hidden; }
+.capture-describe {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin: 0 auto; padding: 10px 18px calc(14px + env(safe-area-inset-bottom));
+  color: rgba(255, 255, 255, 0.72); font-size: var(--text-label); font-weight: 500;
+}
 .capture-shutter {
   width: 76px; height: 76px; border-radius: 50%; background: rgba(255, 255, 255, 0.24);
   display: grid; place-items: center; transition: transform 0.16s var(--ease);
@@ -36,10 +57,7 @@
 .capture-shutter span { width: 62px; height: 62px; border-radius: 50%; background: #fff; }
 .capture-shutter:active { transform: scale(0.93); }
 .capture-shutter:disabled { opacity: 0.4; }
-.capture-hint {
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding-bottom: calc(14px + env(safe-area-inset-bottom)); color: rgba(255, 255, 255, 0.6); font-size: 12px;
-}
+
 
 .capture-analysing {
   min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;

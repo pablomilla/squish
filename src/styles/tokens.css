@@ -49,13 +49,16 @@
   --dv-grid: #e8ddcd;
   --dv-axis: #9a93ab;
 
-  /* Type scale — four levels, used everywhere. More than this is noise. */
-  --text-display: 26px;   /* screen title */
-  --text-hero: 34px;      /* the one number a screen is about */
-  --text-section: 16px;   /* card heading */
-  --text-body: 15px;
-  --text-label: 13px;     /* field labels, secondary rows */
-  --text-caption: 12px;   /* units, timestamps, hints */
+  /* Type scale — four levels, used everywhere. More than this is noise.
+     Sized against the big mainstream trackers: a phone held at arm's length
+     in a kitchen is not a desktop at 60cm, and section headings especially
+     were far too timid. */
+  --text-display: 32px;   /* screen title */
+  --text-hero: 38px;      /* the one number a screen is about */
+  --text-section: 20px;   /* card heading */
+  --text-body: 16px;
+  --text-label: 14px;     /* field labels, secondary rows */
+  --text-caption: 13px;   /* units, timestamps, hints */
 
   /* Spacing — related things 8/12 apart, sections 20 apart. */
   --s1: 4px;
