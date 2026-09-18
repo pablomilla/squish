@@ -96,9 +96,14 @@ a { color: var(--brand-ink); }
 .card--flat { box-shadow: none; }
 .card--tint { background: var(--surface-2); }
 .card--brand { background: var(--brand-soft); border-color: transparent; }
-.card-title { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s3); }
-.card-title h3 { font-size: var(--text-section); }
-.card-title .tiny { flex: none; }
+/*
+ * The heading is the important half, so it is never the thing that gives way.
+ * It keeps its natural width; whatever sits beside it drops onto its own line
+ * when there is no room, rather than squeezing "Daily check-ins" into two.
+ */
+.card-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s1) var(--s2); margin-bottom: var(--s3); }
+.card-title h3 { font-size: var(--text-section); flex: none; }
+.card-title .tiny, .card-title .badge { flex: none; }
 
 /* ---------- Buttons ---------- */
 .btn {
