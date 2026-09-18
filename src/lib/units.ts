@@ -7,6 +7,15 @@
  */
 import { round1 } from './nutrition';
 
+/**
+ * Stored weights keep two decimal places of a kilogram.
+ *
+ * One was not enough: 0.1 kg is 0.22 lb, coarser than the 0.1 lb the
+ * stones-and-pounds field accepts, so typing "10 st 10 lb" stored 68.0 kg and
+ * read back as 10 st 9.9 lb. Every whole pound came back wrong.
+ */
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
 export const CM_PER_INCH = 2.54;
 export const INCHES_PER_FOOT = 12;
 export const KG_PER_POUND = 0.45359237;
@@ -46,7 +55,7 @@ export function kgToStonePounds(kg: number): StonePounds {
 }
 
 export function stonePoundsToKg(stone: number, pounds: number): number {
-  return round1((stone * POUNDS_PER_STONE + pounds) * KG_PER_POUND);
+  return round2((stone * POUNDS_PER_STONE + pounds) * KG_PER_POUND);
 }
 
 export function kgToPounds(kg: number): number {
@@ -54,7 +63,7 @@ export function kgToPounds(kg: number): number {
 }
 
 export function poundsToKg(pounds: number): number {
-  return round1(pounds * KG_PER_POUND);
+  return round2(pounds * KG_PER_POUND);
 }
 
 export type Units = 'metric' | 'imperial';
@@ -79,3 +88,64 @@ export function formatWeightDelta(kgDelta: number, units: Units): string {
 }
 
 export const weightUnitLabel = (units: Units) => (units === 'metric' ? 'kg' : 'lb');
+
+/**
+ * Where setup starts people, round in whichever system they are reading.
+ * 68 kg is a tidy number to be shown; the very same weight in stones is
+ * 10 st 9.9 lb, which is not.
+ */
+export const STARTING_WEIGHTS: Record<Units, { weightKg: number; targetWeightKg: number }> = {
+  metric: { weightKg: 68, targetWeightKg: 63 },
+  imperial: { weightKg: stonePoundsToKg(10, 10), targetWeightKg: stonePoundsToKg(10, 0) },
+};
+
+/**
+ * Weekly pace is stored in kilograms, but nobody losing weight in stones
+ * thinks in kilograms. Each system offers its own choices, a quarter of a
+ * pound at a time rather than a tenth of a kilo.
+ */
+export const PACE_CHOICES: Record<Units, { min: number; max: number; step: number }> = {
+  metric: { min: 0.1, max: 1, step: 0.1 },
+  imperial: { min: 0.25, max: 2, step: 0.25 },
+};
+
+/** A stored kg pace expressed in the displayed unit, on that unit's grid. */
+export function paceIn(kgPerWeek: number, units: Units): number {
+  const { min, max, step } = PACE_CHOICES[units];
+  const raw = units === 'metric' ? kgPerWeek : kgPerWeek / KG_PER_POUND;
+  return Math.min(max, Math.max(min, round2(Math.round(raw / step) * step)));
+}
+
+/** The reverse: what the slider hands back, stored as kilograms. */
+export function paceToKg(value: number, units: Units): number {
+  return units === 'metric' ? round2(value) : round2(value * KG_PER_POUND);
+}
+
+export function formatPace(kgPerWeek: number, units: Units): string {
+  return `${paceIn(kgPerWeek, units)} ${weightUnitLabel(units)}`;
+}
+
+const isStartingWeight = (kg: number, which: 'weightKg' | 'targetWeightKg') =>
+  Object.values(STARTING_WEIGHTS).some((start) => start[which] === kg);
+
+/**
+ * Re-express a profile when someone switches systems.
+ *
+ * A weight they have actually typed is theirs, and is converted rather than
+ * altered. A starting value they have never touched is replaced with the one
+ * that reads well in the system they have just chosen.
+ */
+export function retuneForUnits<T extends { units: Units; weightKg: number; targetWeightKg: number; pace: number }>(
+  profile: T,
+  units: Units,
+): T {
+  return {
+    ...profile,
+    units,
+    weightKg: isStartingWeight(profile.weightKg, 'weightKg') ? STARTING_WEIGHTS[units].weightKg : profile.weightKg,
+    targetWeightKg: isStartingWeight(profile.targetWeightKg, 'targetWeightKg')
+      ? STARTING_WEIGHTS[units].targetWeightKg
+      : profile.targetWeightKg,
+    pace: paceToKg(paceIn(profile.pace, units), units),
+  };
+}

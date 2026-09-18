@@ -5,8 +5,9 @@ import { Segmented } from '../components/ui';
 import { MacroBars } from '../components/charts';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { useSquish, DEFAULT_PROFILE } from '../store/useSquish';
-import { ACTIVITY_LABEL, computeTargets } from '../lib/nutrition';
+import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
 import type { Activity, Goal, Profile, Sex } from '../types';
+import { PACE_CHOICES, formatPace, paceIn, paceToKg, retuneForUnits } from '../lib/units';
 import type { Units } from '../lib/units';
 import './onboarding.css';
 
@@ -97,7 +98,7 @@ export default function Onboarding() {
               <label>Units</label>
               <Segmented<Units>
                 value={draft.units}
-                onChange={(units) => set({ units })}
+                onChange={(units) => setDraft((d) => retuneForUnits(d, units))}
                 options={[
                   { value: 'metric', label: 'cm / kg' },
                   { value: 'imperial', label: 'ft / st' },
@@ -145,17 +146,20 @@ export default function Onboarding() {
 
             {draft.goal !== 'maintain' && (
               <div className="field">
-                <label htmlFor="pace">Pace — {draft.pace} kg per week</label>
+                <label htmlFor="pace">Pace — {formatPace(draft.pace, draft.units)} per week</label>
                 <input
                   id="pace"
                   type="range"
-                  min={0.1}
-                  max={1}
-                  step={0.1}
-                  value={draft.pace}
-                  onChange={(e) => set({ pace: Number(e.target.value) })}
+                  min={PACE_CHOICES[draft.units].min}
+                  max={PACE_CHOICES[draft.units].max}
+                  step={PACE_CHOICES[draft.units].step}
+                  value={paceIn(draft.pace, draft.units)}
+                  onChange={(e) => set({ pace: paceToKg(Number(e.target.value), draft.units) })}
                 />
-                <p className="tiny muted">Steady beats speedy — 0.5 kg a week is the sweet spot for most people.</p>
+                <p className="tiny muted">
+                  Steady beats speedy — {draft.units === 'metric' ? '0.5 kg' : '1 lb'} a week is the sweet spot for most
+                  people.
+                </p>
               </div>
             )}
           </div>
@@ -202,7 +206,7 @@ export default function Onboarding() {
               <MacroBars totals={{ calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }} targets={targets} compact />
               <div className="divider" />
               <div className="row" style={{ gap: 16 }}>
-                <span className="small muted">💧 {targets.water} glasses</span>
+                <span className="small muted">💧 {targets.water} glasses ({waterVolume(targets.water)})</span>
                 <span className="small muted">👟 {targets.steps.toLocaleString()} steps</span>
               </div>
             </div>

@@ -40,6 +40,20 @@ export function tdee(p: Profile): number {
   return bmr(p) * ACTIVITY_FACTOR[p.activity];
 }
 
+/**
+ * What the app means by "a glass". Water was counted in glasses without ever
+ * saying how big one was, which made the target unreadable: people's glasses
+ * run from 150 ml to a pint. 250 ml is the size the target was always
+ * calculated against.
+ */
+export const GLASS_ML = 250;
+
+/** Glasses as a volume, for the people who think in litres rather than count. */
+export function waterVolume(glasses: number): string {
+  const ml = glasses * GLASS_ML;
+  return ml >= 1000 ? `${round1(ml / 1000)} L` : `${ml} ml`;
+}
+
 /** Daily calorie + macro targets, Yazio-style: pace converted to a kcal delta. */
 export function computeTargets(p: Profile): Targets {
   const maintenance = tdee(p);
@@ -66,7 +80,7 @@ export function computeTargets(p: Profile): Targets {
     fibre,
     sugar: Math.round((calories * 0.1) / 4),
     sodium: 2300,
-    water: Math.max(6, Math.round((p.weightKg * 33) / 250)), // 250 ml glasses
+    water: Math.max(6, Math.round((p.weightKg * 33) / GLASS_ML)),
     steps: p.activity === 'sedentary' ? 6000 : p.activity === 'light' ? 8000 : 10000,
   };
 }

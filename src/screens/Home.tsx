@@ -11,7 +11,7 @@ import { formatWeight } from '../lib/units';
 import { useSquish } from '../store/useSquish';
 import { friendlyDate, greeting, isoDate, slotForNow, weekOf } from '../lib/date';
 import { habitCount, habitsOn, habitTally, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
-import { pct, remaining } from '../lib/nutrition';
+import { GLASS_ML, pct, remaining, waterVolume } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
 import './home.css';
 
@@ -174,7 +174,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
               <DropIcon size={16} /> Water
             </span>
             <b className="small">
-              {day?.water ?? 0}/{targets.water}
+              {day?.water ?? 0}/{targets.water} glasses
             </b>
           </div>
           <div className="glasses">
@@ -188,6 +188,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
               />
             ))}
           </div>
+          <p className="tiny muted">
+            {waterVolume(day?.water ?? 0)} of {waterVolume(targets.water)} — a glass is {GLASS_ML} ml
+          </p>
         </div>
 
         <div className="card card--quiet tracker">

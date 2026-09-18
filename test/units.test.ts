@@ -2,16 +2,21 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   MAX_POUNDS_IN_STONE,
+  STARTING_WEIGHTS,
   cmToFeetInches,
   feetInchesToCm,
   formatHeight,
+  formatPace,
   formatWeight,
   formatWeightDelta,
   kgToPounds,
   kgToStonePounds,
+  paceToKg,
   poundsToKg,
+  retuneForUnits,
   stonePoundsToKg,
 } from '../src/lib/units';
+import { GLASS_ML, waterVolume } from '../src/lib/nutrition';
 
 test('height converts both ways without drifting', () => {
   assert.deepEqual(cmToFeetInches(168), { feet: 5, inches: 6 });
@@ -102,4 +107,62 @@ test('habit tallies count days met across the week, not today', async () => {
 
   // And an empty week tallies zero rather than throwing.
   assert.deepEqual(habitTally([], {}, targets, dates), { meals: 0, protein: 0, water: 0, movement: 0 });
+});
+
+test('a weight typed in stones and pounds survives being stored and read back', () => {
+  // One decimal place of a kilogram is 0.22 lb — coarser than the field
+  // accepts — so whole pounds used to come back a tenth light: 10 lb as 9.9.
+  for (const [stone, pounds] of [
+    [10, 10],
+    [12, 3],
+    [9, 7],
+    [10, 0],
+    [13, MAX_POUNDS_IN_STONE],
+  ] as const) {
+    assert.deepEqual(
+      kgToStonePounds(stonePoundsToKg(stone, pounds)),
+      { stone, pounds },
+      `${stone} st ${pounds} lb did not survive the round trip`,
+    );
+  }
+});
+
+test('setup starts people on a round number in whichever system they read', () => {
+  assert.deepEqual(kgToStonePounds(STARTING_WEIGHTS.imperial.weightKg), { stone: 10, pounds: 10 });
+  assert.deepEqual(kgToStonePounds(STARTING_WEIGHTS.imperial.targetWeightKg), { stone: 10, pounds: 0 });
+  assert.equal(STARTING_WEIGHTS.metric.weightKg, 68);
+});
+
+test('pace is offered in the units being read, not always in kilos', () => {
+  assert.equal(formatPace(0.5, 'metric'), '0.5 kg');
+  assert.equal(formatPace(0.5, 'imperial'), '1 lb');
+  assert.equal(formatPace(paceToKg(1.5, 'imperial'), 'imperial'), '1.5 lb');
+});
+
+test('switching units leaves a weight someone typed alone', () => {
+  const typed = { units: 'metric' as const, weightKg: 81.4, targetWeightKg: 76, pace: 0.5 };
+  const switched = retuneForUnits(typed, 'imperial');
+  assert.equal(switched.weightKg, 81.4, 'their own weight must not be altered by a display choice');
+  assert.equal(switched.targetWeightKg, 76);
+});
+
+test('switching units re-rounds a starting weight nobody has touched', () => {
+  const untouched = {
+    units: 'metric' as const,
+    weightKg: STARTING_WEIGHTS.metric.weightKg,
+    targetWeightKg: STARTING_WEIGHTS.metric.targetWeightKg,
+    pace: 0.5,
+  };
+  const switched = retuneForUnits(untouched, 'imperial');
+  assert.deepEqual(kgToStonePounds(switched.weightKg), { stone: 10, pounds: 10 });
+  assert.equal(formatPace(switched.pace, 'imperial'), '1 lb');
+  // And back again, without drifting somewhere odd.
+  assert.equal(retuneForUnits(switched, 'metric').weightKg, 68);
+});
+
+test('a glass has a stated size, because "10 glasses" on its own means nothing', () => {
+  assert.equal(GLASS_ML, 250);
+  assert.equal(waterVolume(4), '1 L');
+  assert.equal(waterVolume(3), '750 ml');
+  assert.equal(waterVolume(10), '2.5 L');
 });

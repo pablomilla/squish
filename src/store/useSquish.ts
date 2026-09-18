@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Achievement, DayLog, FoodItem, MealEntry, Profile, Targets } from '../types';
 import { computeTargets } from '../lib/nutrition';
+import { STARTING_WEIGHTS } from '../lib/units';
 import { isoDate, nowTime, slotForNow } from '../lib/date';
 
 export const DEFAULT_PROFILE: Profile = {
@@ -9,8 +10,8 @@ export const DEFAULT_PROFILE: Profile = {
   sex: 'female',
   age: 30,
   heightCm: 168,
-  weightKg: 68,
-  targetWeightKg: 63,
+  weightKg: STARTING_WEIGHTS.metric.weightKg,
+  targetWeightKg: STARTING_WEIGHTS.metric.targetWeightKg,
   activity: 'light',
   goal: 'lose',
   pace: 0.5,

@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
-import { formatHeight, formatWeight } from '../lib/units';
+import { PACE_CHOICES, formatHeight, formatPace, formatWeight, paceIn, paceToKg, retuneForUnits, weightUnitLabel } from '../lib/units';
 import { SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
-import { ACTIVITY_LABEL, computeTargets, tdee } from '../lib/nutrition';
+import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
 import { isoDate } from '../lib/date';
 import { streakOf } from '../lib/selectors';
@@ -92,7 +92,7 @@ export default function You() {
           </button>
         </div>
         <Row label="Goal" value={profile.goal === 'lose' ? 'Lose weight' : profile.goal === 'gain' ? 'Build up' : 'Stay steady'} />
-        <Row label="Pace" value={profile.goal === 'maintain' ? '—' : `${profile.pace} kg / week`} />
+        <Row label="Pace" value={profile.goal === 'maintain' ? '—' : `${formatPace(profile.pace, profile.units)} / week`} />
         <Row label="Weight" value={formatWeight(profile.weightKg, profile.units)} />
         <Row label="Goal weight" value={formatWeight(profile.targetWeightKg, profile.units)} />
         <Row label="Height" value={formatHeight(profile.heightCm, profile.units)} />
@@ -167,15 +167,21 @@ export default function You() {
           </div>
           {profile.goal !== 'maintain' && (
             <div className="row-between">
-              <span className="small">Pace (kg/week)</span>
-              <Stepper value={profile.pace} step={0.1} min={0.1} max={1} onChange={(pace) => setProfile({ pace })} />
+              <span className="small">Pace ({weightUnitLabel(profile.units)}/week)</span>
+              <Stepper
+                value={paceIn(profile.pace, profile.units)}
+                step={PACE_CHOICES[profile.units].step}
+                min={PACE_CHOICES[profile.units].min}
+                max={PACE_CHOICES[profile.units].max}
+                onChange={(pace) => setProfile({ pace: paceToKg(pace, profile.units) })}
+              />
             </div>
           )}
           <div className="field">
             <label>Units</label>
             <Segmented
               value={profile.units}
-              onChange={(units) => setProfile({ units })}
+              onChange={(units) => setProfile(retuneForUnits(profile, units))}
               options={[
                 { value: 'metric' as const, label: 'cm / kg' },
                 { value: 'imperial' as const, label: 'ft / st' },
@@ -249,7 +255,9 @@ export default function You() {
             <Stepper value={targets.fibre} step={1} min={10} max={60} onChange={(fibre) => setTargets({ fibre })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Water</span>
+            <span className="small">
+              Water<span className="tiny muted"> · {GLASS_ML} ml a glass</span>
+            </span>
             <Stepper value={targets.water} min={4} max={20} onChange={(water) => setTargets({ water })} suffix="glasses" />
           </div>
           <div className="row-between">
