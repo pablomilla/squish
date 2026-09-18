@@ -29,18 +29,14 @@ const TEXT_BOTTOM = PILL_TOP - 24;
 const SUB_LEADING = 50;
 
 /**
- * The mascot's light-theme colours, fixed here rather than read from the page.
- * Keep in step with `--squish-*` in squish.css if that palette ever changes.
+ * The mascot's light skin tones, pinned here so a card drawn in dark mode still
+ * comes out light. These are the only colours the artwork leaves themeable —
+ * keep them in step with `--squish-skin-*` in squish.css.
  */
 const MASCOT_LIGHT: Record<string, string> = {
   '--squish-skin-0': '#fffaf4',
   '--squish-skin-1': '#fdeadc',
   '--squish-skin-2': '#f6d7c4',
-  '--squish-ink': '#2b2340',
-  '--squish-blush': 'rgba(244, 137, 159, 0.42)',
-  '--squish-pink': '#f4899f',
-  '--squish-spark': '#f2c84b',
-  '--squish-shadow': 'rgba(107, 95, 224, 0.13)',
 };
 
 const BRAND = {

@@ -18,7 +18,8 @@
     "preview": "vite preview",
     "lint": "oxlint src server test scripts",
     "typecheck": "tsc -b",
-    "test": "tsx --test test/*.test.ts"
+    "test": "tsx --test test/*.test.ts",
+    "build:mascot": "tsx scripts/build-mascot.ts"
   },
   "dependencies": {
     "react": "^19.2.8",

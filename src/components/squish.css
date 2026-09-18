@@ -1,60 +1,91 @@
+/**
+ * The mascot's movement and its one themeable colour.
+ *
+ * The artwork fixes every colour except the three skin tones, which are custom
+ * properties so one set of files serves both themes. The values here match the
+ * light and dark deliveries in design/artwork exactly.
+ */
 .squish {
   --squish-skin-0: #fffaf4;
   --squish-skin-1: #fdeadc;
   --squish-skin-2: #f6d7c4;
-  --squish-ink: #2b2340;
-  --squish-blush: rgba(244, 137, 159, 0.42);
-  --squish-pink: #f4899f;
-  --squish-spark: #f2c84b;
-  --squish-shadow: rgba(107, 95, 224, 0.13);
-  overflow: visible;
   display: block;
+  overflow: visible;
 }
 
 :root[data-theme='dark'] .squish {
   --squish-skin-0: #fdf3ea;
   --squish-skin-1: #f4ddcc;
   --squish-skin-2: #e2bfa9;
-  --squish-shadow: rgba(0, 0, 0, 0.32);
 }
 
-.squish--bob { animation: squish-bob 3.4s ease-in-out infinite; transform-origin: 50% 90%; }
+/* Idle breathing, and a livelier version for the two happy poses. */
+.squish--bob { animation: squish-bob 3.4s ease-in-out infinite; transform-origin: 50% 88%; }
+.squish--bob.squish--excited,
+.squish--bob.squish--cheering { animation: squish-bounce 1.9s ease-in-out infinite; }
+
 @keyframes squish-bob {
   0%, 100% { transform: translateY(0) scale(1, 1); }
-  45% { transform: translateY(-5px) scale(0.985, 1.015); }
-  70% { transform: translateY(1px) scale(1.02, 0.98); }
+  45% { transform: translateY(-2.5%) scale(0.99, 1.012); }
+  70% { transform: translateY(0.5%) scale(1.015, 0.985); }
 }
 
-.squish-eyes { animation: squish-blink 6s infinite; transform-origin: 50% 47%; }
+@keyframes squish-bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  40% { transform: translateY(-4%) scale(0.985, 1.02); }
+  62% { transform: translateY(0) scale(1.03, 0.97); }
+}
+
+/*
+ * The blink happens on a wrapper the build step adds, because the eyes carry
+ * their own `transform` attribute and a CSS transform would replace it rather
+ * than compose with it. `fill-box` puts the origin at the eyes themselves, so
+ * the lids close on the eyes and not on the middle of the picture.
+ */
+.sq-blink {
+  animation: squish-blink 6.2s infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
 @keyframes squish-blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.08); }
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.06); }
 }
 
-.squish-heart { animation: squish-beat 2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+/* Sleep marks drift; sparks twinkle. Both live in the artwork's accents group. */
+.squish--sleepy .sq-accents { animation: squish-float 2.8s ease-in-out infinite; }
+.squish--excited .sq-accents,
+.squish--cheering .sq-accents {
+  animation: squish-sparkle 2.2s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@keyframes squish-float {
+  0%, 100% { opacity: 0.45; transform: translateY(1%); }
+  50% { opacity: 1; transform: translateY(-2%); }
+}
+
+@keyframes squish-sparkle {
+  0%, 100% { opacity: 0.75; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+.sq-heart {
+  animation: squish-beat 2s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
 @keyframes squish-beat {
   0%, 100% { transform: scale(1); }
-  30% { transform: scale(1.08); }
+  30% { transform: scale(1.09); }
   55% { transform: scale(0.98); }
 }
 
-.squish-zzz { animation: squish-float 2.6s ease-in-out infinite; }
-@keyframes squish-float {
-  0%, 100% { opacity: 0.35; transform: translateY(2px); }
-  50% { opacity: 1; transform: translateY(-4px); }
-}
-
-.squish-think circle { animation: squish-think 1.4s ease-in-out infinite; }
-.squish-think circle:nth-child(2) { animation-delay: 0.18s; }
-.squish-think circle:nth-child(3) { animation-delay: 0.36s; }
-@keyframes squish-think {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.9; }
-}
-
-.squish--cheering, .squish--excited { animation: squish-bounce 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
-@keyframes squish-bounce {
-  0%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-8px); }
-  60% { transform: translateY(0) scaleY(0.97); }
+/* A mascot that will not sit still is a problem for some people, not a delight. */
+@media (prefers-reduced-motion: reduce) {
+  .squish,
+  .squish * { animation: none; }
 }
