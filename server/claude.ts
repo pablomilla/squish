@@ -101,8 +101,16 @@ const MEAL_SCHEMA = {
         properties: {
           name: { type: 'string' },
           emoji: { type: 'string', description: 'One emoji that suits the food' },
-          portion: { type: 'string', description: 'Human-readable portion, e.g. "1 bowl (320 g)"' },
+          portion: {
+            type: 'string',
+            description:
+              'What the portion was, in words only: "1 bowl", "1 medium apple", "2 slices". No weights — the app shows those itself, from grams, and would print them twice.',
+          },
           grams: { type: 'number', description: 'Estimated edible weight in grams' },
+          liquid: {
+            type: 'boolean',
+            description: 'True for a drink, soup or anything else a person measures by volume rather than weight',
+          },
           nutrients: {
             type: 'object',
             properties: NUTRIENT_PROPS,
@@ -110,7 +118,7 @@ const MEAL_SCHEMA = {
             additionalProperties: false,
           },
         },
-        required: ['name', 'emoji', 'portion', 'grams', 'nutrients'],
+        required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'nutrients'],
         additionalProperties: false,
       },
     },
@@ -124,7 +132,8 @@ const SYSTEM = `You are the nutrition engine behind Squish, a friendly food-trac
 Your job is to identify what someone ate and estimate its nutrition as accurately as a careful dietitian would.
 
 Rules:
-- Estimate realistic portions from visual cues: plate and bowl size, cutlery, hands, packaging. Say so in the portion text.
+- Estimate realistic portions from visual cues: plate and bowl size, cutlery, hands, packaging.
+- portion names what it was; grams carries how much it weighed. Keep weights out of the portion text.
 - Break the meal into the individual foods you can actually see or that were described. Do not invent sides that are not there.
 - Nutrition values are per the portion you state, not per 100 g.
 - Count fibre inside total carbohydrate, and give sugar as total sugars.
@@ -156,6 +165,7 @@ interface ModelMeal {
     emoji?: string;
     portion?: string;
     grams?: number;
+    liquid?: boolean;
     nutrients?: Partial<Nutrients>;
   }[];
 }
@@ -167,6 +177,7 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
     emoji: item.emoji || '🍽️',
     portion: item.portion?.trim() || '1 serving',
     grams: typeof item.grams === 'number' ? Math.round(item.grams) : undefined,
+    liquid: item.liquid === true,
     nutrients: coerceNutrients(item.nutrients),
   }));
 

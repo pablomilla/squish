@@ -10,6 +10,7 @@ import { searchFoods, toFoodItem } from '../lib/foods';
 import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients } from '../lib/nutrition';
 import { friendlyDate } from '../lib/date';
 import './review.css';
+import { describePortion } from '../lib/units';
 
 interface Row {
   item: FoodItem;
@@ -148,7 +149,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                   <span className="item-text">
                     <b>{item.name}</b>
                     <span className="tiny muted">
-                      {item.portion} · {Math.round(item.nutrients.calories)} kcal
+                      {describePortion(item.portion, item.grams, item.liquid)} · {Math.round(item.nutrients.calories)} kcal
                     </span>
                   </span>
                   <span className="tiny muted item-macros">
@@ -251,7 +252,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
               <span className="meal-card-body">
                 <span className="meal-card-title">{food.name}</span>
                 <span className="tiny muted">
-                  {food.serving} · {Math.round((food.per100.calories * food.servingG) / 100)} kcal
+                  {describePortion(food.serving, food.servingG, food.tags.includes('drink'))} ·{' '}
+                  {Math.round((food.per100.calories * food.servingG) / 100)} kcal
                 </span>
               </span>
               <PlusIcon size={18} />

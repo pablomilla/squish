@@ -12,6 +12,7 @@ import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { GLASS_ML, scoreLabel } from '../lib/nutrition';
 import { WeightField } from '../components/fields';
 import './diary.css';
+import { describePortion } from '../lib/units';
 
 const SLOTS: { key: MealSlot; label: string; emoji: string }[] = [
   { key: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -196,7 +197,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                   <span className="thumb thumb--emoji" aria-hidden="true">{item.emoji ?? '🍽️'}</span>
                   <span className="grow">
                     <b className="small">{item.name}</b>
-                    <p className="tiny muted">{item.portion}</p>
+                    <p className="tiny muted">{describePortion(item.portion, item.grams, item.liquid)}</p>
                   </span>
                   <span className="small">{Math.round(item.nutrients.calories)} kcal</span>
                 </div>

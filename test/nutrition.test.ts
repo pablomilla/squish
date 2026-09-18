@@ -92,7 +92,8 @@ test('text estimates split a description into separate foods', () => {
 
 test('measurement servings are not multiplied by their own quantity', () => {
   const cola = estimateFromText('a diet cola').items[0];
-  assert.equal(cola.portion, '330 ml can');
+  assert.equal(cola.portion, '1 can');
+  assert.equal(cola.grams, 330, 'one can, not one can of 330 cans');
   assert.ok(cola.nutrients.calories <= 2);
 });
 

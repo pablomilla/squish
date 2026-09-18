@@ -17,6 +17,9 @@ import { round1 } from './nutrition';
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export const CM_PER_INCH = 2.54;
+export const GRAMS_PER_OUNCE = 28.349523125;
+/** The imperial fluid ounce. The US one is 29.57 ml; this app speaks British. */
+export const ML_PER_FLUID_OUNCE = 28.4130625;
 export const INCHES_PER_FOOT = 12;
 export const KG_PER_POUND = 0.45359237;
 export const POUNDS_PER_STONE = 14;
@@ -64,6 +67,49 @@ export function kgToPounds(kg: number): number {
 
 export function poundsToKg(pounds: number): number {
   return round2(pounds * KG_PER_POUND);
+}
+
+/**
+ * What a portion weighed, in grams with ounces beside it.
+ *
+ * Both, always, rather than following the profile's units: that toggle is
+ * about bodies, and food is labelled in grams here and sold in ounces
+ * elsewhere. A portion is an estimate either way, so the ounces are rounded
+ * to match — no one needs 11.29 oz of stew.
+ */
+export function formatFoodWeight(grams: number): string {
+  const ounces = grams / GRAMS_PER_OUNCE;
+  const shown = ounces < 10 ? Math.round(ounces * 10) / 10 : Math.round(ounces);
+  return `${Math.round(grams)} g (${shown} oz)`;
+}
+
+/**
+ * What a drink measured, in millilitres with fluid ounces beside it. Drinks
+ * are stored as grams like everything else, which for anything water-based is
+ * near enough the same number.
+ */
+export function formatDrinkVolume(ml: number): string {
+  const ounces = ml / ML_PER_FLUID_OUNCE;
+  const shown = ounces < 10 ? Math.round(ounces * 10) / 10 : Math.round(ounces);
+  return `${Math.round(ml)} ml (${shown} fl oz)`;
+}
+
+/** A weight the description already carries, so it is not said twice. */
+const WEIGHT_IN_BRACKETS = /\s*\((?:about\s*)?\d+(?:\.\d+)?\s*(?:g|grams?|ml)\)\s*$/i;
+const NOTHING_BUT_A_WEIGHT = /^\s*\d+(?:\.\d+)?\s*(?:g|grams?|ml)\s*$/i;
+
+/**
+ * A portion as the app shows it: what it was, then what it weighed.
+ *
+ * The words and the weight are kept apart so the weight can be converted, and
+ * so that scaling a portion changes it — "2 × 1 bowl (320 g)" used to go on
+ * saying 320 g however many bowls you had.
+ */
+export function describePortion(portion: string, grams?: number, liquid = false): string {
+  if (!grams) return portion; // A quick-added entry has no weight to show.
+  const words = portion.replace(WEIGHT_IN_BRACKETS, '').replace(NOTHING_BUT_A_WEIGHT, '').trim();
+  const measure = liquid ? formatDrinkVolume(grams) : formatFoodWeight(grams);
+  return words ? `${words} · ${measure}` : measure;
 }
 
 export type Units = 'metric' | 'imperial';

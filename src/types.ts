@@ -27,9 +27,11 @@ export interface FoodItem {
   id: string;
   name: string;
   emoji?: string;
-  /** Portion as shown to the user, e.g. "1 bowl (320 g)". */
+  /** What the portion was, in words: "1 bowl". The weight is shown from `grams`. */
   portion: string;
   grams?: number;
+  /** Measured by volume rather than weight — a drink, a soup, a sauce. */
+  liquid?: boolean;
   nutrients: Nutrients;
 }
 

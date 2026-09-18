@@ -10,6 +10,7 @@ import { qualityScore, sumNutrients } from '../lib/nutrition';
 import { analyseText, SquishApiError } from '../lib/api';
 import { slotForNow } from '../lib/date';
 import './addfood.css';
+import { describePortion } from '../lib/units';
 
 type Tab = 'search' | 'describe' | 'favourites';
 
@@ -136,8 +137,8 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                 <span className="meal-card-body">
                   <span className="meal-card-title">{food.name}</span>
                   <span className="tiny muted">
-                    {food.serving} · {Math.round((food.per100.calories * food.servingG) / 100)} kcal · P{' '}
-                    {Math.round((food.per100.protein * food.servingG) / 100)}g
+                    {describePortion(food.serving, food.servingG, food.tags.includes('drink'))} ·{' '}
+                    {Math.round((food.per100.calories * food.servingG) / 100)} kcal
                   </span>
                 </span>
                 <PlusIcon size={18} />
@@ -233,7 +234,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                 <span className="meal-card-body">
                   <span className="meal-card-title">{item.name}</span>
                   <span className="tiny muted">
-                    {item.portion} · {Math.round(item.nutrients.calories)} kcal
+                    {describePortion(item.portion, item.grams, item.liquid)} · {Math.round(item.nutrients.calories)} kcal
                   </span>
                 </span>
                 <HeartIcon size={17} />
