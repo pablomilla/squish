@@ -1,6 +1,24 @@
 import { useEffect, useId, useState } from 'react';
 import type { Units } from '../lib/units';
-import { cmToFeetInches, feetInchesToCm, kgToStonePounds, MAX_POUNDS_IN_STONE, stonePoundsToKg } from '../lib/units';
+import {
+  cmToFeetInches,
+  feetInchesToCm,
+  kgToStonePounds,
+  stonePoundsToKg,
+  FEET_RANGE,
+  HEIGHT_CM_RANGE,
+  MAX_POUNDS_IN_STONE,
+  STONE_RANGE,
+  WEIGHT_KG_RANGE,
+} from '../lib/units';
+
+/**
+ * Shown at the field's own precision, which is not the store's. Weights are
+ * kept to two decimal places of a kilogram so that pounds survive being saved,
+ * and a box labelled "kg" should not put 60.33 on screen because of it.
+ */
+const atPrecision = (n: number, decimals: number) =>
+  String(decimals ? Math.round(n * 10 ** decimals) / 10 ** decimals : Math.round(n));
 
 /**
  * A number field that lets you type.
@@ -31,12 +49,12 @@ export function NumberField({
   hideLabel?: boolean;
 }) {
   const id = useId();
-  const [draft, setDraft] = useState(() => String(value));
+  const [draft, setDraft] = useState(() => atPrecision(value, decimals));
 
   // Follow the value when it changes from elsewhere — switching units, say.
   useEffect(() => {
-    setDraft((current) => (Number(current) === value ? current : String(value)));
-  }, [value]);
+    setDraft((current) => (Number(current) === value ? current : atPrecision(value, decimals)));
+  }, [value, decimals]);
 
   const commit = () => {
     const parsed = Number(draft);
@@ -99,7 +117,16 @@ export function HeightField({
   onChange: (cm: number) => void;
 }) {
   if (units === 'metric') {
-    return <NumberField label="Height" value={Math.round(cm)} suffix="cm" min={120} max={220} onChange={onChange} />;
+    return (
+      <NumberField
+        label="Height"
+        value={Math.round(cm)}
+        suffix="cm"
+        min={HEIGHT_CM_RANGE.min}
+        max={HEIGHT_CM_RANGE.max}
+        onChange={onChange}
+      />
+    );
   }
 
   const { feet, inches } = cmToFeetInches(cm);
@@ -112,8 +139,8 @@ export function HeightField({
           hideLabel
           value={feet}
           suffix="ft"
-          min={3}
-          max={7}
+          min={FEET_RANGE.min}
+          max={FEET_RANGE.max}
           onChange={(nextFeet) => onChange(feetInchesToCm(nextFeet, inches))}
         />
         <NumberField
@@ -143,7 +170,17 @@ export function WeightField({
   onChange: (kg: number) => void;
 }) {
   if (units === 'metric') {
-    return <NumberField label={label} value={kg} suffix="kg" min={35} max={250} decimals={1} onChange={onChange} />;
+    return (
+      <NumberField
+        label={label}
+        value={kg}
+        suffix="kg"
+        min={WEIGHT_KG_RANGE.min}
+        max={WEIGHT_KG_RANGE.max}
+        decimals={1}
+        onChange={onChange}
+      />
+    );
   }
 
   const { stone, pounds } = kgToStonePounds(kg);
@@ -156,8 +193,8 @@ export function WeightField({
           hideLabel
           value={stone}
           suffix="st"
-          min={5}
-          max={39}
+          min={STONE_RANGE.min}
+          max={STONE_RANGE.max}
           onChange={(nextStone) => onChange(stonePoundsToKg(nextStone, pounds))}
         />
         <NumberField

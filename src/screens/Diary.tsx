@@ -9,7 +9,7 @@ import { CameraIcon, ChevronIcon, PenIcon, PlusIcon, TrashIcon } from '../compon
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
-import { scoreLabel } from '../lib/nutrition';
+import { GLASS_ML, scoreLabel } from '../lib/nutrition';
 import { WeightField } from '../components/fields';
 import './diary.css';
 
@@ -133,7 +133,9 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <span className="tiny muted">water, movement, weight</span>
         </div>
         <div className="row-between diary-tracker">
-          <span className="small">💧 Water</span>
+          <span className="small">
+            💧 Water<span className="tiny muted"> · {GLASS_ML} ml</span>
+          </span>
           <Stepper value={day?.water ?? 0} min={0} max={20} onChange={(v) => setWater(date, v)} suffix="glasses" />
         </div>
         <div className="row-between diary-tracker">

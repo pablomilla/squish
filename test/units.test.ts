@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  FEET_RANGE,
+  HEIGHT_CM_RANGE,
   MAX_POUNDS_IN_STONE,
   STARTING_WEIGHTS,
+  STONE_RANGE,
+  WEIGHT_KG_RANGE,
   cmToFeetInches,
   feetInchesToCm,
   formatHeight,
@@ -165,4 +169,20 @@ test('a glass has a stated size, because "10 glasses" on its own means nothing',
   assert.equal(waterVolume(4), '1 L');
   assert.equal(waterVolume(3), '750 ml');
   assert.equal(waterVolume(10), '2.5 L');
+});
+
+test('both systems accept the same span, so switching never clamps a weight away', () => {
+  // The smallest and largest a person can enter in stones must be enterable in
+  // kilograms too, or switching units quietly rewrites what they recorded.
+  const lightest = stonePoundsToKg(STONE_RANGE.min, 0);
+  const heaviest = stonePoundsToKg(STONE_RANGE.max, MAX_POUNDS_IN_STONE);
+  assert.ok(lightest >= WEIGHT_KG_RANGE.min, `${lightest} kg is below the metric field's floor`);
+  assert.ok(heaviest <= WEIGHT_KG_RANGE.max, `${heaviest} kg is above the metric field's ceiling`);
+});
+
+test('the same holds for height', () => {
+  const shortest = feetInchesToCm(FEET_RANGE.min, 0);
+  const tallest = feetInchesToCm(FEET_RANGE.max, 11);
+  assert.ok(shortest >= HEIGHT_CM_RANGE.min, `${shortest} cm is below the metric field's floor`);
+  assert.ok(tallest <= HEIGHT_CM_RANGE.max, `${tallest} cm is above the metric field's ceiling`);
 });

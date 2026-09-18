@@ -90,6 +90,20 @@ export function formatWeightDelta(kgDelta: number, units: Units): string {
 export const weightUnitLabel = (units: Units) => (units === 'metric' ? 'kg' : 'lb');
 
 /**
+ * What the entry fields will accept, chosen so both systems span the same
+ * range. When they disagreed, a value you could type in one was silently
+ * clamped the moment you switched to the other: 5 st went in happily and came
+ * back as 35 kg.
+ *
+ * The stone maximum is 38 rather than 39 because the pounds field sits beside
+ * it and can add almost another stone on top.
+ */
+export const WEIGHT_KG_RANGE = { min: 31, max: 250 };
+export const STONE_RANGE = { min: 5, max: 38 };
+export const HEIGHT_CM_RANGE = { min: 122, max: 241 };
+export const FEET_RANGE = { min: 4, max: 7 };
+
+/**
  * Where setup starts people, round in whichever system they are reading.
  * 68 kg is a tidy number to be shown; the very same weight in stones is
  * 10 st 9.9 lb, which is not.
