@@ -1,0 +1,170 @@
+[
+  {
+    "file": "public/squish-icon-maskable.svg",
+    "paths": 18,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "public/squish-icon.svg",
+    "paths": 18,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "store/adaptive-foreground.svg",
+    "paths": 17,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "store/feature-graphic.svg",
+    "paths": 36,
+    "gradients": 14,
+    "valid": true
+  },
+  {
+    "file": "svg/dark/squish-calm.svg",
+    "paths": 22,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/dark/squish-cheering.svg",
+    "paths": 26,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/dark/squish-excited.svg",
+    "paths": 21,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/dark/squish-nomnom.svg",
+    "paths": 29,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/dark/squish-proud.svg",
+    "paths": 19,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/dark/squish-sleepy.svg",
+    "paths": 26,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/dark/squish-thinking.svg",
+    "paths": 22,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/flat/squish-calm.svg",
+    "paths": 13,
+    "gradients": 0,
+    "valid": true
+  },
+  {
+    "file": "svg/flat/squish-cheering.svg",
+    "paths": 19,
+    "gradients": 0,
+    "valid": true
+  },
+  {
+    "file": "svg/flat/squish-excited.svg",
+    "paths": 14,
+    "gradients": 0,
+    "valid": true
+  },
+  {
+    "file": "svg/flat/squish-nomnom.svg",
+    "paths": 20,
+    "gradients": 0,
+    "valid": true
+  },
+  {
+    "file": "svg/flat/squish-proud.svg",
+    "paths": 12,
+    "gradients": 0,
+    "valid": true
+  },
+  {
+    "file": "svg/flat/squish-sleepy.svg",
+    "paths": 17,
+    "gradients": 0,
+    "valid": true
+  },
+  {
+    "file": "svg/flat/squish-thinking.svg",
+    "paths": 14,
+    "gradients": 0,
+    "valid": true
+  },
+  {
+    "file": "svg/moods/squish-calm.svg",
+    "paths": 22,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/moods/squish-cheering.svg",
+    "paths": 26,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/moods/squish-excited.svg",
+    "paths": 21,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/moods/squish-nomnom.svg",
+    "paths": 29,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/moods/squish-proud.svg",
+    "paths": 19,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/moods/squish-sleepy.svg",
+    "paths": 26,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/moods/squish-thinking.svg",
+    "paths": 22,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/squish-lockup.svg",
+    "paths": 34,
+    "gradients": 14,
+    "valid": true
+  },
+  {
+    "file": "svg/squish-master.svg",
+    "paths": 21,
+    "gradients": 11,
+    "valid": true
+  },
+  {
+    "file": "svg/squish-wordmark.svg",
+    "paths": 13,
+    "gradients": 3,
+    "valid": true
+  }
+]

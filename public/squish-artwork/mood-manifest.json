@@ -1,0 +1,48 @@
+{
+  "default": "excited",
+  "viewBox": "0 0 512 512",
+  "moods": {
+    "excited": {
+      "svg": "svg/moods/squish-excited.svg",
+      "flat": "svg/flat/squish-excited.svg",
+      "dark": "svg/dark/squish-excited.svg",
+      "png": "png/moods/squish-excited.png"
+    },
+    "nomnom": {
+      "svg": "svg/moods/squish-nomnom.svg",
+      "flat": "svg/flat/squish-nomnom.svg",
+      "dark": "svg/dark/squish-nomnom.svg",
+      "png": "png/moods/squish-nomnom.png"
+    },
+    "calm": {
+      "svg": "svg/moods/squish-calm.svg",
+      "flat": "svg/flat/squish-calm.svg",
+      "dark": "svg/dark/squish-calm.svg",
+      "png": "png/moods/squish-calm.png"
+    },
+    "sleepy": {
+      "svg": "svg/moods/squish-sleepy.svg",
+      "flat": "svg/flat/squish-sleepy.svg",
+      "dark": "svg/dark/squish-sleepy.svg",
+      "png": "png/moods/squish-sleepy.png"
+    },
+    "proud": {
+      "svg": "svg/moods/squish-proud.svg",
+      "flat": "svg/flat/squish-proud.svg",
+      "dark": "svg/dark/squish-proud.svg",
+      "png": "png/moods/squish-proud.png"
+    },
+    "cheering": {
+      "svg": "svg/moods/squish-cheering.svg",
+      "flat": "svg/flat/squish-cheering.svg",
+      "dark": "svg/dark/squish-cheering.svg",
+      "png": "png/moods/squish-cheering.png"
+    },
+    "thinking": {
+      "svg": "svg/moods/squish-thinking.svg",
+      "flat": "svg/flat/squish-thinking.svg",
+      "dark": "svg/dark/squish-thinking.svg",
+      "png": "png/moods/squish-thinking.png"
+    }
+  }
+}

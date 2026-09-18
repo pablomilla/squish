@@ -1,0 +1,104 @@
+[
+  {
+    "file": "png/moods/squish-calm.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "file": "png/moods/squish-cheering.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "file": "png/moods/squish-excited.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "file": "png/moods/squish-nomnom.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "file": "png/moods/squish-proud.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "file": "png/moods/squish-sleepy.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "file": "png/moods/squish-thinking.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "file": "public/apple-touch-icon.png",
+    "width": 180,
+    "height": 180,
+    "alpha": false
+  },
+  {
+    "file": "public/icon-192.png",
+    "width": 192,
+    "height": 192,
+    "alpha": false
+  },
+  {
+    "file": "public/icon-512.png",
+    "width": 512,
+    "height": 512,
+    "alpha": false
+  },
+  {
+    "file": "public/icon-maskable-512.png",
+    "width": 512,
+    "height": 512,
+    "alpha": false
+  },
+  {
+    "file": "squish-lockup-preview.png",
+    "width": 1200,
+    "height": 440,
+    "alpha": true
+  },
+  {
+    "file": "squish-moods-preview.png",
+    "width": 1600,
+    "height": 880,
+    "alpha": true
+  },
+  {
+    "file": "store/adaptive-foreground-432.png",
+    "width": 432,
+    "height": 432,
+    "alpha": true
+  },
+  {
+    "file": "store/app-store-icon-1024.png",
+    "width": 1024,
+    "height": 1024,
+    "alpha": false
+  },
+  {
+    "file": "store/feature-graphic-1024x500.png",
+    "width": 1024,
+    "height": 500,
+    "alpha": false
+  },
+  {
+    "file": "store/google-play-icon-512.png",
+    "width": 512,
+    "height": 512,
+    "alpha": true
+  }
+]
