@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Squish from '../components/Squish';
+import Wordmark from '../components/Wordmark';
 import { unlock } from '../lib/api';
 import './lock.css';
 
@@ -31,7 +32,9 @@ export default function Lock({ onUnlocked }: { onUnlocked: () => void }) {
     <div className="app lock">
       <form className="screen lock-body" onSubmit={submit}>
         <Squish mood={error ? 'calm' : 'excited'} size={150} heart={!error} />
-        <h1 className="lock-logo">Squish</h1>
+        <h1 className="lock-logo">
+          <Wordmark width={200} />
+        </h1>
         <p className="muted center">Pop in your passcode and let's get logging.</p>
 
         <div className="field lock-field">

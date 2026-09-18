@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Squish from '../components/Squish';
+import Wordmark from '../components/Wordmark';
 import { Segmented } from '../components/ui';
 import { MacroBars } from '../components/charts';
 import { HeightField, NumberField, WeightField } from '../components/fields';
@@ -41,7 +42,9 @@ export default function Onboarding() {
         {step === 'welcome' && (
           <div className="onboard-hero">
             <Squish mood="excited" size={190} heart />
-            <h1 className="onboard-logo">Squish</h1>
+            <h1 className="onboard-logo">
+              <Wordmark width={230} />
+            </h1>
             <p className="onboard-tag">Your little health buddy.</p>
             <p className="muted center" style={{ maxWidth: 300, margin: '10px auto 0' }}>
               Snap your meal, get instant nutrition insights, and build habits that feel kind. Small steps, big progress.

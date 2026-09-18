@@ -17,10 +17,8 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
   const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
   const [failed, setFailed] = useState(false);
 
-  // The card is redrawn when its contents change, not when the parent screen
-  // happens to re-render — the caller passes a fresh object literal each time.
-  const signature = JSON.stringify(data);
-
+  // `data` is the dependency, so the caller must hand over a stable object —
+  // a fresh literal on every parent render would redraw the card each time.
   useEffect(() => {
     // The sheet's children are committed before this runs, so the hidden
     // mascot is already in the DOM and ready to be cloned.
@@ -44,7 +42,7 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
       setCard(null);
       setFailed(false);
     };
-  }, [open, signature]);
+  }, [open, data]);
 
   const send = async () => {
     if (!card) return;

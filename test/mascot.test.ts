@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { MASCOT_ART, MASCOT_VIEWBOX } from '../src/components/squish-art.ts';
+import { MASCOT_ART, MASCOT_VIEWBOX, WORDMARK_ART } from '../src/components/squish-art.ts';
 import type { Mood } from '../src/types.ts';
 
 const MOODS: Mood[] = ['excited', 'nomnom', 'calm', 'sleepy', 'proud', 'cheering', 'thinking'];
@@ -52,4 +52,13 @@ test('the face is animatable: eyes wrapped for the blink, mood labelled', () => 
 
 test('all seven poses share one viewBox, so sizes are interchangeable', () => {
   assert.equal(MASCOT_VIEWBOX, '0 0 512 512');
+});
+
+test('the logotype is drawn artwork, themeable and instance-safe', () => {
+  assert.ok(WORDMARK_ART.length > 1000);
+  assert.ok(!WORDMARK_ART.includes('<text'), 'the lettering must be outlined, not live type');
+  assert.ok(WORDMARK_ART.includes('var(--squish-word-0'), 'the ink must be themeable or it vanishes in dark mode');
+  for (const [, id] of WORDMARK_ART.matchAll(/\bid="([^"]+)"/g)) assert.ok(id.startsWith('__ID__'), `"${id}" unprefixed`);
+  const defined = new Set([...WORDMARK_ART.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+  for (const [, used] of WORDMARK_ART.matchAll(/url\(#([^)]+)\)/g)) assert.ok(defined.has(used), `#${used} is undefined`);
 });

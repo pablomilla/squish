@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Route } from '../App';
 import type { AnalysisResult, MealSlot } from '../types';
 import Squish from '../components/Squish';
+import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, useToast } from '../components/ui';
 import { CameraIcon, CloseIcon, FlashIcon, FlipIcon, HelpIcon, ImageIcon, PenIcon } from '../components/icons';
 import { analysePhoto, shrinkImage, SquishApiError } from '../lib/api';
@@ -231,7 +232,7 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
           <button type="button" className="capture-round" onClick={onCancel} aria-label="Close">
             <CloseIcon />
           </button>
-          <span className="capture-wordmark">Squish</span>
+          <Wordmark width={84} className="capture-wordmark" />
           <button type="button" className="capture-round" onClick={() => setTips(true)} aria-label="Photo tips">
             <HelpIcon />
           </button>

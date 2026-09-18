@@ -3,6 +3,7 @@ import Squish from '../components/Squish';
 import { MacroSplitBar, StreakDots, WeeklyBars, WeightTrend } from '../components/charts';
 import { Segmented } from '../components/ui';
 import ShareSheet from '../components/ShareSheet';
+import type { ShareCardData } from '../lib/share';
 import { FlameIcon, ShareIcon } from '../components/icons';
 import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
@@ -49,6 +50,24 @@ export default function Insights() {
   const streak = streakOf(meals, today);
   const best = bestStreak(meals);
   const weights = useMemo(() => weightSeries(days, 120), [days]);
+
+  // Held steady, because the share sheet redraws the card whenever this changes.
+  const shareData = useMemo<ShareCardData>(
+    () => ({
+      headline: `${streak} day streak`,
+      subline:
+        summary.loggedDays > 0
+          ? `${summary.loggedDays} of the last ${summary.days} days logged, averaging ${summary.avgCalories} kcal.`
+          : 'Every day counts.',
+      stats: [
+        { label: 'best streak', value: `${best}` },
+        { label: 'avg quality', value: `${summary.avgScore}` },
+        { label: 'meals logged', value: `${meals.length}` },
+      ],
+      mood: 'cheering',
+    }),
+    [streak, best, summary, meals.length],
+  );
   const weekTotals = useMemo(
     () => dates.reduce(
       (acc, d) => {
@@ -263,23 +282,7 @@ export default function Insights() {
         A happier you, with Squish.
       </p>
 
-      <ShareSheet
-        open={sharing}
-        onClose={() => setSharing(false)}
-        data={{
-          headline: `${streak} day streak`,
-          subline:
-            summary.loggedDays > 0
-              ? `${summary.loggedDays} of the last ${summary.days} days logged, averaging ${summary.avgCalories} kcal.`
-              : 'Every day counts.',
-          stats: [
-            { label: 'best streak', value: `${best}` },
-            { label: 'avg quality', value: `${summary.avgScore}` },
-            { label: 'meals logged', value: `${meals.length}` },
-          ],
-          mood: 'cheering',
-        }}
-      />
+      <ShareSheet open={sharing} onClose={() => setSharing(false)} data={shareData} />
     </div>
   );
 }

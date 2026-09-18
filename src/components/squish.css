@@ -89,3 +89,21 @@
   .squish,
   .squish * { animation: none; }
 }
+
+/**
+ * The logotype's ink, themed the same way the skin is. Dark lettering on a
+ * dark screen is no logo at all, so in dark mode the letters go light and the
+ * sheen that lifts them in light mode is turned off rather than inverted.
+ */
+.wordmark {
+  --squish-word-0: #302637;
+  --squish-word-1: #2d2437;
+  --squish-word-sheen: #8c778d;
+  display: block;
+}
+
+:root[data-theme='dark'] .wordmark {
+  --squish-word-0: #f4f0ff;
+  --squish-word-1: #e4ddf6;
+  --squish-word-sheen: transparent;
+}

@@ -37,7 +37,15 @@ const SKIN = [
   { light: '#F6D7C4', variable: '--squish-skin-2' },
 ];
 
+/** The wordmark's ink, likewise: dark letters would vanish on a dark screen. */
+const INK = [
+  { light: '#302637', variable: '--squish-word-0' },
+  { light: '#2D2437', variable: '--squish-word-1' },
+  { light: '#8C778D', variable: '--squish-word-sheen' },
+];
+
 const SOURCE = (mood: string) => `design/artwork/svg/moods/squish-${mood}.svg`;
+const WORDMARK = 'design/artwork/svg/squish-wordmark.svg';
 const OUTPUT = 'src/components/squish-art.ts';
 
 function inner(svg: string, mood: string): string {
@@ -94,6 +102,17 @@ const art = MOODS.map((mood) => {
   return [mood, markup] as const;
 });
 
+const wordmarkRaw = readFileSync(WORDMARK, 'utf8');
+const wordmarkBox = wordmarkRaw.match(/viewBox="([^"]+)"/)?.[1];
+if (!wordmarkBox) throw new Error('wordmark: no viewBox');
+
+const wordmark = namespaced(
+  INK.reduce((acc, { light, variable }) => acc.replaceAll(light, `var(${variable}, ${light})`), inner(wordmarkRaw, 'wordmark')),
+);
+for (const { light } of INK) {
+  if (new RegExp(`(?<!, )${light}`, 'i').test(wordmark)) throw new Error('wordmark: an ink colour escaped theming');
+}
+
 const file = `/**
  * The Squish mascot, generated from design/artwork by scripts/build-mascot.ts.
  * Do not edit by hand — change the artwork and run \`npm run build:mascot\`.
@@ -109,9 +128,15 @@ export const MASCOT_VIEWBOX = '0 0 512 512';
 export const MASCOT_ART: Record<Mood, string> = {
 ${art.map(([mood, markup]) => `  ${mood}: ${JSON.stringify(markup)},`).join('\n')}
 };
+
+/** The traced lettering, with its ink themeable the way the skin is. */
+export const WORDMARK_VIEWBOX = ${JSON.stringify(wordmarkBox)};
+export const WORDMARK_ART = ${JSON.stringify(wordmark)};
 `;
 
 writeFileSync(OUTPUT, file);
 
-const sizes = art.map(([mood, markup]) => `${mood} ${(markup.length / 1024).toFixed(1)}k`).join('  ');
+const sizes = [...art, ['wordmark', wordmark] as const]
+  .map(([name, markup]) => `${name} ${(markup.length / 1024).toFixed(1)}k`)
+  .join('  ');
 console.log(`Wrote ${OUTPUT}\n  ${sizes}\n  ${(file.length / 1024).toFixed(1)}k total`);
