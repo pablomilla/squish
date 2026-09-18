@@ -20,20 +20,26 @@
 }
 
 /* Idle breathing, and a livelier version for the two happy poses. */
-.squish--bob { animation: squish-bob 3.4s ease-in-out infinite; transform-origin: 50% 88%; }
+.squish--bob { animation: squish-bob 4.2s ease-in-out infinite; transform-origin: 50% 88%; }
 .squish--bob.squish--excited,
-.squish--bob.squish--cheering { animation: squish-bounce 1.9s ease-in-out infinite; }
+.squish--bob.squish--cheering { animation: squish-bounce 2.6s ease-in-out infinite; }
 
+/*
+ * Breathing, not bouncing. The travel is in percentages of his own size, so
+ * growing him would have grown the movement to match — these are set against
+ * the larger mascot to come out gentler than before, not just proportionally
+ * the same.
+ */
 @keyframes squish-bob {
   0%, 100% { transform: translateY(0) scale(1, 1); }
-  45% { transform: translateY(-2.5%) scale(0.99, 1.012); }
-  70% { transform: translateY(0.5%) scale(1.015, 0.985); }
+  45% { transform: translateY(-1.6%) scale(0.994, 1.008); }
+  70% { transform: translateY(0.35%) scale(1.009, 0.991); }
 }
 
 @keyframes squish-bounce {
   0%, 100% { transform: translateY(0) scale(1, 1); }
-  40% { transform: translateY(-4%) scale(0.985, 1.02); }
-  62% { transform: translateY(0) scale(1.03, 0.97); }
+  40% { transform: translateY(-2.7%) scale(0.99, 1.014); }
+  62% { transform: translateY(0) scale(1.02, 0.98); }
 }
 
 /*

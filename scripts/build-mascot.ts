@@ -30,6 +30,19 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const MOODS = ['excited', 'nomnom', 'calm', 'sleepy', 'proud', 'cheering', 'thinking'] as const;
 
+/**
+ * The delivered poses are drawn inside a 512 box but only fill about half of
+ * it, so `size={116}` was painting a 78px character. This crop is the union of
+ * all seven poses' painted bounds — measured in a browser, widest is cheering
+ * at 411x403 from (60,55) — squared off and given a few pixels of air.
+ *
+ * One box for all seven, not a tight box each: a per-pose crop would make the
+ * mascot jump in size whenever the mood changed.
+ *
+ * Re-measure this if the artwork is ever redrawn.
+ */
+const CROP = '54 45 420 420';
+
 /** The only colours that differ between the light and dark deliveries. */
 const SKIN = [
   { light: '#FFFAF4', variable: '--squish-skin-0' },
@@ -123,7 +136,7 @@ const file = `/**
  */
 import type { Mood } from '../types';
 
-export const MASCOT_VIEWBOX = '0 0 512 512';
+export const MASCOT_VIEWBOX = '${CROP}';
 
 export const MASCOT_ART: Record<Mood, string> = {
 ${art.map(([mood, markup]) => `  ${mood}: ${JSON.stringify(markup)},`).join('\n')}

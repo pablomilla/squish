@@ -9,8 +9,11 @@
 }
 .home-streak b { font-size: 20px; }
 
-.home-hero { display: flex; align-items: center; gap: var(--s2); padding: var(--s4) var(--s3); }
+/* Squish leans into the card's right padding: the artwork has air of its own
+   around him, so the words get that space back rather than the gap doing. */
+.home-hero { display: flex; align-items: center; gap: 0; padding: var(--s4) var(--s3); }
 .home-hero-text { flex: 1; min-width: 0; }
+.home-hero .squish { margin-right: calc(var(--s3) * -1); flex-shrink: 0; }
 .home-mood { margin-top: var(--s3); font-size: 22px; color: var(--brand-ink); line-height: 1.2; }
 
 .home-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--s2); margin: var(--s2) 0 var(--s5); }

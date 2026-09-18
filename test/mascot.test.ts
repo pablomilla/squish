@@ -50,8 +50,10 @@ test('the face is animatable: eyes wrapped for the blink, mood labelled', () => 
   }
 });
 
-test('all seven poses share one viewBox, so sizes are interchangeable', () => {
-  assert.equal(MASCOT_VIEWBOX, '0 0 512 512');
+test('all seven poses share one viewBox, so a mood change never resizes him', () => {
+  const [, , w, h] = MASCOT_VIEWBOX.split(' ').map(Number);
+  assert.equal(w, h, 'a non-square box would stretch him, since callers pass one size');
+  assert.ok(w < 512, 'the delivered box is half empty; the crop is what makes `size` mean the character');
 });
 
 test('the logotype is drawn artwork, themeable and instance-safe', () => {

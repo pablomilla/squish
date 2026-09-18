@@ -10,6 +10,7 @@
  * happened to be in night mode.
  */
 import { limit, wrap, type Measure } from './cardtext';
+import { WORDMARK_ART, WORDMARK_VIEWBOX } from '../components/squish-art';
 import type { Mood } from '../types';
 
 export const CARD_WIDTH = 1080;
@@ -20,13 +21,17 @@ export const CARD_HEIGHT = 1350;
  * flowed from the top, so that long wording shrinks to fit instead of sliding
  * down over the figures and the hill.
  */
-const HILL_TOP = 1210;
-const PILL_TOP = 1012;
+const HILL_TOP = 1162;
+const PILL_TOP = 972;
 const PILL_HEIGHT = 150;
 /** Between the mascot's feet and the figures: where the words go. */
 const TEXT_TOP = 726;
 const TEXT_BOTTOM = PILL_TOP - 24;
 const SUB_LEADING = 50;
+
+/** How big Squish is drawn, and where his feet land. */
+const MASCOT_SIZE = 430;
+const MASCOT_TOP = 250;
 
 /**
  * The mascot's light skin tones, pinned here so a card drawn in dark mode still
@@ -64,6 +69,16 @@ export interface ShareCardData {
  * CSS custom properties resolve inside a standalone SVG as long as they are
  * declared on its root, so they are inlined onto the clone before serialising.
  */
+function rasterise(markup: string, what: string): Promise<HTMLImageElement> {
+  const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`The ${what} would not render`));
+    image.src = url;
+  });
+}
+
 async function mascotImage(source: SVGSVGElement, size: number): Promise<HTMLImageElement> {
   const clone = source.cloneNode(true) as SVGSVGElement;
   clone.setAttribute('width', String(size));
@@ -77,15 +92,21 @@ async function mascotImage(source: SVGSVGElement, size: number): Promise<HTMLIma
       .join(';'),
   );
 
-  const markup = new XMLSerializer().serializeToString(clone);
-  const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
+  return rasterise(new XMLSerializer().serializeToString(clone), 'mascot');
+}
 
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('The mascot would not render'));
-    image.src = url;
-  });
+/**
+ * The drawn logotype, not the name set in Fredoka. Built from the artwork
+ * directly rather than cloned off the page: unlike the mascot, no wordmark is
+ * necessarily on screen when a card is made. Its ink resolves to the light
+ * values through the fallbacks already baked into the artwork.
+ */
+function wordmarkImage(width: number): Promise<HTMLImageElement> {
+  const [, , w, h] = WORDMARK_VIEWBOX.split(' ').map(Number);
+  const markup =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${WORDMARK_VIEWBOX}" ` +
+    `width="${width}" height="${(width * h) / w}">${WORDMARK_ART.replaceAll('__ID__', 'card-')}</svg>`;
+  return rasterise(markup, 'wordmark');
 }
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
@@ -110,23 +131,31 @@ function layOutWords(
   const room = TEXT_BOTTOM - TEXT_TOP;
   const gap = 24;
   const measure: Measure = (text) => ctx.measureText(text).width;
-  let fitted = null as null | { headline: string[]; headlineSize: number; leading: number; subline: string[]; height: number };
 
-  for (const size of [104, 88, 74, 62]) {
+  const attempt = (size: number, sublineLines: number) => {
     ctx.font = `600 ${size}px Fredoka, sans-serif`;
     const headline = limit(wrap(data.headline, CARD_WIDTH - 160, measure), 2);
     const leading = Math.round(size * 1.1);
 
     ctx.font = '500 38px Fredoka, sans-serif';
-    const subline = limit(wrap(data.subline, CARD_WIDTH - 220, measure), 2);
+    const subline = limit(wrap(data.subline, CARD_WIDTH - 220, measure), sublineLines);
 
-    const height = headline.length * leading + gap + subline.length * SUB_LEADING;
-    fitted = { headline, headlineSize: size, leading, subline, height };
-    if (height <= room) break;
+    return { headline, headlineSize: size, leading, subline, height: headline.length * leading + gap + subline.length * SUB_LEADING };
+  };
+
+  // Shrink the headline before shortening the subline — a smaller headline is
+  // still the whole headline, whereas a shortened subline has lost words.
+  let block = attempt(62, 1);
+  for (const sublineLines of [2, 1]) {
+    for (const size of [104, 88, 74, 62]) {
+      const candidate = attempt(size, sublineLines);
+      if (candidate.height <= room) return { ...candidate, top: TEXT_TOP + (room - candidate.height) / 2 };
+      block = candidate;
+    }
   }
 
-  const block = fitted as NonNullable<typeof fitted>;
-  return { ...block, top: TEXT_TOP + Math.max(0, (room - block.height) / 2) };
+  // Nothing fits, which takes wording we do not write. Top-align what is left.
+  return { ...block, top: TEXT_TOP };
 }
 
 /** Make sure the brand faces are available before any text is measured. */
@@ -162,7 +191,7 @@ export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement
   // straddling its edge looked like a mistake.
   ctx.fillStyle = BRAND.brandSoft;
   ctx.beginPath();
-  ctx.ellipse(centre, 440, 380, 285, 0, 0, Math.PI * 2); // bottom lands on TEXT_TOP
+  ctx.ellipse(centre, 452, 366, 268, 0, 0, Math.PI * 2); // sits around the mascot, clear of the headline
   ctx.fill();
 
   ctx.fillStyle = BRAND.peach;
@@ -177,8 +206,8 @@ export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement
   ctx.ellipse(centre, HILL_TOP + 290, 780, 290, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const squish = await mascotImage(mascot, 460);
-  ctx.drawImage(squish, centre - 230, 240, 460, 460);
+  const squish = await mascotImage(mascot, MASCOT_SIZE);
+  ctx.drawImage(squish, centre - MASCOT_SIZE / 2, MASCOT_TOP, MASCOT_SIZE, MASCOT_SIZE);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -215,13 +244,18 @@ export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement
     });
   }
 
-  // The bit that does the work once this leaves the app.
-  ctx.fillStyle = BRAND.ink;
-  ctx.font = '600 58px Fredoka, sans-serif';
-  ctx.fillText('Squish', centre, CARD_HEIGHT - 148);
+  // The bit that does the work once this leaves the app: the drawn logotype,
+  // so a card carries the same mark as the app and the store listing rather
+  // than the name typed in whatever font the phone managed to load.
+  const [, , wordW, wordH] = WORDMARK_VIEWBOX.split(' ').map(Number);
+  const markWidth = 268;
+  const markHeight = (markWidth * wordH) / wordW;
+  const wordmark = await wordmarkImage(markWidth);
+  ctx.drawImage(wordmark, centre - markWidth / 2, 1194, markWidth, markHeight);
+
   ctx.fillStyle = BRAND.ink2;
-  ctx.font = '700 40px Caveat, cursive';
-  ctx.fillText('your little health buddy', centre, CARD_HEIGHT - 82);
+  ctx.font = '700 38px Caveat, cursive';
+  ctx.fillText('your little health buddy', centre, 1194 + markHeight + 6);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('The card would not save'))), 'image/png');
