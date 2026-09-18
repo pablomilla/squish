@@ -92,6 +92,13 @@ export const HeartIcon = ({ size = 20, className }: IconProps) => (
   </svg>
 );
 
+export const ShareIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 15.5V3.8M8.4 7.2 12 3.6l3.6 3.6" />
+    <path d="M6.5 11.5H5a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 5 20.5h14a1.5 1.5 0 0 0 1.5-1.5v-6a1.5 1.5 0 0 0-1.5-1.5h-1.5" />
+  </svg>
+);
+
 export const SettingsIcon = ({ size = 22, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <circle cx="12" cy="12" r="3" />

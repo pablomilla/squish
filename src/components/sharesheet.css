@@ -1,0 +1,7 @@
+.share-body { display: flex; flex-direction: column; gap: var(--s3); }
+/* Present for the renderer to clone, and out of the way of the eye. */
+.share-source { position: absolute; left: -9999px; top: 0; pointer-events: none; }
+.share-preview {
+  display: block; width: 100%; aspect-ratio: 1080 / 1350;
+  border-radius: var(--r-lg); box-shadow: var(--shadow-md); background: var(--surface-2);
+}

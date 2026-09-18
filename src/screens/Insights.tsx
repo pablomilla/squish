@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import { MacroSplitBar, StreakDots, WeeklyBars, WeightTrend } from '../components/charts';
 import { Segmented } from '../components/ui';
-import { FlameIcon } from '../components/icons';
+import ShareSheet from '../components/ShareSheet';
+import { FlameIcon, ShareIcon } from '../components/icons';
 import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
 import {
@@ -27,6 +28,7 @@ type Metric = 'calories' | 'protein' | 'fibre' | 'score';
 const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', fibre: 'g', score: 'pts' };
 
 export default function Insights() {
+  const [sharing, setSharing] = useState(false);
   const { meals, days, targets, unlocked, profile, unlock } = useSquish();
   const [range, setRange] = useState<Range>('7');
   const [metric, setMetric] = useState<Metric>('calories');
@@ -139,6 +141,11 @@ export default function Insights() {
             <p className="tiny muted" style={{ marginTop: 8 }}>Best streak: {best} day{best === 1 ? '' : 's'}</p>
           </div>
         </div>
+        {streak >= 2 && (
+          <button type="button" className="btn btn--soft btn--block share-trigger" onClick={() => setSharing(true)}>
+            <ShareIcon size={18} /> Share my streak
+          </button>
+        )}
         <div className="divider" />
         <StreakDots dates={week} done={loggedThisWeek} />
       </section>
@@ -255,6 +262,24 @@ export default function Insights() {
       <p className="script center" style={{ fontSize: 20, color: 'var(--ink-2)' }}>
         A happier you, with Squish.
       </p>
+
+      <ShareSheet
+        open={sharing}
+        onClose={() => setSharing(false)}
+        data={{
+          headline: `${streak} day streak`,
+          subline:
+            summary.loggedDays > 0
+              ? `${summary.loggedDays} of the last ${summary.days} days logged, averaging ${summary.avgCalories} kcal.`
+              : 'Every day counts.',
+          stats: [
+            { label: 'best streak', value: `${best}` },
+            { label: 'avg quality', value: `${summary.avgScore}` },
+            { label: 'meals logged', value: `${meals.length}` },
+          ],
+          mood: 'cheering',
+        }}
+      />
     </div>
   );
 }

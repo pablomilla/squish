@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, Ref } from 'react';
 import type { Mood } from '../types';
 import './squish.css';
 
@@ -11,6 +11,8 @@ interface Props {
   className?: string;
   style?: CSSProperties;
   label?: string;
+  /** Needed so a share card can rasterise the artwork already on the page. */
+  ref?: Ref<SVGSVGElement>;
 }
 
 /** A soft blob: narrow top, round belly, two little feet. */
@@ -158,9 +160,10 @@ function Accessory({ mood, heart }: { mood: Mood; heart: boolean }) {
 /**
  * The Squish mascot. One blob, many moods — the app's main source of warmth.
  */
-export function Squish({ mood = 'excited', size = 140, heart = false, bob = true, className = '', style, label }: Props) {
+export function Squish({ mood = 'excited', size = 140, heart = false, bob = true, className = '', style, label, ref }: Props) {
   return (
     <svg
+      ref={ref}
       className={`squish ${bob ? 'squish--bob' : ''} squish--${mood} ${className}`}
       style={{ width: size, height: size, ...style }}
       viewBox="0 0 200 212"

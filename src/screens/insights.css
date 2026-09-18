@@ -2,6 +2,7 @@
 .metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); margin-top: var(--s3); }
 .metric-row > * { min-width: 0; padding-left: 0; padding-right: 0; justify-content: center; }
 .insights-streak { display: flex; align-items: center; gap: 10px; }
+.share-trigger { margin-top: var(--s3); }
 .insights-streak > div { flex: 1; }
 .insights-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s2); }
 
