@@ -16,6 +16,7 @@ import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import type { AnalysisResult, MealSlot } from '../src/types';
 import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
+import { BarcodeError, lookupBarcode } from './barcode';
 import {
   analyseLabel,
   analysePhoto,
@@ -193,6 +194,24 @@ app.post('/api/analyse/text', requirePasscode, rateLimit, async (req, res) => {
   } catch (error) {
     logFailure('text analysis', error);
     res.json(estimateFromText(description, mealSlot));
+  }
+});
+
+/** Look a barcode up in Open Food Facts. */
+app.get('/api/barcode/:code', requirePasscode, async (req, res) => {
+  try {
+    // Express 5 types a route param as possibly repeated; the validator in
+    // lookupBarcode rejects anything that is not plain digits regardless.
+    const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+    const slot = Array.isArray(req.query.slot) ? req.query.slot[0] : req.query.slot;
+    res.json(await lookupBarcode(String(code), asSlot(slot)));
+  } catch (error) {
+    if (error instanceof BarcodeError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    logFailure('barcode lookup', error);
+    res.status(502).json({ error: 'The food database is having a moment. Try again shortly.' });
   }
 });
 

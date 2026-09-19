@@ -5,7 +5,8 @@ import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, useToast } from '../components/ui';
 import { CameraIcon, CloseIcon, FlashIcon, FlipIcon, HelpIcon, ImageIcon, PenIcon } from '../components/icons';
-import { analysePhoto, shrinkImage } from '../lib/api';
+import { analysePhoto, lookupBarcode, shrinkImage } from '../lib/api';
+import { scanner } from '../lib/barcode';
 import { useSquish } from '../store/useSquish';
 import { slotForNow } from '../lib/date';
 import './capture.css';
@@ -19,8 +20,12 @@ interface Props {
 }
 
 type CameraState = 'requesting' | 'ready' | 'denied' | 'unavailable' | 'unsupported';
-/** A plate is estimated; a label is read. Two different jobs for the camera. */
-type Shot = 'plate' | 'label';
+/**
+ * Three jobs for one camera. A plate is estimated, a label is read, and a
+ * barcode is watched for continuously — there is no shutter to press for that
+ * one, it either sees the code or it does not.
+ */
+type Shot = 'plate' | 'label' | 'barcode';
 type Facing = 'environment' | 'user';
 
 /** navigator.mediaDevices is genuinely absent on insecure origins, whatever the types say. */
@@ -51,11 +56,13 @@ const CAMERA_MESSAGE: Record<Exclude<CameraState, 'ready'>, string> = {
 const THINKING_LINES: Record<Shot, string[]> = {
   plate: ['Looking at your plate…', 'Spotting the ingredients…', 'Sizing up the portions…', 'Adding up the good stuff…'],
   label: ['Finding the label…', 'Reading the numbers…', 'Checking the serving size…', 'Adding it up…'],
+  barcode: ['Looking it up…', 'Checking the database…'],
 };
 
 const GUIDE: Record<Shot, string> = {
   plate: 'Good light, whole plate in the frame.',
   label: 'Fill the frame with the nutrition table.',
+  barcode: 'Hold the barcode steady in the frame.',
 };
 
 const LABEL_TIPS = [
@@ -91,6 +98,7 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
   const [line, setLine] = useState(0);
   const [tips, setTips] = useState(false);
   const [shot, setShot] = useState<Shot>('plate');
+  const [scanning, setScanning] = useState(false);
   const cameraReady = camera === 'ready';
 
   const track = stream?.getVideoTracks()[0];
@@ -167,7 +175,8 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
       setPreview(dataUrl);
       setBusy(true);
       try {
-        const analysis = await analysePhoto(dataUrl, mealSlot, undefined, shot);
+        // Barcode mode never reaches here — it has no shutter to press.
+        const analysis = await analysePhoto(dataUrl, mealSlot, undefined, shot === 'label' ? 'label' : 'plate');
         countPhotoAnalysis();
         streamRef.current?.getTracks().forEach((t) => t.stop());
         onAnalysed(analysis, { photo: dataUrl, slot: analysis.slot ?? mealSlot, date });
@@ -182,6 +191,76 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
     },
     [mealSlot, date, shot, onAnalysed, countPhotoAnalysis, toast],
   );
+
+  const lookUp = useCallback(
+    async (code: string) => {
+      setBusy(true);
+      try {
+        const analysis = await lookupBarcode(code, mealSlot);
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        onAnalysed(analysis, { slot: analysis.slot ?? mealSlot, date });
+      } catch (error) {
+        toast(error instanceof Error ? error.message : 'That lookup did not work.', '😕');
+        setBusy(false);
+      }
+    },
+    [mealSlot, date, onAnalysed, toast],
+  );
+
+  /**
+   * Watch the video for a barcode while this mode is open.
+   *
+   * Frames are grabbed onto a canvas and handed to the detector a few times a
+   * second — often enough to feel instant, rarely enough that a phone does not
+   * get hot. `navigator.vibrate` is absent on iOS, hence the optional call.
+   */
+  useEffect(() => {
+    if (shot !== 'barcode' || !cameraReady || busy) return;
+
+    let live = true;
+    let timer: number | undefined;
+    const canvas = document.createElement('canvas');
+
+    (async () => {
+      let detector: Awaited<ReturnType<typeof scanner>>;
+      try {
+        detector = await scanner();
+      } catch {
+        if (live) toast('This browser will not scan barcodes. Try the label instead.', '😕');
+        return;
+      }
+      if (!live) return;
+      setScanning(true);
+
+      const look = async () => {
+        const video = videoRef.current;
+        if (!live || !video?.videoWidth) return;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0);
+        try {
+          const [found] = await detector.detect(canvas);
+          if (found && live) {
+            live = false;
+            navigator.vibrate?.(60);
+            toast(`Found ${found.value}`, '🏷️');
+            void lookUp(found.value);
+            return;
+          }
+        } catch {
+          /* a frame that will not decode is the normal case, not an error */
+        }
+        if (live) timer = window.setTimeout(() => void look(), 350);
+      };
+      void look();
+    })();
+
+    return () => {
+      live = false;
+      if (timer) clearTimeout(timer);
+      setScanning(false);
+    };
+  }, [shot, cameraReady, busy, lookUp, toast]);
 
   const shoot = useCallback(() => {
     const video = videoRef.current;
@@ -269,6 +348,7 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
             options={[
               { value: 'plate', label: 'Food' },
               { value: 'label', label: 'Label' },
+              { value: 'barcode', label: 'Barcode' },
             ]}
           />
         </div>
@@ -294,9 +374,16 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
           <span className="tiny">Library</span>
         </button>
 
-        <button type="button" className="capture-shutter" onClick={shoot} disabled={!cameraReady} aria-label="Take photo">
-          <span />
-        </button>
+        {shot === 'barcode' ? (
+          <div className="capture-watching" aria-live="polite">
+            <span className="capture-watching-dot" aria-hidden="true" />
+            <span className="tiny">{scanning ? 'Watching…' : 'Getting ready…'}</span>
+          </div>
+        ) : (
+          <button type="button" className="capture-shutter" onClick={shoot} disabled={!cameraReady} aria-label="Take photo">
+            <span />
+          </button>
+        )}
 
         {/* Whichever of these the device can actually do. Neither is guaranteed:
             iOS has no torch over the web, and a laptop has one camera. */}

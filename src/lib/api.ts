@@ -50,36 +50,52 @@ export function onLocked(handler: () => void): void {
   onLockedHandler = handler;
 }
 
+async function unwrap<T>(path: string, response: Response): Promise<T> {
+  if (response.status === 401) {
+    forgetPasscode();
+    onLockedHandler?.();
+    throw new SquishApiError('locked', 'This Squish needs its passcode again.');
+  }
+  if (response.status === 429) {
+    const payload = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
+    throw new SquishApiError('rate_limited', payload.error ?? payload.message ?? 'Too many in one hour — try again shortly.');
+  }
+  if (!response.ok) {
+    // The server explains itself in `error`; showing that beats a status code.
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error ?? `${path} responded ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
 async function post<T>(path: string, body: unknown): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     const passcode = storedPasscode();
-    const response = await fetch(path, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(passcode ? { 'x-squish-pass': passcode } : {}),
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    return await unwrap<T>(
+      path,
+      await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(passcode ? { 'x-squish-pass': passcode } : {}) },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      }),
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
-    if (response.status === 401) {
-      forgetPasscode();
-      onLockedHandler?.();
-      throw new SquishApiError('locked', 'This Squish needs its passcode again.');
-    }
-    if (response.status === 429) {
-      const payload = (await response.json().catch(() => ({}))) as { message?: string };
-      throw new SquishApiError('rate_limited', payload.message ?? 'Too many meals in one hour — try again shortly.');
-    }
-    if (!response.ok) {
-      // The server explains itself in `error`; showing that beats a status code.
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new Error(payload.error ?? `${path} responded ${response.status}`);
-    }
-    return (await response.json()) as T;
+async function get<T>(path: string): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const passcode = storedPasscode();
+    return await unwrap<T>(
+      path,
+      await fetch(path, { headers: passcode ? { 'x-squish-pass': passcode } : {}, signal: controller.signal }),
+    );
   } finally {
     clearTimeout(timer);
   }
@@ -129,6 +145,12 @@ export async function aiStatus(): Promise<AiStatus> {
 }
 
 /** Analyse a meal photo. Falls back to a local estimate if the API is unreachable. */
+/** Look a scanned barcode up. No offline answer exists, so it may fail. */
+export async function lookupBarcode(code: string, slot?: MealSlot): Promise<AnalysisResult> {
+  const query = slot ? `?slot=${encodeURIComponent(slot)}` : '';
+  return get<AnalysisResult>(`/api/barcode/${encodeURIComponent(code)}${query}`);
+}
+
 export type PhotoMode = 'plate' | 'label';
 
 export async function analysePhoto(

@@ -22,6 +22,7 @@
     "build:mascot": "tsx scripts/build-mascot.ts"
   },
   "dependencies": {
+    "barcode-detector": "^3.2.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tsx": "^4.23.13",
@@ -42,5 +43,5 @@
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   },
-  "description": "Squish \u2014 your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
+  "description": "Squish — your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
 }
