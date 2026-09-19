@@ -3,3 +3,8 @@
 .you-head h1 { font-size: var(--text-display); }
 .you-plan { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
 .you-footer { font-size: 22px; color: var(--ink-2); margin-top: 4px; }
+
+/* What the logs say, offered rather than applied. */
+.learned { margin-top: var(--s3); padding: var(--s3); border-radius: var(--r-md); background: var(--brand-soft); }
+.learned p + p { margin-top: 6px; }
+.link-button { color: var(--brand-ink); text-decoration: underline; font: inherit; }

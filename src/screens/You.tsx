@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
-import { PACE_CHOICES, formatHeight, formatPace, formatWeight, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
+import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
+import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
@@ -14,7 +15,17 @@ import './you.css';
 
 export default function You() {
   const toast = useToast();
-  const { profile, targets, meals, theme, setProfile, setTargets, recalcTargets, resetAll, unlocked } = useSquish();
+  const { profile, targets, meals, days, theme, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked } =
+    useSquish();
+  const [ignoredLearning, setIgnoredLearning] = useState(false);
+
+  // Only offered, never applied: a plan that moves on its own is unsettling,
+  // and the reading behind it can be wrong in ways only they would know.
+  const learning = useMemo(
+    () => adaptiveSuggestion(profile, meals, days, targets.calories),
+    [profile, meals, days, targets.calories],
+  );
+  const learned = ignoredLearning ? null : learning;
   const [editing, setEditing] = useState(false);
   const [editingTargets, setEditingTargets] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -81,6 +92,52 @@ export default function You() {
           <button type="button" className="btn--quiet small" style={{ marginTop: 8 }} onClick={() => { recalcTargets(); toast('Back to the suggested plan', '↩️'); }}>
             Reset to suggested ({suggested.calories} kcal)
           </button>
+        )}
+
+        {learned && (
+          <div className="learned">
+            <p className="small">
+              <b>Your logs disagree with the textbook.</b>
+            </p>
+            <p className="tiny muted">
+              Over {learned.observation.spanDays} days you averaged{' '}
+              <b>{learned.observation.meanIntake.toLocaleString()} kcal</b> a day and your weight moved{' '}
+              <b>{formatWeightDelta(learned.observation.weeklyChangeKg, profile.units)}</b> a week. That puts what you
+              actually burn nearer <b>{learned.applied.toLocaleString()}</b> than the {learned.formula.toLocaleString()}{' '}
+              the formula assumed.
+            </p>
+            {learned.capped && learned.factor < 1 && (
+              <p className="tiny muted">
+                Worth saying: a reading this low is more often a few unlogged snacks than a slow metabolism. I have only
+                gone part of the way, and it is your call.
+              </p>
+            )}
+            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn--soft btn--sm"
+                onClick={() => {
+                  applyBurnFactor(learned.factor);
+                  toast(`Plan redone — ${computeTargets({ ...profile, burnFactor: learned.factor }).calories} kcal a day`, '🎯');
+                }}
+              >
+                Use {computeTargets({ ...profile, burnFactor: learned.factor }).calories} kcal instead
+              </button>
+              <button type="button" className="btn--quiet small" onClick={() => setIgnoredLearning(true)}>
+                Leave it
+              </button>
+            </div>
+          </div>
+        )}
+
+        {profile.burnFactor && profile.burnFactor !== 1 && !learned && (
+          <p className="tiny muted" style={{ marginTop: 10 }}>
+            Tuned to your own logs: {Math.round((profile.burnFactor - 1) * 100) > 0 ? '+' : ''}
+            {Math.round((profile.burnFactor - 1) * 100)}% on the textbook estimate.{' '}
+            <button type="button" className="link-button" onClick={() => { applyBurnFactor(1); toast('Back to the textbook estimate', '↩️'); }}>
+              Undo
+            </button>
+          </p>
         )}
       </section>
 

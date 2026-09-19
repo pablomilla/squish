@@ -51,6 +51,8 @@ interface SquishState {
   completeOnboarding: (profile: Partial<Profile>) => void;
   setTargets: (patch: Partial<Targets>) => void;
   recalcTargets: () => void;
+  /** Accept what the logs say about their metabolism, and redo the plan on it. */
+  applyBurnFactor: (factor: number) => void;
 
   addMeal: (meal: Omit<MealEntry, 'id' | 'date' | 'time'> & Partial<Pick<MealEntry, 'id' | 'date' | 'time'>>) => MealEntry;
   updateMeal: (id: string, patch: Partial<MealEntry>) => void;
@@ -101,6 +103,11 @@ export const useSquish = create<SquishState>()(
 
       setTargets: (patch) => set({ targets: { ...get().targets, ...patch } }),
       recalcTargets: () => set({ targets: computeTargets(get().profile) }),
+
+      applyBurnFactor: (factor) => {
+        const profile = { ...get().profile, burnFactor: factor };
+        set({ profile, targets: computeTargets(profile) });
+      },
 
       addMeal: (meal) => {
         const entry: MealEntry = {

@@ -36,8 +36,19 @@ export function bmr(p: Pick<Profile, 'sex' | 'age' | 'heightCm' | 'weightKg'>): 
   return base - 78;
 }
 
-export function tdee(p: Profile): number {
+/** What the textbook says, before anything is learned from their own logs. */
+export function baseTdee(p: Profile): number {
   return bmr(p) * ACTIVITY_FACTOR[p.activity];
+}
+
+/**
+ * What they actually burn, as best we know: the formula, tuned by whatever
+ * their logs have shown. Clamped here as well as where it is set, so a
+ * corrupted store cannot prescribe something daft.
+ */
+export function tdee(p: Profile): number {
+  const factor = Math.min(1.15, Math.max(0.9, p.burnFactor ?? 1));
+  return baseTdee(p) * factor;
 }
 
 /**

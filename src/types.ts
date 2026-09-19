@@ -78,6 +78,12 @@ export interface Profile {
   pace: number;
   units: 'metric' | 'imperial';
   onboarded: boolean;
+  /**
+   * What their own logs say about their metabolism, as a multiple of the
+   * textbook estimate. 1 until there is enough data to say otherwise, and
+   * only ever changed with their say-so.
+   */
+  burnFactor?: number;
 }
 
 export interface Targets extends Nutrients {
