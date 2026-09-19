@@ -4,7 +4,7 @@ import { MACROS } from '../types';
 import { MACRO_LABEL, pct } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
-import { formatWeight, type Units } from '../lib/units';
+import { formatWeight, saltGrams, type Units } from '../lib/units';
 import './charts.css';
 
 export const MACRO_COLOR: Record<MacroKey, string> = {
@@ -78,7 +78,7 @@ export function ProgressRing({ value, target, size = 190, label = 'left', unit =
 export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets: Targets }) {
   const rows = [
     { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: Math.round(targets.sugar ?? 0), unit: 'g' },
-    { key: 'sodium' as const, label: 'Salt', value: Math.round(totals.sodium ?? 0), limit: Math.round(targets.sodium ?? 0), unit: 'mg' },
+    { key: 'sodium' as const, label: 'Salt', value: saltGrams(totals.sodium ?? 0), limit: saltGrams(targets.sodium ?? 0), unit: 'g' },
   ].filter((row) => row.limit > 0); // No limit set, nothing meaningful to say.
 
   if (!rows.length) return null;

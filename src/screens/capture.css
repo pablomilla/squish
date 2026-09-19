@@ -27,13 +27,18 @@
   display: grid; place-items: center; backdrop-filter: blur(6px);
 }
 .capture-guide {
-  position: absolute; left: 24px; right: 24px; bottom: 82px;
+  position: absolute; left: 24px; right: 24px; bottom: 124px;
   text-align: center; color: rgba(255, 255, 255, 0.82); font-size: var(--text-label);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
+/* Two choices over the viewfinder: what you are pointing at, and when you ate it. */
+.capture-shot { position: absolute; left: 14px; right: 14px; bottom: 64px; }
 .capture-slot { position: absolute; left: 14px; right: 14px; bottom: 14px; }
+.capture-shot .segmented,
 .capture-slot .segmented { background: rgba(20, 16, 30, 0.55); border-color: rgba(255, 255, 255, 0.16); backdrop-filter: blur(8px); }
+.capture-shot .segmented button,
 .capture-slot .segmented button { color: rgba(255, 255, 255, 0.72); }
+.capture-shot .segmented button[aria-selected='true'],
 .capture-slot .segmented button[aria-selected='true'] { background: #fff; color: #2b2340; }
 
 .capture-controls {

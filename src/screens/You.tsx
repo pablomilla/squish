@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
-import { PACE_CHOICES, formatHeight, formatPace, formatWeight, paceIn, paceToKg, retuneForUnits, weightUnitLabel } from '../lib/units';
+import { PACE_CHOICES, formatHeight, formatPace, formatWeight, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
 import { SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
@@ -260,7 +260,14 @@ export default function You() {
           </div>
           <div className="row-between">
             <span className="small">Salt<span className="tiny muted"> · a daily limit</span></span>
-            <Stepper value={targets.sodium ?? 0} step={100} min={0} max={6000} onChange={(sodium) => setTargets({ sodium })} suffix="mg" />
+            <Stepper
+              value={saltGrams(targets.sodium ?? 0)}
+              step={0.5}
+              min={0}
+              max={15}
+              onChange={(salt) => setTargets({ sodium: sodiumMg(salt) })}
+              suffix="g"
+            />
           </div>
           <div className="row-between">
             <span className="small">

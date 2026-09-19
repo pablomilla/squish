@@ -18,6 +18,8 @@ import {
   paceToKg,
   poundsToKg,
   retuneForUnits,
+  saltGrams,
+  sodiumMg,
   stonePoundsToKg,
 } from '../src/lib/units';
 import { GLASS_ML, waterVolume } from '../src/lib/nutrition';
@@ -185,4 +187,18 @@ test('the same holds for height', () => {
   const tallest = feetInchesToCm(FEET_RANGE.max, 11);
   assert.ok(shortest >= HEIGHT_CM_RANGE.min, `${shortest} cm is below the metric field's floor`);
   assert.ok(tallest <= HEIGHT_CM_RANGE.max, `${tallest} cm is above the metric field's ceiling`);
+});
+
+test('salt is shown as salt, not sodium wearing its name', () => {
+  // A gram of salt is only about 0.4 g of sodium, so the two are not
+  // interchangeable: 2300 mg of sodium is 5.8 g of salt, near the NHS 6 g.
+  assert.equal(saltGrams(2300), 5.8);
+  assert.equal(saltGrams(1040), 2.6);
+  assert.equal(saltGrams(0), 0);
+});
+
+test('a salt limit set in grams is stored back as sodium', () => {
+  assert.equal(sodiumMg(6), 2400);
+  assert.equal(saltGrams(sodiumMg(6)), 6);
+  assert.equal(saltGrams(sodiumMg(2.5)), 2.5);
 });

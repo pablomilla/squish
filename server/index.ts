@@ -17,6 +17,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import type { AnalysisResult, MealSlot } from '../src/types';
 import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
 import {
+  analyseLabel,
   analysePhoto,
   analyseText,
   coachMessage,
@@ -136,9 +137,9 @@ app.post('/api/unlock', (req, res) => {
   res.status(401).json({ ok: false, message: 'That passcode did not match.' });
 });
 
-/** Vision analysis of a meal photo. Body: { image: dataURL | base64, mediaType?, slot?, hint? } */
+/** Vision analysis of a photo. Body: { image: dataURL | base64, mediaType?, slot?, hint?, mode? } */
 app.post('/api/analyse/photo', requirePasscode, rateLimit, async (req, res) => {
-  const { image, mediaType, slot, hint } = req.body ?? {};
+  const { image, mediaType, slot, hint, mode } = req.body ?? {};
   if (typeof image !== 'string' || image.length < 32) {
     res.status(400).json({ error: 'An image is required.' });
     return;
@@ -149,13 +150,24 @@ app.post('/api/analyse/photo', requirePasscode, rateLimit, async (req, res) => {
   const type = match ? match[1] : typeof mediaType === 'string' ? mediaType : 'image/jpeg';
   const mealSlot = asSlot(slot);
 
+  const label = mode === 'label';
+
   if (!hasCredentials()) {
+    // A made-up plate is a passable demo; made-up figures off a packet are a lie.
+    if (label) {
+      res.status(503).json({ error: 'Squish is offline, so a label cannot be read. Search for it or add it by hand.' });
+      return;
+    }
     res.json(demoEstimateFromPhoto(data.slice(0, 256), mealSlot));
     return;
   }
 
   try {
-    res.json(await analysePhoto(data, type, mealSlot, typeof hint === 'string' ? hint : undefined));
+    res.json(
+      label
+        ? await analyseLabel(data, type, mealSlot)
+        : await analysePhoto(data, type, mealSlot, typeof hint === 'string' ? hint : undefined),
+    );
   } catch (error) {
     logFailure('photo analysis', error);
     res.json(demoEstimateFromPhoto(data.slice(0, 256), mealSlot));

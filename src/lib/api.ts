@@ -129,11 +129,21 @@ export async function aiStatus(): Promise<AiStatus> {
 }
 
 /** Analyse a meal photo. Falls back to a local estimate if the API is unreachable. */
-export async function analysePhoto(dataUrl: string, slot?: MealSlot, hint?: string): Promise<AnalysisResult> {
+export type PhotoMode = 'plate' | 'label';
+
+export async function analysePhoto(
+  dataUrl: string,
+  slot?: MealSlot,
+  hint?: string,
+  mode: PhotoMode = 'plate',
+): Promise<AnalysisResult> {
   try {
-    return await post<AnalysisResult>('/api/analyse/photo', { image: dataUrl, slot, hint });
+    return await post<AnalysisResult>('/api/analyse/photo', { image: dataUrl, slot, hint, mode });
   } catch (error) {
     if (error instanceof SquishApiError) throw error;
+    // Inventing a plate is a fair demo; inventing figures off a packet is not,
+    // so a label read is allowed to fail and say so.
+    if (mode === 'label') throw error;
     return demoEstimateFromPhoto(dataUrl.slice(-256), slot);
   }
 }

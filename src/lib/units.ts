@@ -18,6 +18,13 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export const CM_PER_INCH = 2.54;
 export const GRAMS_PER_OUNCE = 28.349523125;
+/**
+ * Salt is sodium chloride, so a gram of salt is only about 0.4 g of sodium.
+ * Nutrition is stored as sodium in milligrams, the way databases hold it, but
+ * every packet in a British shop states salt in grams and the NHS guideline is
+ * 6 g of salt a day — so that is what gets shown.
+ */
+export const SALT_PER_SODIUM = 2.5;
 /** The imperial fluid ounce. The US one is 29.57 ml; this app speaks British. */
 export const ML_PER_FLUID_OUNCE = 28.4130625;
 export const INCHES_PER_FOOT = 12;
@@ -77,6 +84,16 @@ export function poundsToKg(pounds: number): number {
  * elsewhere. A portion is an estimate either way, so the ounces are rounded
  * to match — no one needs 11.29 oz of stew.
  */
+/** Sodium in milligrams, said as the salt figure people read on a packet. */
+export function saltGrams(sodiumMg: number): number {
+  return Math.round(((sodiumMg * SALT_PER_SODIUM) / 1000) * 10) / 10;
+}
+
+/** And back again, for a limit someone sets in grams of salt. */
+export function sodiumMg(salt: number): number {
+  return Math.round((salt * 1000) / SALT_PER_SODIUM);
+}
+
 export function formatFoodWeight(grams: number): string {
   const ounces = grams / GRAMS_PER_OUNCE;
   const shown = ounces < 10 ? Math.round(ounces * 10) / 10 : Math.round(ounces);

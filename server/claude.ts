@@ -236,12 +236,13 @@ async function requestMeal(
   content: Anthropic.ContentBlockParam[],
   fallbackSlot?: MealSlot,
   model: string = MODEL,
+  system: string = SYSTEM,
 ): Promise<DetailedAnalysis> {
   const startedAt = Date.now();
   const response = await getClient().messages.create({
     model,
     max_tokens: 8000,
-    system: SYSTEM,
+    system,
     messages: [{ role: 'user', content }],
     ...tuningFor(model),
   });
@@ -272,6 +273,11 @@ async function requestMeal(
   };
 }
 
+type ImageMedia = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+
+const asMedia = (mediaType: string): ImageMedia =>
+  (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mediaType) ? mediaType : 'image/jpeg') as ImageMedia;
+
 /** Full result including what the call cost — used by the benchmark. */
 export async function analysePhotoDetailed(
   imageBase64: string,
@@ -280,16 +286,9 @@ export async function analysePhotoDetailed(
   hint?: string,
   model: string = MODEL,
 ): Promise<DetailedAnalysis> {
-  const supported = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  const media = (supported.includes(mediaType) ? mediaType : 'image/jpeg') as
-    | 'image/jpeg'
-    | 'image/png'
-    | 'image/webp'
-    | 'image/gif';
-
   return requestMeal(
     [
-      { type: 'image', source: { type: 'base64', media_type: media, data: imageBase64 } },
+      { type: 'image', source: { type: 'base64', media_type: asMedia(mediaType), data: imageBase64 } },
       {
         type: 'text',
         text: [
@@ -304,6 +303,46 @@ export async function analysePhotoDetailed(
     slot,
     model,
   );
+}
+
+/**
+ * Reading a label is a different job from looking at a plate: the numbers are
+ * printed, so they are to be read rather than estimated, and being out by a
+ * third — forgivable on a bowl of stew — is inexcusable here.
+ */
+const LABEL_SYSTEM = `You are the nutrition engine behind Squish, a friendly food-tracking app. You are reading a nutrition label on a packet.
+
+Rules:
+- Read the printed figures. Do not estimate, round generously, or fall back on what you know about similar products. If a figure is not legible, leave it out rather than inventing it.
+- Use the per-serving column when the label has one, and set grams to that serving's weight. If the label only gives per 100 g, return the values for 100 g and say so in the portion.
+- portion names the serving in words — "1 serving", "1 bar", "half the pack", "100 g" — and grams carries its weight.
+- Energy: use the kcal figure, not the kJ one.
+- British labels state SALT in grams; the sodium field wants milligrams. Sodium mg is the salt figure in grams multiplied by 400. Do not copy the salt grams into sodium.
+- Carbohydrate on a British label is already net of nothing — it is total carbohydrate, so use it as is. "of which sugars" is the sugar figure. Fibre is often listed separately; use it when present and 0 when it genuinely is not.
+- title is the product name from the packaging when you can read it, otherwise what the food plainly is.
+- Return exactly one item unless the packet genuinely holds separate foods.
+- If the photo is not a nutrition label — a plate of food, a barcode alone, a blurry mess — return an empty items array, a score of 0, and say so kindly in coachNote.
+- confidence is "low" when the print is small, angled, or partly out of frame.
+- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, British English.`;
+
+export async function analyseLabel(
+  imageBase64: string,
+  mediaType: string,
+  slot?: MealSlot,
+): Promise<AnalysisResult> {
+  const { analysis } = await requestMeal(
+    [
+      { type: 'image', source: { type: 'base64', media_type: asMedia(mediaType), data: imageBase64 } },
+      {
+        type: 'text',
+        text: 'This is a photo of the nutrition information on a food packet. Read it and return the nutrition for one serving.',
+      },
+    ],
+    slot,
+    MODEL,
+    LABEL_SYSTEM,
+  );
+  return analysis;
 }
 
 export async function analysePhoto(

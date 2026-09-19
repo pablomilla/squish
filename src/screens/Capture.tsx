@@ -5,7 +5,7 @@ import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, useToast } from '../components/ui';
 import { CameraIcon, CloseIcon, FlashIcon, FlipIcon, HelpIcon, ImageIcon, PenIcon } from '../components/icons';
-import { analysePhoto, shrinkImage, SquishApiError } from '../lib/api';
+import { analysePhoto, shrinkImage } from '../lib/api';
 import { useSquish } from '../store/useSquish';
 import { slotForNow } from '../lib/date';
 import './capture.css';
@@ -19,6 +19,8 @@ interface Props {
 }
 
 type CameraState = 'requesting' | 'ready' | 'denied' | 'unavailable' | 'unsupported';
+/** A plate is estimated; a label is read. Two different jobs for the camera. */
+type Shot = 'plate' | 'label';
 type Facing = 'environment' | 'user';
 
 /** navigator.mediaDevices is genuinely absent on insecure origins, whatever the types say. */
@@ -46,11 +48,21 @@ const CAMERA_MESSAGE: Record<Exclude<CameraState, 'ready'>, string> = {
   unsupported: 'This browser will not give me a camera. Pick a photo from your library, or describe the meal instead.',
 };
 
-const THINKING_LINES = [
-  'Looking at your plate…',
-  'Spotting the ingredients…',
-  'Sizing up the portions…',
-  'Adding up the good stuff…',
+const THINKING_LINES: Record<Shot, string[]> = {
+  plate: ['Looking at your plate…', 'Spotting the ingredients…', 'Sizing up the portions…', 'Adding up the good stuff…'],
+  label: ['Finding the label…', 'Reading the numbers…', 'Checking the serving size…', 'Adding it up…'],
+};
+
+const GUIDE: Record<Shot, string> = {
+  plate: 'Good light, whole plate in the frame.',
+  label: 'Fill the frame with the nutrition table.',
+};
+
+const LABEL_TIPS = [
+  ['🔍', 'Fill the frame with the nutrition table itself — not the whole packet.'],
+  ['📐', 'Straight on, not at an angle. A curved tin or bag bends the rows out of line.'],
+  ['💡', 'Watch for glare on shiny packaging. Tilt it away from the light rather than using the flash.'],
+  ['🥄', 'Squish reads the per-serving column when there is one, so check the serving it picked.'],
 ];
 
 const TIPS = [
@@ -78,6 +90,7 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
   const [busy, setBusy] = useState(false);
   const [line, setLine] = useState(0);
   const [tips, setTips] = useState(false);
+  const [shot, setShot] = useState<Shot>('plate');
   const cameraReady = camera === 'ready';
 
   const track = stream?.getVideoTracks()[0];
@@ -134,9 +147,9 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
 
   useEffect(() => {
     if (!busy) return;
-    const timer = setInterval(() => setLine((n) => (n + 1) % THINKING_LINES.length), 2200);
+    const timer = setInterval(() => setLine((n) => (n + 1) % THINKING_LINES[shot].length), 2200);
     return () => clearInterval(timer);
-  }, [busy]);
+  }, [busy, shot]);
 
   const toggleTorch = useCallback(async () => {
     if (!track) return;
@@ -154,20 +167,20 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
       setPreview(dataUrl);
       setBusy(true);
       try {
-        const analysis = await analysePhoto(dataUrl, mealSlot);
+        const analysis = await analysePhoto(dataUrl, mealSlot, undefined, shot);
         countPhotoAnalysis();
         streamRef.current?.getTracks().forEach((t) => t.stop());
         onAnalysed(analysis, { photo: dataUrl, slot: analysis.slot ?? mealSlot, date });
       } catch (error) {
         toast(
-          error instanceof SquishApiError ? error.message : 'I could not read that photo — try again or describe it instead.',
+          error instanceof Error ? error.message : 'I could not read that photo — try again or describe it instead.',
           '😅',
         );
         setBusy(false);
         setPreview(null);
       }
     },
-    [mealSlot, date, onAnalysed, countPhotoAnalysis, toast],
+    [mealSlot, date, shot, onAnalysed, countPhotoAnalysis, toast],
   );
 
   const shoot = useCallback(() => {
@@ -198,8 +211,12 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
       <div className="screen capture-analysing">
         {preview && <img src={preview} alt="" className="capture-analysing-photo" />}
         <Squish mood="thinking" size={150} />
-        <h2>{THINKING_LINES[line]}</h2>
-        <p className="muted small center">Squish is working out the calories, macros and fibre for you.</p>
+        <h2>{THINKING_LINES[shot][line]}</h2>
+        <p className="muted small center">
+          {shot === 'label'
+            ? 'Squish is reading the figures straight off the packet.'
+            : 'Squish is working out the calories, macros and fibre for you.'}
+        </p>
         <div className="capture-skeletons">
           {[0, 1, 2].map((i) => (
             <div key={i} className="skeleton" style={{ height: 14, width: `${80 - i * 14}%` }} />
@@ -242,7 +259,19 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
           <span /><span /><span /><span />
         </div>
 
-        <p className="capture-guide">Good light, whole plate in the frame.</p>
+        <p className="capture-guide">{GUIDE[shot]}</p>
+
+        <div className="capture-shot">
+          <Segmented<Shot>
+            label="What are you photographing?"
+            value={shot}
+            onChange={setShot}
+            options={[
+              { value: 'plate', label: 'Food' },
+              { value: 'label', label: 'Label' },
+            ]}
+          />
+        </div>
 
         <div className="capture-slot">
           <Segmented<MealSlot>
@@ -308,9 +337,9 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
         <PenIcon size={16} /> Describe it instead
       </button>
 
-      <Sheet open={tips} onClose={() => setTips(false)} title="A good food photo">
+      <Sheet open={tips} onClose={() => setTips(false)} title={shot === 'label' ? 'A good label photo' : 'A good food photo'}>
         <div className="stack">
-          {TIPS.map(([emoji, text]) => (
+          {(shot === 'label' ? LABEL_TIPS : TIPS).map(([emoji, text]) => (
             <div className="row" key={text} style={{ alignItems: 'flex-start', gap: 12 }}>
               <span aria-hidden="true" style={{ fontSize: 22 }}>{emoji}</span>
               <p className="small">{text}</p>
