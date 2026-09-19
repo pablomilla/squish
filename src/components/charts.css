@@ -68,3 +68,8 @@
 .streak-dot.is-done { background: var(--mint-soft); color: var(--good); border-color: var(--mint); }
 
 .score-meter { flex: none; }
+
+/* Ceilings, not targets — stated plainly rather than drawn as a bar you fill. */
+.minor-nutrients { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s3); }
+.minor-nutrient { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-sunk); }
+.minor-nutrient .is-over b { color: var(--warn); }

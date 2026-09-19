@@ -329,6 +329,42 @@ export async function analyseText(description: string, slot?: MealSlot): Promise
   return analysis;
 }
 
+/**
+ * Correct an analysis in plain words.
+ *
+ * The whole meal goes back with the correction because the change is rarely
+ * isolated: "it was grilled, not fried" moves the fat, which moves the
+ * calories and the score. Asking for a fresh reading of the corrected meal is
+ * both simpler and more accurate than patching one number and hoping.
+ */
+export async function refineAnalysis(
+  analysis: AnalysisResult,
+  instruction: string,
+  slot?: MealSlot,
+): Promise<AnalysisResult> {
+  const asLogged = analysis.items
+    .map((item) => `- ${item.name}, ${item.portion || 'a portion'}${item.grams ? ` (${item.grams} g)` : ''}, ${Math.round(item.nutrients.calories)} kcal`)
+    .join('\n');
+
+  const { analysis: corrected } = await requestMeal(
+    [
+      {
+        type: 'text',
+        text: [
+          `You previously read this ${slot ?? 'meal'} as "${analysis.title}":`,
+          asLogged || '- (nothing)',
+          '',
+          `The person says: "${instruction}"`,
+          '',
+          'Apply their correction and return the whole meal again. They are telling you about the food, not asking a question — trust them over your own earlier reading. Leave anything they did not mention exactly as it was, including its portion and its nutrition. If they are adding a food, add it; if they are removing one, leave it out.',
+        ].join('\n'),
+      },
+    ],
+    slot,
+  );
+  return corrected;
+}
+
 export interface CoachContext {
   name: string;
   goal: string;

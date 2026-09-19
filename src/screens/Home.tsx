@@ -3,7 +3,7 @@ import type { Route } from '../App';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
 import MealCard from '../components/MealCard';
-import { MacroBars, MacroSplitBar, ProgressRing, StreakDots } from '../components/charts';
+import { MacroBars, MacroSplitBar, MinorNutrients, ProgressRing, StreakDots } from '../components/charts';
 import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
 import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
@@ -136,6 +136,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         {/* The macro bars already carry protein and fibre with their numbers —
             the stat pills that used to sit beside the ring said it twice. */}
         <MacroBars totals={totals} targets={targets} compact />
+        <MinorNutrients totals={totals} targets={targets} />
         {totals.calories > 0 && (
           <>
             <div className="divider" />

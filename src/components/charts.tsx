@@ -69,6 +69,38 @@ export function ProgressRing({ value, target, size = 190, label = 'left', unit =
 /* ------------------------------------------------------------------ *
  * Macro bars — identity by fixed hue order, always direct-labelled.
  * ------------------------------------------------------------------ */
+/**
+ * Sugar and sodium, which the app has always worked out and never shown.
+ * They get a quieter treatment than the macros — a number against a limit
+ * rather than a bar, because they are ceilings to stay under, not targets to
+ * reach, and a full bar should not look like an achievement.
+ */
+export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets: Targets }) {
+  const rows = [
+    { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: Math.round(targets.sugar ?? 0), unit: 'g' },
+    { key: 'sodium' as const, label: 'Salt', value: Math.round(totals.sodium ?? 0), limit: Math.round(targets.sodium ?? 0), unit: 'mg' },
+  ].filter((row) => row.limit > 0); // No limit set, nothing meaningful to say.
+
+  if (!rows.length) return null;
+
+  return (
+    <div className="minor-nutrients">
+      {rows.map((row) => (
+        <div className="minor-nutrient" key={row.key}>
+          <span className="tiny muted">{row.label}</span>
+          <span className={`small ${row.value > row.limit ? 'is-over' : ''}`}>
+            <b>{row.value.toLocaleString()}</b>
+            <span className="muted">
+              {' '}
+              / {row.limit.toLocaleString()} {row.unit}
+            </span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MacroBars({ totals, targets, compact = false }: { totals: Nutrients; targets: Targets; compact?: boolean }) {
   return (
     <div className={`macro-bars ${compact ? 'macro-bars--compact' : ''}`}>

@@ -255,6 +255,14 @@ export default function You() {
             <Stepper value={targets.fibre} step={1} min={10} max={60} onChange={(fibre) => setTargets({ fibre })} suffix="g" />
           </div>
           <div className="row-between">
+            <span className="small">Sugar<span className="tiny muted"> · a daily limit</span></span>
+            <Stepper value={targets.sugar ?? 0} step={5} min={0} max={200} onChange={(sugar) => setTargets({ sugar })} suffix="g" />
+          </div>
+          <div className="row-between">
+            <span className="small">Salt<span className="tiny muted"> · a daily limit</span></span>
+            <Stepper value={targets.sodium ?? 0} step={100} min={0} max={6000} onChange={(sodium) => setTargets({ sodium })} suffix="mg" />
+          </div>
+          <div className="row-between">
             <span className="small">
               Water<span className="tiny muted"> · {GLASS_ML} ml a glass</span>
             </span>

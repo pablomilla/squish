@@ -3,7 +3,7 @@ import type { Route } from '../App';
 import type { MealEntry, MealSlot } from '../types';
 import MealCard from '../components/MealCard';
 import Squish from '../components/Squish';
-import { MacroBars, ProgressRing, ScoreMeter } from '../components/charts';
+import { MacroBars, MinorNutrients, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, Stepper, useToast } from '../components/ui';
 import { CameraIcon, ChevronIcon, PenIcon, PlusIcon, TrashIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -190,6 +190,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             </div>
 
             <MacroBars totals={selected.nutrients} targets={targets} compact />
+            <MinorNutrients totals={selected.nutrients} targets={targets} />
 
             <div className="card card--tint card--flat">
               {selected.items.map((item) => (

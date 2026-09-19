@@ -30,3 +30,10 @@
 .item-chevron { flex: none; color: var(--ink-3); transform: rotate(90deg); transition: transform 0.18s var(--ease); }
 .item-chevron.is-open { transform: rotate(-90deg); }
 .item-edit .field { margin-top: 2px; }
+
+/* Correcting a scan in words, right under the thing that is wrong. */
+.fix-card { display: flex; flex-direction: column; gap: 4px; }
+.fix-card label { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+.fix-row { display: flex; gap: 8px; margin-top: 8px; }
+.fix-row .input { flex: 1; min-width: 0; }
+.fix-row .btn { flex: none; }

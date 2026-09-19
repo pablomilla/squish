@@ -67,25 +67,60 @@ export function habitCount(h: HabitState): number {
   return Number(h.meals) + Number(h.protein) + Number(h.water) + Number(h.movement);
 }
 
-/** Consecutive days with at least one meal, counting back from today. */
+/**
+ * Days logged, counting back from today, forgiving the odd missed day.
+ *
+ * A streak ends when two days in a row go unlogged — one on its own does not
+ * undo weeks of work, which is the whole point of a streak. Only days that
+ * were actually logged are counted, so a skipped day is forgiven rather than
+ * awarded: log Monday, Tuesday and Thursday and the streak is three, not four.
+ */
 export function streakOf(meals: MealEntry[], today = isoDate()): number {
   const logged = new Set(meals.map((m) => m.date));
   let streak = 0;
+  // Today counts against nobody until it is over.
   let cursor = logged.has(today) ? today : addDays(today, -1);
-  while (logged.has(cursor)) {
-    streak += 1;
-    cursor = addDays(cursor, -1);
+
+  while (true) {
+    if (logged.has(cursor)) {
+      streak += 1;
+      cursor = addDays(cursor, -1);
+    } else if (streak > 0 && logged.has(addDays(cursor, -1))) {
+      cursor = addDays(cursor, -1); // Step over the one missed day.
+    } else {
+      return streak;
+    }
   }
-  return streak;
 }
 
+/** Was the streak kept alive across a missed day? Worth saying kindly. */
+export function streakForgaveADay(meals: MealEntry[], today = isoDate()): boolean {
+  const logged = new Set(meals.map((m) => m.date));
+  let cursor = logged.has(today) ? today : addDays(today, -1);
+  let seen = 0;
+
+  while (true) {
+    if (logged.has(cursor)) {
+      seen += 1;
+      cursor = addDays(cursor, -1);
+    } else if (seen > 0 && logged.has(addDays(cursor, -1))) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+/** The longest run ever, under the same forgiving rule. */
 export function bestStreak(meals: MealEntry[]): number {
   const dates = [...new Set(meals.map((m) => m.date))].sort();
   let best = 0;
   let run = 0;
   let previous: string | null = null;
+
   for (const date of dates) {
-    run = previous && addDays(previous, 1) === date ? run + 1 : 1;
+    const carriesOn = previous !== null && (addDays(previous, 1) === date || addDays(previous, 2) === date);
+    run = carriesOn ? run + 1 : 1;
     best = Math.max(best, run);
     previous = date;
   }

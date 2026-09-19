@@ -14,9 +14,17 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
-import type { MealSlot } from '../src/types';
+import type { AnalysisResult, MealSlot } from '../src/types';
 import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
-import { analysePhoto, analyseText, coachMessage, credentialSource, hasCredentials, type CoachContext } from './claude';
+import {
+  analysePhoto,
+  analyseText,
+  coachMessage,
+  credentialSource,
+  hasCredentials,
+  refineAnalysis,
+  type CoachContext,
+} from './claude';
 
 const app = express();
 app.use(cors());
@@ -173,6 +181,33 @@ app.post('/api/analyse/text', requirePasscode, rateLimit, async (req, res) => {
   } catch (error) {
     logFailure('text analysis', error);
     res.json(estimateFromText(description, mealSlot));
+  }
+});
+
+/** Correct an analysis in words. Body: { analysis, instruction, slot } */
+app.post('/api/analyse/refine', requirePasscode, rateLimit, async (req, res) => {
+  const { analysis, instruction, slot } = req.body ?? {};
+
+  if (typeof instruction !== 'string' || !instruction.trim()) {
+    res.status(400).json({ error: 'Tell me what to change.' });
+    return;
+  }
+  if (!analysis || !Array.isArray(analysis.items)) {
+    res.status(400).json({ error: 'There is no meal to correct.' });
+    return;
+  }
+  // Without a key there is nothing to re-read the meal with, and silently
+  // handing back the same analysis would look like the correction was ignored.
+  if (!hasCredentials()) {
+    res.status(503).json({ error: 'Squish is offline, so this one needs editing by hand.' });
+    return;
+  }
+
+  try {
+    res.json(await refineAnalysis(analysis as AnalysisResult, instruction.trim(), asSlot(slot)));
+  } catch (error) {
+    logFailure('refinement', error);
+    res.status(502).json({ error: 'I could not work that out — try editing it by hand.' });
   }
 });
 

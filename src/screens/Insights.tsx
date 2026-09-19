@@ -7,17 +7,7 @@ import type { ShareCardData } from '../lib/share';
 import { FlameIcon, ShareIcon } from '../components/icons';
 import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
-import {
-  bestStreak,
-  habitCount,
-  habitsOn,
-  mealsOn,
-  series,
-  streakOf,
-  summarise,
-  totalsOn,
-  weightSeries,
-} from '../lib/selectors';
+import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
 import { MACRO_LABEL } from '../lib/nutrition';
 import { formatWeight, formatWeightDelta } from '../lib/units';
 import type { MacroKey } from '../types';
@@ -48,6 +38,7 @@ export default function Insights() {
   const week = weekOf(today);
   const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);
   const streak = streakOf(meals, today);
+  const forgave = streakForgaveADay(meals, today);
   const best = bestStreak(meals);
   const weights = useMemo(() => weightSeries(days, 120), [days]);
 
@@ -157,7 +148,14 @@ export default function Insights() {
                 ? `You're on a ${streak} day streak! Keep it going 💜`
                 : 'Log something today and we start a new streak together.'}
             </p>
-            <p className="tiny muted" style={{ marginTop: 8 }}>Best streak: {best} day{best === 1 ? '' : 's'}</p>
+            <p className="tiny muted" style={{ marginTop: 8 }}>
+              Best streak: {best} day{best === 1 ? '' : 's'}
+            </p>
+            {forgave && (
+              <p className="tiny" style={{ marginTop: 4, color: 'var(--brand-ink)' }}>
+                You missed a day and came back — the streak held. It takes two in a row to lose it.
+              </p>
+            )}
           </div>
         </div>
         {streak >= 2 && (

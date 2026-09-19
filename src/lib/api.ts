@@ -74,7 +74,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
       const payload = (await response.json().catch(() => ({}))) as { message?: string };
       throw new SquishApiError('rate_limited', payload.message ?? 'Too many meals in one hour — try again shortly.');
     }
-    if (!response.ok) throw new Error(`${path} responded ${response.status}`);
+    if (!response.ok) {
+      // The server explains itself in `error`; showing that beats a status code.
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(payload.error ?? `${path} responded ${response.status}`);
+    }
     return (await response.json()) as T;
   } finally {
     clearTimeout(timer);
@@ -132,6 +136,21 @@ export async function analysePhoto(dataUrl: string, slot?: MealSlot, hint?: stri
     if (error instanceof SquishApiError) throw error;
     return demoEstimateFromPhoto(dataUrl.slice(-256), slot);
   }
+}
+
+/**
+ * Hand a correction back to Squish in the person's own words.
+ *
+ * Unlike the analysers there is no offline fallback: guessing at "half the
+ * rice" without a model would be worse than admitting it cannot be done, and
+ * quietly returning the same meal would look like the correction was ignored.
+ */
+export async function refineAnalysis(
+  analysis: AnalysisResult,
+  instruction: string,
+  slot?: MealSlot,
+): Promise<AnalysisResult> {
+  return post<AnalysisResult>('/api/analyse/refine', { analysis, instruction, slot });
 }
 
 /** Analyse a written meal description. */

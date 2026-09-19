@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import type { Draft } from '../App';
 import type { FoodItem, MealSlot, Nutrients } from '../types';
 import Squish from '../components/Squish';
-import { MacroBars, MacroSplitBar, ScoreMeter } from '../components/charts';
+import { MacroBars, MacroSplitBar, MinorNutrients, ScoreMeter } from '../components/charts';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { NumberField } from '../components/fields';
 import { useSquish } from '../store/useSquish';
+import { refineAnalysis } from '../lib/api';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
 import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients } from '../lib/nutrition';
 import { friendlyDate } from '../lib/date';
@@ -49,6 +50,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   const [picker, setPicker] = useState<{ replacing?: string } | null>(null);
   const [query, setQuery] = useState('');
   const [openRow, setOpenRow] = useState<string | null>(null);
+  const [fix, setFix] = useState('');
+  const [fixing, setFixing] = useState(false);
 
   const items = useMemo(() => rows.map((row) => scaledItem(row)), [rows]);
   const totals = useMemo(() => (items.length ? sumNutrients(items) : { ...EMPTY }), [items]);
@@ -64,6 +67,25 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
     setRows((list) =>
       list.map((row) => (row.item.id === id && row.baseGrams ? { ...row, factor: Math.max(0.05, amount / row.baseGrams) } : row)),
     );
+
+  /** Hand the whole meal back to Squish with the correction in plain words. */
+  const applyFix = async () => {
+    const instruction = fix.trim();
+    if (!instruction || fixing) return;
+    setFixing(true);
+    try {
+      const corrected = await refineAnalysis({ ...analysis, items, title, nutrients: totals, score }, instruction, slot);
+      setRows(corrected.items.map(makeRow));
+      if (corrected.title?.trim()) setTitle(corrected.title.trim());
+      setOpenRow(null);
+      setFix('');
+      toast('Sorted — have a look', '✨');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'I could not work that out.', '😅');
+    } finally {
+      setFixing(false);
+    }
+  };
 
   const chooseFood = (food: FoodRecord) => {
     const swapped = makeRow(toFoodItem(food));
@@ -147,6 +169,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
           <span className="muted small">kcal · {Math.round((totals.calories / targets.calories) * 100)}% of today</span>
         </div>
         <MacroBars totals={totals} targets={targets} compact />
+        <MinorNutrients totals={totals} targets={targets} />
         <div className="divider" />
         <MacroSplitBar totals={totals} />
       </div>
@@ -255,6 +278,34 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="card fix-card">
+        <label htmlFor="fix" className="small">
+          <SparkIcon size={16} /> Something not right?
+        </label>
+        <p className="tiny muted">
+          Tell Squish in your own words — "it was a full pint", "half the rice", "grilled not fried".
+        </p>
+        <div className="fix-row">
+          <input
+            id="fix"
+            className="input"
+            value={fix}
+            disabled={fixing}
+            placeholder="It was a full pint"
+            onChange={(e) => setFix(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void applyFix();
+              }
+            }}
+          />
+          <button type="button" className="btn btn--soft" disabled={!fix.trim() || fixing} onClick={() => void applyFix()}>
+            {fixing ? 'Thinking…' : 'Fix it'}
+          </button>
         </div>
       </section>
 
