@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { describePortion, formatDrinkVolume, formatFoodWeight } from '../src/lib/units';
-import { FOODS, toFoodItem } from '../src/lib/foods';
+import { FOODS, searchFoods, toFoodItem } from '../src/lib/foods';
 
 test('a portion weight is given in grams and ounces', () => {
   assert.equal(formatFoodWeight(320), '320 g (11 oz)');
@@ -63,5 +63,19 @@ test('every label in the food table states its measure exactly once', () => {
     const shown = describePortion(item.portion, item.grams, item.liquid);
     assert.ok(/(oz|fl oz)/.test(shown), `${food.name}: no converted measure`);
     assert.equal((shown.match(/\d+\s*(?:g|ml)\b/g) ?? []).length, 1, `${food.name}: "${shown}" states it twice`);
+  }
+});
+
+test('the everyday word for a food finds it, not just the label on the tin', () => {
+  // What someone types when swapping a mis-scanned item is the word they use.
+  for (const [typed, expected] of [
+    ['lager', 'Beer'],
+    ['coke', 'Cola'],
+    ['shrimp', 'Prawns, cooked'],
+    ['porridge', 'Porridge oats, dry'],
+    ['fries', 'Chips / fries'],
+    ['wine', 'Red wine'],
+  ] as const) {
+    assert.equal(searchFoods(typed, 1)[0]?.name, expected, `"${typed}" did not find ${expected}`);
   }
 });

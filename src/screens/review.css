@@ -22,3 +22,11 @@
 .search-wrap { position: relative; display: flex; align-items: center; }
 .search-wrap svg { position: absolute; left: 13px; color: var(--ink-3); }
 .search-wrap .input { padding-left: 40px; }
+
+/* One tap for the corrections people actually make: half it, double it. */
+.amount-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0 12px; }
+.amount-chips .chip { padding: 9px 13px; font-size: var(--text-label); }
+/* The icon points right, so it is turned to point down, then up when open. */
+.item-chevron { flex: none; color: var(--ink-3); transform: rotate(90deg); transition: transform 0.18s var(--ease); }
+.item-chevron.is-open { transform: rotate(-90deg); }
+.item-edit .field { margin-top: 2px; }

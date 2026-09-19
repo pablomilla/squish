@@ -4,13 +4,21 @@ import type { FoodItem, MealSlot, Nutrients } from '../types';
 import Squish from '../components/Squish';
 import { MacroBars, MacroSplitBar, ScoreMeter } from '../components/charts';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
-import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
+import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
+import { NumberField } from '../components/fields';
 import { useSquish } from '../store/useSquish';
-import { searchFoods, toFoodItem } from '../lib/foods';
+import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
 import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients } from '../lib/nutrition';
 import { friendlyDate } from '../lib/date';
 import './review.css';
 import { describePortion } from '../lib/units';
+
+/** The corrections people actually make to a scan, one tap each. */
+const HOW_MUCH = [
+  { label: 'Half', factor: 0.5 },
+  { label: 'As scanned', factor: 1 },
+  { label: 'Double', factor: 2 },
+];
 
 interface Row {
   item: FoodItem;
@@ -37,7 +45,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   const [slot, setSlot] = useState<MealSlot>(draft.slot);
   const [rows, setRows] = useState<Row[]>(analysis.items.map(makeRow));
   const [note, setNote] = useState('');
-  const [adding, setAdding] = useState(false);
+  /** The food picker, open either to add a food or to swap one out. */
+  const [picker, setPicker] = useState<{ replacing?: string } | null>(null);
   const [query, setQuery] = useState('');
   const [openRow, setOpenRow] = useState<string | null>(null);
 
@@ -48,7 +57,21 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   const results = useMemo(() => searchFoods(query, 10), [query]);
 
   const setFactor = (id: string, factor: number) =>
-    setRows((list) => list.map((row) => (row.item.id === id ? { ...row, factor: Math.max(0.25, factor) } : row)));
+    setRows((list) => list.map((row) => (row.item.id === id ? { ...row, factor: Math.max(0.05, factor) } : row)));
+
+  /** Set the amount itself rather than a multiple of it — 568 ml, not "× 2". */
+  const setAmount = (id: string, amount: number) =>
+    setRows((list) =>
+      list.map((row) => (row.item.id === id && row.baseGrams ? { ...row, factor: Math.max(0.05, amount / row.baseGrams) } : row)),
+    );
+
+  const chooseFood = (food: FoodRecord) => {
+    const swapped = makeRow(toFoodItem(food));
+    setRows((list) => (picker?.replacing ? list.map((r) => (r.item.id === picker.replacing ? swapped : r)) : [...list, swapped]));
+    setOpenRow(picker?.replacing ? swapped.item.id : null);
+    setPicker(null);
+    setQuery('');
+  };
 
   const save = () => {
     if (!items.length) {
@@ -131,10 +154,16 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       <section className="card">
         <div className="card-title">
           <h3>Items</h3>
-          <button type="button" className="btn--quiet small row" onClick={() => setAdding(true)}>
+          <button type="button" className="btn--quiet small row" onClick={() => setPicker({})}>
             <PlusIcon size={16} /> Add
           </button>
         </div>
+
+        {items.length > 0 && (
+          <p className="tiny muted" style={{ marginTop: -6, marginBottom: 6 }}>
+            Squish guessed these. Tap any one to change the amount or swap it for something else.
+          </p>
+        )}
 
         {items.length === 0 && <p className="empty">Nothing here yet — add the foods you ate.</p>}
 
@@ -155,15 +184,53 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                   <span className="tiny muted item-macros">
                     {Math.round(item.nutrients.protein)}P · {Math.round(item.nutrients.carbs)}C · {Math.round(item.nutrients.fat)}F
                   </span>
+                  <ChevronIcon size={16} className={`item-chevron ${open ? 'is-open' : ''}`} />
                 </button>
 
                 {open && (
                   <div className="item-edit">
-                    <div className="row-between">
-                      <span className="small muted">Portion</span>
-                      <Stepper value={row.factor} step={0.25} min={0.25} max={12} onChange={(factor) => setFactor(row.item.id, factor)} suffix="×" />
+                    <p className="tiny muted">How much was it?</p>
+                    <div className="amount-chips">
+                      {HOW_MUCH.map((choice) => (
+                        <button
+                          key={choice.label}
+                          type="button"
+                          className="chip"
+                          aria-pressed={Math.abs(row.factor - choice.factor) < 0.02}
+                          onClick={() => setFactor(row.item.id, choice.factor)}
+                        >
+                          {choice.label}
+                        </button>
+                      ))}
                     </div>
-                    <div className="row" style={{ gap: 8, marginTop: 10 }}>
+
+                    {row.baseGrams ? (
+                      <NumberField
+                        label={`Or set it exactly${item.liquid ? ' (ml)' : ' (g)'}`}
+                        value={Math.round(row.baseGrams * row.factor)}
+                        suffix={item.liquid ? 'ml' : 'g'}
+                        min={1}
+                        max={5000}
+                        onChange={(amount) => setAmount(row.item.id, amount)}
+                      />
+                    ) : (
+                      <div className="row-between" style={{ marginTop: 10 }}>
+                        <span className="small muted">Portions</span>
+                        <Stepper value={row.factor} step={0.25} min={0.25} max={12} onChange={(factor) => setFactor(row.item.id, factor)} suffix="×" />
+                      </div>
+                    )}
+
+                    <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="chip"
+                        onClick={() => {
+                          setQuery(row.item.name);
+                          setPicker({ replacing: row.item.id });
+                        }}
+                      >
+                        <SearchIcon size={15} /> Not this — swap it
+                      </button>
                       <button
                         type="button"
                         className="chip"
@@ -221,7 +288,14 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         {draft.editingId ? 'Update meal' : 'Save meal'}
       </button>
 
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add a food">
+      <Sheet
+        open={picker !== null}
+        onClose={() => {
+          setPicker(null);
+          setQuery('');
+        }}
+        title={picker?.replacing ? 'Swap this for…' : 'Add a food'}
+      >
         <div className="field">
           <label htmlFor="add-search" className="visually-hidden">Search foods</label>
           <div className="search-wrap">
@@ -242,11 +316,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
               key={food.id}
               type="button"
               className="meal-card"
-              onClick={() => {
-                setRows((list) => [...list, makeRow(toFoodItem(food))]);
-                setAdding(false);
-                setQuery('');
-              }}
+              onClick={() => chooseFood(food)}
             >
               <span className="thumb thumb--emoji" aria-hidden="true">{food.emoji}</span>
               <span className="meal-card-body">
@@ -270,7 +340,11 @@ function scaledItem(row: Row): FoodItem {
   if (row.factor === 1) return { ...row.item, nutrients: row.base, portion: row.basePortion, grams: row.baseGrams };
   return {
     ...row.item,
-    portion: `${round1(row.factor)} × ${row.basePortion}`,
+    // The words described the amount that was scanned, so once that amount
+    // changes they are stale — 568 ml is not "half a pint", however many of
+    // them it is. The measure says it instead. Only when there is no measure
+    // to show does the multiplier have to carry it.
+    portion: row.baseGrams ? '' : `${round1(row.factor)} × ${row.basePortion}`,
     grams: row.baseGrams ? Math.round(row.baseGrams * row.factor) : undefined,
     nutrients: scaleNutrients(row.base, row.factor),
   };
