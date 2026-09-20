@@ -6,8 +6,9 @@
     "protein": 14.2,
     "carbs": 62.0,
     "fat": 10.1,
+    "grams": 330,
     "slot": "breakfast",
-    "source": "weighed: 50g oats, 200ml semi-skimmed, 80g blueberries"
+    "source": "weighed: 50g oats, 200ml semi-skimmed, 80g blueberries — 330 g in the bowl"
   },
   {
     "file": "02-ready-meal.jpg",
@@ -16,8 +17,9 @@
     "protein": 34.0,
     "carbs": 58.0,
     "fat": 15.0,
+    "grams": 400,
     "slot": "dinner",
-    "source": "back-of-pack label, whole tray"
+    "source": "back-of-pack label, whole tray — 400 g net weight"
   },
   {
     "file": "03-pub-burger.jpg",
@@ -27,6 +29,6 @@
     "carbs": 96.0,
     "fat": 62.0,
     "slot": "lunch",
-    "source": "chain's published nutrition page"
+    "source": "chain's published nutrition page (not weighed, so no portion figure)"
   }
 ]
