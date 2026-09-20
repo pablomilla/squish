@@ -17,9 +17,11 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import type { AnalysisResult, MealSlot } from '../src/types';
 import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
 import { BarcodeError, lookupBarcode } from './barcode';
+import { FetchGuardError, readRecipePage } from './recipe';
 import {
   analyseLabel,
   analysePhoto,
+  analyseRecipe,
   analyseText,
   coachMessage,
   credentialSource,
@@ -212,6 +214,38 @@ app.get('/api/barcode/:code', requirePasscode, async (req, res) => {
     }
     logFailure('barcode lookup', error);
     res.status(502).json({ error: 'The food database is having a moment. Try again shortly.' });
+  }
+});
+
+/**
+ * Import a recipe from a web page. Body: { url, slot }
+ *
+ * Unlike the other endpoints this one has no offline fallback: the estimator
+ * can guess at "chicken salad" but it cannot read a web page, and returning an
+ * invented recipe would be worse than saying no.
+ */
+app.post('/api/recipe', requirePasscode, rateLimit, async (req, res) => {
+  const { url, slot } = req.body ?? {};
+
+  if (typeof url !== 'string' || !url.trim()) {
+    res.status(400).json({ error: 'Paste the address of a recipe page.' });
+    return;
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: 'Reading a recipe needs the AI, and no key is configured on this server.' });
+    return;
+  }
+
+  try {
+    const source = await readRecipePage(url);
+    res.json(await analyseRecipe(source, asSlot(slot)));
+  } catch (error) {
+    if (error instanceof FetchGuardError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    logFailure('recipe import', error);
+    res.status(502).json({ error: 'That recipe could not be read. Try another page.' });
   }
 });
 

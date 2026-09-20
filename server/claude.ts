@@ -8,6 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { AnalysisResult, MealSlot, Nutrients } from '../src/types';
 import { addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
+import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
@@ -30,6 +31,8 @@ export interface ModelUsage {
 }
 
 export interface DetailedAnalysis {
+  /** Whatever the model actually returned, for the fields only some jobs ask for. */
+  raw?: { servings?: number };
   analysis: AnalysisResult;
   usage: ModelUsage;
 }
@@ -178,6 +181,8 @@ function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
 }
 
 interface ModelMeal {
+  /** Recipes only: how many servings the whole thing makes. */
+  servings?: number;
   title?: string;
   slot?: MealSlot;
   confidence?: 'high' | 'medium' | 'low';
@@ -245,8 +250,21 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
  * Haiku predates adaptive thinking and rejects output_config.effort, so the
  * request shape is per model family rather than one size fits all.
  */
-function tuningFor(model: string): Pick<Anthropic.MessageCreateParamsNonStreaming, 'thinking' | 'output_config'> {
-  const format = { type: 'json_schema', schema: MEAL_SCHEMA } as const;
+/** The meal shape, plus how many servings the recipe makes. */
+const RECIPE_SCHEMA = {
+  ...MEAL_SCHEMA,
+  properties: {
+    ...MEAL_SCHEMA.properties,
+    servings: {
+      type: 'integer',
+      description: 'How many servings the whole recipe makes. The items you return are for ONE of them.',
+    },
+  },
+  required: [...MEAL_SCHEMA.required, 'servings'],
+} as const;
+
+function tuningFor(model: string, schema: Record<string, unknown> = MEAL_SCHEMA): Pick<Anthropic.MessageCreateParamsNonStreaming, 'thinking' | 'output_config'> {
+  const format = { type: 'json_schema', schema } as const;
   if (model.startsWith('claude-haiku')) {
     return { output_config: { format } };
   }
@@ -267,6 +285,7 @@ async function requestMeal(
   fallbackSlot?: MealSlot,
   model: string = MODEL,
   system: string = SYSTEM,
+  schema: Record<string, unknown> = MEAL_SCHEMA,
 ): Promise<DetailedAnalysis> {
   const startedAt = Date.now();
   const response = await getClient().messages.create({
@@ -274,7 +293,7 @@ async function requestMeal(
     max_tokens: 8000,
     system,
     messages: [{ role: 'user', content }],
-    ...tuningFor(model),
+    ...tuningFor(model, schema),
   });
   const latencyMs = Date.now() - startedAt;
 
@@ -290,8 +309,11 @@ async function requestMeal(
   const inputTokens = response.usage.input_tokens;
   const outputTokens = response.usage.output_tokens;
 
+  const parsed = JSON.parse(text) as ModelMeal;
+
   return {
-    analysis: toAnalysis(JSON.parse(text) as ModelMeal, fallbackSlot),
+    analysis: toAnalysis(parsed, fallbackSlot),
+    raw: parsed,
     usage: {
       model: response.model,
       inputTokens,
@@ -397,6 +419,29 @@ export async function analyseText(description: string, slot?: MealSlot): Promise
     slot,
   );
   return analysis;
+}
+
+/**
+ * One serving of a recipe someone found on the web.
+ *
+ * The page has already been fetched and reduced to its ingredients by
+ * `server/recipe.ts`; everything here is the estimating.
+ */
+export async function analyseRecipe(source: RecipeSource, slot?: MealSlot): Promise<RecipeImport> {
+  const { analysis, raw } = await requestMeal(
+    [{ type: 'text', text: recipePrompt(source) }],
+    slot,
+    MODEL,
+    RECIPE_SYSTEM,
+    RECIPE_SCHEMA,
+  );
+
+  // A yield of nought or one-and-a-half servings is a misread, and dividing by
+  // it later would be worse than assuming a single serving.
+  const claimed = Math.round(raw?.servings ?? 0);
+  const servings = Number.isFinite(claimed) && claimed >= 1 && claimed <= 60 ? claimed : 1;
+
+  return { ...analysis, servings, sourceUrl: source.url };
 }
 
 /**

@@ -7,13 +7,13 @@ import { Segmented, Stepper, useToast } from '../components/ui';
 import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { searchFoods, toFoodItem } from '../lib/foods';
-import { qualityScore, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
-import { analyseText, SquishApiError } from '../lib/api';
+import { qualityScore, scaleNutrients, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
+import { analyseText, importRecipe, SquishApiError, type RecipeImport } from '../lib/api';
 import { slotForNow } from '../lib/date';
 import './addfood.css';
 import { describePortion } from '../lib/units';
 
-type Tab = 'search' | 'describe' | 'favourites';
+type Tab = 'search' | 'describe' | 'recipe' | 'favourites';
 
 interface Props {
   slot?: MealSlot;
@@ -39,6 +39,9 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
   const [busy, setBusy] = useState(false);
   const [quickKcal, setQuickKcal] = useState(250);
   const [quickProtein, setQuickProtein] = useState(10);
+  const [recipeUrl, setRecipeUrl] = useState('');
+  const [recipe, setRecipe] = useState<RecipeImport | null>(null);
+  const [helpings, setHelpings] = useState(1);
 
   const mealSlot = slot ?? slotForNow();
   const results = useMemo(() => searchFoods(query, 20), [query]);
@@ -62,6 +65,47 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         slot: mealSlot,
       },
       { slot: mealSlot, date },
+    );
+  };
+
+  const readRecipe = async () => {
+    if (!recipeUrl.trim() || busy) return;
+    setBusy(true);
+    setRecipe(null);
+    try {
+      const imported = await importRecipe(recipeUrl.trim(), mealSlot);
+      setRecipe(imported);
+      setHelpings(1);
+    } catch (error) {
+      toast(error instanceof SquishApiError ? error.message : 'That recipe could not be read.', '📖');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * The import is one serving. Multiply it by however many they actually had,
+   * grams and all — a portion whose weight does not move with its nutrition is
+   * the bug that made scanned meals so hard to edit.
+   */
+  const helping = (item: FoodItem): FoodItem => ({
+    ...item,
+    // "1/2 leek" stops being true the moment it is multiplied, so past a
+    // single helping the weight speaks on its own.
+    portion: helpings === 1 ? item.portion : '',
+    grams: item.grams === undefined ? undefined : Math.round(item.grams * helpings),
+    nutrients: scaleNutrients(item.nutrients, helpings),
+  });
+
+  const useRecipe = () => {
+    if (!recipe) return;
+    onReady(
+      {
+        ...recipe,
+        items: recipe.items.map((item) => ({ ...helping(item), id: `${item.id}-${Math.random().toString(36).slice(2, 8)}` })),
+        nutrients: scaleNutrients(recipe.nutrients, helpings),
+      },
+      { slot, date },
     );
   };
 
@@ -113,6 +157,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         options={[
           { value: 'search', label: 'Search' },
           { value: 'describe', label: 'Describe' },
+          { value: 'recipe', label: 'Recipe' },
           { value: 'favourites', label: 'Saved' },
         ]}
       />
@@ -226,6 +271,88 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
           <button type="button" className="btn btn--block" onClick={() => void describe()}>
             <SparkIcon size={18} /> Work it out
           </button>
+        </div>
+      )}
+
+      {tab === 'recipe' && (
+        <div className="stack">
+          <div className="describe-hero">
+            <Squish mood="excited" size={92} bob={false} />
+            <p className="speech">Paste a recipe from anywhere on the web and I'll work out what one helping of it comes to.</p>
+          </div>
+          <input
+            className="input"
+            type="url"
+            inputMode="url"
+            value={recipeUrl}
+            placeholder="https://…"
+            aria-label="Recipe web address"
+            onChange={(e) => setRecipeUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void readRecipe();
+              }
+            }}
+          />
+          <button type="button" className="btn btn--block" disabled={!recipeUrl.trim() || busy} onClick={() => void readRecipe()}>
+            <SparkIcon size={18} /> {busy ? 'Reading…' : 'Read the recipe'}
+          </button>
+
+          {recipe && (
+            <section className="card recipe-result">
+              <div className="card-title">
+                <h3>{recipe.title}</h3>
+                <span className="tiny muted">
+                  makes {recipe.servings} {recipe.servings === 1 ? 'serving' : 'servings'}
+                </span>
+              </div>
+
+              <div className="row-between">
+                <span className="small">How many did you have?</span>
+                <Stepper value={helpings} step={0.5} min={0.5} max={10} onChange={setHelpings} suffix="×" />
+              </div>
+
+              <div className="divider" />
+              <div className="row-between">
+                <b style={{ fontSize: 22 }}>{Math.round(recipe.nutrients.calories * helpings)} kcal</b>
+                <span className="tiny muted">
+                  {Math.round(recipe.nutrients.protein * helpings)}P · {Math.round(recipe.nutrients.carbs * helpings)}C ·{' '}
+                  {Math.round(recipe.nutrients.fat * helpings)}F
+                </span>
+              </div>
+
+              {/* Shown exactly as it will be logged, weights and all — a list
+                  whose calories move with the stepper and whose grams do not
+                  is the kind of thing nobody notices until they do. */}
+              <div className="card card--tint card--flat" style={{ marginTop: 10 }}>
+                {recipe.items.map((item) => {
+                  const scaled = helping(item);
+                  return (
+                    <div className="list-row" key={item.id}>
+                      <span className="thumb thumb--emoji" aria-hidden="true">{item.emoji ?? '🍽️'}</span>
+                      <span className="grow">
+                        <b className="small">{item.name}</b>
+                        <p className="tiny muted">{describePortion(scaled.portion, scaled.grams, scaled.liquid)}</p>
+                      </span>
+                      <span className="small">{Math.round(scaled.nutrients.calories)} kcal</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* An estimate off somebody else's ingredient list is a rung
+                  further from the truth than a photo of the actual plate, and
+                  it should not pretend otherwise. */}
+              <p className="tiny muted" style={{ marginTop: 10 }}>
+                Worked out from the ingredients on the page — check it against what you actually put in.
+              </p>
+
+              <button type="button" className="btn btn--block" style={{ marginTop: 10 }} onClick={useRecipe}>
+                <PlusIcon size={18} /> Use this
+              </button>
+            </section>
+          )}
         </div>
       )}
 

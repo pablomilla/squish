@@ -195,6 +195,24 @@ export async function analyseText(description: string, slot?: MealSlot): Promise
   }
 }
 
+export interface RecipeImport extends AnalysisResult {
+  /** How many servings the whole recipe makes. */
+  servings: number;
+  sourceUrl: string;
+}
+
+/**
+ * One serving of a recipe from a web page.
+ *
+ * No offline fallback on purpose. Everywhere else, a failed call falls back to
+ * the local estimator — but the estimator cannot read a web page, and handing
+ * back a plausible invention under the title of somebody's recipe would be the
+ * worst thing this app could do.
+ */
+export async function importRecipe(url: string, slot?: MealSlot): Promise<RecipeImport> {
+  return post<RecipeImport>('/api/recipe', { url, slot });
+}
+
 export interface CoachRequest {
   name: string;
   goal: string;
