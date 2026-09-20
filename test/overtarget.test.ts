@@ -3,8 +3,10 @@ import { test } from 'node:test';
 import {
   MAX_PENALTY,
   OVER,
+  addNutrients,
   ceilingLimit,
   computeTargets,
+  qualityScore,
   WAY_OVER,
   dayVerdict,
   isCeiling,
@@ -14,6 +16,7 @@ import {
   scoreLabel,
 } from '../src/lib/nutrition';
 import { dayScore, series, summarise } from '../src/lib/selectors';
+import { FOODS } from '../src/lib/foods';
 import { raiseFatTarget } from '../src/store/useSquish';
 import type { MealEntry, Nutrients, Targets } from '../src/types';
 
@@ -265,4 +268,80 @@ test('a fat target somebody set themselves is left alone', () => {
   const mine = { targets: { ...TARGETS, calories: 2000, protein: 120, fat: 95 } };
   assert.equal((raiseFatTarget(mine, 1) as { targets: Targets }).targets.fat, 95);
   assert.equal((raiseFatTarget(mine, 2) as { targets: Targets }).targets.fat, 95, 'and it does not run twice');
+});
+
+/* ------------------------------------------------------------------ *
+ * Saturated fat: the distinction the whole argument turns on.
+ * ------------------------------------------------------------------ */
+
+test('unsaturated fat no longer marks a meal down the way saturated does', () => {
+  const kcal = 400;
+  const olive = { calories: kcal, protein: 8, carbs: 20, fat: 30, fibre: 6, satFat: 4.5, sugar: 5, sodium: 300 };
+  const butter = { ...olive, satFat: 20 };
+
+  // The saturates penalty tops out at 18 points, so that is the widest the gap
+  // between two otherwise identical plates can be — a full grade.
+  assert.ok(qualityScore(olive) > qualityScore(butter) + 15,
+    `same fat, different kind: ${qualityScore(olive)} vs ${qualityScore(butter)}`);
+  assert.equal(scoreLabel(qualityScore(olive)).label, 'Balanced');
+  assert.equal(scoreLabel(qualityScore(butter)).label, 'So-so');
+});
+
+test('the foods the evidence likes score better than they used to', () => {
+  // Per the app's own food table, scaled to 1000 kcal for comparison.
+  const salmon = { calories: 208, protein: 20, carbs: 0, fat: 13, fibre: 0, satFat: 3.1, sugar: 0, sodium: 59 };
+  const almonds = { calories: 579, protein: 21, carbs: 22, fat: 50, fibre: 12.5, satFat: 3.8, sugar: 4.4, sodium: 1 };
+
+  const before = (n: Nutrients) => qualityScore({ ...n, satFat: undefined });
+  assert.ok(qualityScore(salmon) > before(salmon), `salmon ${before(salmon)} -> ${qualityScore(salmon)}`);
+  assert.ok(qualityScore(almonds) > before(almonds), `almonds ${before(almonds)} -> ${qualityScore(almonds)}`);
+  assert.ok(qualityScore(almonds) >= 75, 'a handful of almonds is a good snack, and should read like one');
+});
+
+test('butter and cream still get what they had coming', () => {
+  const butter = { calories: 717, protein: 0.9, carbs: 0.1, fat: 81, fibre: 0, satFat: 51, sugar: 0.1, sodium: 643 };
+  assert.ok(qualityScore(butter) < 38, `got ${qualityScore(butter)}`);
+});
+
+test('a meal logged before Squish asked for saturates is judged the old way', () => {
+  const old = { calories: 500, protein: 20, carbs: 40, fat: 30, fibre: 5, sugar: 8, sodium: 400 };
+  assert.equal(qualityScore(old), qualityScore({ ...old, satFat: undefined }));
+  assert.notEqual(qualityScore(old), qualityScore({ ...old, satFat: 0 }), 'unknown is not the same answer as none');
+});
+
+test('a day of unknowns does not add up to a day of none', () => {
+  const unknown = { calories: 500, protein: 20, carbs: 40, fat: 20, fibre: 5, sugar: 8, sodium: 400 };
+  const known = { ...unknown, satFat: 6 };
+
+  assert.equal(addNutrients(unknown, unknown).satFat, undefined);
+  assert.equal(addNutrients(unknown, known).satFat, 6, 'what is known still counts');
+  assert.equal(addNutrients(known, known).satFat, 12);
+});
+
+test('no saturates figure means nothing to be over', () => {
+  const t: Targets = { ...TARGETS, satFat: 22 };
+  assert.deepEqual(overTargets({ ...day(), satFat: undefined }, t), []);
+
+  const over = overTargets({ ...day(), satFat: 60 }, t);
+  assert.equal(over[0].key, 'satFat');
+  assert.equal(dayVerdict(70, { ...day(), satFat: 60 }, t).label, 'Over on saturates');
+});
+
+test('the saturates limit is 10% of energy', () => {
+  const t = computeTargets({
+    name: '', sex: 'male', age: 40, heightCm: 178, weightKg: 88, targetWeightKg: 80,
+    activity: 'moderate', goal: 'maintain', pace: 0, units: 'metric', onboarded: true,
+  });
+  const share = ((t.satFat ?? 0) * 9) / t.calories;
+  assert.ok(Math.abs(share - 0.1) < 0.01, `got ${Math.round(share * 100)}%`);
+  assert.ok((t.satFat ?? 0) < t.fat, 'and it is a slice of the fat, not on top of it');
+});
+
+test('every food in the table has a believable saturates figure', () => {
+  for (const food of FOODS) {
+    const { satFat, fat, name } = { ...food.per100, name: food.name };
+    assert.notEqual(satFat, undefined, `${name} has no saturates figure`);
+    assert.ok((satFat as number) <= fat + 0.001, `${name}: ${satFat} g saturates inside ${fat} g of fat`);
+    assert.ok((satFat as number) >= 0, `${name}: negative saturates`);
+  }
 });

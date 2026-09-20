@@ -7,7 +7,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { AnalysisResult, MealSlot, Nutrients } from '../src/types';
-import { qualityScore } from '../src/lib/nutrition';
+import { addOptional, qualityScore } from '../src/lib/nutrition';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
@@ -70,6 +70,7 @@ const NUTRIENT_PROPS = {
   carbs: { type: 'number', description: 'grams, total carbohydrate' },
   fat: { type: 'number', description: 'grams' },
   fibre: { type: 'number', description: 'grams' },
+  satFat: { type: 'number', description: 'grams of saturated fat, counted inside fat' },
   sugar: { type: 'number', description: 'grams of total sugars' },
   sodium: { type: 'number', description: 'milligrams' },
 } as const;
@@ -86,7 +87,7 @@ const MEAL_SCHEMA = {
     },
     score: {
       type: 'integer',
-      description: 'Diet-quality score 0-100 for this meal: protein and fibre density lift it, heavy added sugar, saturated fat and sodium pull it down',
+      description: 'Diet-quality score 0-100 for this meal: protein and fibre density lift it, heavy added sugar, saturated fat and sodium pull it down. Unsaturated fat — olive oil, nuts, oily fish, avocado — is not a mark against a meal.',
     },
     coachNote: {
       type: 'string',
@@ -114,7 +115,7 @@ const MEAL_SCHEMA = {
           nutrients: {
             type: 'object',
             properties: NUTRIENT_PROPS,
-            required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'sugar', 'sodium'],
+            required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'satFat', 'sugar', 'sodium'],
             additionalProperties: false,
           },
         },
@@ -138,18 +139,23 @@ Rules:
 - Break the meal into the individual foods you can actually see or that were described. Do not invent sides that are not there.
 - Nutrition values are per the portion you state, not per 100 g.
 - Count fibre inside total carbohydrate, and give sugar as total sugars.
+- satFat is the saturated share of fat, counted inside it, and is never larger than fat. It is what the app judges a meal on, so it is worth getting right: butter, cream, cheese, coconut, fatty red meat and pastry are mostly saturated; olive oil, rapeseed, nuts, seeds, avocado and oily fish are mostly not.
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, British English.`;
 
 function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0);
+  const fat = num(raw?.fat);
   return {
     calories: Math.round(num(raw?.calories)),
     protein: num(raw?.protein),
     carbs: num(raw?.carbs),
-    fat: num(raw?.fat),
+    fat,
     fibre: num(raw?.fibre),
+    // Saturates live inside total fat, so a larger figure is a slip rather
+    // than a finding. Absent stays absent — see Nutrients.satFat.
+    satFat: raw?.satFat === undefined ? undefined : Math.min(fat, num(raw.satFat)),
     sugar: num(raw?.sugar),
     sodium: Math.round(num(raw?.sodium)),
   };
@@ -189,10 +195,11 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
       carbs: acc.carbs + item.nutrients.carbs,
       fat: acc.fat + item.nutrients.fat,
       fibre: acc.fibre + item.nutrients.fibre,
+      satFat: addOptional(acc.satFat, item.nutrients.satFat),
       sugar: (acc.sugar ?? 0) + (item.nutrients.sugar ?? 0),
       sodium: (acc.sodium ?? 0) + (item.nutrients.sodium ?? 0),
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, satFat: undefined as number | undefined, sugar: 0, sodium: 0 },
   );
 
   const score =
@@ -319,6 +326,7 @@ Rules:
 - Energy: use the kcal figure, not the kJ one.
 - British labels state SALT in grams; the sodium field wants milligrams. Sodium mg is the salt figure in grams multiplied by 400. Do not copy the salt grams into sodium.
 - Carbohydrate on a British label is already net of nothing — it is total carbohydrate, so use it as is. "of which sugars" is the sugar figure. Fibre is often listed separately; use it when present and 0 when it genuinely is not.
+- "Fat, of which saturates" gives both figures: the first is fat, the indented one is satFat.
 - title is the product name from the packaging when you can read it, otherwise what the food plainly is.
 - Return exactly one item unless the packet genuinely holds separate foods.
 - If the photo is not a nutrition label — a plate of food, a barcode alone, a blurry mess — return an empty items array, a score of 0, and say so kindly in coachNote.

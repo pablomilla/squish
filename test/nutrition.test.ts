@@ -53,8 +53,13 @@ test('sums round away floating point noise', () => {
 });
 
 test('scaling a portion scales every nutrient', () => {
-  const scaled = scaleNutrients({ calories: 200, protein: 10, carbs: 20, fat: 5, fibre: 2, sugar: 4, sodium: 100 }, 1.5);
-  assert.deepEqual(scaled, { calories: 300, protein: 15, carbs: 30, fat: 7.5, fibre: 3, sugar: 6, sodium: 150 });
+  const scaled = scaleNutrients({ calories: 200, protein: 10, carbs: 20, fat: 5, fibre: 2, satFat: 1.4, sugar: 4, sodium: 100 }, 1.5);
+  assert.deepEqual(scaled, { calories: 300, protein: 15, carbs: 30, fat: 7.5, fibre: 3, satFat: 2.1, sugar: 6, sodium: 150 });
+});
+
+test('scaling something with no saturates figure does not invent one', () => {
+  const scaled = scaleNutrients({ calories: 200, protein: 10, carbs: 20, fat: 5, fibre: 2, sugar: 4, sodium: 100 }, 2);
+  assert.equal(scaled.satFat, undefined, 'twice nothing known is still nothing known');
 });
 
 test('quality score rewards protein and fibre over sugar', () => {

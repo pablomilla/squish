@@ -17,6 +17,7 @@ const NUTELLA = {
   salt_100g: 0.107,
   sodium_100g: 0.0428,
   sugars_100g: 56.3,
+  'saturated-fat_100g': 10.6,
 };
 
 test('a barcode is digits, and the right number of them', () => {
@@ -115,4 +116,21 @@ test('a nameless product still logs, under its number', () => {
 test('the meal total matches the single item it contains', () => {
   const analysis = toAnalysis({ product_name: 'Nutella', serving_quantity: '15', nutriments: NUTELLA }, '1')!;
   assert.equal(analysis.nutrients.calories, analysis.items[0].nutrients.calories);
+});
+
+test('saturates come across, scaled to the serving like everything else', () => {
+  const item = toAnalysis(
+    { product_name: 'Nutella', serving_size: '15g', serving_quantity: '15', nutriments: NUTELLA },
+    '3017620422003',
+  )!.items[0];
+
+  assert.equal(item.nutrients.satFat, 1.6, '10.6 g per 100 g, over a 15 g serving');
+  assert.ok((item.nutrients.satFat as number) < item.nutrients.fat, 'and it sits inside the fat');
+});
+
+test('a product with no saturates figure is left blank, not called nought', () => {
+  const { 'saturated-fat_100g': _omitted, ...noSat } = NUTELLA;
+  const item = toAnalysis({ product_name: 'Mystery', serving_quantity: '15', nutriments: noSat }, '3017620422003')!.items[0];
+
+  assert.equal(item.nutrients.satFat, undefined);
 });

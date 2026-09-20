@@ -2,6 +2,18 @@ import type { Activity, FoodItem, MacroKey, Nutrients, Profile, Targets } from '
 
 export const EMPTY: Nutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0 };
 
+/**
+ * Adding two saturated-fat figures where either may be missing.
+ *
+ * Nought and "nobody said" are different answers, and treating the second as
+ * the first would quietly tell someone their day was free of saturated fat
+ * when all it was free of was data.
+ */
+export function addOptional(a: number | undefined, b: number | undefined): number | undefined {
+  if (a === undefined && b === undefined) return undefined;
+  return round1((a ?? 0) + (b ?? 0));
+}
+
 const ACTIVITY_FACTOR: Record<Activity, number> = {
   sedentary: 1.2,
   light: 1.375,
@@ -96,6 +108,16 @@ export const FAT_MAX_SHARE = 0.35;
 export const CARBS_MAX_SHARE = 0.65;
 
 /**
+ * Saturated fat, which is where the argument about fat actually is.
+ *
+ * WHO, the US guidelines and SACN all land on the same number: under 10% of
+ * energy, with the rest of the fat unsaturated. Unlike total fat this one is a
+ * line rather than a range, so the target is the limit. At 2,000 kcal it comes
+ * to 22 g, which is what a British label's 20 g reference intake says too.
+ */
+export const SAT_FAT_MAX_SHARE = 0.1;
+
+/**
  * Sugar has the same problem in miniature.
  *
  * The 10% of energy everyone quotes is WHO's figure for FREE sugars — the ones
@@ -137,6 +159,7 @@ export function computeTargets(p: Profile): Targets {
     fibre,
     sugar: Math.round((calories * SUGAR_SHARE) / 4),
     sodium: 2300,
+    satFat: Math.round((calories * SAT_FAT_MAX_SHARE) / 9),
     fatMax: Math.round((calories * FAT_MAX_SHARE) / 9),
     carbsMax: Math.round((calories * CARBS_MAX_SHARE) / 4),
     sugarMax: Math.round((calories * SUGAR_MAX_SHARE) / 4),
@@ -154,6 +177,7 @@ export function addNutrients(a: Nutrients, b: Nutrients): Nutrients {
     carbs: round1(a.carbs + b.carbs),
     fat: round1(a.fat + b.fat),
     fibre: round1(a.fibre + b.fibre),
+    satFat: addOptional(a.satFat, b.satFat),
     sugar: round1((a.sugar ?? 0) + (b.sugar ?? 0)),
     sodium: Math.round((a.sodium ?? 0) + (b.sodium ?? 0)),
   };
@@ -170,6 +194,7 @@ export function scaleNutrients(n: Nutrients, factor: number): Nutrients {
     carbs: round1(n.carbs * factor),
     fat: round1(n.fat * factor),
     fibre: round1(n.fibre * factor),
+    satFat: n.satFat === undefined ? undefined : round1(n.satFat * factor),
     sugar: round1((n.sugar ?? 0) * factor),
     sodium: Math.round((n.sodium ?? 0) * factor),
   };
@@ -206,12 +231,51 @@ export const UNSCORED = 0;
 export function qualityScore(n: Nutrients): number {
   if (n.calories <= 0) return UNSCORED;
   const per1000 = (v: number) => (v / n.calories) * 1000;
+
+  /*
+   * Below about a hundred calories there is not enough on the plate for "per
+   * 1000 kcal" to mean anything — it takes the splash of milk in a coffee and
+   * scales it up into a day's worth of butter. So the marks against a food
+   * fade out as the food gets smaller, rather than being extrapolated.
+   *
+   * Deliberately only the marks against. Over-crediting a bowl of spinach for
+   * its fibre costs nobody anything; telling someone their coffee is a
+   * saturated-fat problem is how a tracker loses your trust.
+   */
+  const solid = Math.min(1, n.calories / 100);
+
   let score = 52;
   score += Math.min(22, per1000(n.protein) * 0.42);
   score += Math.min(18, per1000(n.fibre) * 1.5);
-  score -= Math.min(20, Math.max(0, per1000(n.sugar ?? 0) - 12) * 0.6);
-  score -= Math.min(14, Math.max(0, per1000(n.fat) - 42) * 0.5);
-  score -= Math.min(10, Math.max(0, per1000(n.sodium ?? 0) - 900) / 90);
+  score -= Math.min(20, Math.max(0, per1000(n.sugar ?? 0) - 12) * 0.6) * solid;
+  score -= Math.min(10, Math.max(0, per1000(n.sodium ?? 0) - 900) / 90) * solid;
+
+  /*
+   * Fat.
+   *
+   * This used to be one line docking up to 14 points for total fat above 42 g
+   * per 1000 kcal, which marked down salmon, avocado, olive oil and almonds —
+   * the foods the evidence is most positive about. What the guidance actually
+   * warns about is saturated fat: under 10% of energy, which is 11 g per 1000
+   * kcal, with the rest unsaturated.
+   *
+   * So saturates carry the penalty where they are known — up to 24 points,
+   * more than total fat ever cost, because this is the part the evidence is
+   * actually about. Total fat keeps a light touch well past the 35% mark,
+   * because a plate that is half oil is still worth a word whatever kind of
+   * oil it is.
+   *
+   * Where saturates are unknown — a meal logged before Squish asked for them —
+   * the old total-fat rule stands in. It is the wrong question, but it is
+   * better than scoring blind.
+   */
+  if (n.satFat === undefined) {
+    score -= Math.min(14, Math.max(0, per1000(n.fat) - 42) * 0.5) * solid;
+  } else {
+    score -= Math.min(24, Math.max(0, per1000(n.satFat) - 11) * 0.9) * solid;
+    score -= Math.min(6, Math.max(0, per1000(n.fat) - 55) * 0.2) * solid;
+  }
+
   return Math.max(1, Math.min(100, Math.round(score)));
 }
 
@@ -238,10 +302,10 @@ export function scoreLabel(score: number): { label: string; tone: Tone } {
  * not a warning, and calories already have the ring.
  * ------------------------------------------------------------------ */
 
-export type CeilingKey = 'carbs' | 'fat' | 'sugar' | 'sodium';
+export type CeilingKey = 'carbs' | 'fat' | 'satFat' | 'sugar' | 'sodium';
 
 /** Checked worst-first, so the verdict names the biggest problem. */
-export const CEILINGS: CeilingKey[] = ['fat', 'carbs', 'sugar', 'sodium'];
+export const CEILINGS: CeilingKey[] = ['satFat', 'fat', 'carbs', 'sugar', 'sodium'];
 
 /**
  * How far past a limit counts as over.
@@ -301,6 +365,7 @@ export function isCeiling(key: string): key is CeilingKey {
 }
 
 export const CEILING_LABEL: Record<CeilingKey, string> = {
+  satFat: 'Saturates',
   fat: 'Fat',
   carbs: 'Carbs',
   sugar: 'Sugar',

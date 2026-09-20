@@ -316,6 +316,10 @@ export default function You() {
             <Stepper value={targets.fat} step={5} min={20} max={200} onChange={(fat) => setTargets({ fat })} suffix="g" />
           </div>
           <div className="row-between">
+            <span className="small">Saturates<span className="tiny muted"> · a daily limit</span></span>
+            <Stepper value={targets.satFat ?? 0} step={1} min={0} max={80} onChange={(satFat) => setTargets({ satFat })} suffix="g" />
+          </div>
+          <div className="row-between">
             <span className="small">Fibre</span>
             <Stepper value={targets.fibre} step={1} min={10} max={60} onChange={(fibre) => setTargets({ fibre })} suffix="g" />
           </div>

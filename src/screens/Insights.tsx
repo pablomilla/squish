@@ -8,7 +8,7 @@ import { FlameIcon, ShareIcon } from '../components/icons';
 import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
 import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
-import { MACRO_LABEL, OVER, ceilingLimit, isCeiling } from '../lib/nutrition';
+import { MACRO_LABEL, OVER, addOptional, ceilingLimit, isCeiling, round1 } from '../lib/nutrition';
 import { formatWeight, formatWeightDelta, saltGrams } from '../lib/units';
 import type { MacroKey } from '../types';
 import './insights.css';
@@ -74,11 +74,12 @@ export default function Insights() {
           carbs: acc.carbs + t.carbs,
           fat: acc.fat + t.fat,
           fibre: acc.fibre + t.fibre,
+          satFat: addOptional(acc.satFat, t.satFat),
           sugar: acc.sugar + (t.sugar ?? 0),
           sodium: acc.sodium + (t.sodium ?? 0),
         };
       },
-      { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0 },
+      { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, satFat: undefined as number | undefined, sugar: 0, sodium: 0 },
     ),
     [dates, meals],
   );
@@ -147,6 +148,9 @@ export default function Insights() {
   const ceilingAverages = useMemo(() => {
     const logged = points.filter((p) => p.logged).length || 1;
     return [
+      ...(weekTotals.satFat === undefined
+        ? []
+        : [{ key: 'satFat', label: 'Saturates', avg: round1(weekTotals.satFat / logged), limit: Math.round(targets.satFat ?? 0) }]),
       { key: 'sugar', label: 'Sugar', avg: Math.round(weekTotals.sugar / logged), limit: Math.round(targets.sugar ?? 0) },
       { key: 'salt', label: 'Salt', avg: saltGrams(weekTotals.sodium / logged), limit: saltGrams(targets.sodium ?? 0) },
     ].filter((row) => row.limit > 0);
@@ -277,7 +281,7 @@ export default function Insights() {
         {ceilingAverages.length > 0 && (
           <>
             <div className="divider" />
-            <div className="avg-grid avg-grid--pair">
+            <div className="avg-grid" style={{ gridTemplateColumns: `repeat(${ceilingAverages.length}, minmax(0, 1fr))` }}>
               {ceilingAverages.map(({ key, label, avg, limit }) => {
                 const under = avg <= limit;
                 return (

@@ -78,6 +78,11 @@ export function ProgressRing({ value, target, size = 190, label = 'left', unit =
  */
 export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets: Targets }) {
   const rows = [
+    // Only shown once something has actually reported a figure. A day of meals
+    // logged before Squish asked would otherwise read as a day of no saturates.
+    ...(totals.satFat === undefined
+      ? []
+      : [{ key: 'satFat' as const, label: 'Saturates', value: round1(totals.satFat), limit: Math.round(targets.satFat ?? 0), unit: 'g' }]),
     { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: Math.round(targets.sugar ?? 0), unit: 'g' },
     { key: 'sodium' as const, label: 'Salt', value: saltGrams(totals.sodium ?? 0), limit: saltGrams(targets.sodium ?? 0), unit: 'g' },
   ].filter((row) => row.limit > 0); // No limit set, nothing meaningful to say.
@@ -85,7 +90,7 @@ export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets
   if (!rows.length) return null;
 
   return (
-    <div className="minor-nutrients">
+    <div className="minor-nutrients" style={{ gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))` }}>
       {rows.map((row) => (
         <div className="minor-nutrient" key={row.key}>
           <span className="tiny muted">{row.label}</span>

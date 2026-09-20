@@ -19,6 +19,14 @@ export interface Nutrients {
   carbs: number;
   fat: number;
   fibre: number;
+  /**
+   * Saturated fat in grams, counted inside `fat`.
+   *
+   * Undefined means nobody said, not nought — meals logged before Squish
+   * asked for it, and anything from a source that does not carry it. The
+   * difference matters: a day of unknowns must not read as a day of none.
+   */
+  satFat?: number;
   sugar?: number;
   sodium?: number;
 }

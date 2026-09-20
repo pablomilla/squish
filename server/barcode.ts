@@ -84,12 +84,17 @@ function nutrientsPer100(n: Nutriments): Nutrients | null {
   // Sodium comes in grams, and is often absent where salt is given instead.
   const sodiumG = num(n.sodium_100g) ?? (num(n.salt_100g) !== undefined ? num(n.salt_100g)! / 2.5 : undefined) ?? 0;
 
+  // Saturates are left undefined rather than nought where nobody has entered
+  // them: a product with no figure is not a product with none in it.
+  const sat = num(n['saturated-fat_100g']);
+
   return {
     calories: Math.round(kcal),
     protein: round1(num(n.proteins_100g) ?? 0),
     carbs: round1(carbs),
     fat: round1(num(n.fat_100g) ?? 0),
     fibre: round1(fibre),
+    satFat: sat === undefined ? undefined : round1(sat),
     sugar: round1(num(n.sugars_100g) ?? 0),
     sodium: Math.round(sodiumG * 1000),
   };
@@ -105,6 +110,7 @@ const scale = (per100: Nutrients, grams: number): Nutrients => {
     carbs: round1(per100.carbs * f),
     fat: round1(per100.fat * f),
     fibre: round1(per100.fibre * f),
+    satFat: per100.satFat === undefined ? undefined : round1(per100.satFat * f),
     sugar: round1((per100.sugar ?? 0) * f),
     sodium: Math.round((per100.sodium ?? 0) * f),
   };
