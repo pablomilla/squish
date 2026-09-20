@@ -327,6 +327,41 @@ export const useSquish = create<SquishState>()(
           photoAnalyses: 0,
         }),
     }),
-    { name: 'squish-v1', version: 5, migrate },
+    {
+      name: 'squish-v1',
+      version: 5,
+      migrate,
+      /*
+       * A safety net under the migrations, not a replacement for them.
+       *
+       * Persist merges the saved state over the fresh one, but only one level
+       * deep: a missing top-level key like `reminders` is filled from the
+       * defaults, while `profile` and `targets` are taken wholesale and any
+       * key added since is simply absent. That is how three target fields came
+       * to be silently missing, and it is worse than it sounds for `profile` —
+       * one absent required field puts NaN through the BMR formula and into
+       * ten target values, which no fallback anywhere can undo.
+       *
+       * `targets` is deliberately NOT merged this way, and trying it is what
+       * showed why. Targets belong to a person: filling a gap from the default
+       * profile's targets gave a store on 1,900 kcal a fat ceiling of 54 g,
+       * which belongs to somebody else entirely — and worse, having a wrong
+       * value present stopped `ceilingLimit` working the right one out from
+       * their own calories. A plausible number is more dangerous than a
+       * missing one when something downstream knows how to derive it.
+       *
+       * So targets are left to migrations, which compute them per person, and
+       * to the guard test that fails when a new one arrives without a step.
+       */
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<SquishState>;
+        return {
+          ...current,
+          ...saved,
+          profile: { ...current.profile, ...saved.profile },
+          reminders: { ...current.reminders, ...saved.reminders },
+        };
+      },
+    },
   ),
 );

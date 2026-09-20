@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { addMicros, addNutrients, computeTargets, dayVerdict, microTargets, overTargets, scaleMicros } from '../src/lib/nutrition';
 import { FOODS, toFoodItem } from '../src/lib/foods';
 import { MICROS } from '../src/types';
-import { addCeilingTargets, addMicroTargets, migrate } from '../src/store/useSquish';
+import { DEFAULT_PROFILE, addCeilingTargets, addMicroTargets, migrate } from '../src/store/useSquish';
 import type { Micros, Nutrients, Profile, Targets } from '../src/types';
 
 const person = (over: Partial<Profile> = {}): Profile => ({
@@ -226,4 +226,48 @@ test('it does not run twice, or on targets that already have both', () => {
   assert.deepEqual(addCeilingTargets(current, 5), current, 'already migrated');
   assert.deepEqual(addCeilingTargets(current, 4), current, 'and nothing to do anyway');
   assert.deepEqual(addCeilingTargets({ targets: {} }, 4), { targets: {} }, 'no calorie target to work from');
+});
+
+/* ------------------------------------------------------------------ *
+ * The other half of the class: profile fields, where a gap is worse.
+ * ------------------------------------------------------------------ */
+
+test('a profile missing a required field puts NaN through every target', () => {
+  // Not a hypothetical: this is what any future required field would do to a
+  // store saved before it existed, and why `merge` fills profile gaps.
+  const gappy = { ...person(), age: undefined } as unknown as Profile;
+  const targets = computeTargets(gappy);
+
+  const spoiled = Object.entries(targets)
+    .filter(([, v]) => typeof v === 'number' && Number.isNaN(v))
+    .map(([k]) => k);
+
+  assert.ok(spoiled.includes('calories'), 'the calorie target is the first to go');
+  assert.ok(spoiled.length >= 8, `and it spreads — ${spoiled.length} fields spoiled`);
+});
+
+test('filling the gap from the defaults makes it merely generic instead', () => {
+  const gappy = { ...person(), age: undefined } as unknown as Profile;
+  const patched = { ...DEFAULT_PROFILE, ...gappy, age: DEFAULT_PROFILE.age };
+  const targets = computeTargets(patched);
+
+  assert.ok(Number.isFinite(targets.calories));
+  assert.deepEqual(
+    Object.entries(targets).filter(([, v]) => typeof v === 'number' && Number.isNaN(v)),
+    [],
+    'nothing is NaN once the gap is filled',
+  );
+});
+
+test('the profile merge keeps what the person actually set', () => {
+  // What the store's `merge` does, in one line: their values win, the defaults
+  // only fill what is not there.
+  const saved = { name: 'Mia', weightKg: 66.7, units: 'imperial' as const, goal: 'lose' as const };
+  const merged = { ...DEFAULT_PROFILE, ...saved };
+
+  assert.equal(merged.name, 'Mia');
+  assert.equal(merged.weightKg, 66.7);
+  assert.equal(merged.units, 'imperial', 'not the default metric');
+  assert.equal(merged.goal, 'lose');
+  assert.equal(merged.age, DEFAULT_PROFILE.age, 'and only the gap comes from the defaults');
 });
