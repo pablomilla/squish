@@ -4,7 +4,7 @@ import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
 import MealCard from '../components/MealCard';
 import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing, StreakDots } from '../components/charts';
-import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
+import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, SparkIcon, FlameIcon } from '../components/icons';
 import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
 import { formatWeight } from '../lib/units';
@@ -165,6 +165,10 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             Saved
           </button>
         </div>
+        <button type="button" className="action action--wide" onClick={() => go({ name: 'ask' })}>
+          <SparkIcon size={20} />
+          Ask Squish about your diary
+        </button>
       </section>
 
       <p className="section-label">Daily check-ins</p>

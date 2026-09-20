@@ -213,6 +213,34 @@ export async function importRecipe(url: string, slot?: MealSlot): Promise<Recipe
   return post<RecipeImport>('/api/recipe', { url, slot });
 }
 
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatContext {
+  goal: string;
+  calorieTarget: number;
+  proteinTarget: number;
+  today: string;
+  week: string;
+  streak: number;
+  recentMeals: string[];
+}
+
+/**
+ * Ask Squish something, with the diary as context.
+ *
+ * The context is assembled in the browser and sent with every question,
+ * because the server keeps nothing between requests. It costs a few hundred
+ * tokens a message and it is what makes the difference between an answer about
+ * your week and an answer about nutrition in general.
+ */
+export async function askSquish(turns: ChatTurn[], context: ChatContext): Promise<string> {
+  const { reply } = await post<{ reply: string }>('/api/chat', { turns, context });
+  return reply;
+}
+
 export interface CoachRequest {
   name: string;
   goal: string;

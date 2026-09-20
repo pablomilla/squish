@@ -19,6 +19,7 @@ import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
 import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
 import { publicKey, pushConfigured, startReminderClock, subscribe, unsubscribe } from './push';
+import { chatReply, MAX_TURNS, type ChatTurn } from './chat';
 import {
   analyseLabel,
   analysePhoto,
@@ -215,6 +216,59 @@ app.get('/api/barcode/:code', requirePasscode, async (req, res) => {
     }
     logFailure('barcode lookup', error);
     res.status(502).json({ error: 'The food database is having a moment. Try again shortly.' });
+  }
+});
+
+/**
+ * Ask Squish a question. Body: { turns, context }
+ *
+ * Rate limited like the analysis endpoints, because a chat box is the easiest
+ * thing in the app to leave running up a bill.
+ */
+app.post('/api/chat', requirePasscode, rateLimit, async (req, res) => {
+  const { turns, context } = req.body ?? {};
+
+  if (!Array.isArray(turns) || !turns.length) {
+    res.status(400).json({ error: 'Ask me something.' });
+    return;
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: 'Squish needs the AI to answer questions, and no key is configured here.' });
+    return;
+  }
+
+  const clean: ChatTurn[] = turns
+    .filter((turn: unknown): turn is ChatTurn => {
+      const t = turn as ChatTurn;
+      return (t?.role === 'user' || t?.role === 'assistant') && typeof t?.content === 'string' && t.content.trim().length > 0;
+    })
+    .slice(-MAX_TURNS)
+    // A single question is capped too: the context is what makes an answer
+    // good, not a wall of pasted text.
+    .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 2000) }));
+
+  if (!clean.length || clean[clean.length - 1].role !== 'user') {
+    res.status(400).json({ error: 'Ask me something.' });
+    return;
+  }
+
+  try {
+    res.json({
+      reply: await chatReply(clean, {
+        goal: String(context?.goal ?? 'maintain'),
+        calorieTarget: Number(context?.calorieTarget) || 2000,
+        proteinTarget: Number(context?.proteinTarget) || 100,
+        today: String(context?.today ?? 'nothing logged'),
+        week: String(context?.week ?? 'nothing logged'),
+        streak: Number(context?.streak) || 0,
+        recentMeals: Array.isArray(context?.recentMeals)
+          ? context.recentMeals.slice(0, 12).map((m: unknown) => String(m).slice(0, 80))
+          : [],
+      }),
+    });
+  } catch (error) {
+    logFailure('chat', error);
+    res.status(502).json({ error: 'I could not think of an answer just then. Try again in a moment.' });
   }
 });
 

@@ -1,0 +1,24 @@
+/* The thread grows upward from the composer, which stays put. */
+.ask { display: flex; flex-direction: column; min-height: 100%; }
+.ask-thread { flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--s3); padding-bottom: var(--s3); }
+
+.ask-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--s3); padding: var(--s4) 0; }
+.ask-openers { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+.ask-turn { max-width: 86%; padding: 10px 14px; border-radius: var(--r-lg); }
+.ask-turn p { margin: 0; }
+.ask-turn p + p { margin-top: 8px; }
+.ask-turn--user { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: var(--r-sm); }
+.ask-turn--assistant { align-self: flex-start; background: var(--surface-sunk); border-bottom-left-radius: var(--r-sm); }
+
+.ask-thinking { display: flex; gap: 5px; align-items: center; padding: 14px; }
+.ask-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); animation: ask-bounce 1.2s var(--ease) infinite; }
+.ask-dot:nth-child(2) { animation-delay: 0.15s; }
+.ask-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ask-bounce { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ask-dot { animation: none; opacity: 0.6; } }
+
+.ask-composer {
+  position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 8px;
+  padding-top: var(--s3); background: var(--bg);
+}

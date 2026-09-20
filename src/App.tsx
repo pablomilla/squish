@@ -12,6 +12,7 @@ import Review from './screens/Review';
 import Diary from './screens/Diary';
 import Insights from './screens/Insights';
 import You from './screens/You';
+import Ask from './screens/Ask';
 import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
 import { aiStatus, onLocked, storedPasscode } from './lib/api';
@@ -32,6 +33,7 @@ export type Route =
   | { name: 'you' }
   | { name: 'capture'; slot?: MealSlot; date?: string }
   | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'favourites' }
+  | { name: 'ask' }
   | { name: 'review'; draft: Draft };
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
@@ -122,6 +124,7 @@ function Shell() {
       {route.name === 'add' && (
         <AddFood slot={route.slot} date={route.date} initialTab={route.tab} onCancel={home} onReady={openReview} />
       )}
+      {route.name === 'ask' && <Ask onClose={home} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
 
       {isTab && (
