@@ -16,5 +16,16 @@ services:
       # spend your Anthropic credit.
       - key: SQUISH_PASSCODE
         sync: false
+      # Meal reminders. Optional — leave these blank and the app works, minus
+      # the nudges. Generate the pair with `npm run setup:push`.
+      #
+      # Note the plan above: reminders need a server that is awake at 8am, and
+      # a free instance sleeps after fifteen minutes. See the README.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
       - key: NODE_VERSION
         value: 22.12.0

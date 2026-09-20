@@ -122,6 +122,34 @@ With a passcode set, the app opens on a lock screen and every analysis endpoint 
 is entered. It is a shared passcode, not a login — everyone who knows it shares one Squish. Render's
 free tier sleeps after inactivity, so the first visit takes ~50s to wake.
 
+### Turning meal reminders on
+
+Reminders are off until a keypair exists. Locally:
+
+```bash
+npm run setup:push        # prints a VAPID keypair
+```
+
+Paste the three lines it gives you into `.env`, or into your host's environment, and restart. The
+server says which it is on startup: *"Meal reminders on."* or *"Meal reminders off — run
+`npm run setup:push` to generate keys."* Then open **You → Meal reminders**, set the times, and
+press the button — the notification permission prompt only ever appears from that press.
+
+Three things will stop it working, and none of them announce themselves:
+
+| | |
+| --- | --- |
+| **A sleeping server** | The reminder clock is a `setInterval` on the server. Render's free instance sleeps after fifteen minutes of no traffic, and a sleeping instance cannot fire an 8am nudge. Reminders need an instance that stays awake — on Render that means a paid one. |
+| **An ephemeral disk** | Subscriptions live in `.data/push-subscriptions.json`. Without a persistent disk attached, that file is wiped on every deploy and everyone has to opt in again. Set `SQUISH_PUSH_STORE` to a path on the disk once you have one. |
+| **An iPhone in a Safari tab** | iOS only allows notifications to a web app added to the home screen, from 16.4. The screen says so rather than offering a dead button, but it is the most likely reason a tester reports nothing arriving. |
+
+Regenerating the keypair invalidates every existing subscription, so everyone already getting
+reminders has to turn them on again. `npm run setup:push` refuses to overwrite without `--force` for
+that reason.
+
+When the app is wrapped for the App Store none of this applies: a native local notification is
+scheduled on the device, needs no server, no keys and no subscription.
+
 ## How the AI part works
 
 `server/claude.ts` sends the image (or description) to `claude-opus-5` with
