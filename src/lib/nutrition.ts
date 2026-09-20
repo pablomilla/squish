@@ -65,6 +65,52 @@ export function waterVolume(glasses: number): string {
   return ml >= 1000 ? `${round1(ml / 1000)} L` : `${ml} ml`;
 }
 
+/**
+ * How much of the day's energy should come from fat, and where "too much"
+ * actually starts. They are deliberately two different numbers.
+ *
+ * Every body that publishes a figure treats total fat as a range, not a line:
+ *
+ *   WHO (2023)                 no more than 30% of energy, and "primarily
+ *                              unsaturated"; saturated fat under 10%
+ *   US (IOM / Dietary Guides)  20–35% of energy is the acceptable range
+ *   UK (COMA, endorsed SACN)   no more than 35% of food energy — 78 g for a
+ *                              woman on 2,000 kcal, 97 g for a man on 2,500
+ *   EU label reference intake  70 g against 2,000 kcal, which is 31.5%
+ *
+ * Squish aimed at 28%, below all of them, and then treated that aim as a
+ * ceiling — so a day built on olive oil, oily fish and nuts came back marked
+ * down. The PREDIMED trial's Mediterranean arm, the one with the 30% drop in
+ * cardiovascular events, prescribed four tablespoons of olive oil and 30 g of
+ * nuts a day on top of everything else eaten: about 64 g of fat from the two
+ * supplements alone. Under the old numbers that day was already over.
+ *
+ * So the target is 30% — WHO's figure, and near enough the EU label's — and
+ * nothing is flagged until 35%, which is the point every one of the four above
+ * agrees is too much.
+ */
+export const FAT_SHARE = 0.3;
+export const FAT_MAX_SHARE = 0.35;
+
+/** The top of the same body's acceptable range for carbohydrate. */
+export const CARBS_MAX_SHARE = 0.65;
+
+/**
+ * Sugar has the same problem in miniature.
+ *
+ * The 10% of energy everyone quotes is WHO's figure for FREE sugars — the ones
+ * added to food, plus honey and fruit juice. Squish counts total sugars,
+ * because that is what a label states, what Open Food Facts stores and what a
+ * photo can be judged on; nothing in the chain can tell the sugar in an apple
+ * from the sugar in a biscuit. Holding total sugars to a free-sugars figure
+ * marks down fruit and milk, which is not what the guideline says.
+ *
+ * So 10% stays as the aim, and the limit is the EU labelling reference intake
+ * for total sugars: 90 g against 2,000 kcal, which is 18% of energy.
+ */
+export const SUGAR_SHARE = 0.1;
+export const SUGAR_MAX_SHARE = 0.18;
+
 /** Daily calorie + macro targets, Yazio-style: pace converted to a kcal delta. */
 export function computeTargets(p: Profile): Targets {
   const maintenance = tdee(p);
@@ -79,7 +125,7 @@ export function computeTargets(p: Profile): Targets {
 
   const proteinPerKg = p.goal === 'lose' ? 1.8 : p.goal === 'gain' ? 1.9 : 1.6;
   const protein = Math.round(proteinPerKg * Math.min(p.weightKg, p.targetWeightKg + 25));
-  const fat = Math.round((calories * 0.28) / 9);
+  const fat = Math.round((calories * FAT_SHARE) / 9);
   const carbs = Math.max(60, Math.round((calories - protein * 4 - fat * 9) / 4));
   const fibre = Math.round((calories / 1000) * 14);
 
@@ -89,8 +135,11 @@ export function computeTargets(p: Profile): Targets {
     carbs,
     fat,
     fibre,
-    sugar: Math.round((calories * 0.1) / 4),
+    sugar: Math.round((calories * SUGAR_SHARE) / 4),
     sodium: 2300,
+    fatMax: Math.round((calories * FAT_MAX_SHARE) / 9),
+    carbsMax: Math.round((calories * CARBS_MAX_SHARE) / 4),
+    sugarMax: Math.round((calories * SUGAR_MAX_SHARE) / 4),
     water: Math.max(6, Math.round((p.weightKg * 33) / GLASS_ML)),
     steps: p.activity === 'sedentary' ? 6000 : p.activity === 'light' ? 8000 : 10000,
   };
@@ -194,8 +243,16 @@ export type CeilingKey = 'carbs' | 'fat' | 'sugar' | 'sodium';
 /** Checked worst-first, so the verdict names the biggest problem. */
 export const CEILINGS: CeilingKey[] = ['fat', 'carbs', 'sugar', 'sodium'];
 
-/** A quarter over is worth pointing at; half over is worth saying out loud. */
-export const OVER = 1.25;
+/**
+ * How far past a limit counts as over.
+ *
+ * A hair over used to be swallowed by a quarter's tolerance, which made sense
+ * while the limit was really a target. Now that the limits are the guidance's
+ * own ceilings there is no allowance left to give — only enough slack that
+ * rounding and estimation noise do not set it off. Half again past the limit
+ * is loud.
+ */
+export const OVER = 1.05;
 export const WAY_OVER = 1.5;
 
 export interface OverTarget {
@@ -208,10 +265,28 @@ export interface OverTarget {
   level: 'over' | 'way-over';
 }
 
+/**
+ * Where "too much" starts for each ceiling.
+ *
+ * For fat and carbs this is deliberately not the target: those are the middle
+ * of a range, and being above the middle of a range is not a fault. Sugar and
+ * sodium have no such distinction — their targets were always limits.
+ */
+export function ceilingLimit(key: CeilingKey, t: Targets): number {
+  // Zeroed on the You screen means "do not track this one", and a derived
+  // limit has no business overriding that.
+  if (!(t[key] ?? 0)) return 0;
+  if (key === 'fat') return t.fatMax ?? Math.round((t.calories * FAT_MAX_SHARE) / 9);
+  if (key === 'carbs') return t.carbsMax ?? Math.round((t.calories * CARBS_MAX_SHARE) / 4);
+  if (key === 'sugar') return t.sugarMax ?? Math.round((t.calories * SUGAR_MAX_SHARE) / 4);
+  // Sodium is the one whose target always was a limit.
+  return t[key] ?? 0;
+}
+
 /** Every ceiling this lot of food is meaningfully over, worst first. */
 export function overTargets(n: Nutrients, t: Targets): OverTarget[] {
   return CEILINGS.flatMap<OverTarget>((key) => {
-    const target = t[key] ?? 0;
+    const target = ceilingLimit(key, t);
     const value = n[key] ?? 0;
     if (target <= 0 || value <= 0) return [];
     const ratio = value / target;

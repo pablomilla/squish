@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Achievement, DayLog, FoodItem, MealEntry, Profile, Targets } from '../types';
-import { computeTargets } from '../lib/nutrition';
+import { CARBS_MAX_SHARE, FAT_MAX_SHARE, FAT_SHARE, SUGAR_MAX_SHARE, computeTargets } from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
 import { isoDate, nowTime, slotForNow } from '../lib/date';
 
@@ -74,6 +74,38 @@ interface SquishState {
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+/**
+ * Store v1 -> v2: the fat target moved from 28% of energy to 30%, and stopped
+ * doubling as the ceiling.
+ *
+ * Only targets that still carry the old formula's answer are touched. Anyone
+ * who set their own fat number on the You screen meant it, and keeps it —
+ * which is why this checks rather than simply recomputing.
+ */
+export function raiseFatTarget(state: unknown, from: number): unknown {
+  if (from >= 2 || !state || typeof state !== 'object') return state;
+  const s = state as { targets?: Targets };
+  const t = s.targets;
+  if (!t?.calories) return state;
+
+  const wasAutomatic = t.fat === Math.round((t.calories * 0.28) / 9);
+  if (!wasAutomatic) return state;
+
+  const fat = Math.round((t.calories * FAT_SHARE) / 9);
+  return {
+    ...s,
+    targets: {
+      ...t,
+      fat,
+      // Carbohydrate is the remainder, so it has to move with it.
+      carbs: Math.max(60, Math.round((t.calories - t.protein * 4 - fat * 9) / 4)),
+      fatMax: Math.round((t.calories * FAT_MAX_SHARE) / 9),
+      carbsMax: Math.round((t.calories * CARBS_MAX_SHARE) / 4),
+      sugarMax: Math.round((t.calories * SUGAR_MAX_SHARE) / 4),
+    },
+  };
+}
 
 export const emptyDay = (date: string): DayLog => ({ date, water: 0, steps: 0 });
 
@@ -193,6 +225,6 @@ export const useSquish = create<SquishState>()(
           photoAnalyses: 0,
         }),
     }),
-    { name: 'squish-v1', version: 1 },
+    { name: 'squish-v1', version: 2, migrate: raiseFatTarget },
   ),
 );

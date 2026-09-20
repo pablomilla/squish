@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react';
 import type { MacroKey, Nutrients, Targets } from '../types';
 import { MACROS } from '../types';
-import { CEILING_LABEL, MACRO_LABEL, isCeiling, overPhrase, pct, round1 } from '../lib/nutrition';
+import { CEILING_LABEL, MACRO_LABEL, OVER, ceilingLimit, isCeiling, overPhrase, pct, round1 } from '../lib/nutrition';
 import type { OverTarget } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
@@ -109,10 +109,12 @@ export function MacroBars({ totals, targets, compact = false }: { totals: Nutrie
         const value = Math.round(totals[key]);
         const target = Math.round(targets[key]);
         const fraction = Math.min(1, pct(value, target));
-        // Only fat and carbs can be "over" in a way worth warning about.
+        // Only fat and carbs can be "over" in a way worth warning about, and
+        // only past their limit rather than their aim — 30% of energy from fat
+        // is the target, 35% is where the guidance says too much begins.
         // Protein and fibre past target is the thing we keep asking for, and it
         // used to be dimmed as though it were a mistake.
-        const over = isCeiling(key) && value > target * 1.05;
+        const over = isCeiling(key) && value > ceilingLimit(key, targets) * OVER;
         return (
           <div className={`macro-bar ${over ? 'is-over' : ''}`} key={key}>
             <div className="macro-bar-head">
@@ -156,8 +158,10 @@ export function OverTargetNote({ over }: { over: OverTarget[] }) {
         !
       </span>
       <div className="grow">
-        {/* No "today" — the diary shows other days, and it was wrong on those. */}
-        <b className="small">{loud ? 'Well over target' : 'Over target'}</b>
+        {/* No "today" — the diary shows other days, and it was wrong on those.
+            "Limit" rather than "target": for fat that is a different, higher
+            number, and being above the target is not the thing being reported. */}
+        <b className="small">{loud ? 'Well over the limit' : 'Over the limit'}</b>
         <ul className="over-note-list">
           {over.map((o) => {
             const salt = o.key === 'sodium';
@@ -165,7 +169,7 @@ export function OverTargetNote({ over }: { over: OverTarget[] }) {
             const target = salt ? saltGrams(o.target) : Math.round(o.target);
             return (
               <li className="tiny" key={o.key}>
-                {CEILING_LABEL[o.key]} {value} g — {overPhrase(o)} your {target} g target.
+                {CEILING_LABEL[o.key]} {value} g — {overPhrase(o)} your {target} g limit.
               </li>
             );
           })}

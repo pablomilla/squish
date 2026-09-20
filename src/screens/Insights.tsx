@@ -8,7 +8,7 @@ import { FlameIcon, ShareIcon } from '../components/icons';
 import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
 import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
-import { MACRO_LABEL, isCeiling } from '../lib/nutrition';
+import { MACRO_LABEL, OVER, ceilingLimit, isCeiling } from '../lib/nutrition';
 import { formatWeight, formatWeightDelta, saltGrams } from '../lib/units';
 import type { MacroKey } from '../types';
 import './insights.css';
@@ -255,8 +255,10 @@ export default function Insights() {
           {macroAverages.map(({ key, avg, target }) => {
             const share = target > 0 ? avg / target : 0;
             // Fat and carbs sailing past their target used to read "on target"
-            // too, which is the same blind spot the day score had.
-            const over = isCeiling(key) && share > 1.05;
+            // too, which is the same blind spot the day score had — but the
+            // line to cross is their limit, not their aim.
+            const limit = isCeiling(key) ? ceilingLimit(key, targets) : 0;
+            const over = limit > 0 && avg > limit * OVER;
             const on = !over && share >= 0.9;
             return (
               <div key={key} className="avg-cell">
@@ -266,7 +268,7 @@ export default function Insights() {
                   className={`tiny ${on ? 'avg-on' : over ? 'avg-over' : 'avg-off'}`}
                   aria-label={`${Math.round(share * 100)} per cent of the ${MACRO_LABEL[key]} goal`}
                 >
-                  {over ? `over ${target} g` : on ? 'on target' : `${Math.round(share * 100)}%`}
+                  {over ? `over ${limit} g` : on ? 'on target' : `${Math.round(share * 100)}%`}
                 </span>
               </div>
             );

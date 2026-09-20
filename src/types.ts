@@ -89,6 +89,14 @@ export interface Profile {
 export interface Targets extends Nutrients {
   water: number;
   steps: number;
+  /**
+   * Where too much starts, for the nutrients whose target is the middle of a
+   * range rather than a line. Optional: a store written before these existed
+   * falls back to working them out from the calorie target.
+   */
+  fatMax?: number;
+  carbsMax?: number;
+  sugarMax?: number;
 }
 
 export interface Achievement {
