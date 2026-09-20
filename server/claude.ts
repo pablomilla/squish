@@ -371,7 +371,10 @@ export interface Crockery {
 
 /**
  * A known-size object in the frame is worth more than any amount of guessing,
- * and the most reliable one is the plate it is served on.
+ * and the most reliable one is the plate it is served on — but only when the
+ * size is real. The food is scaled by the ratio, so a 27 cm assumption about a
+ * 20 cm plate makes the portion getting on for twice what it was. A wrong
+ * ruler is worse than no ruler, which is why nothing is assumed here.
  */
 export const capitalise = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -379,9 +382,10 @@ export function crockeryNote(crockery?: Crockery): string {
   const parts: string[] = [];
   if (crockery?.plateCm) parts.push(`their dinner plate is ${crockery.plateCm} cm across`);
   if (crockery?.bowlMl) parts.push(`their usual bowl holds about ${crockery.bowlMl} ml`);
+  // Nothing measured, nothing claimed. Silence leaves the model on its priors
+  // about ordinary portions, which is a better place to be than holding a
+  // ruler we made up.
   if (!parts.length) return '';
-  // Stated as what we know rather than as what they said: the default is a
-  // standard British dinner plate until somebody measures their own.
   return `${capitalise(parts.join(' and '))} — use that as the scale wherever it is in shot.`;
 }
 

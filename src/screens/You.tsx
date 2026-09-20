@@ -31,6 +31,7 @@ export default function You() {
   const [editing, setEditing] = useState(false);
   const [editingTargets, setEditingTargets] = useState(false);
   const [savingReminders, setSavingReminders] = useState(false);
+  const measured = profile.plateCm !== undefined || profile.bowlMl !== undefined;
   // Worked out once: whether push is possible does not change while the screen
   // is open, and calling it in render would run it on every keystroke.
   const [blocker] = useState(reminderSupport);
@@ -231,37 +232,73 @@ export default function You() {
         </div>
         {/* The single cheapest thing anyone can do for portion accuracy. A
             phone with a depth sensor measures the food; a photo has to measure
-            it against something, and the plate is the ruler already in shot. */}
+            it against something, and the plate is the ruler already in shot.
+
+            Nothing is assumed, though. A wrong plate size is worse than none:
+            the food gets scaled by the ratio, so a 27 cm guess about a 20 cm
+            plate makes the portion almost twice what it was. */}
         <p className="tiny muted">
           Measure a dinner plate across and tell Squish once. Most meals are eaten off the same few things, and a plate
           of known size is a ruler lying in every photo.
         </p>
-        <div className="stack" style={{ marginTop: 10 }}>
-          <div className="row-between">
-            <span className="small">Dinner plate</span>
-            <Stepper
-              value={profile.plateCm ?? 27}
-              step={1}
-              min={15}
-              max={40}
-              onChange={(plateCm) => setProfile({ plateCm })}
-              suffix="cm across"
-            />
-          </div>
-          <div className="row-between">
-            <span className="small">Usual bowl</span>
-            <Stepper
-              value={profile.bowlMl ?? 400}
-              step={50}
-              min={150}
-              max={1500}
-              onChange={(bowlMl) => setProfile({ bowlMl })}
-              suffix="ml"
-            />
-          </div>
-        </div>
+
+        {measured ? (
+          <>
+            <div className="stack" style={{ marginTop: 10 }}>
+              <div className="row-between">
+                <span className="small">Dinner plate</span>
+                <Stepper
+                  value={profile.plateCm ?? 27}
+                  step={1}
+                  min={15}
+                  max={40}
+                  onChange={(plateCm) => setProfile({ plateCm })}
+                  suffix="cm across"
+                />
+              </div>
+              <div className="row-between">
+                <span className="small">Usual bowl</span>
+                <Stepper
+                  value={profile.bowlMl ?? 400}
+                  step={50}
+                  min={150}
+                  max={1500}
+                  onChange={(bowlMl) => setProfile({ bowlMl })}
+                  suffix="ml"
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn--quiet small"
+              style={{ marginTop: 10 }}
+              onClick={() => {
+                setProfile({ plateCm: undefined, bowlMl: undefined });
+                toast('Squish will judge portions on its own', '🍽️');
+              }}
+            >
+              Forget my plate sizes
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="tiny muted" style={{ marginTop: 10 }}>
+              <b>Not set.</b> Squish is judging portions from the photo alone, which is what it has always done.
+            </p>
+            <button
+              type="button"
+              className="btn btn--soft btn--block"
+              style={{ marginTop: 10 }}
+              onClick={() => setProfile({ plateCm: 27, bowlMl: 400 })}
+            >
+              Measure and set them
+            </button>
+          </>
+        )}
+
         <p className="tiny muted" style={{ marginTop: 8 }}>
-          A standard British dinner plate is about 27 cm; a side plate 20 cm.
+          A standard British dinner plate is about 27 cm; a side plate 20 cm. Only tell Squish a size you have actually
+          measured — a wrong one makes portions worse, not better.
         </p>
       </section>
 

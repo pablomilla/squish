@@ -29,6 +29,14 @@ the same two or three things, so one measurement improves every photo after it.
 Those numbers go into the prompt, and the model is told to prefer them over any
 general assumption.
 
+Nothing is assumed. There is no default plate size, and an early version that
+shipped one was wrong to: the payoff is not symmetric. A correct size is real
+information; an absent one is neutral, leaving the model on its priors about
+ordinary portions; a wrong one is worse than either, because the food is scaled
+by the ratio. Telling it 27 cm about a 20 cm plate makes the portion getting on
+for twice what it was. So the setting reads "Not set" until somebody measures,
+and says plainly that a guess makes things worse rather than better.
+
 **Known objects in the frame.** The prompt carries a short table of things that
 are reliably sized — a dinner fork is about 19 cm, a teaspoon 13 cm, a mug
 300 ml, a can 330 ml, a credit card 8.6 cm, an adult palm about 9 cm across. A

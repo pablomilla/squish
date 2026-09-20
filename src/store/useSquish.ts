@@ -17,11 +17,7 @@ export const DEFAULT_PROFILE: Profile = {
   pace: 0.5,
   units: 'metric',
   onboarded: false,
-  // A standard British dinner plate and a cereal bowl. Set rather than left
-  // blank so the screen showing "27 cm" is telling the truth about what is
-  // being used — and so a new user gets the benefit without doing anything.
-  plateCm: 27,
-  bowlMl: 400,
+  // No plate size until somebody measures one. See clearAssumedCrockery.
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -117,6 +113,33 @@ export function raiseFatTarget(state: unknown, from: number): unknown {
       sugarMax: Math.round((t.calories * SUGAR_MAX_SHARE) / 4),
     },
   };
+}
+
+/**
+ * Store v2 -> v3: stop assuming everybody eats off a 27 cm plate.
+ *
+ * The plate size is sent to the model as a scale reference, and the payoff is
+ * not symmetric. A correct one is real information. An absent one is neutral —
+ * the model falls back on what a normal portion looks like. A wrong one is
+ * worse than either, because the food is scaled by the ratio: tell it 27 cm
+ * about a 20 cm plate and the portion comes out getting on for twice the size.
+ *
+ * Shipping a default put every new user in the third case, which was the one
+ * mistake worth not making. Only the exact pair that default wrote is cleared;
+ * anybody who has since measured their own keeps it.
+ */
+export function clearAssumedCrockery(state: unknown, from: number): unknown {
+  if (from >= 3 || !state || typeof state !== 'object') return state;
+  const s = state as { profile?: Profile };
+  if (s.profile?.plateCm !== 27 || s.profile?.bowlMl !== 400) return state;
+
+  const { plateCm: _plate, bowlMl: _bowl, ...profile } = s.profile;
+  return { ...s, profile };
+}
+
+/** Every migration, oldest first. */
+export function migrate(state: unknown, from: number): unknown {
+  return clearAssumedCrockery(raiseFatTarget(state, from), from);
 }
 
 export const emptyDay = (date: string): DayLog => ({ date, water: 0, steps: 0 });
@@ -241,6 +264,6 @@ export const useSquish = create<SquishState>()(
           photoAnalyses: 0,
         }),
     }),
-    { name: 'squish-v1', version: 2, migrate: raiseFatTarget },
+    { name: 'squish-v1', version: 3, migrate },
   ),
 );
