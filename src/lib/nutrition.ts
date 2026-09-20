@@ -252,8 +252,35 @@ export function dayVerdict(
 }
 
 /**
- * How far over, in words. "Nearly 3×" lands where "2.9×" does not, and at the
- * small end a percentage is the honest way to put it.
+ * What going well over a ceiling costs the day's score.
+ *
+ * The composition score already leans on fat, sugar and salt *density*, but
+ * density is not amount: eat 2,600 kcal and the fat can be a perfectly
+ * ordinary share of it while still being three times what the day had room
+ * for. That gap belongs to the day, not to any meal in it, so it is charged
+ * here and nowhere else — a meal's own score never sees a daily target.
+ *
+ * The penalty ramps from the point a flag first appears rather than switching
+ * on at half-over, so there is no cliff: a day that creeps over loses a point
+ * or two, and a day at three times its fat target loses the thirty that
+ * separate a good day from a poor one.
+ */
+export const PENALTY_PER_X = 22;
+export const MAX_PENALTY_EACH = 30;
+export const MAX_PENALTY = 35;
+
+export function overPenalty(over: OverTarget[]): number {
+  const total = over.reduce(
+    (sum, o) => sum + Math.min(MAX_PENALTY_EACH, (o.ratio - OVER) * PENALTY_PER_X),
+    0,
+  );
+  return Math.min(MAX_PENALTY, Math.round(total));
+}
+
+/**
+ * How far over, in words, to sit mid-sentence: "Fat 190 g — nearly 3× your
+ * 65 g target." A round multiple lands where "2.9×" does not, and at the small
+ * end a percentage is the honest way to put it.
  */
 export function overPhrase(o: OverTarget): string {
   if (o.ratio < 1.9) return `${Math.round((o.ratio - 1) * 100)}% over`;

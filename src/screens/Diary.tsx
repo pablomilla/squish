@@ -37,7 +37,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   const dayMeals = useMemo(() => mealsOn(meals, date), [meals, date]);
   const totals = useMemo(() => totalsOn(meals, date), [meals, date]);
   const day = days[date];
-  const score = dayScore(meals, date);
+  const score = dayScore(meals, date, targets);
   const verdict = dayVerdict(score, totals, targets);
 
   return (

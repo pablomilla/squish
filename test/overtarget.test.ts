@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  MAX_PENALTY,
   OVER,
   WAY_OVER,
   dayVerdict,
   isCeiling,
+  overPenalty,
   overPhrase,
   overTargets,
   scoreLabel,
 } from '../src/lib/nutrition';
-import type { Nutrients, Targets } from '../src/types';
+import { dayScore } from '../src/lib/selectors';
+import type { MealEntry, Nutrients, Targets } from '../src/types';
 
 const TARGETS: Targets = {
   calories: 2000, protein: 120, carbs: 200, fat: 65, fibre: 28,
@@ -102,4 +105,68 @@ test('how far over, in words', () => {
   assert.equal(at(190 / 65), 'nearly 3×', 'the reported day, rounded the way a person would say it');
   assert.equal(at(2), '2×');
   assert.equal(at(3.4), 'over 3×');
+});
+
+
+/* ------------------------------------------------------------------ *
+ * The score itself, not just the words beside it.
+ * ------------------------------------------------------------------ */
+
+const DAY = '2026-09-20';
+const meal = (id: string, score: number, n: Nutrients): MealEntry =>
+  ({ id, date: DAY, time: '12:00', slot: 'lunch', title: id, items: [], score, source: 'search', nutrients: n } as MealEntry);
+
+const penalty = (ratio: number) => overPenalty([{ key: 'fat', value: 65 * ratio, target: 65, ratio, level: ratio >= WAY_OVER ? 'way-over' : 'over' }]);
+
+test('the penalty ramps from the first flag — no cliff at half over', () => {
+  assert.equal(penalty(OVER), 0, 'the moment it is worth mentioning it still costs nothing');
+  assert.ok(penalty(1.3) <= 2, `a whisker over should barely register, got ${penalty(1.3)}`);
+  assert.ok(penalty(WAY_OVER) > penalty(1.45), 'and it climbs smoothly through the loud threshold');
+  assert.ok(penalty(2) > penalty(1.5), 'twice over costs more than half again over');
+});
+
+test('no single nutrient can take more than thirty points', () => {
+  assert.equal(penalty(10), 30);
+  assert.equal(penalty(100), 30);
+});
+
+test('a day of everything at once still lands on its feet', () => {
+  const everything = overTargets(day({ carbs: 800, fat: 400, sugar: 400, sodium: 12000 }), TARGETS);
+  assert.equal(everything.length, 4);
+  assert.equal(overPenalty(everything), MAX_PENALTY);
+});
+
+test("the reported day: well-scoring meals, a day that isn't", () => {
+  // Three sensible-looking meals. Every one of them scores respectably on its
+  // own; together they put 190 g of fat against a 65 g target.
+  const meals = [
+    meal('a', 62, { calories: 700, protein: 35, carbs: 60, fat: 62, fibre: 8, sugar: 12, sodium: 600 }),
+    meal('b', 62, { calories: 700, protein: 35, carbs: 60, fat: 62, fibre: 8, sugar: 12, sodium: 600 }),
+    meal('c', 62, { calories: 700, protein: 35, carbs: 60, fat: 66, fibre: 8, sugar: 14, sodium: 600 }),
+  ];
+
+  const score = dayScore(meals, DAY, TARGETS);
+  assert.equal(scoreLabel(62).label, 'Balanced', 'what it used to come out as');
+  assert.ok(score <= 38, `the day should no longer read as balanced, got ${score}`);
+  assert.equal(dayVerdict(score, { calories: 2100, protein: 105, carbs: 180, fat: 190, fibre: 24, sugar: 38, sodium: 1800 }, TARGETS).label, 'Over on fat');
+});
+
+test('a day inside its targets scores exactly what it always did', () => {
+  const meals = [
+    meal('a', 80, { calories: 900, protein: 55, carbs: 90, fat: 28, fibre: 12, sugar: 18, sodium: 700 }),
+    meal('b', 70, { calories: 900, protein: 55, carbs: 90, fat: 30, fibre: 12, sugar: 18, sodium: 700 }),
+  ];
+  assert.equal(dayScore(meals, DAY, TARGETS), 75, 'the plain weighted average, untouched');
+});
+
+test('the penalty can never take a day down to "nothing to score"', () => {
+  const meals = [meal('a', 1, { calories: 3000, protein: 20, carbs: 900, fat: 400, fibre: 2, sugar: 500, sodium: 15000 })];
+  const score = dayScore(meals, DAY, TARGETS);
+  assert.equal(score, 1, 'nought is the word for an empty day, not a terrible one');
+  assert.notEqual(dayVerdict(score, meals[0].nutrients, TARGETS).tone, 'none');
+});
+
+test('eating plenty of protein and fibre costs nothing', () => {
+  const meals = [meal('a', 90, { calories: 1800, protein: 300, carbs: 150, fat: 50, fibre: 90, sugar: 20, sodium: 1200 })];
+  assert.equal(dayScore(meals, DAY, TARGETS), 90);
 });

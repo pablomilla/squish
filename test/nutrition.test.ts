@@ -126,16 +126,16 @@ test('streaks count back from today and survive a missing today', () => {
 test('day score weights big meals more heavily than small ones', () => {
   const today = isoDate();
   const meals = [meal(today, 900, 40), meal(today, 100, 90)];
-  const score = dayScore(meals, today);
+  const score = dayScore(meals, today, computeTargets(profile));
   assert.ok(score < 55 && score > 40, `${score}`);
-  assert.equal(dayScore([], today), 0);
+  assert.equal(dayScore([], today, computeTargets(profile)), 0);
 });
 
 test('range summaries only average the days that were logged', () => {
   const today = isoDate();
   const dates = lastDays(7, today);
   const meals = [meal(dates[6], 2000, 80), meal(dates[5], 1000, 60)];
-  const summary = summarise(series(meals, dates), computeTargets(profile));
+  const summary = summarise(series(meals, dates, computeTargets(profile)), computeTargets(profile));
   assert.equal(summary.days, 7);
   assert.equal(summary.loggedDays, 2);
   assert.equal(summary.avgCalories, 1500);

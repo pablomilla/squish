@@ -33,7 +33,7 @@ export default function Insights() {
     return lastDays(span, today);
   }, [range, meals, today]);
 
-  const points = useMemo(() => series(meals, dates), [meals, dates]);
+  const points = useMemo(() => series(meals, dates, targets), [meals, dates, targets]);
   const summary = useMemo(() => summarise(points, targets), [points, targets]);
   const week = weekOf(today);
   const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);

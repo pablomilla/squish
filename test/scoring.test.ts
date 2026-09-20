@@ -2,7 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { UNSCORED, qualityScore, scoreLabel } from '../src/lib/nutrition';
 import { dayScore } from '../src/lib/selectors';
-import type { MealEntry, Nutrients } from '../src/types';
+import type { MealEntry, Nutrients, Targets } from '../src/types';
+
+// Roomy enough that nothing in here trips the over-target penalty — these
+// cases are about the composition half of the score.
+const TARGETS: Targets = {
+  calories: 2000, protein: 120, carbs: 200, fat: 65, fibre: 28,
+  sugar: 50, sodium: 2300, water: 8, steps: 8000,
+};
 
 const DAY = '2026-09-20';
 const nutrients = (calories: number, over: Partial<Nutrients> = {}): Nutrients => ({
@@ -32,21 +39,21 @@ test('logging a glass of water does not cost you points on a good day', () => {
   const lunch = meal('lunch', 700, 80);
   const water = meal('water', 0, UNSCORED);
 
-  assert.equal(dayScore([lunch], DAY), 80);
-  assert.equal(dayScore([lunch, water], DAY), 80, 'the water used to drag this down to 74');
+  assert.equal(dayScore([lunch], DAY, TARGETS), 80);
+  assert.equal(dayScore([lunch, water], DAY, TARGETS), 80, 'the water used to drag this down to 74');
 });
 
 test('a day of nothing but water is unscored rather than nought out of a hundred', () => {
-  assert.equal(dayScore([meal('water', 0, UNSCORED)], DAY), UNSCORED);
+  assert.equal(dayScore([meal('water', 0, UNSCORED)], DAY, TARGETS), UNSCORED);
 });
 
 test('an empty day is still unscored', () => {
-  assert.equal(dayScore([], DAY), UNSCORED);
+  assert.equal(dayScore([], DAY, TARGETS), UNSCORED);
 });
 
 test('a big meal still moves the day more than a small one', () => {
   const big = meal('dinner', 900, 40);
   const small = meal('apple', 90, 90);
-  const score = dayScore([big, small], DAY);
+  const score = dayScore([big, small], DAY, TARGETS);
   assert.ok(score < 55, `the dinner should dominate, got ${score}`);
 });

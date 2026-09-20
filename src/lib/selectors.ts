@@ -1,5 +1,5 @@
 import type { DayLog, MealEntry, MacroKey, Mood, Nutrients, Targets } from '../types';
-import { EMPTY, UNSCORED, addNutrients, pct, qualityScore } from './nutrition';
+import { EMPTY, UNSCORED, addNutrients, overPenalty, overTargets, pct, qualityScore } from './nutrition';
 import { addDays, isoDate, lastDays } from './date';
 
 export function mealsOn(meals: MealEntry[], date: string): MealEntry[] {
@@ -11,18 +11,29 @@ export function totalsOn(meals: MealEntry[], date: string): Nutrients {
 }
 
 /**
- * Weighted day score — a big meal moves it more than a coffee.
+ * Weighted day score — a big meal moves it more than a coffee — less whatever
+ * the day went badly over on.
  *
  * Meals with no calories sit it out entirely rather than scoring nought:
  * counting them dragged the day down, so logging a glass of water cost you
  * several points off a day you had eaten well.
+ *
+ * The targets only enter here. Every meal on a day can be a sensible thing to
+ * eat and the day still be nothing like the day that was planned — three of
+ * them, each scoring well, put 190 g of fat against a 65 g target. That is the
+ * day's doing rather than any one meal's, which is why no meal is marked down
+ * for it and the day is.
  */
-export function dayScore(meals: MealEntry[], date: string): number {
+export function dayScore(meals: MealEntry[], date: string, targets: Targets): number {
   const list = mealsOn(meals, date).filter((m) => m.nutrients.calories > 0);
   if (!list.length) return UNSCORED;
   const weight = list.reduce((sum, m) => sum + Math.max(60, m.nutrients.calories), 0);
   const weighted = list.reduce((sum, m) => sum + m.score * Math.max(60, m.nutrients.calories), 0);
-  return Math.round(weighted / weight);
+  const composition = Math.round(weighted / weight);
+
+  // Floored at 1, never 0: nought is the app's word for "nothing to score",
+  // and a day that was eaten is never that.
+  return Math.max(1, composition - overPenalty(overTargets(totalsOn(meals, date), targets)));
 }
 
 export interface HabitState {
@@ -144,7 +155,7 @@ export interface DaySeriesPoint {
   logged: boolean;
 }
 
-export function series(meals: MealEntry[], dates: string[]): DaySeriesPoint[] {
+export function series(meals: MealEntry[], dates: string[], targets: Targets): DaySeriesPoint[] {
   return dates.map((date) => {
     const totals = totalsOn(meals, date);
     return {
@@ -154,7 +165,7 @@ export function series(meals: MealEntry[], dates: string[]): DaySeriesPoint[] {
       carbs: Math.round(totals.carbs),
       fat: Math.round(totals.fat),
       fibre: Math.round(totals.fibre),
-      score: dayScore(meals, date),
+      score: dayScore(meals, date, targets),
       logged: totals.calories > 0,
     };
   });
