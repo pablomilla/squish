@@ -144,7 +144,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       </div>
 
       <div className="row wrap" style={{ gap: 8 }}>
-        <span className={`badge badge--${verdict.tone}`}>{verdict.label} meal</span>
+        <span className={`badge badge--${verdict.tone}`}>{verdict.tone === 'none' ? verdict.label : `${verdict.label} meal`}</span>
         {analysis.offline ? (
           <span className="badge badge--warn" title="No model was reachable, so these numbers come from the offline estimator">
             Offline estimate

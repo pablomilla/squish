@@ -80,7 +80,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
               <span className="small muted">Day score</span>
               {score > 0 ? (
                 <span className={`badge badge--${verdict.tone}`}>
-                  {score} {verdict.label}
+                  {verdict.tone === 'none' ? verdict.label : `${score} ${verdict.label}`}
                 </span>
               ) : (
                 <span className="badge">Nothing logged</span>

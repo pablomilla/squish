@@ -214,6 +214,8 @@ a { color: var(--brand-ink); }
 .badge--good { background: var(--good-soft); color: var(--good); }
 .badge--warn { background: var(--warn-soft); color: var(--warn); }
 .badge--bad { background: var(--bad-soft); color: var(--bad); }
+/* Not good, not bad — a meal with no calories to judge. */
+.badge--none { background: var(--surface-sunk); color: var(--ink-3); }
 .divider { height: 1px; background: var(--line); margin: var(--s3) 0; }
 /* Names a group of cards so loose tiles read as one section. */
 .section-label {

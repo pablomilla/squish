@@ -1,5 +1,5 @@
 import type { DayLog, MealEntry, MacroKey, Mood, Nutrients, Targets } from '../types';
-import { EMPTY, addNutrients, pct, qualityScore } from './nutrition';
+import { EMPTY, UNSCORED, addNutrients, pct, qualityScore } from './nutrition';
 import { addDays, isoDate, lastDays } from './date';
 
 export function mealsOn(meals: MealEntry[], date: string): MealEntry[] {
@@ -10,10 +10,16 @@ export function totalsOn(meals: MealEntry[], date: string): Nutrients {
   return mealsOn(meals, date).reduce((acc, m) => addNutrients(acc, m.nutrients), { ...EMPTY });
 }
 
-/** Weighted day score — a big meal moves it more than a coffee. */
+/**
+ * Weighted day score — a big meal moves it more than a coffee.
+ *
+ * Meals with no calories sit it out entirely rather than scoring nought:
+ * counting them dragged the day down, so logging a glass of water cost you
+ * several points off a day you had eaten well.
+ */
 export function dayScore(meals: MealEntry[], date: string): number {
-  const list = mealsOn(meals, date);
-  if (!list.length) return 0;
+  const list = mealsOn(meals, date).filter((m) => m.nutrients.calories > 0);
+  if (!list.length) return UNSCORED;
   const weight = list.reduce((sum, m) => sum + Math.max(60, m.nutrients.calories), 0);
   const weighted = list.reduce((sum, m) => sum + m.score * Math.max(60, m.nutrients.calories), 0);
   return Math.round(weighted / weight);

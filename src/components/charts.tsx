@@ -356,11 +356,14 @@ export function StreakDots({ dates, done }: { dates: string[]; done: boolean[] }
 
 /** Small score meter used on meal cards. */
 export function ScoreMeter({ score, size = 44 }: { score: number; size?: number }) {
-  const tone = score >= 75 ? 'var(--good)' : score >= 45 ? 'var(--warn)' : 'var(--bad)';
+  // Nought means unscored, not awful, so it gets a blank ring and a dash
+  // rather than an empty red one shouting zero out of a hundred.
+  const scored = score > 0;
+  const tone = !scored ? 'var(--line)' : score >= 75 ? 'var(--good)' : score >= 45 ? 'var(--warn)' : 'var(--bad)';
   const r = (size - 6) / 2;
   const c = 2 * Math.PI * r;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="score-meter" role="img" aria-label={`Quality score ${score} out of 100`}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="score-meter" role="img" aria-label={scored ? `Quality score ${score} out of 100` : 'No calories to score'}>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-sunk)" strokeWidth="5" />
       <circle
         cx={size / 2}
@@ -370,11 +373,11 @@ export function ScoreMeter({ score, size = 44 }: { score: number; size?: number 
         stroke={tone}
         strokeWidth="5"
         strokeLinecap="round"
-        strokeDasharray={`${(c * Math.min(100, score)) / 100} ${c}`}
+        strokeDasharray={`${scored ? (c * Math.min(100, score)) / 100 : 0} ${c}`}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
       <text x="50%" y="53%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.32} fontWeight="600" fill="var(--ink)">
-        {score}
+        {scored ? score : '–'}
       </text>
     </svg>
   );

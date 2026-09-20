@@ -145,8 +145,17 @@ export function macroSplit(n: Nutrients): Record<'protein' | 'carbs' | 'fat', nu
  * heavy sugar, saturated-ish fat load and sodium. Used when the model does not
  * return one of its own.
  */
+/**
+ * What a meal scores when there is nothing to score it on.
+ *
+ * Diet quality is about the make-up of the energy you ate, so a glass of water
+ * has none to judge. That is not the same as judging it badly — water was
+ * coming out as "Heavy", the label meant for the worst meal of the week.
+ */
+export const UNSCORED = 0;
+
 export function qualityScore(n: Nutrients): number {
-  if (n.calories <= 0) return 0;
+  if (n.calories <= 0) return UNSCORED;
   const per1000 = (v: number) => (v / n.calories) * 1000;
   let score = 52;
   score += Math.min(22, per1000(n.protein) * 0.42);
@@ -157,7 +166,8 @@ export function qualityScore(n: Nutrients): number {
   return Math.max(1, Math.min(100, Math.round(score)));
 }
 
-export function scoreLabel(score: number): { label: string; tone: 'good' | 'warn' | 'bad' } {
+export function scoreLabel(score: number): { label: string; tone: 'good' | 'warn' | 'bad' | 'none' } {
+  if (score <= UNSCORED) return { label: 'Nothing to score', tone: 'none' };
   if (score >= 75) return { label: 'Brilliant', tone: 'good' };
   if (score >= 55) return { label: 'Balanced', tone: 'good' };
   if (score >= 38) return { label: 'So-so', tone: 'warn' };
