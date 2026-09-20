@@ -150,20 +150,34 @@ export function Stepper({
 }
 
 /* ---------------- Theme ---------------- */
-export function useAppliedTheme(preference: 'light' | 'dark' | 'system') {
+
+/**
+ * What the browser is currently asking for, live.
+ *
+ * Worth exposing on its own: when someone picks Auto and gets dark all day,
+ * the question is always whether the app is broken or the phone is set that
+ * way — and on Android it is usually the phone, since Chrome has a dark theme
+ * setting of its own that is separate from the system one.
+ */
+export function usePrefersDark(): boolean {
   const media = useMemo(
     () => (typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null),
     [],
   );
-  const [systemDark, setSystemDark] = useState(media?.matches ?? false);
+  const [dark, setDark] = useState(media?.matches ?? false);
 
   useEffect(() => {
     if (!media) return;
-    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    const onChange = (e: MediaQueryListEvent) => setDark(e.matches);
     media.addEventListener('change', onChange);
     return () => media.removeEventListener('change', onChange);
   }, [media]);
 
+  return dark;
+}
+
+export function useAppliedTheme(preference: 'light' | 'dark' | 'system') {
+  const systemDark = usePrefersDark();
   const theme = preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;
 
   useEffect(() => {

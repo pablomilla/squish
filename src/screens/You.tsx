@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
-import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
+import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
 import { adaptiveSuggestion } from '../lib/adaptive';
@@ -18,6 +18,7 @@ export default function You() {
   const { profile, targets, meals, days, theme, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked } =
     useSquish();
   const [ignoredLearning, setIgnoredLearning] = useState(false);
+  const prefersDark = usePrefersDark();
 
   // Only offered, never applied: a plan that moves on its own is unsettling,
   // and the reading behind it can be wrong in ways only they would know.
@@ -185,6 +186,13 @@ export default function You() {
             { value: 'system' as const, label: 'Auto' },
           ]}
         />
+        {theme === 'system' && (
+          <p className="tiny muted" style={{ marginTop: 8 }}>
+            Your browser is asking for <b>{prefersDark ? 'dark' : 'light'}</b>, so that is what Auto gives you. On
+            Android that comes from the phone's dark theme <em>or</em> from Chrome's own, under Settings → Theme — they
+            are two separate switches.
+          </p>
+        )}
       </section>
 
       <section className="card card--quiet">
