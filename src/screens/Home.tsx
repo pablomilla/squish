@@ -3,7 +3,7 @@ import type { Route } from '../App';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
 import MealCard from '../components/MealCard';
-import { MacroBars, MacroSplitBar, MinorNutrients, ProgressRing, StreakDots } from '../components/charts';
+import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing, StreakDots } from '../components/charts';
 import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
 import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
@@ -11,7 +11,7 @@ import { formatWeight } from '../lib/units';
 import { useSquish } from '../store/useSquish';
 import { friendlyDate, greeting, isoDate, slotForNow, weekOf } from '../lib/date';
 import { habitCount, habitsOn, habitTally, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
-import { GLASS_ML, pct, remaining, waterVolume } from '../lib/nutrition';
+import { GLASS_ML, overTargets, pct, remaining, waterVolume } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
 import './home.css';
 
@@ -137,6 +137,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             the stat pills that used to sit beside the ring said it twice. */}
         <MacroBars totals={totals} targets={targets} compact />
         <MinorNutrients totals={totals} targets={targets} />
+        <OverTargetNote over={overTargets(totals, targets)} />
         {totals.calories > 0 && (
           <>
             <div className="divider" />

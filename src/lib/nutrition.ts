@@ -166,12 +166,100 @@ export function qualityScore(n: Nutrients): number {
   return Math.max(1, Math.min(100, Math.round(score)));
 }
 
-export function scoreLabel(score: number): { label: string; tone: 'good' | 'warn' | 'bad' | 'none' } {
+export type Tone = 'good' | 'warn' | 'bad' | 'none';
+
+export function scoreLabel(score: number): { label: string; tone: Tone } {
   if (score <= UNSCORED) return { label: 'Nothing to score', tone: 'none' };
   if (score >= 75) return { label: 'Brilliant', tone: 'good' };
   if (score >= 55) return { label: 'Balanced', tone: 'good' };
   if (score >= 38) return { label: 'So-so', tone: 'warn' };
   return { label: 'Heavy', tone: 'bad' };
+}
+
+/* ------------------------------------------------------------------ *
+ * Going over.
+ *
+ * `qualityScore` judges what the food is made of, per 1000 kcal, and that is
+ * the only fair question to ask of a single meal: a daily target cannot be
+ * applied to one plate. But the day inherited the same blind spot, so 190 g of
+ * fat against a 65 g target came back "Balanced" — the score had never been
+ * shown the target. These flags are the missing half.
+ *
+ * Only the ceilings are checked. Protein and fibre over target is good news,
+ * not a warning, and calories already have the ring.
+ * ------------------------------------------------------------------ */
+
+export type CeilingKey = 'carbs' | 'fat' | 'sugar' | 'sodium';
+
+/** Checked worst-first, so the verdict names the biggest problem. */
+export const CEILINGS: CeilingKey[] = ['fat', 'carbs', 'sugar', 'sodium'];
+
+/** A quarter over is worth pointing at; half over is worth saying out loud. */
+export const OVER = 1.25;
+export const WAY_OVER = 1.5;
+
+export interface OverTarget {
+  key: CeilingKey;
+  /** Stored units: grams for the macros, milligrams for sodium. */
+  value: number;
+  target: number;
+  /** How many times the target — 2.9 for 190 g of fat against 65 g. */
+  ratio: number;
+  level: 'over' | 'way-over';
+}
+
+/** Every ceiling this lot of food is meaningfully over, worst first. */
+export function overTargets(n: Nutrients, t: Targets): OverTarget[] {
+  return CEILINGS.flatMap<OverTarget>((key) => {
+    const target = t[key] ?? 0;
+    const value = n[key] ?? 0;
+    if (target <= 0 || value <= 0) return [];
+    const ratio = value / target;
+    if (ratio < OVER) return [];
+    return [{ key, value, target, ratio, level: ratio >= WAY_OVER ? 'way-over' : 'over' }];
+  }).sort((a, b) => b.ratio - a.ratio);
+}
+
+/** Is more of this a problem, or an achievement? */
+export function isCeiling(key: string): key is CeilingKey {
+  return (CEILINGS as string[]).includes(key);
+}
+
+export const CEILING_LABEL: Record<CeilingKey, string> = {
+  fat: 'Fat',
+  carbs: 'Carbs',
+  sugar: 'Sugar',
+  sodium: 'Salt',
+};
+
+/**
+ * The verdict on a whole day: the quality score, but no longer allowed to call
+ * a day balanced while something on it is half again over its target. The
+ * number is left alone — it still means what it always meant — and the words
+ * beside it stop contradicting the bars underneath.
+ */
+export function dayVerdict(
+  score: number,
+  n: Nutrients,
+  t: Targets,
+): { label: string; tone: Tone; over: OverTarget[] } {
+  const over = overTargets(n, t);
+  const worst = over.find((o) => o.level === 'way-over');
+  if (score > UNSCORED && worst) {
+    return { label: `Over on ${CEILING_LABEL[worst.key].toLowerCase()}`, tone: 'bad', over };
+  }
+  return { ...scoreLabel(score), over };
+}
+
+/**
+ * How far over, in words. "Nearly 3×" lands where "2.9×" does not, and at the
+ * small end a percentage is the honest way to put it.
+ */
+export function overPhrase(o: OverTarget): string {
+  if (o.ratio < 1.9) return `${Math.round((o.ratio - 1) * 100)}% over`;
+  const whole = Math.round(o.ratio);
+  if (Math.abs(o.ratio - whole) < 0.03) return `${whole}×`;
+  return o.ratio > whole ? `over ${whole}×` : `nearly ${whole}×`;
 }
 
 export function itemsTotal(items: FoodItem[]): Nutrients {

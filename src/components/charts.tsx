@@ -1,7 +1,8 @@
 import { useId, useMemo, useState } from 'react';
 import type { MacroKey, Nutrients, Targets } from '../types';
 import { MACROS } from '../types';
-import { MACRO_LABEL, pct } from '../lib/nutrition';
+import { CEILING_LABEL, MACRO_LABEL, isCeiling, overPhrase, pct } from '../lib/nutrition';
+import type { OverTarget } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
 import { formatWeight, saltGrams, type Units } from '../lib/units';
@@ -108,9 +109,12 @@ export function MacroBars({ totals, targets, compact = false }: { totals: Nutrie
         const value = Math.round(totals[key]);
         const target = Math.round(targets[key]);
         const fraction = Math.min(1, pct(value, target));
-        const over = value > target * 1.05;
+        // Only fat and carbs can be "over" in a way worth warning about.
+        // Protein and fibre past target is the thing we keep asking for, and it
+        // used to be dimmed as though it were a mistake.
+        const over = isCeiling(key) && value > target * 1.05;
         return (
-          <div className="macro-bar" key={key}>
+          <div className={`macro-bar ${over ? 'is-over' : ''}`} key={key}>
             <div className="macro-bar-head">
               <span className="macro-dot" style={{ background: MACRO_COLOR[key] }} aria-hidden="true" />
               <span className="macro-name">{MACRO_LABEL[key]}</span>
@@ -119,15 +123,54 @@ export function MacroBars({ totals, targets, compact = false }: { totals: Nutrie
                 <span className="muted"> / {target} g</span>
               </span>
             </div>
-            <div className="macro-track" role="img" aria-label={`${MACRO_LABEL[key]}: ${value} of ${target} grams`}>
-              <span
-                className="macro-fill"
-                style={{ width: `${fraction * 100}%`, background: MACRO_COLOR[key], opacity: over ? 0.72 : 1 }}
-              />
+            <div
+              className="macro-track"
+              role="img"
+              aria-label={`${MACRO_LABEL[key]}: ${value} of ${target} grams${over ? ', over target' : ''}`}
+            >
+              {/* backgroundColor, not background: the shorthand would wipe out
+                  the stripes the stylesheet lays over an out-of-range bar. */}
+              <span className="macro-fill" style={{ width: `${fraction * 100}%`, backgroundColor: MACRO_COLOR[key] }} />
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * What went over, said plainly.
+ *
+ * The bars carry the numbers, but a bar that is full looks much the same
+ * whether it is at 100% or at 290% — and a score reading "Balanced" beside it
+ * settled the argument the wrong way. This says the size of it in words.
+ */
+export function OverTargetNote({ over }: { over: OverTarget[] }) {
+  if (!over.length) return null;
+  const loud = over.some((o) => o.level === 'way-over');
+
+  return (
+    <div className={`over-note ${loud ? 'over-note--loud' : ''}`} role="note">
+      <span className="over-note-mark" aria-hidden="true">
+        !
+      </span>
+      <div className="grow">
+        {/* No "today" — the diary shows other days, and it was wrong on those. */}
+        <b className="small">{loud ? 'Well over target' : 'Over target'}</b>
+        <ul className="over-note-list">
+          {over.map((o) => {
+            const salt = o.key === 'sodium';
+            const value = salt ? saltGrams(o.value) : Math.round(o.value);
+            const target = salt ? saltGrams(o.target) : Math.round(o.target);
+            return (
+              <li className="tiny" key={o.key}>
+                {CEILING_LABEL[o.key]} {value} g — {overPhrase(o)} your {target} g target.
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

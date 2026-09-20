@@ -3,13 +3,13 @@ import type { Route } from '../App';
 import type { MealEntry, MealSlot } from '../types';
 import MealCard from '../components/MealCard';
 import Squish from '../components/Squish';
-import { MacroBars, MinorNutrients, ProgressRing, ScoreMeter } from '../components/charts';
+import { MacroBars, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, Stepper, useToast } from '../components/ui';
 import { CameraIcon, ChevronIcon, PenIcon, PlusIcon, TrashIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
-import { GLASS_ML, scoreLabel } from '../lib/nutrition';
+import { GLASS_ML, dayVerdict } from '../lib/nutrition';
 import { WeightField } from '../components/fields';
 import './diary.css';
 import { describePortion } from '../lib/units';
@@ -38,7 +38,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   const totals = useMemo(() => totalsOn(meals, date), [meals, date]);
   const day = days[date];
   const score = dayScore(meals, date);
-  const verdict = scoreLabel(score);
+  const verdict = dayVerdict(score, totals, targets);
 
   return (
     <div className="screen diary">
@@ -76,7 +76,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         <div className="row" style={{ gap: 16 }}>
           <ProgressRing value={totals.calories} target={targets.calories} size={132} />
           <div className="grow stack">
-            <div className="row-between">
+            <div className="row-between diary-verdict">
               <span className="small muted">Day score</span>
               {score > 0 ? (
                 <span className={`badge badge--${verdict.tone}`}>
@@ -89,6 +89,10 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             <MacroBars totals={totals} targets={targets} compact />
           </div>
         </div>
+        {/* Sugar and salt were on the home screen and the review sheet but never
+            here, which is the screen people actually go back through. */}
+        <MinorNutrients totals={totals} targets={targets} />
+        <OverTargetNote over={verdict.over} />
       </section>
 
       {SLOTS.map(({ key, label, emoji }) => {

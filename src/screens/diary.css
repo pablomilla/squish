@@ -20,3 +20,9 @@
 .diary-tracker--field { display: flex; flex-direction: column; gap: var(--s1); }
 .diary-tracker--field .field > label { display: none; }
 .diary-tracker:last-child { border-bottom: none; }
+
+/* "42 Over on fat" is a good deal longer than "42 Balanced" was, and beside a
+   132px ring there is no room for it. Let it drop to its own line rather than
+   breaking mid-phrase. */
+.diary-summary .diary-verdict { flex-wrap: wrap; gap: 3px 8px; }
+.diary-verdict .badge { white-space: nowrap; margin-left: auto; }
