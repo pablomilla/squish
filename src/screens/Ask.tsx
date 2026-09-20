@@ -6,9 +6,8 @@ import { useToast } from '../components/ui';
 import { useSquish } from '../store/useSquish';
 import { askNutritionist, SquishApiError, type ChatMessage } from '../lib/api';
 import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
-import { isoDate, lastDays } from '../lib/date';
-import { mealsOn, series, streakOf, summarise, totalsOn } from '../lib/selectors';
-import { saltGrams } from '../lib/units';
+import { contextFor } from '../lib/nutritionist-session';
+import { isoDate } from '../lib/date';
 import './ask.css';
 
 const OPENERS = [
@@ -54,28 +53,8 @@ export default function Ask({ onClose }: { onClose: () => void }) {
   const today = isoDate();
 
   // The outline it gets for free, so an easy question needs no lookup at all.
-  const context = useMemo(() => {
-    const todayTotals = totalsOn(meals, today);
-    const mealCount = mealsOn(meals, today).length;
-    const week = summarise(series(meals, lastDays(7, today), targets), targets);
-    const salt = saltGrams(todayTotals.sodium ?? 0);
-
-    return {
-      goal: profile.goal,
-      calorieTarget: targets.calories,
-      proteinTarget: targets.protein,
-      today: todayTotals.calories
-        ? `${Math.round(todayTotals.calories)} kcal, ${Math.round(todayTotals.protein)} g protein, ` +
-          `${Math.round(todayTotals.fibre)} g fibre, ${salt} g salt, across ${mealCount} meal${mealCount === 1 ? '' : 's'}`
-        : 'nothing logged yet',
-      week: week.loggedDays
-        ? `${week.loggedDays} of 7 days logged, averaging ${week.avgCalories} kcal, ` +
-          `${week.avgProtein} g protein and ${week.avgFibre} g fibre, quality score ${week.avgScore}`
-        : 'nothing logged',
-      streak: streakOf(meals, today),
-      recentMeals: meals.slice(-8).map((m) => `${m.title} (${Math.round(m.nutrients.calories)} kcal)`),
-    };
-  }, [meals, targets, profile.goal, today]);
+  // Built where the loop is, not here, so an eval sees the same summary.
+  const context = useMemo(() => contextFor(meals, targets, profile, today), [meals, targets, profile, today]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });

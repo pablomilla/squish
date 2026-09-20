@@ -1,6 +1,7 @@
 import type { AnalysisResult, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
-import { toolLabel, type ToolAnswer, type ToolCall } from './nutritionist-tools';
+import type { ToolAnswer, ToolCall } from './nutritionist-tools';
+import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 
 const TIMEOUT_MS = 45_000;
 const PASS_KEY = 'squish-pass';
@@ -220,31 +221,14 @@ export async function importRecipe(url: string, slot?: MealSlot): Promise<Recipe
 }
 
 /**
- * A turn as the conversation actually travels.
+ * Asking the nutritionist, over the wire.
  *
- * Assistant turns come back as blocks — text, the model's thinking, the
- * lookups it wants — and go back up untouched. The browser never edits one:
- * a thinking block carries a signature, and an edited or dropped block fails
- * it and takes the conversation with it.
+ * The conversation and the loop are `nutritionist-session`; all that happens
+ * here is the round trip. Keeping the loop out of this file is what lets an
+ * eval, or a test, hold the same conversation without a browser.
  */
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string | unknown[];
-}
-
-export interface ChatContext {
-  goal: string;
-  calorieTarget: number;
-  proteinTarget: number;
-  today: string;
-  week: string;
-  streak: number;
-  recentMeals: string[];
-}
-
-export type ChatStep =
-  | { done: true; reply: string }
-  | { done: false; assistant: unknown[]; calls: ToolCall[] };
+export type { ChatContext, ChatMessage, ChatStep } from './nutritionist-session';
+export { MAX_TOOL_ROUNDS } from './nutritionist-session';
 
 /** One round trip: a question in, an answer or a list of lookups out. */
 export async function chatStep(
@@ -255,46 +239,17 @@ export async function chatStep(
   return post<ChatStep>('/api/chat', { turns: messages, context, notes });
 }
 
-/** Matches the server's own cap, so the browser stops at the same place. */
-export const MAX_TOOL_ROUNDS = 6;
+export type AskResult = ConversationResult;
 
-export interface AskResult {
-  reply: string;
-  /** The whole conversation, lookups and all, ready to carry on from. */
-  messages: ChatMessage[];
-}
-
-/**
- * Ask the nutritionist, running whatever it wants to look up.
- *
- * The loop lives here rather than on the server because the diary does. Each
- * round the server says either "here is the answer" or "look these up first",
- * and `run` answers them out of the store — so the food never leaves the
- * browser and the API key never enters it.
- */
+/** Ask the nutritionist, running its lookups against the store in this browser. */
 export async function askNutritionist(options: {
   messages: ChatMessage[];
   context: ChatContext;
-  /** Read afresh each round: a note saved mid-answer is in force immediately. */
   notes: () => { id: string; note: string }[];
   run: (call: ToolCall) => ToolAnswer;
   onLookup?: (labels: string[]) => void;
 }): Promise<AskResult> {
-  const messages = [...options.messages];
-
-  for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
-    const step = await chatStep(messages, options.context, options.notes());
-    if (step.done) return { reply: step.reply, messages };
-
-    options.onLookup?.(step.calls.map(toolLabel));
-    messages.push({ role: 'assistant', content: step.assistant });
-    // Every result in one message, which is what the API expects — a separate
-    // message per lookup is rejected.
-    messages.push({ role: 'user', content: step.calls.map(options.run) });
-  }
-
-  // Unreachable in practice: the server withholds the tools at the same count.
-  return { reply: 'I got lost looking things up. Ask me again?', messages };
+  return runConversation({ ...options, step: chatStep });
 }
 
 export interface CoachRequest {
