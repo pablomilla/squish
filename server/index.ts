@@ -142,9 +142,15 @@ app.post('/api/unlock', (req, res) => {
   res.status(401).json({ ok: false, message: 'That passcode did not match.' });
 });
 
-/** Vision analysis of a photo. Body: { image: dataURL | base64, mediaType?, slot?, hint?, mode? } */
+/** A number from a request body, or nothing. */
+const inRange = (value: unknown, min: number, max: number): number | undefined => {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min && n <= max ? Math.round(n) : undefined;
+};
+
+/** Vision analysis of a photo. Body: { image: dataURL | base64, mediaType?, slot?, hint?, mode?, crockery? } */
 app.post('/api/analyse/photo', requirePasscode, rateLimit, async (req, res) => {
-  const { image, mediaType, slot, hint, mode } = req.body ?? {};
+  const { image, mediaType, slot, hint, mode, crockery } = req.body ?? {};
   if (typeof image !== 'string' || image.length < 32) {
     res.status(400).json({ error: 'An image is required.' });
     return;
@@ -171,7 +177,11 @@ app.post('/api/analyse/photo', requirePasscode, rateLimit, async (req, res) => {
     res.json(
       label
         ? await analyseLabel(data, type, mealSlot)
-        : await analysePhoto(data, type, mealSlot, typeof hint === 'string' ? hint : undefined),
+        : await analysePhoto(data, type, mealSlot, typeof hint === 'string' ? hint : undefined, {
+            // Sizes, not free text: this goes straight into a prompt.
+            plateCm: inRange(crockery?.plateCm, 15, 40),
+            bowlMl: inRange(crockery?.bowlMl, 150, 1500),
+          }),
     );
   } catch (error) {
     logFailure('photo analysis', error);

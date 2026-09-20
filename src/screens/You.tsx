@@ -227,6 +227,46 @@ export default function You() {
 
       <section className="card card--quiet">
         <div className="card-title">
+          <h3>Your plates</h3>
+        </div>
+        {/* The single cheapest thing anyone can do for portion accuracy. A
+            phone with a depth sensor measures the food; a photo has to measure
+            it against something, and the plate is the ruler already in shot. */}
+        <p className="tiny muted">
+          Measure a dinner plate across and tell Squish once. Most meals are eaten off the same few things, and a plate
+          of known size is a ruler lying in every photo.
+        </p>
+        <div className="stack" style={{ marginTop: 10 }}>
+          <div className="row-between">
+            <span className="small">Dinner plate</span>
+            <Stepper
+              value={profile.plateCm ?? 27}
+              step={1}
+              min={15}
+              max={40}
+              onChange={(plateCm) => setProfile({ plateCm })}
+              suffix="cm across"
+            />
+          </div>
+          <div className="row-between">
+            <span className="small">Usual bowl</span>
+            <Stepper
+              value={profile.bowlMl ?? 400}
+              step={50}
+              min={150}
+              max={1500}
+              onChange={(bowlMl) => setProfile({ bowlMl })}
+              suffix="ml"
+            />
+          </div>
+        </div>
+        <p className="tiny muted" style={{ marginTop: 8 }}>
+          A standard British dinner plate is about 27 cm; a side plate 20 cm.
+        </p>
+      </section>
+
+      <section className="card card--quiet">
+        <div className="card-title">
           <h3>Meal reminders</h3>
           {reminders.on && <span className="badge badge--good">On</span>}
         </div>

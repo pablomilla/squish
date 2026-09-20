@@ -131,6 +131,16 @@ export interface Profile {
    * only ever changed with their say-so.
    */
   burnFactor?: number;
+  /**
+   * The size of the crockery they actually eat off, in centimetres across and
+   * millilitres respectively.
+   *
+   * Most people eat most of their meals off the same two or three things, and
+   * a plate of known width is a ruler lying in the photograph. It is the
+   * nearest a web app gets to the depth sensor a phone would use.
+   */
+  plateCm?: number;
+  bowlMl?: number;
 }
 
 export interface Targets extends Nutrients {

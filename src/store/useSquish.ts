@@ -17,6 +17,11 @@ export const DEFAULT_PROFILE: Profile = {
   pace: 0.5,
   units: 'metric',
   onboarded: false,
+  // A standard British dinner plate and a cereal bowl. Set rather than left
+  // blank so the screen showing "27 cm" is telling the truth about what is
+  // being used — and so a new user gets the benefit without doing anything.
+  plateCm: 27,
+  bowlMl: 400,
 };
 
 export const ACHIEVEMENTS: Achievement[] = [

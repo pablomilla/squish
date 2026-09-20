@@ -156,12 +156,14 @@ const MEAL_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const SYSTEM = `You are the nutrition engine behind Squish, a friendly food-tracking app.
+export const SYSTEM = `You are the nutrition engine behind Squish, a friendly food-tracking app.
 
 Your job is to identify what someone ate and estimate its nutrition as accurately as a careful dietitian would.
 
 Rules:
-- Estimate realistic portions from visual cues: plate and bowl size, cutlery, hands, packaging.
+- Estimate realistic portions from visual cues, and say so honestly when there are none: plate and bowl size, cutlery, hands, packaging.
+- Look for something of known size in the frame and measure against it. A dinner fork is about 19 cm, a teaspoon 13 cm, a standard mug holds 300 ml, a can 330 ml, a credit card is 8.6 cm, an adult palm is roughly 9 cm across. A plate photographed from above gives a scale for everything on it.
+- Where the person has told us the size of their own plate or bowl, that is the best ruler in the picture. Use it over any general assumption.
 - portion names what it was; grams carries how much it weighed. Keep weights out of the portion text.
 - Describe the amount that is actually there, not the size it came in: a glass half full of lager is "half a pint", not "1 pint". People photograph food part-way through.
 - Break the meal into the individual foods you can actually see or that were described. Do not invent sides that are not there.
@@ -361,12 +363,35 @@ const asMedia = (mediaType: string): ImageMedia =>
   (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mediaType) ? mediaType : 'image/jpeg') as ImageMedia;
 
 /** Full result including what the call cost — used by the benchmark. */
+/** What the person has told us about the things they eat off. */
+export interface Crockery {
+  plateCm?: number;
+  bowlMl?: number;
+}
+
+/**
+ * A known-size object in the frame is worth more than any amount of guessing,
+ * and the most reliable one is the plate it is served on.
+ */
+export const capitalise = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+
+export function crockeryNote(crockery?: Crockery): string {
+  const parts: string[] = [];
+  if (crockery?.plateCm) parts.push(`their dinner plate is ${crockery.plateCm} cm across`);
+  if (crockery?.bowlMl) parts.push(`their usual bowl holds about ${crockery.bowlMl} ml`);
+  if (!parts.length) return '';
+  // Stated as what we know rather than as what they said: the default is a
+  // standard British dinner plate until somebody measures their own.
+  return `${capitalise(parts.join(' and '))} — use that as the scale wherever it is in shot.`;
+}
+
 export async function analysePhotoDetailed(
   imageBase64: string,
   mediaType: string,
   slot?: MealSlot,
   hint?: string,
   model: string = MODEL,
+  crockery?: Crockery,
 ): Promise<DetailedAnalysis> {
   return requestMeal(
     [
@@ -375,6 +400,7 @@ export async function analysePhotoDetailed(
         type: 'text',
         text: [
           `This is a photo of a ${slot ?? 'meal'} someone just ate or is about to eat.`,
+          crockeryNote(crockery),
           hint ? `They added a note: "${hint}".` : '',
           'Identify every food and drink, estimate the portions from the visual cues, and return the nutrition.',
         ]
@@ -433,8 +459,9 @@ export async function analysePhoto(
   mediaType: string,
   slot?: MealSlot,
   hint?: string,
+  crockery?: Crockery,
 ): Promise<AnalysisResult> {
-  const { analysis } = await analysePhotoDetailed(imageBase64, mediaType, slot, hint);
+  const { analysis } = await analysePhotoDetailed(imageBase64, mediaType, slot, hint, MODEL, crockery);
   return analysis;
 }
 

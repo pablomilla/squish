@@ -60,7 +60,7 @@ const THINKING_LINES: Record<Shot, string[]> = {
 };
 
 const GUIDE: Record<Shot, string> = {
-  plate: 'Good light, whole plate in the frame.',
+  plate: 'Whole plate in the frame — the rim is what Squish measures against.',
   label: 'Fill the frame with the nutrition table.',
   barcode: 'Hold the barcode steady in the frame.',
 };
@@ -83,6 +83,7 @@ const TIPS = [
 export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props) {
   const toast = useToast();
   const countPhotoAnalysis = useSquish((s) => s.countPhotoAnalysis);
+  const profile = useSquish((s) => s.profile);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -176,7 +177,10 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
       setBusy(true);
       try {
         // Barcode mode never reaches here — it has no shutter to press.
-        const analysis = await analysePhoto(dataUrl, mealSlot, undefined, shot === 'label' ? 'label' : 'plate');
+        const analysis = await analysePhoto(dataUrl, mealSlot, undefined, shot === 'label' ? 'label' : 'plate', {
+          plateCm: profile.plateCm,
+          bowlMl: profile.bowlMl,
+        });
         countPhotoAnalysis();
         streamRef.current?.getTracks().forEach((t) => t.stop());
         onAnalysed(analysis, { photo: dataUrl, slot: analysis.slot ?? mealSlot, date });
@@ -189,7 +193,7 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
         setPreview(null);
       }
     },
-    [mealSlot, date, shot, onAnalysed, countPhotoAnalysis, toast],
+    [mealSlot, date, shot, onAnalysed, countPhotoAnalysis, toast, profile.plateCm, profile.bowlMl],
   );
 
   const lookUp = useCallback(

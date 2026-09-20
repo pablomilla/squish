@@ -158,9 +158,10 @@ export async function analysePhoto(
   slot?: MealSlot,
   hint?: string,
   mode: PhotoMode = 'plate',
+  crockery?: { plateCm?: number; bowlMl?: number },
 ): Promise<AnalysisResult> {
   try {
-    return await post<AnalysisResult>('/api/analyse/photo', { image: dataUrl, slot, hint, mode });
+    return await post<AnalysisResult>('/api/analyse/photo', { image: dataUrl, slot, hint, mode, crockery });
   } catch (error) {
     if (error instanceof SquishApiError) throw error;
     // Inventing a plate is a fair demo; inventing figures off a packet is not,
