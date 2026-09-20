@@ -16,3 +16,11 @@ bench/report.md
 
 # Verification screenshots, taken while working — not the repo's business
 shots/
+
+# Eval output: results, transcripts and the rendered report are derived
+.claude/hillclimb/**/traces/
+.claude/hillclimb/**/results.jsonl
+.claude/hillclimb/**/errors.jsonl
+.claude/hillclimb/**/report.html
+.claude/hillclimb/**/trajectory/
+eval/nutritionist/cases.html

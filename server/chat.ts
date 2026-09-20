@@ -271,10 +271,17 @@ const textOf = (blocks: Anthropic.ContentBlock[]): string =>
  * bytes before the first one are genuinely the same every time. A prefix that
  * has quietly started moving does not fail — it just costs ten times more.
  */
+export interface Tuning {
+  model?: string;
+  effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+}
+
 export function chatRequest(
   messages: ChatMessage[],
   context: ChatContext,
   notes: Note[] = [],
+  /** Only ever set by the eval. Left alone, this is exactly what ships. */
+  tuning: Tuning = {},
 ): Anthropic.MessageCreateParamsNonStreaming {
   // Past the round limit the tools are simply withheld. Answering the question
   // with what it has beats an error, and a loop that cannot be entered again
@@ -282,7 +289,7 @@ export function chatRequest(
   const exhausted = toolRounds(messages) >= MAX_TOOL_ROUNDS;
 
   return {
-    model: MODEL,
+    model: tuning.model ?? MODEL,
     max_tokens: 2400,
     /*
      * Two cache breakpoints, and the split between them is the point.
@@ -304,15 +311,20 @@ export function chatRequest(
       { type: 'text', text: `${contextBlock(context)}\n\n${memoryBlock(notes)}` },
     ],
     thinking: { type: 'adaptive' },
-    output_config: { effort: 'medium' },
+    output_config: { effort: tuning.effort ?? 'medium' },
     ...(exhausted ? {} : { tools: NUTRITIONIST_TOOLS }),
     messages: messages as Anthropic.MessageParam[],
   };
 }
 
-export async function chatStep(messages: ChatMessage[], context: ChatContext, notes: Note[] = []): Promise<ChatStep> {
+export async function chatStep(
+  messages: ChatMessage[],
+  context: ChatContext,
+  notes: Note[] = [],
+  tuning: Tuning = {},
+): Promise<ChatStep> {
   const startedAt = Date.now();
-  const response = await getClient().messages.create(chatRequest(messages, context, notes));
+  const response = await getClient().messages.create(chatRequest(messages, context, notes, tuning));
 
   const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
   const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
