@@ -1,0 +1,16 @@
+.dictate { display: flex; flex-direction: column; gap: 6px; }
+.dictate-btn { align-self: flex-start; }
+
+/* Live, and saying so without a wall of red: the dot pulses, the label does
+   not move, and nothing reflows while the words arrive. */
+.dictate-btn.is-live { background: var(--bad-soft); color: var(--bad); }
+.dictate-btn.is-live::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor; animation: dictate-pulse 1.4s var(--ease) infinite;
+}
+@keyframes dictate-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) {
+  .dictate-btn.is-live::before { animation: none; }
+}
+
+.dictate-heard { min-height: 1.2em; font-style: italic; }

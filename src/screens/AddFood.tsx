@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { AnalysisResult, FoodItem, MealSlot } from '../types';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
+import DictateButton from '../components/DictateButton';
 import { Segmented, Stepper, useToast } from '../components/ui';
 import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -207,6 +208,13 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
             placeholder="e.g. chicken salad wrap, an apple and a flat white"
             onChange={(e) => setDescription(e.target.value)}
             aria-label="Describe your meal"
+          />
+          {/* Appended rather than replacing: people dictate the bulk of it and
+              then tidy up the bit it misheard. */}
+          <DictateButton
+            label="your meal"
+            onText={(text) => setDescription((current) => (current ? `${current.trim()} ${text}` : text))}
+            onError={(message) => toast(message, '🎤')}
           />
           <div className="row wrap" style={{ gap: 8 }}>
             {EXAMPLES.map((example) => (

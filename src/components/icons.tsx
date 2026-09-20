@@ -159,3 +159,17 @@ export const PenIcon = ({ size = 20, className }: IconProps) => (
     <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z" />
   </svg>
 );
+
+export const MicIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <rect x="9" y="2.5" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
+    <path d="M12 17.5V21" />
+  </svg>
+);
+
+export const StopIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor" stroke="none" />
+  </svg>
+);

@@ -3,6 +3,7 @@ import type { Draft } from '../App';
 import type { FoodItem, MealSlot, Nutrients } from '../types';
 import Squish from '../components/Squish';
 import { MacroBars, MacroSplitBar, MinorNutrients, ScoreMeter } from '../components/charts';
+import DictateButton from '../components/DictateButton';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { NumberField } from '../components/fields';
@@ -315,6 +316,13 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
             {fixing ? 'Thinking…' : 'Fix it'}
           </button>
         </div>
+        {/* Corrections are short and said out loud faster than typed, and this
+            is the screen someone is on with a plate in front of them. */}
+        <DictateButton
+          label="your correction"
+          onText={(text) => setFix((current) => (current ? `${current.trim()} ${text}` : text))}
+          onError={(message) => toast(message, '🎤')}
+        />
       </section>
 
       <div className="field">
