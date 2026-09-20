@@ -3,7 +3,7 @@ import Squish from '../components/Squish';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
-import { disableReminders, enableReminders, explainBlocker, reminderSupport } from '../lib/reminders';
+import { disableReminders, enableReminders, explainBlocker, pushConfigured, reminderSupport } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -34,7 +34,24 @@ export default function You() {
   const measured = profile.plateCm !== undefined || profile.bowlMl !== undefined;
   // Worked out once: whether push is possible does not change while the screen
   // is open, and calling it in render would run it on every keystroke.
-  const [blocker] = useState(reminderSupport);
+  const [blocker, setBlocker] = useState(reminderSupport);
+
+  /*
+   * The browser being capable is only half of it. A server with no keypair
+   * cannot send anything, and until that is known the card would be offering a
+   * button whose only outcome is an error — which reads as a fault rather than
+   * a decision. Nothing is shown as available until the server has agreed.
+   */
+  useEffect(() => {
+    if (blocker !== 'ok') return;
+    let live = true;
+    void pushConfigured().then((ready) => {
+      if (live && !ready) setBlocker('not-configured');
+    });
+    return () => {
+      live = false;
+    };
+  }, [blocker]);
 
   const toggleReminders = async () => {
     setSavingReminders(true);

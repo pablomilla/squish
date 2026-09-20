@@ -50,6 +50,24 @@ export function reminderSupport(): ReminderBlocker {
   return 'ok';
 }
 
+/**
+ * Whether this server can send reminders at all.
+ *
+ * The browser being capable is only half of it: without a keypair on the
+ * server there is nothing to subscribe to. Asked up front rather than
+ * discovered by pressing a button, because a control that only fails when
+ * used looks like a fault rather than a decision.
+ */
+export async function pushConfigured(): Promise<boolean> {
+  try {
+    const response = await fetch('/api/push/key');
+    if (!response.ok) return false;
+    return Boolean(((await response.json()) as { publicKey?: string }).publicKey);
+  } catch {
+    return false;
+  }
+}
+
 export function explainBlocker(blocker: ReminderBlocker): string {
   switch (blocker) {
     case 'needs-home-screen':
@@ -61,7 +79,9 @@ export function explainBlocker(blocker: ReminderBlocker): string {
     case 'denied':
       return 'Notifications are blocked for Squish. You can allow them again in your browser settings.';
     case 'not-configured':
-      return 'Reminders are not set up on this server yet.';
+      // Not a fault. Waking a phone from a web page needs a server that never
+      // sleeps; the app on the phone will do it on the device instead.
+      return 'Reminders are waiting on the phone app — it can nudge you without needing a server awake at breakfast.';
     default:
       return '';
   }
