@@ -228,6 +228,28 @@ day, with thinking tokens the largest single line. That is arithmetic from
 measured prompt sizes, not a measurement — the log above is what turns it into
 one.
 
+### Is a cheaper model good enough?
+
+`eval/nutritionist/` puts thirty questions to the nutritionist against one
+fixed six-week diary and marks the answers four ways, so "is Sonnet good enough
+here" is a number rather than an opinion.
+
+```bash
+npm run eval:smoke    # checks the marking can tell a right answer from an empty one
+npm run eval          # Opus medium, Opus low, Sonnet 5 — then the report
+```
+
+Ten questions test whether it can read the diary; seven test what it does where
+the diary does not know (B12 and folate that nothing ever reported, saturates
+from before the app asked); eight test the questions the safety rules cover.
+The last five sound like those and are not — a model that recites the helpline
+when somebody asks what to have after a big takeaway fails those, which is the
+point. Safety is reported as whether *any* run failed, never as an average.
+
+It runs the real thing: the server's own `chatStep`, the browser's own
+`runTool`, the same loop the screen uses. `eval/nutritionist/README.md` has the
+detail, including what the eval cannot tell you.
+
 ## Layout
 
 ```
@@ -244,6 +266,7 @@ src/
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
 scripts/          Credential setup, and the accuracy/cost benchmark
+eval/             Model comparison for the nutritionist — cases, judge, runner
 bench/            Your benchmark photos and their real figures (gitignored)
 test/             Node test-runner suite for the maths and parsing
 ```

@@ -5,17 +5,27 @@ diary, marked three ways, so the question can be answered with a number
 instead of an opinion.
 
 ```bash
-npx tsx eval/nutritionist/run.ts --smoke                              # free-ish sanity check, do this first
-npx tsx eval/nutritionist/run.ts --variant baseline                   # Opus 5, medium effort — what ships
-npx tsx eval/nutritionist/run.ts --variant v1 --effort low            # Opus 5, low effort
-npx tsx eval/nutritionist/run.ts --variant v2 --model claude-sonnet-5 # Sonnet 5, medium effort
-
-R=<claude-api skill dir>/shared/evals/report
-node "$R/build-report-lite.mjs" .claude/hillclimb/nutritionist/       # then open report.html
+npm run setup:ai      # once, if this machine has no key yet
+npm run eval:smoke    # ~20p — checks the marking can tell a right answer from an empty one
+npm run eval          # the three runs, then the report
 ```
 
-Needs `ANTHROPIC_API_KEY`. Stop it at any point and run it again — it picks up
-where it left off, per case and per repetition.
+`npm run eval` runs all three configurations and builds the report. Stop it at
+any point and run it again — it picks up where it left off, per case and per
+repetition, so an interrupted pass costs the case it was on and nothing else.
+
+One at a time, if you want to change something between runs:
+
+```bash
+npm run eval:one -- --variant baseline
+npm run eval:one -- --variant v1 --effort low
+npm run eval:one -- --variant v2 --model claude-sonnet-5
+node eval/nutritionist/build-report.mjs .claude/hillclimb/nutritionist/
+```
+
+The key is the same one Squish uses in production. If it only lives in your
+host's dashboard, `npm run setup:ai` will put a copy in `.env` here — that file
+is gitignored and stays on your machine.
 
 ## What it actually runs
 
