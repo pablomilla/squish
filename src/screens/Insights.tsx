@@ -76,10 +76,15 @@ export default function Insights() {
           fibre: acc.fibre + t.fibre,
           satFat: addOptional(acc.satFat, t.satFat),
           sugar: acc.sugar + (t.sugar ?? 0),
+          freeSugar: addOptional(acc.freeSugar, t.freeSugar),
           sodium: acc.sodium + (t.sodium ?? 0),
         };
       },
-      { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, satFat: undefined as number | undefined, sugar: 0, sodium: 0 },
+      {
+        calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0,
+        satFat: undefined as number | undefined,
+        freeSugar: undefined as number | undefined,
+      },
     ),
     [dates, meals],
   );
@@ -151,6 +156,9 @@ export default function Insights() {
       ...(weekTotals.satFat === undefined
         ? []
         : [{ key: 'satFat', label: 'Saturates', avg: round1(weekTotals.satFat / logged), limit: Math.round(targets.satFat ?? 0) }]),
+      ...(weekTotals.freeSugar === undefined
+        ? []
+        : [{ key: 'freeSugar', label: 'Free sugars', avg: round1(weekTotals.freeSugar / logged), limit: Math.round(targets.freeSugar ?? 0) }]),
       { key: 'sugar', label: 'Sugar', avg: Math.round(weekTotals.sugar / logged), limit: Math.round(targets.sugar ?? 0) },
       { key: 'salt', label: 'Salt', avg: saltGrams(weekTotals.sodium / logged), limit: saltGrams(targets.sodium ?? 0) },
     ].filter((row) => row.limit > 0);
@@ -281,7 +289,7 @@ export default function Insights() {
         {ceilingAverages.length > 0 && (
           <>
             <div className="divider" />
-            <div className="avg-grid" style={{ gridTemplateColumns: `repeat(${ceilingAverages.length}, minmax(0, 1fr))` }}>
+            <div className="avg-grid" style={{ gridTemplateColumns: `repeat(${ceilingAverages.length === 4 ? 2 : ceilingAverages.length}, minmax(0, 1fr))` }}>
               {ceilingAverages.map(({ key, label, avg, limit }) => {
                 const under = avg <= limit;
                 return (

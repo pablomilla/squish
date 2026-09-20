@@ -28,6 +28,15 @@ export interface Nutrients {
    */
   satFat?: number;
   sugar?: number;
+  /**
+   * Free sugars in grams, counted inside `sugar`: the ones added to food, plus
+   * honey, syrups and the sugar in fruit juice. The sugar in a whole apple or
+   * a glass of milk is not free, and the guidelines do not ask anyone to cut
+   * it down.
+   *
+   * Undefined means nobody said, the same as `satFat`.
+   */
+  freeSugar?: number;
   sodium?: number;
 }
 

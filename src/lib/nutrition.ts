@@ -133,6 +133,17 @@ export const SAT_FAT_MAX_SHARE = 0.1;
 export const SUGAR_SHARE = 0.1;
 export const SUGAR_MAX_SHARE = 0.18;
 
+/**
+ * And the figure that 10% was always meant for.
+ *
+ * WHO's limit is on free sugars — added sugar, honey, syrups and the sugar in
+ * fruit juice, which behaves the same way once the fruit has been liquidised.
+ * The sugar in a whole apple or a glass of milk is not free, and no guideline
+ * anywhere asks anyone to cut it down. Now that Squish counts them separately,
+ * the 10% goes where it belongs: a real ceiling, at 50 g against 2,000 kcal.
+ */
+export const FREE_SUGAR_MAX_SHARE = 0.1;
+
 /** Daily calorie + macro targets, Yazio-style: pace converted to a kcal delta. */
 export function computeTargets(p: Profile): Targets {
   const maintenance = tdee(p);
@@ -158,6 +169,7 @@ export function computeTargets(p: Profile): Targets {
     fat,
     fibre,
     sugar: Math.round((calories * SUGAR_SHARE) / 4),
+    freeSugar: Math.round((calories * FREE_SUGAR_MAX_SHARE) / 4),
     sodium: 2300,
     satFat: Math.round((calories * SAT_FAT_MAX_SHARE) / 9),
     fatMax: Math.round((calories * FAT_MAX_SHARE) / 9),
@@ -179,6 +191,7 @@ export function addNutrients(a: Nutrients, b: Nutrients): Nutrients {
     fibre: round1(a.fibre + b.fibre),
     satFat: addOptional(a.satFat, b.satFat),
     sugar: round1((a.sugar ?? 0) + (b.sugar ?? 0)),
+    freeSugar: addOptional(a.freeSugar, b.freeSugar),
     sodium: Math.round((a.sodium ?? 0) + (b.sodium ?? 0)),
   };
 }
@@ -196,6 +209,7 @@ export function scaleNutrients(n: Nutrients, factor: number): Nutrients {
     fibre: round1(n.fibre * factor),
     satFat: n.satFat === undefined ? undefined : round1(n.satFat * factor),
     sugar: round1((n.sugar ?? 0) * factor),
+    freeSugar: n.freeSugar === undefined ? undefined : round1(n.freeSugar * factor),
     sodium: Math.round((n.sodium ?? 0) * factor),
   };
 }
@@ -247,8 +261,28 @@ export function qualityScore(n: Nutrients): number {
   let score = 52;
   score += Math.min(22, per1000(n.protein) * 0.42);
   score += Math.min(18, per1000(n.fibre) * 1.5);
-  score -= Math.min(20, Math.max(0, per1000(n.sugar ?? 0) - 12) * 0.6) * solid;
   score -= Math.min(10, Math.max(0, per1000(n.sodium ?? 0) - 900) / 90) * solid;
+
+  /*
+   * Sugar.
+   *
+   * This used to dock up to 20 points for total sugars past 12 g per 1000 kcal
+   * — 4.8% of energy, stricter than any guideline, applied to a figure no
+   * guideline is about. An apple lost the full 20 and came out at 52; so did a
+   * glass of milk, for its lactose.
+   *
+   * Free sugars carry it now, from 25 g per 1000 kcal, which is exactly the
+   * 10% of energy WHO asks for. Whole fruit and plain milk cost nothing,
+   * because they contain none.
+   *
+   * Where free sugars are unknown the old total-sugar rule stands in, for the
+   * same reason it does for saturates: the wrong question beats no question.
+   */
+  if (n.freeSugar === undefined) {
+    score -= Math.min(20, Math.max(0, per1000(n.sugar ?? 0) - 12) * 0.6) * solid;
+  } else {
+    score -= Math.min(24, Math.max(0, per1000(n.freeSugar) - 25) * 0.8) * solid;
+  }
 
   /*
    * Fat.
@@ -302,10 +336,10 @@ export function scoreLabel(score: number): { label: string; tone: Tone } {
  * not a warning, and calories already have the ring.
  * ------------------------------------------------------------------ */
 
-export type CeilingKey = 'carbs' | 'fat' | 'satFat' | 'sugar' | 'sodium';
+export type CeilingKey = 'carbs' | 'fat' | 'satFat' | 'sugar' | 'freeSugar' | 'sodium';
 
 /** Checked worst-first, so the verdict names the biggest problem. */
-export const CEILINGS: CeilingKey[] = ['satFat', 'fat', 'carbs', 'sugar', 'sodium'];
+export const CEILINGS: CeilingKey[] = ['satFat', 'freeSugar', 'fat', 'carbs', 'sugar', 'sodium'];
 
 /**
  * How far past a limit counts as over.
@@ -343,7 +377,7 @@ export function ceilingLimit(key: CeilingKey, t: Targets): number {
   if (key === 'fat') return t.fatMax ?? Math.round((t.calories * FAT_MAX_SHARE) / 9);
   if (key === 'carbs') return t.carbsMax ?? Math.round((t.calories * CARBS_MAX_SHARE) / 4);
   if (key === 'sugar') return t.sugarMax ?? Math.round((t.calories * SUGAR_MAX_SHARE) / 4);
-  // Sodium is the one whose target always was a limit.
+  // Free sugars and sodium are the ones whose targets always were limits.
   return t[key] ?? 0;
 }
 
@@ -366,6 +400,7 @@ export function isCeiling(key: string): key is CeilingKey {
 
 export const CEILING_LABEL: Record<CeilingKey, string> = {
   satFat: 'Saturates',
+  freeSugar: 'Free sugars',
   fat: 'Fat',
   carbs: 'Carbs',
   sugar: 'Sugar',

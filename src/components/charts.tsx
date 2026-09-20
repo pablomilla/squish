@@ -78,19 +78,27 @@ export function ProgressRing({ value, target, size = 190, label = 'left', unit =
  */
 export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets: Targets }) {
   const rows = [
-    // Only shown once something has actually reported a figure. A day of meals
-    // logged before Squish asked would otherwise read as a day of no saturates.
+    // The two that are only shown once something has actually reported a
+    // figure. A day of meals logged before Squish asked for them would
+    // otherwise read as a day with none in it.
     ...(totals.satFat === undefined
       ? []
       : [{ key: 'satFat' as const, label: 'Saturates', value: round1(totals.satFat), limit: Math.round(targets.satFat ?? 0), unit: 'g' }]),
+    ...(totals.freeSugar === undefined
+      ? []
+      : [{ key: 'freeSugar' as const, label: 'Free sugars', value: round1(totals.freeSugar), limit: Math.round(targets.freeSugar ?? 0), unit: 'g' }]),
     { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: Math.round(targets.sugar ?? 0), unit: 'g' },
     { key: 'sodium' as const, label: 'Salt', value: saltGrams(totals.sodium ?? 0), limit: saltGrams(targets.sodium ?? 0), unit: 'g' },
   ].filter((row) => row.limit > 0); // No limit set, nothing meaningful to say.
 
   if (!rows.length) return null;
 
+  // Four across at 390px leaves 76px a tile, which "Free sugars" will not fit
+  // in. Four goes two by two; anything less stays on one line.
+  const columns = rows.length === 4 ? 2 : rows.length;
+
   return (
-    <div className="minor-nutrients" style={{ gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))` }}>
+    <div className="minor-nutrients" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
       {rows.map((row) => (
         <div className="minor-nutrient" key={row.key}>
           <span className="tiny muted">{row.label}</span>

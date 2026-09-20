@@ -328,6 +328,10 @@ export default function You() {
             <Stepper value={targets.sugar ?? 0} step={5} min={0} max={200} onChange={(sugar) => setTargets({ sugar })} suffix="g" />
           </div>
           <div className="row-between">
+            <span className="small">Free sugars<span className="tiny muted"> · added, honey and juice</span></span>
+            <Stepper value={targets.freeSugar ?? 0} step={5} min={0} max={200} onChange={(freeSugar) => setTargets({ freeSugar })} suffix="g" />
+          </div>
+          <div className="row-between">
             <span className="small">Salt<span className="tiny muted"> · a daily limit</span></span>
             <Stepper
               value={saltGrams(targets.sodium ?? 0)}

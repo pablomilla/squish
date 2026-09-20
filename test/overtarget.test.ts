@@ -345,3 +345,66 @@ test('every food in the table has a believable saturates figure', () => {
     assert.ok((satFat as number) >= 0, `${name}: negative saturates`);
   }
 });
+
+/* ------------------------------------------------------------------ *
+ * Free sugars: the figure the 10% was always about.
+ * ------------------------------------------------------------------ */
+
+test('an apple is not charged for being an apple', () => {
+  const apple = { calories: 95, protein: 0.5, carbs: 25, fat: 0.2, fibre: 4.4, satFat: 0, sugar: 19, freeSugar: 0, sodium: 2 };
+  const sweets = { ...apple, freeSugar: 19 };
+
+  assert.ok(qualityScore(apple) > qualityScore(sweets) + 15,
+    `same sugar, different kind: ${qualityScore(apple)} vs ${qualityScore(sweets)}`);
+  assert.ok(qualityScore(apple) >= 70, `an apple should read well, got ${qualityScore(apple)}`);
+});
+
+test('milk is not charged for its lactose', () => {
+  const milk = { calories: 125, protein: 8.5, carbs: 12, fat: 4.5, fibre: 0, satFat: 2.8, sugar: 12, freeSugar: 0, sodium: 110 };
+  assert.ok(qualityScore(milk) > qualityScore({ ...milk, freeSugar: undefined }) + 10,
+    'the old total-sugar rule docked a glass of milk the full twenty');
+});
+
+test('juice counts as free sugar, because the guideline says so', () => {
+  const juice = { calories: 112, protein: 1.8, carbs: 26, fat: 0.5, fibre: 0.5, satFat: 0, sugar: 21, freeSugar: 21, sodium: 2 };
+  const whole = { ...juice, freeSugar: 0 };
+  assert.ok(qualityScore(juice) < qualityScore(whole) - 15, 'liquidised fruit is not the same as fruit');
+});
+
+test('sweets are still sweets', () => {
+  const cola = { calories: 139, protein: 0, carbs: 35, fat: 0, fibre: 0, satFat: 0, sugar: 35, freeSugar: 35, sodium: 13 };
+  assert.ok(qualityScore(cola) < 38, `got ${qualityScore(cola)}`);
+});
+
+test('no free-sugar figure falls back to the old rule rather than to nought', () => {
+  const unknown = { calories: 400, protein: 10, carbs: 70, fat: 8, fibre: 3, satFat: 3, sugar: 40, sodium: 200 };
+  assert.equal(qualityScore(unknown), qualityScore({ ...unknown, freeSugar: undefined }));
+  assert.notEqual(qualityScore(unknown), qualityScore({ ...unknown, freeSugar: 0 }),
+    'unknown must not be read as "none of it is free"');
+  assert.equal(addNutrients(unknown, unknown).freeSugar, undefined);
+});
+
+test('the free-sugar limit is 10% of energy, and sits inside the total', () => {
+  const t = computeTargets({
+    name: '', sex: 'female', age: 30, heightCm: 168, weightKg: 68, targetWeightKg: 63,
+    activity: 'light', goal: 'maintain', pace: 0, units: 'metric', onboarded: true,
+  });
+  const share = ((t.freeSugar ?? 0) * 4) / t.calories;
+  assert.ok(Math.abs(share - 0.1) < 0.01, `got ${Math.round(share * 100)}%`);
+  assert.ok((t.freeSugar ?? 0) <= ceilingLimit('sugar', t), 'free sugars cannot exceed the total-sugar limit');
+});
+
+test('going over on free sugars is flagged by its own name', () => {
+  const t: Targets = { ...TARGETS, freeSugar: 50 };
+  assert.deepEqual(overTargets({ ...day(), freeSugar: undefined }, t), []);
+  assert.equal(dayVerdict(70, { ...day(), freeSugar: 120 }, t).label, 'Over on free sugars');
+});
+
+test('every food in the table has a believable free-sugar figure', () => {
+  for (const food of FOODS) {
+    const { freeSugar, sugar, name } = { ...food.per100, name: food.name };
+    assert.notEqual(freeSugar, undefined, `${name} has no free-sugar figure`);
+    assert.ok((freeSugar as number) <= (sugar ?? 0) + 0.001, `${name}: ${freeSugar} g free inside ${sugar} g total`);
+    assert.ok((freeSugar as number) >= 0, `${name}: negative free sugar`);
+  }
+});

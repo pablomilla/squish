@@ -87,6 +87,9 @@ function nutrientsPer100(n: Nutriments): Nutrients | null {
   // Saturates are left undefined rather than nought where nobody has entered
   // them: a product with no figure is not a product with none in it.
   const sat = num(n['saturated-fat_100g']);
+  // Added sugars are on American labels by law and rare on European ones, so
+  // this is usually absent. Absent stays absent rather than becoming nought.
+  const added = num(n['added-sugars_100g']);
 
   return {
     calories: Math.round(kcal),
@@ -96,6 +99,7 @@ function nutrientsPer100(n: Nutriments): Nutrients | null {
     fibre: round1(fibre),
     satFat: sat === undefined ? undefined : round1(sat),
     sugar: round1(num(n.sugars_100g) ?? 0),
+    freeSugar: added === undefined ? undefined : round1(added),
     sodium: Math.round(sodiumG * 1000),
   };
 }
@@ -112,6 +116,7 @@ const scale = (per100: Nutrients, grams: number): Nutrients => {
     fibre: round1(per100.fibre * f),
     satFat: per100.satFat === undefined ? undefined : round1(per100.satFat * f),
     sugar: round1((per100.sugar ?? 0) * f),
+    freeSugar: per100.freeSugar === undefined ? undefined : round1(per100.freeSugar * f),
     sodium: Math.round((per100.sodium ?? 0) * f),
   };
 };

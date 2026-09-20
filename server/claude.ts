@@ -72,6 +72,11 @@ const NUTRIENT_PROPS = {
   fibre: { type: 'number', description: 'grams' },
   satFat: { type: 'number', description: 'grams of saturated fat, counted inside fat' },
   sugar: { type: 'number', description: 'grams of total sugars' },
+  freeSugar: {
+    type: 'number',
+    description:
+      'grams of FREE sugars, counted inside sugar: added sugar and syrups, honey, and the sugar in fruit juice. The sugar in whole fruit, vegetables and plain milk or yoghurt is NOT free — that is 0. Never larger than sugar.',
+  },
   sodium: { type: 'number', description: 'milligrams' },
 } as const;
 
@@ -115,7 +120,7 @@ const MEAL_SCHEMA = {
           nutrients: {
             type: 'object',
             properties: NUTRIENT_PROPS,
-            required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'satFat', 'sugar', 'sodium'],
+            required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'satFat', 'sugar', 'freeSugar', 'sodium'],
             additionalProperties: false,
           },
         },
@@ -139,6 +144,7 @@ Rules:
 - Break the meal into the individual foods you can actually see or that were described. Do not invent sides that are not there.
 - Nutrition values are per the portion you state, not per 100 g.
 - Count fibre inside total carbohydrate, and give sugar as total sugars.
+- freeSugar is the added-and-juice share of sugar, counted inside it. An apple, a banana, a carrot and a glass of milk are all 0 — their sugar is not free sugar and no guideline asks anyone to cut it. Juice, honey, syrup, and anything sweetened in a kitchen or a factory is.
 - satFat is the saturated share of fat, counted inside it, and is never larger than fat. It is what the app judges a meal on, so it is worth getting right: butter, cream, cheese, coconut, fatty red meat and pastry are mostly saturated; olive oil, rapeseed, nuts, seeds, avocado and oily fish are mostly not.
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
@@ -147,6 +153,7 @@ Rules:
 function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0);
   const fat = num(raw?.fat);
+  const sugar = num(raw?.sugar);
   return {
     calories: Math.round(num(raw?.calories)),
     protein: num(raw?.protein),
@@ -156,7 +163,10 @@ function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
     // Saturates live inside total fat, so a larger figure is a slip rather
     // than a finding. Absent stays absent — see Nutrients.satFat.
     satFat: raw?.satFat === undefined ? undefined : Math.min(fat, num(raw.satFat)),
-    sugar: num(raw?.sugar),
+    sugar,
+    // Free sugars live inside total sugars, the same way saturates live
+    // inside fat, so a larger figure is a slip rather than a finding.
+    freeSugar: raw?.freeSugar === undefined ? undefined : Math.min(sugar, num(raw.freeSugar)),
     sodium: Math.round(num(raw?.sodium)),
   };
 }
@@ -197,9 +207,14 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
       fibre: acc.fibre + item.nutrients.fibre,
       satFat: addOptional(acc.satFat, item.nutrients.satFat),
       sugar: (acc.sugar ?? 0) + (item.nutrients.sugar ?? 0),
+      freeSugar: addOptional(acc.freeSugar, item.nutrients.freeSugar),
       sodium: (acc.sodium ?? 0) + (item.nutrients.sodium ?? 0),
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, satFat: undefined as number | undefined, sugar: 0, sodium: 0 },
+    {
+      calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0,
+      satFat: undefined as number | undefined,
+      freeSugar: undefined as number | undefined,
+    },
   );
 
   const score =
@@ -326,7 +341,7 @@ Rules:
 - Energy: use the kcal figure, not the kJ one.
 - British labels state SALT in grams; the sodium field wants milligrams. Sodium mg is the salt figure in grams multiplied by 400. Do not copy the salt grams into sodium.
 - Carbohydrate on a British label is already net of nothing — it is total carbohydrate, so use it as is. "of which sugars" is the sugar figure. Fibre is often listed separately; use it when present and 0 when it genuinely is not.
-- "Fat, of which saturates" gives both figures: the first is fat, the indented one is satFat.
+- "Fat, of which saturates" gives both figures: the first is fat, the indented one is satFat. "Carbohydrate, of which sugars" gives total sugars; a British label does not state free sugars, so work freeSugar out from the ingredients list — for most packaged food nearly all of its sugar is free, but not for plain dairy or dried fruit.
 - title is the product name from the packaging when you can read it, otherwise what the food plainly is.
 - Return exactly one item unless the packet genuinely holds separate foods.
 - If the photo is not a nutrition label — a plate of food, a barcode alone, a blurry mess — return an empty items array, a score of 0, and say so kindly in coachNote.
