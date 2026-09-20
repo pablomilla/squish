@@ -46,6 +46,10 @@
   --dv-fat: #db2777;
   --dv-fibre: #15803d;
   --dv-cal: #6b5fe0;
+  /* The two ceilings. They never share a chart with the macros, so they are
+     free to sit outside the macro hues rather than fight them. */
+  --dv-sugar: #a21caf;
+  --dv-salt: #0f766e;
   --dv-grid: #e8ddcd;
   --dv-axis: #9a93ab;
 
@@ -125,6 +129,8 @@
   --dv-fat: #d9508b;
   --dv-fibre: #2f8a48;
   --dv-cal: #8b80f5;
+  --dv-sugar: #d06fd8;
+  --dv-salt: #4fb3a6;
   --dv-grid: #322d43;
   --dv-axis: #857da0;
 

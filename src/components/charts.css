@@ -76,6 +76,9 @@
 .chart-target {
   position: absolute; left: 0; right: 0; border-top: 2px dashed var(--dv-grid);
   display: flex; justify-content: flex-end; pointer-events: none;
+  /* Above the bars: a tall Sunday was painting straight over the label, so the
+     one number that says what the line means read "lim…8". */
+  z-index: 1;
 }
 .chart-target span { font-size: 11px; color: var(--ink-3); background: var(--surface); padding: 0 4px; transform: translateY(-50%); }
 .chart-caption { margin-top: 4px; text-align: right; }
@@ -103,3 +106,13 @@
 .minor-nutrients { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s3); }
 .minor-nutrient { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-sunk); }
 .minor-nutrient .is-over b { color: var(--warn); }
+
+/* Above a limit, in the same stripes the macro bars use, so "over" looks the
+   same wherever the app says it. */
+.chart-bar-fill.is-over {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgb(255 255 255 / 48%) 0 3px,
+    rgb(255 255 255 / 0%) 3px 7px
+  );
+}

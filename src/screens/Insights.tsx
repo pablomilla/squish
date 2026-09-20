@@ -8,15 +8,20 @@ import { FlameIcon, ShareIcon } from '../components/icons';
 import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
 import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
-import { MACRO_LABEL } from '../lib/nutrition';
-import { formatWeight, formatWeightDelta } from '../lib/units';
+import { MACRO_LABEL, isCeiling } from '../lib/nutrition';
+import { formatWeight, formatWeightDelta, saltGrams } from '../lib/units';
 import type { MacroKey } from '../types';
 import './insights.css';
 
 type Range = '7' | '30' | 'all';
-type Metric = 'calories' | 'protein' | 'fibre' | 'score';
+type Metric = 'calories' | 'protein' | 'fibre' | 'sugar' | 'salt' | 'score';
 
-const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', fibre: 'g', score: 'pts' };
+const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', fibre: 'g', sugar: 'g', salt: 'g', score: 'pts' };
+const METRIC_LABEL: Record<Metric, string> = {
+  calories: 'Calories', protein: 'Protein', fibre: 'Fibre', sugar: 'Sugar', salt: 'Salt', score: 'Quality',
+};
+/** The ones you are trying to stay under rather than reach. */
+const METRIC_CEILING: Metric[] = ['sugar', 'salt'];
 
 export default function Insights() {
   const [sharing, setSharing] = useState(false);
@@ -69,9 +74,11 @@ export default function Insights() {
           carbs: acc.carbs + t.carbs,
           fat: acc.fat + t.fat,
           fibre: acc.fibre + t.fibre,
+          sugar: acc.sugar + (t.sugar ?? 0),
+          sodium: acc.sodium + (t.sodium ?? 0),
         };
       },
-      { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 },
+      { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0 },
     ),
     [dates, meals],
   );
@@ -106,6 +113,25 @@ export default function Insights() {
     return [...counts.values()].sort((a, b) => b.count - a.count).slice(0, 5);
   }, [meals, dates]);
 
+  // Six metrics is more than a chain of ternaries wants to carry.
+  const metricAverage: number = {
+    calories: summary.avgCalories,
+    protein: summary.avgProtein,
+    fibre: summary.avgFibre,
+    sugar: summary.avgSugar,
+    salt: summary.avgSalt,
+    score: summary.avgScore,
+  }[metric];
+
+  const metricTarget: number = {
+    calories: targets.calories,
+    protein: targets.protein,
+    fibre: targets.fibre,
+    sugar: targets.sugar ?? 0,
+    salt: saltGrams(targets.sodium ?? 0),
+    score: 75,
+  }[metric];
+
   const macroAverages = useMemo(() => {
     const logged = points.filter((p) => p.logged).length || 1;
     return (['protein', 'carbs', 'fat', 'fibre'] as MacroKey[]).map((key) => ({
@@ -113,6 +139,17 @@ export default function Insights() {
       avg: Math.round(weekTotals[key] / logged),
       target: targets[key],
     }));
+  }, [points, weekTotals, targets]);
+
+  /* Sugar and salt sit apart from the macros rather than in the same grid:
+     "on target" means the opposite thing for a limit, and putting them in one
+     row of four would have said it backwards. */
+  const ceilingAverages = useMemo(() => {
+    const logged = points.filter((p) => p.logged).length || 1;
+    return [
+      { key: 'sugar', label: 'Sugar', avg: Math.round(weekTotals.sugar / logged), limit: Math.round(targets.sugar ?? 0) },
+      { key: 'salt', label: 'Salt', avg: saltGrams(weekTotals.sodium / logged), limit: saltGrams(targets.sodium ?? 0) },
+    ].filter((row) => row.limit > 0);
   }, [points, weekTotals, targets]);
 
   return (
@@ -169,19 +206,20 @@ export default function Insights() {
 
       <section className="card">
         <div className="card-title">
-          <h3>Daily {metric === 'score' ? 'quality' : metric}</h3>
-          <span className="tiny muted">avg {metric === 'calories' ? summary.avgCalories : metric === 'protein' ? summary.avgProtein : metric === 'fibre' ? summary.avgFibre : summary.avgScore} {METRIC_UNIT[metric]}</span>
+          <h3>Daily {METRIC_LABEL[metric].toLowerCase()}</h3>
+          <span className="tiny muted">avg {metricAverage} {METRIC_UNIT[metric]}</span>
         </div>
         <WeeklyBars
           points={points.slice(-14)}
-          target={metric === 'calories' ? targets.calories : metric === 'protein' ? targets.protein : metric === 'fibre' ? targets.fibre : 75}
+          target={metricTarget}
           metric={metric}
           unit={METRIC_UNIT[metric]}
+          ceiling={METRIC_CEILING.includes(metric)}
         />
         <div className="metric-row">
-          {(['calories', 'protein', 'fibre', 'score'] as Metric[]).map((m) => (
+          {(['calories', 'protein', 'fibre', 'sugar', 'salt', 'score'] as Metric[]).map((m) => (
             <button key={m} type="button" className="chip" aria-pressed={metric === m} onClick={() => setMetric(m)}>
-              {m === 'score' ? 'Quality' : m[0].toUpperCase() + m.slice(1)}
+              {METRIC_LABEL[m]}
             </button>
           ))}
         </div>
@@ -214,19 +252,48 @@ export default function Insights() {
         <MacroSplitBar totals={{ calories: weekTotals.calories, protein: weekTotals.protein, carbs: weekTotals.carbs, fat: weekTotals.fat, fibre: weekTotals.fibre }} />
         <div className="divider" />
         <div className="avg-grid">
-          {macroAverages.map(({ key, avg, target }) => (
-            <div key={key} className="avg-cell">
-              <span className="tiny muted">{MACRO_LABEL[key]}</span>
-              <b>{avg} g</b>
-              <span
-                className={`tiny ${avg >= target * 0.9 ? 'avg-on' : 'avg-off'}`}
-                aria-label={`${Math.round((avg / target) * 100)} per cent of the ${MACRO_LABEL[key]} goal`}
-              >
-                {avg >= target * 0.9 ? 'on target' : `${Math.round((avg / target) * 100)}%`}
-              </span>
-            </div>
-          ))}
+          {macroAverages.map(({ key, avg, target }) => {
+            const share = target > 0 ? avg / target : 0;
+            // Fat and carbs sailing past their target used to read "on target"
+            // too, which is the same blind spot the day score had.
+            const over = isCeiling(key) && share > 1.05;
+            const on = !over && share >= 0.9;
+            return (
+              <div key={key} className="avg-cell">
+                <span className="tiny muted">{MACRO_LABEL[key]}</span>
+                <b>{avg} g</b>
+                <span
+                  className={`tiny ${on ? 'avg-on' : over ? 'avg-over' : 'avg-off'}`}
+                  aria-label={`${Math.round(share * 100)} per cent of the ${MACRO_LABEL[key]} goal`}
+                >
+                  {over ? `over ${target} g` : on ? 'on target' : `${Math.round(share * 100)}%`}
+                </span>
+              </div>
+            );
+          })}
         </div>
+        {ceilingAverages.length > 0 && (
+          <>
+            <div className="divider" />
+            <div className="avg-grid avg-grid--pair">
+              {ceilingAverages.map(({ key, label, avg, limit }) => {
+                const under = avg <= limit;
+                return (
+                  <div key={key} className="avg-cell">
+                    <span className="tiny muted">{label}</span>
+                    <b>{avg} g</b>
+                    <span
+                      className={`tiny ${under ? 'avg-on' : 'avg-over'}`}
+                      aria-label={`${under ? 'under' : 'over'} the ${limit} gram daily limit`}
+                    >
+                      {under ? 'under' : 'over'} {limit} g
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </section>
 
       <section className="card">

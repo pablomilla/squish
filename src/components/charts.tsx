@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react';
 import type { MacroKey, Nutrients, Targets } from '../types';
 import { MACROS } from '../types';
-import { CEILING_LABEL, MACRO_LABEL, isCeiling, overPhrase, pct } from '../lib/nutrition';
+import { CEILING_LABEL, MACRO_LABEL, isCeiling, overPhrase, pct, round1 } from '../lib/nutrition';
 import type { OverTarget } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
@@ -215,18 +215,22 @@ export function MacroSplitBar({ totals }: { totals: Nutrients }) {
 interface WeeklyProps {
   points: DaySeriesPoint[];
   target: number;
-  metric?: 'calories' | 'protein' | 'fibre' | 'score';
+  metric?: 'calories' | 'protein' | 'fibre' | 'sugar' | 'salt' | 'score';
   unit?: string;
+  /** Ceilings read the other way round: the target line is one to stay below. */
+  ceiling?: boolean;
 }
 
 const METRIC_COLOR: Record<NonNullable<WeeklyProps['metric']>, string> = {
   calories: 'var(--dv-cal)',
   protein: 'var(--dv-protein)',
   fibre: 'var(--dv-fibre)',
+  sugar: 'var(--dv-sugar)',
+  salt: 'var(--dv-salt)',
   score: 'var(--mint)',
 };
 
-export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal' }: WeeklyProps) {
+export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal', ceiling = false }: WeeklyProps) {
   const [active, setActive] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
   const tableId = useId();
@@ -244,7 +248,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal' 
       <div className="chart-plot" style={{ height }} onPointerLeave={() => setActive(null)}>
         {target > 0 && (
           <div className="chart-target" style={{ bottom: `${(target / max) * 100}%` }}>
-            <span>target {Math.round(target)}</span>
+            <span>{ceiling ? 'limit' : 'target'} {round1(target)}</span>
           </div>
         )}
         <div className="chart-bars">
@@ -264,10 +268,10 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal' 
               >
                 <span className="chart-bar-hit" />
                 <span
-                  className="chart-bar-fill"
+                  className={`chart-bar-fill ${ceiling && target > 0 && value > target ? 'is-over' : ''}`}
                   style={{
                     height: `${Math.max(value > 0 ? 5 : 2, (value / max) * 100)}%`,
-                    background: value > 0 ? color : 'var(--surface-sunk)',
+                    backgroundColor: value > 0 ? color : 'var(--surface-sunk)',
                   }}
                 />
                 {isActive && value > 0 && <span className="chart-bar-label">{value}</span>}

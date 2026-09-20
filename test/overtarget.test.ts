@@ -11,7 +11,7 @@ import {
   overTargets,
   scoreLabel,
 } from '../src/lib/nutrition';
-import { dayScore } from '../src/lib/selectors';
+import { dayScore, series, summarise } from '../src/lib/selectors';
 import type { MealEntry, Nutrients, Targets } from '../src/types';
 
 const TARGETS: Targets = {
@@ -169,4 +169,25 @@ test('the penalty can never take a day down to "nothing to score"', () => {
 test('eating plenty of protein and fibre costs nothing', () => {
   const meals = [meal('a', 90, { calories: 1800, protein: 300, carbs: 150, fat: 50, fibre: 90, sugar: 20, sodium: 1200 })];
   assert.equal(dayScore(meals, DAY, TARGETS), 90);
+});
+
+test('the insights series carries sugar, and salt rather than sodium', () => {
+  const meals = [meal('a', 70, { calories: 900, protein: 40, carbs: 90, fat: 30, fibre: 10, sugar: 26, sodium: 1200 })];
+  const point = series(meals, [DAY], TARGETS)[0];
+
+  assert.equal(point.sugar, 26);
+  assert.equal(point.salt, 3, '1200 mg of sodium is 3 g of salt — what the packet says');
+});
+
+test('range averages cover only the days that were logged', () => {
+  const dates = [DAY, '2026-09-21', '2026-09-22'];
+  const meals = [
+    meal('a', 70, { calories: 900, protein: 40, carbs: 90, fat: 30, fibre: 10, sugar: 20, sodium: 1000 }),
+    { ...meal('b', 70, { calories: 900, protein: 40, carbs: 90, fat: 30, fibre: 10, sugar: 40, sodium: 2000 }), date: '2026-09-22' },
+  ];
+  const summary = summarise(series(meals, dates, TARGETS), TARGETS);
+
+  assert.equal(summary.loggedDays, 2, 'the blank day in the middle sits it out');
+  assert.equal(summary.avgSugar, 30);
+  assert.equal(summary.avgSalt, 3.8, 'kept to a decimal — 3.8 g and 4 g are not the same advice');
 });

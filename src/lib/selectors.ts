@@ -1,6 +1,7 @@
 import type { DayLog, MealEntry, MacroKey, Mood, Nutrients, Targets } from '../types';
 import { EMPTY, UNSCORED, addNutrients, overPenalty, overTargets, pct, qualityScore } from './nutrition';
 import { addDays, isoDate, lastDays } from './date';
+import { saltGrams } from './units';
 
 export function mealsOn(meals: MealEntry[], date: string): MealEntry[] {
   return meals.filter((m) => m.date === date).sort((a, b) => a.time.localeCompare(b.time));
@@ -151,6 +152,9 @@ export interface DaySeriesPoint {
   carbs: number;
   fat: number;
   fibre: number;
+  sugar: number;
+  /** Salt, in grams — what a label says, not the sodium underneath it. */
+  salt: number;
   score: number;
   logged: boolean;
 }
@@ -165,6 +169,8 @@ export function series(meals: MealEntry[], dates: string[], targets: Targets): D
       carbs: Math.round(totals.carbs),
       fat: Math.round(totals.fat),
       fibre: Math.round(totals.fibre),
+      sugar: Math.round(totals.sugar ?? 0),
+      salt: saltGrams(totals.sodium ?? 0),
       score: dayScore(meals, date, targets),
       logged: totals.calories > 0,
     };
@@ -177,6 +183,9 @@ export interface RangeSummary {
   avgCalories: number;
   avgProtein: number;
   avgFibre: number;
+  avgSugar: number;
+  /** Grams of salt, to one decimal — 4 g and 4.4 g are not the same advice. */
+  avgSalt: number;
   avgScore: number;
   onTargetDays: number;
   bestDay?: DaySeriesPoint;
@@ -193,6 +202,8 @@ export function summarise(points: DaySeriesPoint[], targets: Targets): RangeSumm
     avgCalories: avg((p) => p.calories),
     avgProtein: avg((p) => p.protein),
     avgFibre: avg((p) => p.fibre),
+    avgSugar: avg((p) => p.sugar),
+    avgSalt: logged.length ? Math.round((logged.reduce((s, p) => s + p.salt, 0) / logged.length) * 10) / 10 : 0,
     avgScore: avg((p) => p.score),
     onTargetDays: logged.filter((p) => Math.abs(p.calories - targets.calories) <= targets.calories * 0.1).length,
     bestDay: logged.slice().sort((a, b) => b.score - a.score)[0],
