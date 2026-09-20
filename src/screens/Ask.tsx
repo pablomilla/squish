@@ -1,41 +1,59 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Squish from '../components/Squish';
 import DictateButton from '../components/DictateButton';
-import { CloseIcon, SparkIcon } from '../components/icons';
+import { CloseIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { useToast } from '../components/ui';
 import { useSquish } from '../store/useSquish';
-import { askSquish, SquishApiError, type ChatTurn } from '../lib/api';
+import { askNutritionist, SquishApiError, type ChatMessage } from '../lib/api';
+import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
 import { isoDate, lastDays } from '../lib/date';
 import { mealsOn, series, streakOf, summarise, totalsOn } from '../lib/selectors';
 import { saltGrams } from '../lib/units';
 import './ask.css';
 
 const OPENERS = [
-  'How am I doing this week?',
-  "What's missing from my diet?",
-  'Ideas for more protein at breakfast',
-  'Why is my day scoring low?',
+  'What am I short of?',
+  'How were my weekends?',
+  'When did I last eat fish?',
+  'Is my protein getting better?',
 ];
 
+/** What is on screen, as opposed to what is on the wire. */
+interface Bubble {
+  role: 'user' | 'assistant';
+  text: string;
+  /** The lookups that went into this answer, shown above it. */
+  lookups?: string[];
+}
+
 /**
- * Ask Squish.
+ * Squish Nutritionist.
  *
- * The conversation lives here and nowhere else — not in the store, not on the
- * server. Close the screen and it is gone. That is deliberate: a chat about
- * what somebody eats is the most personal thing in this app, and the least
- * useful to keep.
+ * The difference between this and a chat box is that it can go and look. It
+ * is given tools for the diary — days, meals, vitamins and minerals — and it
+ * uses them before answering, so "how were my weekends" is a question about
+ * your weekends rather than about weekends in general. The lookups run here,
+ * in the browser, against the store; they are shown as they happen, because a
+ * thing that reads your food diary should say so while it does it.
+ *
+ * The conversation lives in this component and nowhere else — not in the
+ * store, not on the server. Close the screen and it is gone. What does
+ * survive is the handful of notes it writes about you, which are listed on
+ * the You screen and can be deleted one by one.
  */
 export default function Ask({ onClose }: { onClose: () => void }) {
   const toast = useToast();
-  const { profile, targets, meals } = useSquish();
-  const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const { profile, targets, meals, nutritionistNotes } = useSquish();
+  const [bubbles, setBubbles] = useState<Bubble[]>([]);
+  const [wire, setWire] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [thinking, setThinking] = useState(false);
+  const [lookups, setLookups] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
 
   const today = isoDate();
 
-  // Everything the answer is grounded in, rebuilt only when the diary moves.
+  // The outline it gets for free, so an easy question needs no lookup at all.
   const context = useMemo(() => {
     const todayTotals = totalsOn(meals, today);
     const mealCount = mealsOn(meals, today).length;
@@ -61,27 +79,69 @@ export default function Ask({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [turns, thinking]);
+  }, [bubbles, thinking, lookups]);
+
+  /**
+   * Answer a lookup out of the live store.
+   *
+   * `getState` rather than the values above on purpose: a conversation can
+   * outlast several renders, and a snapshot taken when the screen opened would
+   * answer today's question with this morning's diary.
+   */
+  const run = (call: ToolCall) => {
+    const state = useSquish.getState();
+    const diary: Diary = {
+      meals: state.meals,
+      days: state.days,
+      profile: state.profile,
+      targets: state.targets,
+      notes: state.nutritionistNotes,
+      today: isoDate(),
+    };
+    return runTool(call, diary, {
+      remember: (note) => state.rememberNote(note),
+      forget: (id) => state.forgetNote(id),
+    });
+  };
 
   const ask = async (question: string) => {
     const text = question.trim();
     if (!text || thinking) return;
 
-    const next: ChatTurn[] = [...turns, { role: 'user', content: text }];
-    setTurns(next);
+    const nextWire: ChatMessage[] = [...wire, { role: 'user', content: text }];
+    setBubbles((current) => [...current, { role: 'user', text }]);
+    setWire(nextWire);
     setDraft('');
     setThinking(true);
+    setLookups([]);
+
+    // Collected across rounds so the finished answer can show what it read.
+    const used: string[] = [];
 
     try {
-      const reply = await askSquish(next, context);
-      setTurns([...next, { role: 'assistant', content: reply }]);
+      const { reply, messages } = await askNutritionist({
+        messages: nextWire,
+        context,
+        notes: () => useSquish.getState().nutritionistNotes,
+        run,
+        onLookup: (labels) => {
+          used.push(...labels);
+          setLookups(labels);
+        },
+      });
+      setWire([...messages, { role: 'assistant', content: reply }]);
+      setBubbles((current) => [...current, { role: 'assistant', text: reply, lookups: used.length ? used : undefined }]);
     } catch (error) {
-      // The question stays on screen so it can be tried again rather than
-      // retyped, and the failure is said out loud rather than swallowed.
-      setTurns(next);
+      // The question goes back into the box rather than staying stranded in
+      // the thread, so it can be sent again with one press. The failure is
+      // said out loud rather than swallowed.
+      setWire(wire);
+      setBubbles((current) => current.filter((b, i) => !(i === current.length - 1 && b.role === 'user')));
+      setDraft(text);
       toast(error instanceof SquishApiError ? error.message : 'I could not answer just then.', '💭');
     } finally {
       setThinking(false);
+      setLookups([]);
     }
   };
 
@@ -89,8 +149,8 @@ export default function Ask({ onClose }: { onClose: () => void }) {
     <div className="screen ask">
       <header className="screen-head">
         <div>
-          <h1>Ask Squish</h1>
-          <p>Questions about your own diary</p>
+          <h1>Squish Nutritionist</h1>
+          <p>Reads your diary before it answers</p>
         </div>
         <button type="button" className="btn btn--sm btn--ghost" onClick={onClose} aria-label="Close">
           <CloseIcon size={18} />
@@ -98,12 +158,12 @@ export default function Ask({ onClose }: { onClose: () => void }) {
       </header>
 
       <div className="ask-thread">
-        {turns.length === 0 && (
+        {bubbles.length === 0 && (
           <div className="ask-empty">
             <Squish mood="calm" size={104} />
             <p className="speech">
-              Ask me anything about what you have been eating. I can see your diary, but I am an app — for anything
-              medical, see a GP or a dietitian.
+              Ask me anything about what you have been eating. I can look up any day, any meal and every vitamin
+              Squish tracks — but I am an app, so for anything medical see a GP or a dietitian.
             </p>
             <div className="ask-openers">
               {OPENERS.map((opener) => (
@@ -112,12 +172,42 @@ export default function Ask({ onClose }: { onClose: () => void }) {
                 </button>
               ))}
             </div>
+            {nutritionistNotes.length > 0 && (
+              <div className="ask-memory">
+                <h2>What I remember about you</h2>
+                <ul>
+                  {nutritionistNotes.map((note) => (
+                    <li key={note.id}>
+                      <span>{note.note}</span>
+                      <button
+                        type="button"
+                        className="btn btn--sm btn--ghost"
+                        aria-label={`Forget: ${note.note}`}
+                        onClick={() => {
+                          useSquish.getState().forgetNote(note.id);
+                          toast('Forgotten.', '🧠');
+                        }}
+                      >
+                        <TrashIcon size={15} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
-        {turns.map((turn, index) => (
-          <div key={`${turn.role}-${index}`} className={`ask-turn ask-turn--${turn.role}`}>
-            {turn.content.split('\n').filter(Boolean).map((line, i) => (
+        {bubbles.map((bubble, index) => (
+          <div key={`${bubble.role}-${index}`} className={`ask-turn ask-turn--${bubble.role}`}>
+            {bubble.lookups && (
+              <ul className="ask-lookups ask-lookups--done">
+                {bubble.lookups.map((label, i) => (
+                  <li key={`${label}-${i}`}>{label}</li>
+                ))}
+              </ul>
+            )}
+            {bubble.text.split('\n').filter(Boolean).map((line, i) => (
               <p key={i}>{line}</p>
             ))}
           </div>
@@ -125,10 +215,20 @@ export default function Ask({ onClose }: { onClose: () => void }) {
 
         {thinking && (
           <div className="ask-turn ask-turn--assistant ask-thinking" aria-live="polite">
-            <span className="ask-dot" />
-            <span className="ask-dot" />
-            <span className="ask-dot" />
-            <span className="visually-hidden">Squish is thinking</span>
+            {lookups.length > 0 ? (
+              <ul className="ask-lookups">
+                {lookups.map((label, i) => (
+                  <li key={`${label}-${i}`}>{label}…</li>
+                ))}
+              </ul>
+            ) : (
+              <>
+                <span className="ask-dot" />
+                <span className="ask-dot" />
+                <span className="ask-dot" />
+                <span className="visually-hidden">Squish is thinking</span>
+              </>
+            )}
           </div>
         )}
 

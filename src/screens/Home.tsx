@@ -167,7 +167,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
         <button type="button" className="action action--wide" onClick={() => go({ name: 'ask' })}>
           <SparkIcon size={20} />
-          Ask Squish about your diary
+          Ask the Squish Nutritionist
         </button>
       </section>
 

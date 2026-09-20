@@ -1,5 +1,6 @@
 import type { AnalysisResult, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
+import { toolLabel, type ToolAnswer, type ToolCall } from './nutritionist-tools';
 
 const TIMEOUT_MS = 45_000;
 const PASS_KEY = 'squish-pass';
@@ -10,9 +11,9 @@ const PASS_KEY = 'squish-pass';
  * would look like a working analysis.
  */
 export class SquishApiError extends Error {
-  kind: 'locked' | 'rate_limited';
+  kind: 'locked' | 'rate_limited' | 'server';
 
-  constructor(kind: 'locked' | 'rate_limited', message: string) {
+  constructor(kind: 'locked' | 'rate_limited' | 'server', message: string) {
     super(message);
     this.name = 'SquishApiError';
     this.kind = kind;
@@ -61,9 +62,13 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
     throw new SquishApiError('rate_limited', payload.error ?? payload.message ?? 'Too many in one hour — try again shortly.');
   }
   if (!response.ok) {
-    // The server explains itself in `error`; showing that beats a status code.
+    // The server explains itself in `error`, in words written to be read —
+    // "that page does not look like a recipe" beats "502". When it says
+    // nothing, the status code is all there is, and that is not for showing:
+    // it stays an ordinary Error and each screen says its own thing instead.
     const payload = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(payload.error ?? `${path} responded ${response.status}`);
+    if (payload.error) throw new SquishApiError('server', payload.error);
+    throw new Error(`${path} responded ${response.status}`);
   }
   return (await response.json()) as T;
 }
@@ -214,9 +219,17 @@ export async function importRecipe(url: string, slot?: MealSlot): Promise<Recipe
   return post<RecipeImport>('/api/recipe', { url, slot });
 }
 
-export interface ChatTurn {
+/**
+ * A turn as the conversation actually travels.
+ *
+ * Assistant turns come back as blocks — text, the model's thinking, the
+ * lookups it wants — and go back up untouched. The browser never edits one:
+ * a thinking block carries a signature, and an edited or dropped block fails
+ * it and takes the conversation with it.
+ */
+export interface ChatMessage {
   role: 'user' | 'assistant';
-  content: string;
+  content: string | unknown[];
 }
 
 export interface ChatContext {
@@ -229,17 +242,59 @@ export interface ChatContext {
   recentMeals: string[];
 }
 
+export type ChatStep =
+  | { done: true; reply: string }
+  | { done: false; assistant: unknown[]; calls: ToolCall[] };
+
+/** One round trip: a question in, an answer or a list of lookups out. */
+export async function chatStep(
+  messages: ChatMessage[],
+  context: ChatContext,
+  notes: { id: string; note: string }[],
+): Promise<ChatStep> {
+  return post<ChatStep>('/api/chat', { turns: messages, context, notes });
+}
+
+/** Matches the server's own cap, so the browser stops at the same place. */
+export const MAX_TOOL_ROUNDS = 6;
+
+export interface AskResult {
+  reply: string;
+  /** The whole conversation, lookups and all, ready to carry on from. */
+  messages: ChatMessage[];
+}
+
 /**
- * Ask Squish something, with the diary as context.
+ * Ask the nutritionist, running whatever it wants to look up.
  *
- * The context is assembled in the browser and sent with every question,
- * because the server keeps nothing between requests. It costs a few hundred
- * tokens a message and it is what makes the difference between an answer about
- * your week and an answer about nutrition in general.
+ * The loop lives here rather than on the server because the diary does. Each
+ * round the server says either "here is the answer" or "look these up first",
+ * and `run` answers them out of the store — so the food never leaves the
+ * browser and the API key never enters it.
  */
-export async function askSquish(turns: ChatTurn[], context: ChatContext): Promise<string> {
-  const { reply } = await post<{ reply: string }>('/api/chat', { turns, context });
-  return reply;
+export async function askNutritionist(options: {
+  messages: ChatMessage[];
+  context: ChatContext;
+  /** Read afresh each round: a note saved mid-answer is in force immediately. */
+  notes: () => { id: string; note: string }[];
+  run: (call: ToolCall) => ToolAnswer;
+  onLookup?: (labels: string[]) => void;
+}): Promise<AskResult> {
+  const messages = [...options.messages];
+
+  for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
+    const step = await chatStep(messages, options.context, options.notes());
+    if (step.done) return { reply: step.reply, messages };
+
+    options.onLookup?.(step.calls.map(toolLabel));
+    messages.push({ role: 'assistant', content: step.assistant });
+    // Every result in one message, which is what the API expects — a separate
+    // message per lookup is rejected.
+    messages.push({ role: 'user', content: step.calls.map(options.run) });
+  }
+
+  // Unreachable in practice: the server withholds the tools at the same count.
+  return { reply: 'I got lost looking things up. Ask me again?', messages };
 }
 
 export interface CoachRequest {

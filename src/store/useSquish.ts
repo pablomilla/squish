@@ -12,6 +12,7 @@ import {
   microTargets,
 } from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
+import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow } from '../lib/date';
 
 export const DEFAULT_PROFILE: Profile = {
@@ -56,6 +57,12 @@ interface SquishState {
    */
   reminders: { on: boolean; breakfast: string; lunch: string; dinner: string };
   /**
+   * What the nutritionist has chosen to remember: an allergy, a dislike, a
+   * race being trained for. It writes these itself and they are shown on the
+   * You screen, where any of them can be deleted.
+   */
+  nutritionistNotes: NutritionistNote[];
+  /**
    * The nudge is cached against the situation it described, not just the day —
    * keyed on the date alone, the morning's "nothing logged yet" would still be
    * on screen after dinner.
@@ -86,6 +93,8 @@ interface SquishState {
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setReminders: (patch: Partial<SquishState['reminders']>) => void;
+  rememberNote: (note: string) => NutritionistNote;
+  forgetNote: (id: string) => boolean;
   rememberCoachNote: (message: string, mealsLogged: number) => void;
   resetAll: () => void;
 }
@@ -220,6 +229,7 @@ export const useSquish = create<SquishState>()(
       // Off until asked for. A notification permission prompt nobody invited
       // is the fastest way to be told no for ever.
       reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
+      nutritionistNotes: [],
       lastCoachNote: null,
       photoAnalyses: 0,
 
@@ -313,6 +323,19 @@ export const useSquish = create<SquishState>()(
       setTheme: (theme) => set({ theme }),
       setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
+      rememberNote: (note) => {
+        const saved = newNote(note);
+        set({ nutritionistNotes: [...get().nutritionistNotes, saved] });
+        return saved;
+      },
+
+      forgetNote: (id) => {
+        const kept = get().nutritionistNotes.filter((n) => n.id !== id);
+        if (kept.length === get().nutritionistNotes.length) return false;
+        set({ nutritionistNotes: kept });
+        return true;
+      },
+
       rememberCoachNote: (message, mealsLogged) => set({ lastCoachNote: { date: isoDate(), message, mealsLogged } }),
 
       resetAll: () =>
@@ -325,6 +348,7 @@ export const useSquish = create<SquishState>()(
           unlocked: {},
           lastCoachNote: null,
           photoAnalyses: 0,
+          nutritionistNotes: [],
         }),
     }),
     {

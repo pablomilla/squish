@@ -5,7 +5,7 @@ import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
 import { disableReminders, enableReminders, explainBlocker, pushConfigured, reminderSupport } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
-import { SparkIcon } from '../components/icons';
+import { SparkIcon, TrashIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
@@ -16,7 +16,7 @@ import './you.css';
 
 export default function You() {
   const toast = useToast();
-  const { profile, targets, meals, days, theme, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked } =
+  const { profile, targets, meals, days, theme, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked, nutritionistNotes, forgetNote } =
     useSquish();
   const [ignoredLearning, setIgnoredLearning] = useState(false);
   const prefersDark = usePrefersDark();
@@ -365,6 +365,39 @@ export default function You() {
                 Changed a time? Press the button twice to send the new times over.
               </p>
             )}
+          </>
+        )}
+      </section>
+
+      <section className="card card--quiet">
+        <div className="card-title">
+          <h3>What the nutritionist remembers</h3>
+          {nutritionistNotes.length > 0 && <span className="badge">{nutritionistNotes.length}</span>}
+        </div>
+
+        {nutritionistNotes.length === 0 ? (
+          <p className="tiny muted">
+            Nothing yet. Tell it something worth keeping — an allergy, a food you will not eat, what you are training
+            for — and it will note it down and remember next time.
+          </p>
+        ) : (
+          <>
+            <p className="tiny muted">Its own notes, kept in this browser with everything else. Delete any of them.</p>
+            <div className="stack" style={{ marginTop: 10 }}>
+              {nutritionistNotes.map((note) => (
+                <div className="row-between" key={note.id}>
+                  <span className="small">{note.note}</span>
+                  <button
+                    type="button"
+                    className="btn btn--sm btn--ghost"
+                    aria-label={`Forget: ${note.note}`}
+                    onClick={() => forgetNote(note.id)}
+                  >
+                    <TrashIcon size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </>
         )}
       </section>

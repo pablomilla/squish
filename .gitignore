@@ -13,3 +13,6 @@ bench/report.md
 
 # Push subscriptions: reminder endpoints, written at runtime
 .data/
+
+# Verification screenshots, taken while working — not the repo's business
+shots/

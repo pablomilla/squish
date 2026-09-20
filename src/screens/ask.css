@@ -1,3 +1,7 @@
+/* Two words is one word more than the other screens' titles, and at display
+   size it wrapped and ate a fifth of the phone. */
+.ask .screen-head h1 { font-size: 26px; }
+
 /* The thread grows upward from the composer, which stays put. */
 .ask { display: flex; flex-direction: column; min-height: 100%; }
 .ask-thread { flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--s3); padding-bottom: var(--s3); }
@@ -22,3 +26,23 @@
   position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 8px;
   padding-top: var(--s3); background: var(--bg);
 }
+
+/* What it looked up, above the answer it looked it up for. Small and quiet:
+   it is evidence that the answer came from the diary, not the headline. */
+.ask-lookups { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ask-lookups li {
+  font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px;
+}
+.ask-lookups li::before { content: '›'; color: var(--brand); font-weight: 700; }
+.ask-lookups--done li { opacity: 0.75; }
+.ask-thinking .ask-lookups { margin: 0; }
+.ask-thinking .ask-lookups li { animation: ask-fade 1.4s var(--ease) infinite; }
+@keyframes ask-fade { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ask-thinking .ask-lookups li { animation: none; } }
+
+/* The memory, shown before the first question so it is never a surprise. */
+.ask-memory { width: 100%; text-align: left; background: var(--surface-sunk); border-radius: var(--r-lg); padding: var(--s3); }
+.ask-memory h2 { margin: 0 0 8px; font-size: 13px; color: var(--ink-3); font-weight: 600; }
+.ask-memory ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ask-memory li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.ask-memory li span { flex: 1 1 auto; }

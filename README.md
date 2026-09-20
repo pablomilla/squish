@@ -29,6 +29,18 @@ the way a nutrition app should, and works offline too.
 - Logging streak, four daily habits, nine achievements, weight trend against your goal.
 - "You eat a lot of…" — your most repeated foods over the range.
 
+**Squish Nutritionist**
+- A conversation about your own diary that starts by reading it. It has tools — day totals, a meal
+  search, and an averages-against-targets report covering the six vitamins and minerals Squish
+  tracks — and it uses them before answering, so "how were my weekends?" is about your weekends.
+- Every lookup is shown as it happens and stays above the answer, so you can see what was read.
+- It keeps a short memory: an allergy, a food you will not eat, what you are training for. It writes
+  those notes itself, they travel with each question, and you can delete any of them from the chat
+  or from **You → What the nutritionist remembers**.
+- Safety rules are part of the prompt and tested: no diagnosis, no target under the app's own
+  calorie floors, no skipping meals or fasting or cutting out a food group, and anything that sounds
+  like distress ends at Beat rather than at a macro split.
+
 **Your plan**
 - Mifflin–St Jeor BMR × activity, adjusted by goal and pace, with a safe calorie floor.
 - Protein scaled to body weight, fat at 28% of energy, fibre at 14 g per 1000 kcal.
@@ -158,8 +170,22 @@ no prose parsing. Adaptive thinking is on; effort is `medium` for analysis and `
 coach nudge. Values are coerced and clamped on the way in, and a model-supplied quality score is
 only trusted when it is present and sane, otherwise the local scorer runs.
 
-The key stays on the server. `POST /api/analyse/photo`, `/api/analyse/text` and `/api/coach` are
-the only endpoints, and each one degrades to the offline estimator rather than failing.
+The key stays on the server, and each analysis endpoint degrades to the offline estimator rather
+than failing.
+
+**The nutritionist runs its tools in the browser.** It is the one unusual piece of architecture in
+here, and it follows from where the food lives: every diary is in `localStorage` and the server has
+never held a meal. So `server/nutritionist-tools.ts` *declares* the tools and
+`src/lib/nutritionist-tools.ts` *answers* them. A question goes up with a one-paragraph summary of
+the week; if the model wants to look something up, `/api/chat` hands the pending calls back down,
+the browser reads its own store, and the results go up in the next request. The loop runs at most
+six rounds, and past that the tools are withheld so it has to answer with what it has.
+
+Assistant turns come back as blocks and go up again untouched — thinking included. That is not
+tidiness: a thinking block carries a signature, and one that has been edited or dropped fails and
+takes the conversation with it. Thinking is on for the same reason it is on elsewhere; with it off,
+Opus will occasionally write a tool call out as prose, which here would read as Squish narrating a
+lookup it never did.
 
 ## Measuring accuracy and cost
 
@@ -182,11 +208,14 @@ as good as the ground truth you feed it. Your photos, manifest and results are g
 ```
 server/           Express API — Claude calls, offline fallback
   claude.ts       Vision + structured outputs + the coach prompt
+  chat.ts         The nutritionist's prompt, safety rules and tool loop
+  nutritionist-tools.ts  What it can look up — declared here, run in the browser
   index.ts        Routes, key detection, graceful degradation
 src/
   components/     Squish mascot, charts, icons, sheets and toasts
   screens/        Onboarding, Home, Capture, Review, Diary, Insights, You, AddFood
   lib/            Nutrition maths, food table, offline estimator, selectors, dates, API client
+                  nutritionist-tools.ts answers the lookups out of the store
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
 scripts/          Credential setup, and the accuracy/cost benchmark
