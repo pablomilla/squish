@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Achievement, DayLog, FoodItem, MealEntry, Profile, Targets } from '../types';
-import { CARBS_MAX_SHARE, FAT_MAX_SHARE, FAT_SHARE, SUGAR_MAX_SHARE, computeTargets, microTargets } from '../lib/nutrition';
+import {
+  CARBS_MAX_SHARE,
+  FAT_MAX_SHARE,
+  FAT_SHARE,
+  FREE_SUGAR_MAX_SHARE,
+  SAT_FAT_MAX_SHARE,
+  SUGAR_MAX_SHARE,
+  computeTargets,
+  microTargets,
+} from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
 import { isoDate, nowTime, slotForNow } from '../lib/date';
 
@@ -157,10 +166,40 @@ export function addMicroTargets(state: unknown, from: number): unknown {
   return { ...s, targets: { ...s.targets, micros: microTargets(s.profile) } };
 }
 
+/**
+ * Store v4 -> v5: the saturated fat and free sugar ceilings, for the same
+ * reason and with the same consequence as the micronutrients above.
+ *
+ * Both are limits with no computed fallback in `ceilingLimit` — a zeroed one
+ * means "stop counting this" — so an absent one reads as switched off. On a
+ * store from before the features that meant the Saturates and Free sugars
+ * tiles never rendered, and, worse, that neither could ever be flagged: a day
+ * carrying 60 g of saturates against a 21 g limit raised nothing at all and
+ * reported itself as over on total sugar instead.
+ *
+ * Filled in only where absent, so anyone who has set their own keeps it.
+ */
+export function addCeilingTargets(state: unknown, from: number): unknown {
+  if (from >= 5 || !state || typeof state !== 'object') return state;
+  const s = state as { targets?: Targets };
+  const t = s.targets;
+  if (!t?.calories) return state;
+  if (t.satFat !== undefined && t.freeSugar !== undefined) return state;
+
+  return {
+    ...s,
+    targets: {
+      ...t,
+      satFat: t.satFat ?? Math.round((t.calories * SAT_FAT_MAX_SHARE) / 9),
+      freeSugar: t.freeSugar ?? Math.round((t.calories * FREE_SUGAR_MAX_SHARE) / 4),
+    },
+  };
+}
+
 /** Every migration, oldest first. */
 export function migrate(state: unknown, from: number): unknown {
   let out: unknown = state;
-  for (const step of [raiseFatTarget, clearAssumedCrockery, addMicroTargets]) {
+  for (const step of [raiseFatTarget, clearAssumedCrockery, addMicroTargets, addCeilingTargets]) {
     out = step(out, from);
   }
   return out;
@@ -288,6 +327,6 @@ export const useSquish = create<SquishState>()(
           photoAnalyses: 0,
         }),
     }),
-    { name: 'squish-v1', version: 4, migrate },
+    { name: 'squish-v1', version: 5, migrate },
   ),
 );

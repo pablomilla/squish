@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addMicros, addNutrients, computeTargets, microTargets, scaleMicros } from '../src/lib/nutrition';
+import { addMicros, addNutrients, computeTargets, dayVerdict, microTargets, overTargets, scaleMicros } from '../src/lib/nutrition';
 import { FOODS, toFoodItem } from '../src/lib/foods';
 import { MICROS } from '../src/types';
-import { addMicroTargets, migrate } from '../src/store/useSquish';
+import { addCeilingTargets, addMicroTargets, migrate } from '../src/store/useSquish';
 import type { Micros, Nutrients, Profile, Targets } from '../src/types';
 
 const person = (over: Partial<Profile> = {}): Profile => ({
@@ -150,4 +150,80 @@ test('every migration still runs, in order, from the oldest store', () => {
   assert.equal(after.targets.fat, 67, 'v1: the fat target was raised');
   assert.equal(after.profile.plateCm, undefined, 'v2: the assumed plate cleared');
   assert.equal(after.targets.micros?.calcium, 700, 'v3: and the micronutrients filled in');
+});
+
+/* ------------------------------------------------------------------ *
+ * The guard. Three target fields have now been added without the
+ * migration to go with them, each invisible until somebody asked where
+ * their numbers were. This is the test that should have caught all three.
+ * ------------------------------------------------------------------ */
+
+/** Targets as they were before any of the recent fields existed. */
+const ANCIENT_TARGETS = {
+  calories: 1900, protein: 120, carbs: 210, fat: 63, fibre: 27,
+  sugar: 48, sodium: 2300, water: 9, steps: 10000,
+};
+
+test('every field computeTargets produces survives a migration from the oldest store', () => {
+  const profile = person();
+  const fresh = computeTargets(profile);
+  const migrated = (migrate({ profile, targets: { ...ANCIENT_TARGETS } }, 1) as { targets: Targets }).targets;
+
+  /*
+   * fatMax, carbsMax and sugarMax are allowed to be absent: `ceilingLimit`
+   * works them out from the calorie target when they are. Everything else has
+   * to actually be there, because an absent limit reads as "not tracked" and
+   * the feature disappears without a word.
+   */
+  const hasFallback = new Set(['fatMax', 'carbsMax', 'sugarMax']);
+
+  for (const key of Object.keys(fresh) as (keyof Targets)[]) {
+    if (hasFallback.has(key)) continue;
+    assert.notEqual(
+      migrated[key],
+      undefined,
+      `targets.${key} is missing after migration — add a step to migrate() or the feature using it will silently not appear`,
+    );
+  }
+});
+
+test('the two ceilings that went missing are filled, and correctly', () => {
+  const migrated = (addCeilingTargets({ targets: { ...ANCIENT_TARGETS } }, 4) as { targets: Targets }).targets;
+
+  assert.equal(migrated.satFat, 21, '10% of 1900 kcal, over 9');
+  assert.equal(migrated.freeSugar, 48, '10% of 1900 kcal, over 4');
+  assert.equal(migrated.sugar, 48, 'and the total-sugar target is untouched');
+});
+
+test('with them filled, a day well over is actually flagged', () => {
+  const profile = person();
+  const targets = (migrate({ profile, targets: { ...ANCIENT_TARGETS } }, 1) as { targets: Targets }).targets;
+  const heavy = {
+    calories: 2000, protein: 80, carbs: 250, fat: 95, fibre: 15,
+    satFat: 60, sugar: 160, freeSugar: 150, sodium: 1800,
+  };
+
+  const flagged = overTargets(heavy, targets).map((o) => o.key);
+  assert.ok(flagged.includes('satFat'), `60 g of saturates must be flagged, got ${flagged.join(', ')}`);
+  assert.ok(flagged.includes('freeSugar'), '150 g of free sugar likewise');
+
+  // Worst by ratio, not by order: free sugar is 3.1× its limit where the
+  // saturates are 2.9×, so free sugar is the one worth naming.
+  assert.equal(flagged[0], 'freeSugar');
+  assert.equal(dayVerdict(70, heavy, targets).label, 'Over on free sugars');
+});
+
+test('a ceiling somebody deliberately zeroed stays off', () => {
+  const chosen = { targets: { ...ANCIENT_TARGETS, satFat: 0, freeSugar: 0 } };
+  const after = (addCeilingTargets(chosen, 4) as { targets: Targets }).targets;
+
+  assert.equal(after.satFat, 0, 'zero means stop counting it, not "unset"');
+  assert.equal(after.freeSugar, 0);
+});
+
+test('it does not run twice, or on targets that already have both', () => {
+  const current = { targets: { ...ANCIENT_TARGETS, satFat: 25, freeSugar: 60 } };
+  assert.deepEqual(addCeilingTargets(current, 5), current, 'already migrated');
+  assert.deepEqual(addCeilingTargets(current, 4), current, 'and nothing to do anyway');
+  assert.deepEqual(addCeilingTargets({ targets: {} }, 4), { targets: {} }, 'no calorie target to work from');
 });
