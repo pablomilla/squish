@@ -38,7 +38,28 @@ export interface Nutrients {
    */
   freeSugar?: number;
   sodium?: number;
+  /**
+   * Vitamins and minerals, where anything knows them. Absent means nobody
+   * said, the same as `satFat` — and for these that is the common case, so
+   * anything showing them has to say what it is missing.
+   */
+  micros?: Micros;
 }
+
+/**
+ * The six worth tracking.
+ *
+ * Not a hundred. A photo cannot tell you how much selenium was in the soil the
+ * carrot grew in, and a list of a hundred numbers each carrying that much doubt
+ * is a wall of false precision. These six earn their place because British
+ * intakes genuinely fall short of them and because food composition tables
+ * agree about them: iron (a fifth of young women in the UK are below the lower
+ * threshold), calcium and vitamin D for bone, B12 for anyone eating little or
+ * no meat, folate before and during pregnancy, and vitamin C.
+ */
+export const MICROS = ['iron', 'calcium', 'vitaminD', 'vitaminB12', 'folate', 'vitaminC'] as const;
+export type MicroKey = (typeof MICROS)[number];
+export type Micros = Partial<Record<MicroKey, number>>;
 
 export interface FoodItem {
   id: string;

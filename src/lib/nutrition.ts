@@ -1,6 +1,47 @@
-import type { Activity, FoodItem, MacroKey, Nutrients, Profile, Targets } from '../types';
+import type { Activity, FoodItem, MacroKey, MicroKey, Micros, Nutrients, Profile, Targets } from '../types';
+import { MICROS } from '../types';
 
 export const EMPTY: Nutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0 };
+
+export const MICRO_LABEL: Record<MicroKey, string> = {
+  iron: 'Iron',
+  calcium: 'Calcium',
+  vitaminD: 'Vitamin D',
+  vitaminB12: 'Vitamin B12',
+  folate: 'Folate',
+  vitaminC: 'Vitamin C',
+};
+
+/** Milligrams for the minerals, micrograms for the vitamins that need them. */
+export const MICRO_UNIT: Record<MicroKey, 'mg' | 'µg'> = {
+  iron: 'mg',
+  calcium: 'mg',
+  vitaminD: 'µg',
+  vitaminB12: 'µg',
+  folate: 'µg',
+  vitaminC: 'mg',
+};
+
+/** Sum two sets, keeping "nobody said" distinct from "none". */
+export function addMicros(a: Micros | undefined, b: Micros | undefined): Micros | undefined {
+  if (!a && !b) return undefined;
+  const out: Micros = {};
+  for (const key of MICROS) {
+    const total = addOptional(a?.[key], b?.[key]);
+    if (total !== undefined) out[key] = total;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+export function scaleMicros(micros: Micros | undefined, factor: number): Micros | undefined {
+  if (!micros) return undefined;
+  const out: Micros = {};
+  for (const key of MICROS) {
+    const value = micros[key];
+    if (value !== undefined) out[key] = round1(value * factor);
+  }
+  return out;
+}
 
 /**
  * Adding two saturated-fat figures where either may be missing.
@@ -172,11 +213,34 @@ export function computeTargets(p: Profile): Targets {
     freeSugar: Math.round((calories * FREE_SUGAR_MAX_SHARE) / 4),
     sodium: 2300,
     satFat: Math.round((calories * SAT_FAT_MAX_SHARE) / 9),
+    micros: microTargets(p),
     fatMax: Math.round((calories * FAT_MAX_SHARE) / 9),
     carbsMax: Math.round((calories * CARBS_MAX_SHARE) / 4),
     sugarMax: Math.round((calories * SUGAR_MAX_SHARE) / 4),
     water: Math.max(6, Math.round((p.weightKg * 33) / GLASS_ML)),
     steps: p.activity === 'sedentary' ? 6000 : p.activity === 'light' ? 8000 : 10000,
+  };
+}
+
+/**
+ * UK Reference Nutrient Intakes, from the government's own dietary
+ * recommendations. These are amounts to reach, not ceilings.
+ *
+ * Only iron varies, and not by sex as such: the higher figure exists because
+ * of menstrual losses, which is why it applies to women up to 50 and not
+ * after. Anyone who has not told us otherwise gets the higher one — it is a
+ * target rather than a limit, and erring towards more iron costs nothing.
+ */
+export function microTargets(p: Pick<Profile, 'sex' | 'age'>): Micros {
+  const lowerIron = p.sex === 'male' || p.age > 50;
+  return {
+    iron: lowerIron ? 8.7 : 14.8,
+    calcium: 700,
+    // SACN's 2016 figure, not the 5 µg still printed on labels.
+    vitaminD: 10,
+    vitaminB12: 1.5,
+    folate: 200,
+    vitaminC: 40,
   };
 }
 
@@ -193,6 +257,7 @@ export function addNutrients(a: Nutrients, b: Nutrients): Nutrients {
     sugar: round1((a.sugar ?? 0) + (b.sugar ?? 0)),
     freeSugar: addOptional(a.freeSugar, b.freeSugar),
     sodium: Math.round((a.sodium ?? 0) + (b.sodium ?? 0)),
+    micros: addMicros(a.micros, b.micros),
   };
 }
 
@@ -211,6 +276,7 @@ export function scaleNutrients(n: Nutrients, factor: number): Nutrients {
     sugar: round1((n.sugar ?? 0) * factor),
     freeSugar: n.freeSugar === undefined ? undefined : round1(n.freeSugar * factor),
     sodium: Math.round((n.sodium ?? 0) * factor),
+    micros: scaleMicros(n.micros, factor),
   };
 }
 

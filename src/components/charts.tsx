@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react';
 import type { MacroKey, Nutrients, Targets } from '../types';
-import { MACROS } from '../types';
-import { CEILING_LABEL, MACRO_LABEL, OVER, ceilingLimit, isCeiling, overPhrase, pct, round1 } from '../lib/nutrition';
+import { MACROS, MICROS } from '../types';
+import { CEILING_LABEL, MACRO_LABEL, MICRO_LABEL, MICRO_UNIT, OVER, ceilingLimit, isCeiling, overPhrase, pct, round1 } from '../lib/nutrition';
 import type { OverTarget } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
@@ -115,6 +115,74 @@ export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * Vitamins and minerals, against what a day is supposed to contain.
+ *
+ * Shown as a share of the daily intake rather than as raw numbers, because
+ * nobody knows off-hand whether 1.4 mg of iron is a lot. Collapsed by default:
+ * this is the part of the diary you go looking for, not the part you need
+ * shoved at you every time you log a sandwich.
+ *
+ * It renders nothing at all when nothing reported any, which is the common
+ * case for a day logged entirely by barcode.
+ */
+export function Micronutrients({ totals, targets }: { totals: Nutrients; targets: Targets }) {
+  if (!totals.micros) return null;
+
+  const rows = MICROS.map((key) => ({
+    key,
+    label: MICRO_LABEL[key],
+    unit: MICRO_UNIT[key],
+    value: totals.micros?.[key] ?? 0,
+    target: targets.micros?.[key] ?? 0,
+  })).filter((row) => row.target > 0);
+
+  if (!rows.length) return null;
+
+  return (
+    <details className="card micro-card">
+      <summary className="card-title">
+        <h3>Vitamins &amp; minerals</h3>
+        <span className="tiny muted">{rows.filter((r) => r.value >= r.target).length} of {rows.length} met</span>
+      </summary>
+
+      <div className="micro-list">
+        {rows.map((row) => {
+          const share = Math.min(1, row.value / row.target);
+          const met = row.value >= row.target;
+          return (
+            <div className="micro-row" key={row.key}>
+              <span className="tiny micro-name">{row.label}</span>
+              <div
+                className="macro-track micro-track"
+                role="img"
+                aria-label={`${row.label}: ${round1(row.value)} of ${row.target} ${row.unit}`}
+              >
+                <span
+                  className="macro-fill"
+                  style={{ width: `${share * 100}%`, backgroundColor: met ? 'var(--good)' : 'var(--dv-cal)' }}
+                />
+              </div>
+              <span className="tiny micro-value">
+                <b>{round1(row.value)}</b>
+                <span className="muted"> / {row.target} {row.unit}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* The estimate is rougher here than it is for calories, and a number
+          that looks precise about a vitamin invites more trust than it has
+          earned. */}
+      <p className="tiny muted micro-note">
+        Estimated from what you logged, so treat these as a rough guide. Anything logged without a figure for a
+        vitamin is not counted towards it.
+      </p>
+    </details>
   );
 }
 

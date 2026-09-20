@@ -1,5 +1,5 @@
-import type { FoodItem, Nutrients } from '../types';
-import { round1 } from './nutrition';
+import type { FoodItem, Micros, Nutrients } from '../types';
+import { round1, scaleMicros } from './nutrition';
 
 export interface FoodRecord {
   id: string;
@@ -57,10 +57,115 @@ const f = (
     // The added-and-juice share of `sugar`. Nought for whole fruit, veg and
     // plain milk, which is the whole point of counting it separately.
     freeSugar: per100[8],
+    micros: microsFor(id),
   },
   upf: ULTRA_PROCESSED.has(id) || undefined,
   tags,
 });
+
+/*
+ * Vitamins and minerals per 100 g: iron mg, calcium mg, vitamin D µg,
+ * B12 µg, folate µg, vitamin C mg — in that order.
+ *
+ * Kept apart from the macro tuple, which is already long enough to misread.
+ * Every food in the table has a row, deliberately: a half-filled micronutrient
+ * table under-reports a day without ever looking like it has, which is worse
+ * than not having one.
+ *
+ * Standard composition figures, and approximations like everything else here.
+ * Two are worth a word. British flour is fortified with iron, calcium and
+ * folate by law, which is why the bread and the bagel carry more than the
+ * grain does. Bran flakes are fortified far beyond that again.
+ */
+const MICRO_PER_100: Record<string, [number, number, number, number, number, number]> = {
+  'egg': [1.2, 50, 2.0, 1.1, 44, 0],
+  'egg-scrambled': [1.1, 60, 1.8, 1.0, 40, 0],
+  'oats': [4.7, 52, 0, 0, 56, 0],
+  'greek-yog': [0.1, 110, 0, 0.6, 12, 0.8],
+  'milk': [0.03, 120, 0, 0.5, 5, 0],
+  'banana': [0.3, 5, 0, 0, 20, 8.7],
+  'apple': [0.1, 6, 0, 0, 3, 4.6],
+  'blueberries': [0.3, 6, 0, 0, 6, 9.7],
+  'strawberries': [0.4, 16, 0, 0, 24, 59],
+  'orange': [0.1, 40, 0, 0, 30, 53],
+  'avocado': [0.6, 12, 0, 0, 81, 10],
+  'bread': [2.7, 107, 0, 0, 42, 0],
+  'white-bread': [3.6, 151, 0, 0, 85, 0],
+  'bagel': [3.8, 60, 0, 0, 90, 0],
+  'rice': [0.2, 10, 0, 0, 3, 0],
+  'brown-rice': [0.6, 10, 0, 0, 4, 0],
+  'pasta': [0.5, 7, 0, 0, 7, 0],
+  'potato': [0.3, 5, 0, 0, 10, 13],
+  'sweet-potato': [0.7, 38, 0, 0, 6, 20],
+  'chips': [0.8, 15, 0, 0, 25, 9],
+  'chicken': [0.7, 5, 0.1, 0.3, 4, 0],
+  'chicken-thigh': [1.0, 8, 0.1, 0.5, 6, 0],
+  'beef-mince': [2.4, 12, 0.1, 2.2, 7, 0],
+  'steak': [1.9, 12, 0.1, 1.5, 6, 0],
+  'salmon': [0.3, 12, 11, 3.2, 26, 0],
+  'tuna': [1.0, 10, 1.7, 2.2, 3, 0],
+  'prawns': [0.5, 70, 0.1, 1.1, 3, 0],
+  'tofu': [2.7, 350, 0, 0, 19, 0],
+  'tempeh': [2.7, 111, 0, 0.1, 24, 0],
+  'lentils': [3.3, 19, 0, 0, 181, 1.5],
+  'chickpeas': [2.9, 49, 0, 0, 172, 1.3],
+  'black-beans': [2.1, 27, 0, 0, 149, 0],
+  'hummus': [2.4, 38, 0, 0, 83, 0],
+  'peanut-butter': [1.9, 43, 0, 0, 87, 0],
+  'almonds': [3.7, 269, 0, 0, 44, 0],
+  'walnuts': [2.9, 98, 0, 0, 98, 1.3],
+  'olive-oil': [0.6, 1, 0, 0, 0, 0],
+  'butter': [0.02, 24, 1.5, 0.2, 3, 0],
+  'cheddar': [0.7, 720, 0.6, 0.8, 27, 0],
+  'mozzarella': [0.4, 505, 0.4, 2.3, 7, 0],
+  'feta': [0.7, 493, 0.4, 1.7, 32, 0],
+  'broccoli': [0.7, 40, 0, 0, 65, 65],
+  'spinach': [2.7, 99, 0, 0, 194, 28],
+  'salad': [0.9, 36, 0, 0, 38, 9],
+  'tomato': [0.3, 10, 0, 0, 15, 14],
+  'cucumber': [0.3, 16, 0, 0, 7, 2.8],
+  'carrot': [0.3, 33, 0, 0, 19, 5.9],
+  'peas': [1.5, 25, 0, 0, 65, 40],
+  'corn': [0.5, 2, 0, 0, 46, 6.8],
+  'mushroom': [0.5, 3, 0.2, 0.05, 20, 2],
+  'soup': [0.5, 18, 0, 0, 12, 3],
+  'sushi': [0.6, 12, 2, 0.8, 10, 1],
+  'burrito': [1.5, 60, 0.1, 0.3, 40, 4],
+  'pizza': [1.5, 200, 0.1, 0.3, 45, 2],
+  'burger': [2.0, 70, 0.1, 1.0, 35, 1],
+  'sandwich': [1.5, 70, 0.1, 0.2, 40, 3],
+  'noodles': [1.0, 25, 0, 0.1, 25, 6],
+  'curry': [1.0, 25, 0, 0.2, 15, 5],
+  'poke': [0.8, 20, 1.5, 0.8, 20, 6],
+  'chicken-bowl': [0.8, 25, 0, 0.2, 25, 10],
+  'protein-shake': [0.3, 40, 0, 0.3, 3, 0],
+  'smoothie': [0.3, 14, 0, 0, 12, 25],
+  'coffee': [0.05, 35, 0, 0.15, 2, 0],
+  'latte': [0.05, 85, 0, 0.35, 4, 0],
+  'tea': [0, 0, 0, 0, 1, 0],
+  'orange-juice': [0.1, 11, 0, 0, 30, 38],
+  'cola': [0.05, 2, 0, 0, 0, 0],
+  'diet-cola': [0.02, 2, 0, 0, 0, 0],
+  'beer': [0.02, 4, 0, 0.02, 6, 0],
+  'wine': [0.5, 8, 0, 0, 1, 0],
+  'chocolate': [2.4, 189, 0, 0.75, 10, 0],
+  'dark-chocolate': [11.9, 73, 0, 0.05, 3, 0],
+  'biscuit': [2.1, 90, 0, 0, 30, 0],
+  'cookie': [1.8, 30, 0.1, 0.05, 25, 0],
+  'ice-cream': [0.1, 128, 0.2, 0.4, 5, 0.6],
+  'crisps': [1.2, 24, 0, 0, 40, 15],
+  'popcorn': [2.7, 7, 0, 0, 31, 0],
+  'granola-bar': [1.8, 60, 0, 0, 20, 0],
+  'pancakes': [1.5, 80, 0.2, 0.2, 25, 0],
+  'cereal': [24, 40, 4.2, 2.1, 250, 0],
+  'croissant': [2.0, 37, 0.5, 0.1, 60, 0],
+};
+
+const microsFor = (id: string): Micros | undefined => {
+  const row = MICRO_PER_100[id];
+  if (!row) return undefined;
+  return { iron: row[0], calcium: row[1], vitaminD: row[2], vitaminB12: row[3], folate: row[4], vitaminC: row[5] };
+};
 
 /** A compact, offline food table — enough to log a real day without a network. */
 export const FOODS: FoodRecord[] = [
@@ -196,6 +301,7 @@ export function toFoodItem(food: FoodRecord, servings = 1): FoodItem {
       sugar: round1((n.sugar ?? 0) * factor),
       freeSugar: n.freeSugar === undefined ? undefined : round1(n.freeSugar * factor),
       sodium: Math.round((n.sodium ?? 0) * factor),
+      micros: scaleMicros(n.micros, factor),
     },
   };
 }

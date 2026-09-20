@@ -116,3 +116,22 @@
     rgb(255 255 255 / 0%) 3px 7px
   );
 }
+
+/* ---------- Vitamins and minerals ---------- */
+.micro-card summary { cursor: pointer; list-style: none; }
+.micro-card summary::-webkit-details-marker { display: none; }
+/* A chevron that turns, rather than the browser's default triangle. */
+.micro-card summary::after {
+  content: ''; flex: none; width: 8px; height: 8px; margin-left: 4px;
+  border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3);
+  transform: rotate(45deg) translate(-2px, -2px); transition: transform 0.2s var(--ease);
+}
+.micro-card[open] summary::after { transform: rotate(-135deg) translate(-2px, -2px); }
+.micro-card summary h3 { flex: 1 1 auto; }
+
+.micro-list { display: flex; flex-direction: column; gap: 9px; margin-top: var(--s3); }
+.micro-row { display: grid; grid-template-columns: 5.5em 1fr auto; align-items: center; gap: 8px; }
+.micro-name { color: var(--ink-2); }
+.micro-track { height: 7px; min-width: 0; }
+.micro-value { white-space: nowrap; }
+.micro-note { margin-top: var(--s3); }

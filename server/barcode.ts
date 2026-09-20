@@ -10,8 +10,8 @@
  *
  * https://world.openfoodfacts.org — data under the Open Database Licence.
  */
-import type { AnalysisResult, FoodItem, MealSlot, Nutrients } from '../src/types';
-import { sumNutrients } from '../src/lib/nutrition';
+import type { AnalysisResult, FoodItem, MealSlot, MicroKey, Micros, Nutrients } from '../src/types';
+import { scaleMicros, sumNutrients } from '../src/lib/nutrition';
 import { looksLikeBarcode } from '../src/lib/gtin';
 
 const API = 'https://world.openfoodfacts.org/api/v2/product';
@@ -102,10 +102,37 @@ function nutrientsPer100(n: Nutriments): Nutrients | null {
     sugar: round1(num(n.sugars_100g) ?? 0),
     freeSugar: added === undefined ? undefined : round1(added),
     sodium: Math.round(sodiumG * 1000),
+    // Their micronutrient coverage is thin outside the Americas, so most
+    // products come back with none of these and stay honestly blank.
+    micros: microsFrom(n),
   };
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/**
+ * Their nutriment keys for the six we track, per 100 g.
+ *
+ * Their units are the label's: grams for minerals, so iron comes back as
+ * 0.0025 rather than 2.5 mg, and vitamins D and B12 in grams too.
+ */
+const MICRO_KEYS: [MicroKey, string, number][] = [
+  ['iron', 'iron_100g', 1000], // g -> mg
+  ['calcium', 'calcium_100g', 1000],
+  ['vitaminD', 'vitamin-d_100g', 1_000_000], // g -> µg
+  ['vitaminB12', 'vitamin-b12_100g', 1_000_000],
+  ['folate', 'vitamin-b9_100g', 1_000_000],
+  ['vitaminC', 'vitamin-c_100g', 1000],
+];
+
+function microsFrom(n: Nutriments): Micros | undefined {
+  const out: Micros = {};
+  for (const [key, field, factor] of MICRO_KEYS) {
+    const value = num(n[field]);
+    if (value !== undefined) out[key] = round1(value * factor);
+  }
+  return Object.keys(out).length ? out : undefined;
+}
 
 const scale = (per100: Nutrients, grams: number): Nutrients => {
   const f = grams / 100;
@@ -118,6 +145,7 @@ const scale = (per100: Nutrients, grams: number): Nutrients => {
     satFat: per100.satFat === undefined ? undefined : round1(per100.satFat * f),
     sugar: round1((per100.sugar ?? 0) * f),
     freeSugar: per100.freeSugar === undefined ? undefined : round1(per100.freeSugar * f),
+    micros: scaleMicros(per100.micros, f),
     sodium: Math.round((per100.sodium ?? 0) * f),
   };
 };

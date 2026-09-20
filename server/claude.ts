@@ -6,8 +6,9 @@
  * never has to parse prose into numbers.
  */
 import Anthropic from '@anthropic-ai/sdk';
-import type { AnalysisResult, MealSlot, Nutrients } from '../src/types';
-import { addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
+import type { AnalysisResult, MealSlot, Micros, Nutrients } from '../src/types';
+import { MICROS } from '../src/types';
+import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
@@ -81,6 +82,20 @@ const NUTRIENT_PROPS = {
       'grams of FREE sugars, counted inside sugar: added sugar and syrups, honey, and the sugar in fruit juice. The sugar in whole fruit, vegetables and plain milk or yoghurt is NOT free — that is 0. Never larger than sugar.',
   },
   sodium: { type: 'number', description: 'milligrams' },
+  micros: {
+    type: 'object',
+    description: 'Vitamins and minerals for this portion. Estimate them from the food, as a composition table would.',
+    properties: {
+      iron: { type: 'number', description: 'milligrams' },
+      calcium: { type: 'number', description: 'milligrams' },
+      vitaminD: { type: 'number', description: 'micrograms' },
+      vitaminB12: { type: 'number', description: 'micrograms' },
+      folate: { type: 'number', description: 'micrograms' },
+      vitaminC: { type: 'number', description: 'milligrams' },
+    },
+    required: ['iron', 'calcium', 'vitaminD', 'vitaminB12', 'folate', 'vitaminC'],
+    additionalProperties: false,
+  },
 } as const;
 
 const MEAL_SCHEMA = {
@@ -128,7 +143,7 @@ const MEAL_SCHEMA = {
           nutrients: {
             type: 'object',
             properties: NUTRIENT_PROPS,
-            required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'satFat', 'sugar', 'freeSugar', 'sodium'],
+            required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'satFat', 'sugar', 'freeSugar', 'sodium', 'micros'],
             additionalProperties: false,
           },
         },
@@ -152,12 +167,25 @@ Rules:
 - Break the meal into the individual foods you can actually see or that were described. Do not invent sides that are not there.
 - Nutrition values are per the portion you state, not per 100 g.
 - Count fibre inside total carbohydrate, and give sugar as total sugars.
+- micros are per portion, estimated the way a food composition table would have them. British flour is fortified with iron, calcium and folate, and most breakfast cereals are fortified further, so bread and cereal carry more than the raw grain does. Oily fish and eggs are the food sources of vitamin D; B12 comes only from animal foods and things fortified with it.
 - freeSugar is the added-and-juice share of sugar, counted inside it. An apple, a banana, a carrot and a glass of milk are all 0 — their sugar is not free sugar and no guideline asks anyone to cut it. Juice, honey, syrup, and anything sweetened in a kitchen or a factory is.
 - satFat is the saturated share of fat, counted inside it, and is never larger than fat. It is what the app judges a meal on, so it is worth getting right: butter, cream, cheese, coconut, fatty red meat and pastry are mostly saturated; olive oil, rapeseed, nuts, seeds, avocado and oily fish are mostly not.
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
 - ultraProcessed asks how the food was made, not whether it is good for someone. A home-cooked shepherd's pie is false however much fat is in it; a diet cola is true however few calories are in it.
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, British English.`;
+
+/** Only the six we know about, only as non-negative numbers. */
+function coerceMicros(raw: unknown): Micros | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const source = raw as Record<string, unknown>;
+  const out: Micros = {};
+  for (const key of MICROS) {
+    const value = source[key];
+    if (typeof value === 'number' && Number.isFinite(value)) out[key] = Math.max(0, value);
+  }
+  return Object.keys(out).length ? out : undefined;
+}
 
 function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0);
@@ -177,6 +205,7 @@ function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
     // inside fat, so a larger figure is a slip rather than a finding.
     freeSugar: raw?.freeSugar === undefined ? undefined : Math.min(sugar, num(raw.freeSugar)),
     sodium: Math.round(num(raw?.sodium)),
+    micros: coerceMicros(raw?.micros),
   };
 }
 
@@ -222,6 +251,7 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
       sugar: (acc.sugar ?? 0) + (item.nutrients.sugar ?? 0),
       freeSugar: addOptional(acc.freeSugar, item.nutrients.freeSugar),
       sodium: (acc.sodium ?? 0) + (item.nutrients.sodium ?? 0),
+      micros: addMicros(acc.micros, item.nutrients.micros),
     }),
     {
       calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0,

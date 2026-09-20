@@ -3,7 +3,7 @@ import type { Route } from '../App';
 import type { MealEntry, MealSlot } from '../types';
 import MealCard from '../components/MealCard';
 import Squish from '../components/Squish';
-import { MacroBars, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
+import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, Stepper, useToast } from '../components/ui';
 import { CameraIcon, ChevronIcon, PenIcon, PlusIcon, TrashIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -94,6 +94,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         <MinorNutrients totals={totals} targets={targets} />
         <OverTargetNote over={verdict.over} />
       </section>
+
+      <Micronutrients totals={totals} targets={targets} />
 
       {SLOTS.map(({ key, label, emoji }) => {
         const list = dayMeals.filter((m) => m.slot === key);
