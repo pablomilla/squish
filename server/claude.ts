@@ -306,10 +306,33 @@ function tuningFor(model: string, schema: Record<string, unknown> = MEAL_SCHEMA)
   };
 }
 
-function priceOf(model: string, inputTokens: number, outputTokens: number): number | null {
+/**
+ * Cached tokens are not free, and they are not full price either.
+ *
+ * A read costs a tenth of an ordinary input token and a write costs a quarter
+ * more than one, and `input_tokens` counts neither — so a priced run that
+ * ignores them under-reports exactly when caching is doing its job, which is
+ * the moment you most want the number to be right.
+ */
+const CACHE_READ = 0.1;
+const CACHE_WRITE = 1.25;
+
+export interface TokenCounts {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+}
+
+/** What a call cost, in dollars, or null for a model with no price on file. */
+export function priceUsage(model: string, counts: TokenCounts): number | null {
   const rate = PRICING[model];
   if (!rate) return null;
-  return (inputTokens * rate.input + outputTokens * rate.output) / 1_000_000;
+  const input =
+    counts.inputTokens +
+    (counts.cacheReadTokens ?? 0) * CACHE_READ +
+    (counts.cacheWriteTokens ?? 0) * CACHE_WRITE;
+  return (input * rate.input + counts.outputTokens * rate.output) / 1_000_000;
 }
 
 async function requestMeal(
@@ -351,7 +374,12 @@ async function requestMeal(
       inputTokens,
       outputTokens,
       cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
-      costUsd: priceOf(model, inputTokens, outputTokens),
+      costUsd: priceUsage(model, {
+        inputTokens,
+        outputTokens,
+        cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+        cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
+      }),
       latencyMs,
     },
   };

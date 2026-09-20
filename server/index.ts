@@ -19,7 +19,7 @@ import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
 import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
 import { publicKey, pushConfigured, startReminderClock, subscribe, unsubscribe } from './push';
-import { chatStep, cleanMessages, cleanNotes } from './chat';
+import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import {
   analyseLabel,
   analysePhoto,
@@ -53,6 +53,26 @@ const asSlot = (value: unknown): MealSlot | undefined =>
 
 function logFailure(where: string, error: unknown): void {
   console.warn(`[squish] ${where} fell back to the offline estimator:`, error instanceof Error ? error.message : error);
+}
+
+/**
+ * What the nutritionist just spent, one line per call.
+ *
+ * Numbers only — no question, no answer, nothing from anybody's diary. It is
+ * there to answer "what does this feature cost per user", which until now was
+ * a question nobody could answer from anything but arithmetic. One question
+ * makes one line per round, so `round=0` marks where each new question starts.
+ *
+ * `cached` against `wrote` is the caching working or not: after the first call
+ * of the day most of the prompt should be read rather than written.
+ */
+function logUsage(usage: ChatUsage, round: number): void {
+  const money = usage.costUsd === null ? 'unpriced' : `$${usage.costUsd.toFixed(4)}`;
+  console.info(
+    `[squish] nutritionist round=${round} model=${usage.model} ` +
+      `in=${usage.inputTokens} cached=${usage.cacheReadTokens} wrote=${usage.cacheWriteTokens} ` +
+      `out=${usage.outputTokens} (thinking ${usage.thinkingTokens}) ${money} ${(usage.latencyMs / 1000).toFixed(1)}s`,
+  );
 }
 
 /* ------------------------------------------------------------------ *
@@ -264,7 +284,11 @@ app.post('/api/chat', requirePasscode, rateLimit, async (req, res) => {
       },
       cleanNotes(notes),
     );
-    res.json(step);
+    logUsage(step.usage, toolRounds(messages));
+
+    // The browser has no use for the bill, so it does not travel.
+    const { usage: _usage, ...wire } = step;
+    res.json(wire);
   } catch (error) {
     logFailure('chat', error);
     res.status(502).json({ error: 'I could not think of an answer just then. Try again in a moment.' });

@@ -22,6 +22,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { NUTRITIONIST_TOOLS, type ToolCall } from './nutritionist-tools';
+import { priceUsage } from './claude';
 
 const MODEL = process.env.SQUISH_CHAT_MODEL ?? process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
@@ -207,11 +208,32 @@ export function cleanNotes(raw: unknown): Note[] {
     .map((n) => ({ id: n.id.slice(0, 24), note: n.note.slice(0, 240) }));
 }
 
-export type ChatStep =
+/**
+ * What one round actually cost.
+ *
+ * Reported so it can be, which was the whole problem: the analysers have
+ * priced every call since the benchmark was written, and the chat threw the
+ * figure away. A feature whose cost nobody measures is a feature nobody can
+ * argue about.
+ */
+export interface ChatUsage {
+  model: string;
+  inputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  outputTokens: number;
+  /** Of the output, how much was reasoning. It is usually most of it. */
+  thinkingTokens: number;
+  costUsd: number | null;
+  latencyMs: number;
+}
+
+export type ChatStep = { usage: ChatUsage } & (
   /** It has an answer. */
   | { done: true; reply: string }
   /** It wants to look something up first — these run in the browser. */
-  | { done: false; assistant: Anthropic.ContentBlock[]; calls: ToolCall[] };
+  | { done: false; assistant: Anthropic.ContentBlock[]; calls: ToolCall[] }
+);
 
 /** How many lookups have already come back since they last typed something. */
 export function toolRounds(messages: ChatMessage[]): number {
@@ -241,33 +263,86 @@ const textOf = (blocks: Anthropic.ContentBlock[]): string =>
  * again write a tool call out as prose instead of calling the tool, which here
  * would read as Squish narrating a lookup it never did.
  */
-export async function chatStep(messages: ChatMessage[], context: ChatContext, notes: Note[] = []): Promise<ChatStep> {
+/**
+ * The request, built but not sent.
+ *
+ * Separated out because the two things most worth checking here cannot be
+ * seen from the answer: where the cache breakpoints fall, and whether the
+ * bytes before the first one are genuinely the same every time. A prefix that
+ * has quietly started moving does not fail — it just costs ten times more.
+ */
+export function chatRequest(
+  messages: ChatMessage[],
+  context: ChatContext,
+  notes: Note[] = [],
+): Anthropic.MessageCreateParamsNonStreaming {
   // Past the round limit the tools are simply withheld. Answering the question
   // with what it has beats an error, and a loop that cannot be entered again
   // cannot run away with somebody's money.
   const exhausted = toolRounds(messages) >= MAX_TOOL_ROUNDS;
 
-  const response = await getClient().messages.create({
+  return {
     model: MODEL,
     max_tokens: 2400,
-    system: `${CHAT_SYSTEM}\n\n${contextBlock(context)}\n\n${memoryBlock(notes)}`,
+    /*
+     * Two cache breakpoints, and the split between them is the point.
+     *
+     * The rules and the tool schemas are the same bytes for everybody, every
+     * question, so they sit before the first marker and are read back at a
+     * tenth of the price. Their diary summary and the memory go after it,
+     * because those change whenever a meal is logged and anything that moves
+     * invalidates everything following it.
+     *
+     * The top-level marker catches the other end. Within one question the
+     * conversation is resent in full on every round, each round longer than
+     * the last and seconds apart — so without it a four-lookup question pays
+     * full price for the same history four times over.
+     */
+    cache_control: { type: 'ephemeral' },
+    system: [
+      { type: 'text', text: CHAT_SYSTEM, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: `${contextBlock(context)}\n\n${memoryBlock(notes)}` },
+    ],
     thinking: { type: 'adaptive' },
     output_config: { effort: 'medium' },
     ...(exhausted ? {} : { tools: NUTRITIONIST_TOOLS }),
     messages: messages as Anthropic.MessageParam[],
-  });
+  };
+}
 
-  if (response.stop_reason === 'refusal') return { done: true, reply: REFUSAL };
+export async function chatStep(messages: ChatMessage[], context: ChatContext, notes: Note[] = []): Promise<ChatStep> {
+  const startedAt = Date.now();
+  const response = await getClient().messages.create(chatRequest(messages, context, notes));
+
+  const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
+  const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
+  const usage: ChatUsage = {
+    model: response.model,
+    inputTokens: response.usage.input_tokens,
+    cacheReadTokens,
+    cacheWriteTokens,
+    outputTokens: response.usage.output_tokens,
+    thinkingTokens: response.usage.output_tokens_details?.thinking_tokens ?? 0,
+    costUsd: priceUsage(response.model, {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      cacheReadTokens,
+      cacheWriteTokens,
+    }),
+    latencyMs: Date.now() - startedAt,
+  };
+
+  if (response.stop_reason === 'refusal') return { done: true, reply: REFUSAL, usage };
 
   if (response.stop_reason === 'tool_use') {
     const calls = response.content
       .filter((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use')
       .map((block) => ({ id: block.id, name: block.name, input: (block.input ?? {}) as Record<string, unknown> }));
-    if (calls.length) return { done: false, assistant: response.content, calls };
+    if (calls.length) return { done: false, assistant: response.content, calls, usage };
   }
 
   const reply = textOf(response.content);
   // A turn that stopped for length mid-thought can arrive with nothing said
   // out loud. Better to admit that than to show an empty bubble.
-  return { done: true, reply: reply || 'I lost my thread there — ask me again?' };
+  return { done: true, reply: reply || 'I lost my thread there — ask me again?', usage };
 }

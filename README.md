@@ -205,12 +205,35 @@ what a subscriber costs per month at two, three and five meals a day — before 
 cut. `bench/README.md` covers how to build a test set whose numbers you can trust; the answer is only
 as good as the ground truth you feed it. Your photos, manifest and results are gitignored.
 
+### What the nutritionist costs
+
+Every call it makes logs one line, numbers only — no question, no answer,
+nothing from anybody's diary:
+
+```
+[squish] nutritionist round=0 model=claude-opus-5 in=214 cached=1580 wrote=92 out=337 (thinking 241) $0.0109 0.1s
+```
+
+One question produces one line per round, so `round=0` marks where each new
+question starts, and `cached` against `wrote` says whether the caching is
+working: after the first call the rules and tool schemas — about 1,550 tokens —
+should be read back rather than written. They sit in front of a cache
+breakpoint precisely because they are the same bytes for every person and every
+question; the diary summary and the memory go after it, since anything that
+moves invalidates everything following it. A second breakpoint covers the
+conversation itself, which is resent in full on every round.
+
+Estimated at around 4-5p a question and £1-2 a month for somebody asking one a
+day, with thinking tokens the largest single line. That is arithmetic from
+measured prompt sizes, not a measurement — the log above is what turns it into
+one.
+
 ## Layout
 
 ```
 server/           Express API — Claude calls, offline fallback
   claude.ts       Vision + structured outputs + the coach prompt
-  chat.ts         The nutritionist's prompt, safety rules and tool loop
+  chat.ts         The nutritionist's prompt, safety rules, tool loop and caching
   nutritionist-tools.ts  What it can look up — declared here, run in the browser
   index.ts        Routes, key detection, graceful degradation
 src/
