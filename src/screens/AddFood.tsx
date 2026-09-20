@@ -6,7 +6,7 @@ import { Segmented, Stepper, useToast } from '../components/ui';
 import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { searchFoods, toFoodItem } from '../lib/foods';
-import { qualityScore, sumNutrients } from '../lib/nutrition';
+import { qualityScore, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
 import { analyseText, SquishApiError } from '../lib/api';
 import { slotForNow } from '../lib/date';
 import './addfood.css';
@@ -55,7 +55,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         title: basket.length === 1 ? basket[0].name : `${basket[0].name} +${basket.length - 1}`,
         items: basket,
         nutrients: totals,
-        score: qualityScore(totals),
+        score: qualityScore(totals, ultraProcessedShare(basket)),
         coachNote: '',
         confidence: 'high',
         slot: mealSlot,

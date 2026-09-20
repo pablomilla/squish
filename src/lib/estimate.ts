@@ -8,7 +8,7 @@
  */
 import type { AnalysisResult, FoodItem, MealSlot } from '../types';
 import { FOODS, searchFoods, toFoodItem, type FoodRecord } from './foods';
-import { qualityScore, round1, sumNutrients } from './nutrition';
+import { qualityScore, round1, sumNutrients, ultraProcessedShare } from './nutrition';
 
 const NUMBER_WORDS: Record<string, number> = {
   a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
@@ -109,7 +109,7 @@ export function estimateFromText(description: string, slot?: MealSlot): Analysis
   const parts = description.split(SPLIT).map((s) => s.trim()).filter(Boolean);
   const items = parts.map(parsePart).map(itemFor).filter((x): x is FoodItem => Boolean(x));
   const nutrients = sumNutrients(items);
-  const score = qualityScore(nutrients);
+  const score = qualityScore(nutrients, ultraProcessedShare(items));
   return {
     title: titleFrom(items, description.slice(0, 40) || 'Meal'),
     slot,
@@ -146,7 +146,7 @@ export function demoEstimateFromPhoto(seed: string, slot?: MealSlot): AnalysisRe
     slot,
     items,
     nutrients,
-    score: qualityScore(nutrients),
+    score: qualityScore(nutrients, ultraProcessedShare(items)),
     coachNote:
       'Demo estimate — I could not look at the photo without an Anthropic API key, so this is a typical plate. Tweak the items and they are yours.',
     confidence: 'low',

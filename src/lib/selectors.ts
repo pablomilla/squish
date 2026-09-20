@@ -1,5 +1,5 @@
-import type { DayLog, MealEntry, MacroKey, Mood, Nutrients, Targets } from '../types';
-import { EMPTY, UNSCORED, addNutrients, overPenalty, overTargets, pct, qualityScore } from './nutrition';
+import type { DayLog, FoodItem, MealEntry, MacroKey, Mood, Nutrients, Targets } from '../types';
+import { EMPTY, UNSCORED, addNutrients, overPenalty, overTargets, pct, qualityScore, sumNutrients, ultraProcessedShare } from './nutrition';
 import { addDays, isoDate, lastDays } from './date';
 import { saltGrams } from './units';
 
@@ -270,6 +270,6 @@ export function statusLine(options: {
   return "You're doing great.";
 }
 
-export function scoreOfItems(nutrients: Nutrients): number {
-  return qualityScore(nutrients);
+export function scoreOfItems(items: FoodItem[]): number {
+  return qualityScore(sumNutrients(items), ultraProcessedShare(items));
 }

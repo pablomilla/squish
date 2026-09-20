@@ -44,6 +44,15 @@ export interface FoodItem {
   id: string;
   name: string;
   emoji?: string;
+  /**
+   * Ultra-processed: industrially formulated from refined substances and
+   * additives rather than cooked from food — crisps, confectionery, soft
+   * drinks, mass-produced pastries, formulated powders. NOVA group 4.
+   *
+   * It is the one thing a nutrient panel cannot see, which is why it is
+   * carried separately. Undefined means nobody classified it.
+   */
+  ultraProcessed?: boolean;
   /** What the portion was, in words: "1 bowl". The weight is shown from `grams`. */
   portion: string;
   grams?: number;

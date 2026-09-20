@@ -14,6 +14,7 @@ import {
   overPhrase,
   overTargets,
   scoreLabel,
+  ultraProcessedShare,
 } from '../src/lib/nutrition';
 import { dayScore, series, summarise } from '../src/lib/selectors';
 import { FOODS } from '../src/lib/foods';
@@ -406,5 +407,61 @@ test('every food in the table has a believable free-sugar figure', () => {
     assert.notEqual(freeSugar, undefined, `${name} has no free-sugar figure`);
     assert.ok((freeSugar as number) <= (sugar ?? 0) + 0.001, `${name}: ${freeSugar} g free inside ${sugar} g total`);
     assert.ok((freeSugar as number) >= 0, `${name}: negative free sugar`);
+  }
+});
+
+/* ------------------------------------------------------------------ *
+ * Ultra-processing: the thing a nutrient panel cannot see.
+ * ------------------------------------------------------------------ */
+
+const crisps = {
+  id: 'c', name: 'Crisps', portion: '1 bag', grams: 30, ultraProcessed: true,
+  nutrients: { calories: 161, protein: 2, carbs: 15.9, fat: 10.2, fibre: 1.3, satFat: 0.9, sugar: 0.2, freeSugar: 0.1, sodium: 158 },
+};
+const chicken = {
+  id: 'h', name: 'Chicken breast', portion: '1 fillet', grams: 150,
+  nutrients: { calories: 248, protein: 46.5, carbs: 0, fat: 5.4, fibre: 0, satFat: 1.5, sugar: 0, freeSugar: 0, sodium: 111 },
+};
+
+test('a bag of crisps stops reading as a balanced thing to eat', () => {
+  const composition = qualityScore(crisps.nutrients);
+  const withProcessing = qualityScore(crisps.nutrients, ultraProcessedShare([crisps]));
+
+  assert.equal(scoreLabel(composition).label, 'Balanced', 'on composition alone it always looked fine');
+  assert.equal(scoreLabel(withProcessing).label, 'So-so');
+});
+
+test('the penalty is shared out by calories, so a staple in a real meal costs little', () => {
+  assert.equal(ultraProcessedShare([chicken]), 0);
+  assert.equal(ultraProcessedShare([crisps]), 1);
+
+  const share = ultraProcessedShare([chicken, crisps]);
+  assert.ok(share > 0.35 && share < 0.42, `crisps are about a third of that meal, got ${share}`);
+
+  const totals = addNutrients(chicken.nutrients, crisps.nutrients);
+  const cost = qualityScore(totals) - qualityScore(totals, share);
+  assert.ok(cost >= 4 && cost <= 7, `a third of fourteen points, got ${cost}`);
+});
+
+test('nothing unclassified is assumed to be ultra-processed', () => {
+  const unknown = { ...crisps, ultraProcessed: undefined };
+  assert.equal(ultraProcessedShare([unknown]), 0);
+  assert.equal(qualityScore(unknown.nutrients, ultraProcessedShare([unknown])), qualityScore(unknown.nutrients));
+});
+
+test('a meal with no calories in it is not judged on processing either', () => {
+  const fizz = { id: 'z', name: 'Diet cola', portion: '1 can', grams: 330, ultraProcessed: true,
+    nutrients: { calories: 1, protein: 0, carbs: 0, fat: 0, fibre: 0, satFat: 0, sugar: 0, freeSugar: 0, sodium: 23 } };
+  const scored = qualityScore(fizz.nutrients, ultraProcessedShare([fizz]));
+  assert.ok(scored > 45, `one calorie is not fourteen points of anything, got ${scored}`);
+});
+
+test('the staples the classification is clumsy about are left out of it', () => {
+  for (const id of ['bread', 'white-bread', 'oats', 'milk', 'greek-yog', 'butter', 'olive-oil', 'cheddar']) {
+    const food = FOODS.find((f) => f.id === id)!;
+    assert.ok(!food.upf, `${food.name} should not be marked ultra-processed`);
+  }
+  for (const id of ['crisps', 'cola', 'chocolate', 'biscuit', 'ice-cream', 'granola-bar']) {
+    assert.ok(FOODS.find((f) => f.id === id)!.upf, `${id} should be`);
   }
 });

@@ -25,6 +25,7 @@ const FIELDS = [
   'serving_quantity',
   'serving_quantity_unit',
   'nutriments',
+  'nova_group',
 ].join(',');
 
 /** Their limit is per minute; ours is deliberately under it. */
@@ -123,6 +124,8 @@ const scale = (per100: Nutrients, grams: number): Nutrients => {
 
 interface OffProduct {
   product_name?: string;
+  /** Their NOVA classification, 1 to 4. Group 4 is ultra-processed. */
+  nova_group?: number | string;
   serving_size?: string;
   serving_quantity?: string | number;
   serving_quantity_unit?: string;
@@ -148,6 +151,9 @@ export function toAnalysis(product: OffProduct, code: string, slot?: MealSlot): 
     portion: usable ? (product.serving_size?.trim() || '1 serving') : '',
     grams,
     liquid,
+    // They classify most products already, which saves us guessing from an
+    // ingredients list. No figure means unclassified, not unprocessed.
+    ultraProcessed: num(product.nova_group) === 4 ? true : undefined,
     nutrients: scale(per100, grams),
   };
 

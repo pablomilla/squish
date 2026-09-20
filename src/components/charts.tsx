@@ -87,7 +87,10 @@ export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets
     ...(totals.freeSugar === undefined
       ? []
       : [{ key: 'freeSugar' as const, label: 'Free sugars', value: round1(totals.freeSugar), limit: Math.round(targets.freeSugar ?? 0), unit: 'g' }]),
-    { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: Math.round(targets.sugar ?? 0), unit: 'g' },
+    // Against the limit, not the aim. Total sugars aim at 10% of energy but
+    // are only over at the labelling reference intake — showing the aim here
+    // turned a day of fruit amber, which is the thing free sugars just fixed.
+    { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: ceilingLimit('sugar', targets), unit: 'g' },
     { key: 'sodium' as const, label: 'Salt', value: saltGrams(totals.sodium ?? 0), limit: saltGrams(targets.sodium ?? 0), unit: 'g' },
   ].filter((row) => row.limit > 0); // No limit set, nothing meaningful to say.
 

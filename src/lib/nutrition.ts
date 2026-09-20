@@ -242,7 +242,26 @@ export function macroSplit(n: Nutrients): Record<'protein' | 'carbs' | 'fat', nu
  */
 export const UNSCORED = 0;
 
-export function qualityScore(n: Nutrients): number {
+/**
+ * How much of a meal's energy came from ultra-processed food.
+ *
+ * Calorie-weighted rather than counted, so a slice of packaged bread beside a
+ * plate of dinner is the footnote it should be, while a bag of crisps on its
+ * own is the whole meal. Items nobody has classified sit it out.
+ */
+export function ultraProcessedShare(items: { nutrients: Nutrients; ultraProcessed?: boolean }[]): number {
+  const total = items.reduce((sum, i) => sum + Math.max(0, i.nutrients.calories), 0);
+  if (total <= 0) return 0;
+  const upf = items
+    .filter((i) => i.ultraProcessed)
+    .reduce((sum, i) => sum + Math.max(0, i.nutrients.calories), 0);
+  return upf / total;
+}
+
+/** The most an all-ultra-processed meal loses: a full grade, and no more. */
+export const UPF_PENALTY = 14;
+
+export function qualityScore(n: Nutrients, ultraProcessed = 0): number {
   if (n.calories <= 0) return UNSCORED;
   const per1000 = (v: number) => (v / n.calories) * 1000;
 
@@ -309,6 +328,22 @@ export function qualityScore(n: Nutrients): number {
     score -= Math.min(24, Math.max(0, per1000(n.satFat) - 11) * 0.9) * solid;
     score -= Math.min(6, Math.max(0, per1000(n.fat) - 55) * 0.2) * solid;
   }
+
+  /*
+   * And the part no nutrient panel can show.
+   *
+   * On composition alone a bag of crisps is unremarkable: middling fibre,
+   * little sugar, and — spread over 1000 kcal — not even especially salty. It
+   * came out "Balanced", which is not what anyone means by a bag of crisps.
+   * The missing fact is that it is ultra-processed, and that is a property of
+   * how the food was made rather than of what is in it.
+   *
+   * Scaled by share, so a staple inside a real meal costs almost nothing and
+   * only a meal that genuinely is ultra-processed takes the whole fourteen.
+   * Deliberately not more: the classification catches supermarket wholemeal
+   * bread too, and a tracker that calls bread bad has lost the plot.
+   */
+  score -= UPF_PENALTY * Math.max(0, Math.min(1, ultraProcessed)) * solid;
 
   return Math.max(1, Math.min(100, Math.round(score)));
 }

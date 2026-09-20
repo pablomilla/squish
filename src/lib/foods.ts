@@ -10,8 +10,24 @@ export interface FoodRecord {
   servingG: number;
   /** Per 100 g. */
   per100: Nutrients;
+  /** NOVA group 4 — see FoodItem.ultraProcessed. */
+  upf?: boolean;
   tags: string[];
 }
+
+/*
+ * The ones nobody would argue about: confectionery, crisps, soft drinks,
+ * formulated powders, mass-produced pastry and breakfast cereal.
+ *
+ * Packaged bread is group 4 under a strict reading and is deliberately left
+ * out. Whether a loaf counts depends on whether it came from a bakery or a
+ * factory, which this table cannot know, and being wrong about a staple costs
+ * more than missing one.
+ */
+const ULTRA_PROCESSED = new Set([
+  'cola', 'diet-cola', 'chocolate', 'dark-chocolate', 'biscuit', 'cookie',
+  'ice-cream', 'crisps', 'granola-bar', 'cereal', 'croissant', 'protein-shake',
+]);
 
 const f = (
   id: string,
@@ -42,6 +58,7 @@ const f = (
     // plain milk, which is the whole point of counting it separately.
     freeSugar: per100[8],
   },
+  upf: ULTRA_PROCESSED.has(id) || undefined,
   tags,
 });
 
@@ -165,6 +182,7 @@ export function toFoodItem(food: FoodRecord, servings = 1): FoodItem {
     id: `${food.id}-${Math.random().toString(36).slice(2, 8)}`,
     name: food.name,
     emoji: food.emoji,
+    ultraProcessed: food.upf,
     portion: servings === 1 ? food.serving : `${round1(servings)} × ${food.serving}`,
     grams: Math.round(grams),
     liquid: food.tags.includes('drink'),

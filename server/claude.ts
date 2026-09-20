@@ -7,7 +7,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { AnalysisResult, MealSlot, Nutrients } from '../src/types';
-import { addOptional, qualityScore } from '../src/lib/nutrition';
+import { addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
@@ -117,6 +117,11 @@ const MEAL_SCHEMA = {
             type: 'boolean',
             description: 'True for a drink, soup or anything else a person measures by volume rather than weight',
           },
+          ultraProcessed: {
+            type: 'boolean',
+            description:
+              'NOVA group 4: industrially formulated from refined substances and additives rather than cooked from food. True for crisps, confectionery, soft drinks, mass-produced biscuits and pastries, breakfast cereals, instant noodles, reconstituted meat, formulated powders. False for anything cooked from ingredients, whole foods, plain dairy, bread from a bakery, and for a restaurant or home-cooked dish.',
+          },
           nutrients: {
             type: 'object',
             properties: NUTRIENT_PROPS,
@@ -124,7 +129,7 @@ const MEAL_SCHEMA = {
             additionalProperties: false,
           },
         },
-        required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'nutrients'],
+        required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'nutrients'],
         additionalProperties: false,
       },
     },
@@ -147,6 +152,7 @@ Rules:
 - freeSugar is the added-and-juice share of sugar, counted inside it. An apple, a banana, a carrot and a glass of milk are all 0 — their sugar is not free sugar and no guideline asks anyone to cut it. Juice, honey, syrup, and anything sweetened in a kitchen or a factory is.
 - satFat is the saturated share of fat, counted inside it, and is never larger than fat. It is what the app judges a meal on, so it is worth getting right: butter, cream, cheese, coconut, fatty red meat and pastry are mostly saturated; olive oil, rapeseed, nuts, seeds, avocado and oily fish are mostly not.
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
+- ultraProcessed asks how the food was made, not whether it is good for someone. A home-cooked shepherd's pie is false however much fat is in it; a diet cola is true however few calories are in it.
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, British English.`;
 
@@ -183,6 +189,7 @@ interface ModelMeal {
     portion?: string;
     grams?: number;
     liquid?: boolean;
+    ultraProcessed?: boolean;
     nutrients?: Partial<Nutrients>;
   }[];
 }
@@ -195,6 +202,7 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
     portion: item.portion?.trim() || '1 serving',
     grams: typeof item.grams === 'number' ? Math.round(item.grams) : undefined,
     liquid: item.liquid === true,
+    ultraProcessed: item.ultraProcessed === true,
     nutrients: coerceNutrients(item.nutrients),
   }));
 
@@ -220,7 +228,7 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
   const score =
     typeof parsed.score === 'number' && parsed.score > 0
       ? Math.max(0, Math.min(100, Math.round(parsed.score)))
-      : qualityScore(nutrients);
+      : qualityScore(nutrients, ultraProcessedShare(items));
 
   return {
     title: parsed.title?.trim() || 'Your meal',

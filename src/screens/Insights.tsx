@@ -159,7 +159,7 @@ export default function Insights() {
       ...(weekTotals.freeSugar === undefined
         ? []
         : [{ key: 'freeSugar', label: 'Free sugars', avg: round1(weekTotals.freeSugar / logged), limit: Math.round(targets.freeSugar ?? 0) }]),
-      { key: 'sugar', label: 'Sugar', avg: Math.round(weekTotals.sugar / logged), limit: Math.round(targets.sugar ?? 0) },
+      { key: 'sugar', label: 'Sugar', avg: Math.round(weekTotals.sugar / logged), limit: ceilingLimit('sugar', targets) },
       { key: 'salt', label: 'Salt', avg: saltGrams(weekTotals.sodium / logged), limit: saltGrams(targets.sodium ?? 0) },
     ].filter((row) => row.limit > 0);
   }, [points, weekTotals, targets]);

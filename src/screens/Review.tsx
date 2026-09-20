@@ -9,7 +9,7 @@ import { NumberField } from '../components/fields';
 import { useSquish } from '../store/useSquish';
 import { refineAnalysis } from '../lib/api';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
-import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients } from '../lib/nutrition';
+import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
 import { friendlyDate } from '../lib/date';
 import './review.css';
 import { describePortion } from '../lib/units';
@@ -55,7 +55,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
   const items = useMemo(() => rows.map((row) => scaledItem(row)), [rows]);
   const totals = useMemo(() => (items.length ? sumNutrients(items) : { ...EMPTY }), [items]);
-  const score = useMemo(() => (items.length ? qualityScore(totals) : 0), [items, totals]);
+  const upfShare = useMemo(() => ultraProcessedShare(items), [items]);
+  const score = useMemo(() => (items.length ? qualityScore(totals, upfShare) : 0), [items, totals, upfShare]);
   const verdict = scoreLabel(score);
   const results = useMemo(() => searchFoods(query, 10), [query]);
 
@@ -145,6 +146,13 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       <div className="row wrap" style={{ gap: 8 }}>
         <span className={`badge badge--${verdict.tone}`}>{verdict.tone === 'none' ? verdict.label : `${verdict.label} meal`}</span>
+        {/* Stated, not scolded. It is the one thing the numbers below cannot
+            show, and without it a lower score has no visible reason. */}
+        {upfShare >= 0.5 && (
+          <span className="badge" title="Made in a factory from refined ingredients rather than cooked from food. It counts against the score.">
+            {upfShare >= 0.95 ? 'Ultra-processed' : 'Mostly ultra-processed'}
+          </span>
+        )}
         {analysis.offline ? (
           <span className="badge badge--warn" title="No model was reachable, so these numbers come from the offline estimator">
             Offline estimate
