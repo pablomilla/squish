@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Achievement, DayLog, FoodItem, MealEntry, Profile, Targets } from '../types';
-import { CARBS_MAX_SHARE, FAT_MAX_SHARE, FAT_SHARE, SUGAR_MAX_SHARE, computeTargets } from '../lib/nutrition';
+import { CARBS_MAX_SHARE, FAT_MAX_SHARE, FAT_SHARE, SUGAR_MAX_SHARE, computeTargets, microTargets } from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
 import { isoDate, nowTime, slotForNow } from '../lib/date';
 
@@ -137,9 +137,33 @@ export function clearAssumedCrockery(state: unknown, from: number): unknown {
   return { ...s, profile };
 }
 
+/**
+ * Store v3 -> v4: give existing targets their vitamin and mineral intakes.
+ *
+ * `computeTargets` gained them, but persisted targets never ran through it
+ * again — so for anyone who had used Squish before, `targets.micros` stayed
+ * undefined, every row of the vitamins card filtered itself out, and the card
+ * rendered nothing however much spinach went in. The food had the figures all
+ * along; there was simply nothing to measure them against.
+ *
+ * Safe to fill in unasked: there is no screen for editing a micronutrient
+ * target, so there is no deliberate choice here to overwrite.
+ */
+export function addMicroTargets(state: unknown, from: number): unknown {
+  if (from >= 4 || !state || typeof state !== 'object') return state;
+  const s = state as { profile?: Profile; targets?: Targets };
+  if (!s.targets || s.targets.micros || !s.profile) return state;
+
+  return { ...s, targets: { ...s.targets, micros: microTargets(s.profile) } };
+}
+
 /** Every migration, oldest first. */
 export function migrate(state: unknown, from: number): unknown {
-  return clearAssumedCrockery(raiseFatTarget(state, from), from);
+  let out: unknown = state;
+  for (const step of [raiseFatTarget, clearAssumedCrockery, addMicroTargets]) {
+    out = step(out, from);
+  }
+  return out;
 }
 
 export const emptyDay = (date: string): DayLog => ({ date, water: 0, steps: 0 });
@@ -264,6 +288,6 @@ export const useSquish = create<SquishState>()(
           photoAnalyses: 0,
         }),
     }),
-    { name: 'squish-v1', version: 3, migrate },
+    { name: 'squish-v1', version: 4, migrate },
   ),
 );

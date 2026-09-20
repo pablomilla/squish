@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import { addMicros, addNutrients, computeTargets, microTargets, scaleMicros } from '../src/lib/nutrition';
 import { FOODS, toFoodItem } from '../src/lib/foods';
 import { MICROS } from '../src/types';
-import type { Micros, Nutrients, Profile } from '../src/types';
+import { addMicroTargets, migrate } from '../src/store/useSquish';
+import type { Micros, Nutrients, Profile, Targets } from '../src/types';
 
 const person = (over: Partial<Profile> = {}): Profile => ({
   name: '', sex: 'female', age: 30, heightCm: 168, weightKg: 68, targetWeightKg: 63,
@@ -100,4 +101,53 @@ test('animal foods carry B12 and plants do not', () => {
   assert.ok(micros('salmon').vitaminB12! > 1);
   assert.equal(micros('lentils').vitaminB12, 0);
   assert.equal(micros('broccoli').vitaminB12, 0);
+});
+
+/* ------------------------------------------------------------------ *
+ * The bug: targets that predate the feature.
+ * ------------------------------------------------------------------ */
+
+test('targets saved before micronutrients existed get them', () => {
+  const before = {
+    profile: person({ sex: 'female', age: 29 }),
+    targets: { calories: 1900, protein: 120, carbs: 210, fat: 63, fibre: 27, water: 9, steps: 10000 },
+  };
+  const after = addMicroTargets(before, 3) as { targets: Targets };
+
+  assert.equal(after.targets.micros?.calcium, 700);
+  assert.equal(after.targets.micros?.iron, 14.8, 'and worked out from their own profile');
+  assert.equal(after.targets.calories, 1900, 'nothing else is touched');
+});
+
+test('the iron figure in a migrated target follows the profile it came from', () => {
+  const male = addMicroTargets(
+    { profile: person({ sex: 'male' }), targets: { calories: 2400 } },
+    3,
+  ) as { targets: Targets };
+  assert.equal(male.targets.micros?.iron, 8.7);
+});
+
+test('targets that already have them are left alone', () => {
+  const mine = { profile: person(), targets: { calories: 1900, micros: { iron: 20 } } };
+  assert.equal((addMicroTargets(mine, 3) as { targets: Targets }).targets.micros?.iron, 20);
+});
+
+test('it does not run twice, or on a store with nothing to migrate', () => {
+  const store = { profile: person(), targets: { calories: 1900 } };
+  assert.deepEqual(addMicroTargets(store, 4), store, 'already migrated');
+  assert.deepEqual(addMicroTargets({ profile: person() }, 3), { profile: person() }, 'no targets at all');
+  assert.equal(addMicroTargets(undefined, 3), undefined);
+});
+
+test('every migration still runs, in order, from the oldest store', () => {
+  const oldFat = Math.round((2000 * 0.28) / 9);
+  const ancient = {
+    profile: { ...person(), plateCm: 27, bowlMl: 400 },
+    targets: { calories: 2000, protein: 120, fat: oldFat, carbs: 241 },
+  };
+  const after = migrate(ancient, 1) as { profile: Profile; targets: Targets };
+
+  assert.equal(after.targets.fat, 67, 'v1: the fat target was raised');
+  assert.equal(after.profile.plateCm, undefined, 'v2: the assumed plate cleared');
+  assert.equal(after.targets.micros?.calcium, 700, 'v3: and the micronutrients filled in');
 });
