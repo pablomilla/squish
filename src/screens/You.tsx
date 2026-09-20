@@ -3,6 +3,7 @@ import Squish from '../components/Squish';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
+import { disableReminders, enableReminders, explainBlocker, reminderSupport } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -15,7 +16,7 @@ import './you.css';
 
 export default function You() {
   const toast = useToast();
-  const { profile, targets, meals, days, theme, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked } =
+  const { profile, targets, meals, days, theme, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked } =
     useSquish();
   const [ignoredLearning, setIgnoredLearning] = useState(false);
   const prefersDark = usePrefersDark();
@@ -29,6 +30,35 @@ export default function You() {
   const learned = ignoredLearning ? null : learning;
   const [editing, setEditing] = useState(false);
   const [editingTargets, setEditingTargets] = useState(false);
+  const [savingReminders, setSavingReminders] = useState(false);
+  // Worked out once: whether push is possible does not change while the screen
+  // is open, and calling it in render would run it on every keystroke.
+  const [blocker] = useState(reminderSupport);
+
+  const toggleReminders = async () => {
+    setSavingReminders(true);
+    try {
+      if (reminders.on) {
+        await disableReminders();
+        setReminders({ on: false });
+        toast('Reminders off', '🔕');
+        return;
+      }
+      const result = await enableReminders({
+        breakfast: reminders.breakfast,
+        lunch: reminders.lunch,
+        dinner: reminders.dinner,
+      });
+      if (result.ok) {
+        setReminders({ on: true });
+        toast('Reminders on', '🔔');
+      } else {
+        toast(result.message ?? 'Reminders could not be turned on.', '🔕');
+      }
+    } finally {
+      setSavingReminders(false);
+    }
+  };
   const [confirmReset, setConfirmReset] = useState(false);
   const [status, setStatus] = useState<AiStatus | null>(null);
 
@@ -192,6 +222,56 @@ export default function You() {
             Android that comes from the phone's dark theme <em>or</em> from Chrome's own, under Settings → Theme — they
             are two separate switches.
           </p>
+        )}
+      </section>
+
+      <section className="card card--quiet">
+        <div className="card-title">
+          <h3>Meal reminders</h3>
+          {reminders.on && <span className="badge badge--good">On</span>}
+        </div>
+
+        {blocker !== 'ok' ? (
+          <p className="tiny muted">{explainBlocker(blocker)}</p>
+        ) : (
+          <>
+            <p className="tiny muted">A nudge at each mealtime, so a day does not quietly go unlogged.</p>
+            <div className="stack" style={{ marginTop: 10 }}>
+              {(['breakfast', 'lunch', 'dinner'] as const).map((meal) => (
+                <div className="row-between" key={meal}>
+                  <label className="small" htmlFor={`remind-${meal}`} style={{ textTransform: 'capitalize' }}>
+                    {meal}
+                  </label>
+                  <input
+                    id={`remind-${meal}`}
+                    className="input"
+                    type="time"
+                    // Wide enough for "12:30 PM" plus the clock button. A US
+                    // locale renders 12-hour and was clipping it to "08:00 AI".
+                    style={{ width: 160 }}
+                    value={reminders[meal]}
+                    onChange={(e) => setReminders({ [meal]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className={`btn btn--block ${reminders.on ? 'btn--ghost' : ''}`}
+              style={{ marginTop: 12 }}
+              disabled={savingReminders}
+              onClick={() => void toggleReminders()}
+            >
+              {savingReminders ? 'Just a moment…' : reminders.on ? 'Turn reminders off' : 'Turn reminders on'}
+            </button>
+
+            {reminders.on && (
+              <p className="tiny muted" style={{ marginTop: 8 }}>
+                Changed a time? Press the button twice to send the new times over.
+              </p>
+            )}
+          </>
         )}
       </section>
 

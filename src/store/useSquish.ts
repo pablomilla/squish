@@ -40,6 +40,12 @@ interface SquishState {
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
   /**
+   * When to nudge, and whether to at all. The times live here rather than only
+   * on the server so the screen can show them without a round trip, and so
+   * they survive a server that has forgotten its subscriptions.
+   */
+  reminders: { on: boolean; breakfast: string; lunch: string; dinner: string };
+  /**
    * The nudge is cached against the situation it described, not just the day —
    * keyed on the date alone, the morning's "nothing logged yet" would still be
    * on screen after dinner.
@@ -69,6 +75,7 @@ interface SquishState {
   unlock: (id: string) => void;
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setReminders: (patch: Partial<SquishState['reminders']>) => void;
   rememberCoachNote: (message: string, mealsLogged: number) => void;
   resetAll: () => void;
 }
@@ -119,6 +126,9 @@ export const useSquish = create<SquishState>()(
       favourites: [],
       unlocked: {},
       theme: 'system',
+      // Off until asked for. A notification permission prompt nobody invited
+      // is the fastest way to be told no for ever.
+      reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
       lastCoachNote: null,
       photoAnalyses: 0,
 
@@ -210,6 +220,7 @@ export const useSquish = create<SquishState>()(
       },
 
       setTheme: (theme) => set({ theme }),
+      setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
       rememberCoachNote: (message, mealsLogged) => set({ lastCoachNote: { date: isoDate(), message, mealsLogged } }),
 

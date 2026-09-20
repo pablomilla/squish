@@ -18,6 +18,7 @@ import type { AnalysisResult, MealSlot } from '../src/types';
 import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
 import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
+import { publicKey, pushConfigured, startReminderClock, subscribe, unsubscribe } from './push';
 import {
   analyseLabel,
   analysePhoto,
@@ -217,6 +218,61 @@ app.get('/api/barcode/:code', requirePasscode, async (req, res) => {
   }
 });
 
+/* ---------------- Meal reminders ---------------- *
+ *
+ * No passcode on the key: it is a public key, it is in every subscriber's
+ * browser already, and a lock screen that blocks reminder setup for the one
+ * person who deployed the app would be security theatre.
+ */
+app.get('/api/push/key', (_req, res) => {
+  const key = publicKey();
+  if (!key) {
+    res.status(503).json({ error: 'Reminders are not set up on this server.' });
+    return;
+  }
+  res.json({ publicKey: key });
+});
+
+app.post('/api/push/subscribe', requirePasscode, (req, res) => {
+  const { subscription, times, timezone } = req.body ?? {};
+
+  if (!pushConfigured()) {
+    res.status(503).json({ error: 'Reminders are not set up on this server.' });
+    return;
+  }
+  if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+    res.status(400).json({ error: 'That subscription is not usable.' });
+    return;
+  }
+  if (typeof timezone !== 'string' || !timezone) {
+    res.status(400).json({ error: 'A timezone is needed so the reminder lands at the right hour.' });
+    return;
+  }
+
+  // Only the three meals, only as HH:MM, and nothing else off the request body
+  // ends up in the store.
+  const clock = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const cleaned: Record<string, string> = {};
+  for (const meal of ['breakfast', 'lunch', 'dinner']) {
+    const value = times?.[meal];
+    if (typeof value === 'string' && clock.test(value)) cleaned[meal] = value;
+  }
+
+  subscribe({
+    endpoint: String(subscription.endpoint),
+    keys: { p256dh: String(subscription.keys.p256dh), auth: String(subscription.keys.auth) },
+    times: cleaned,
+    timezone,
+  });
+  res.json({ ok: true });
+});
+
+app.post('/api/push/unsubscribe', requirePasscode, (req, res) => {
+  const endpoint = req.body?.endpoint;
+  if (typeof endpoint === 'string') unsubscribe(endpoint);
+  res.json({ ok: true });
+});
+
 /**
  * Import a recipe from a web page. Body: { url, slot }
  *
@@ -325,4 +381,11 @@ app.listen(PORT, () => {
       : '    Passcode OFF — set SQUISH_PASSCODE before putting this on a public URL.',
   );
   console.log(SERVE_APP ? '    Serving the built app from dist/' : '    API only (run Vite for the app).');
+
+  if (pushConfigured()) {
+    startReminderClock();
+    console.log('    Meal reminders on.');
+  } else {
+    console.log('    Meal reminders off — run `npm run setup:push` to generate keys.');
+  }
 });
