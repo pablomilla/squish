@@ -17,7 +17,7 @@ import './home.css';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
-  const { profile, targets, meals, days, unlock, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote } =
+  const { profile, targets, meals, days, unlock, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
     useSquish();
   const [weighing, setWeighing] = useState(false);
   const day = days[today];
@@ -117,6 +117,30 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
         <Squish mood={mood} size={132} />
       </section>
+
+      {/* A meal that was analysed and never saved. It is offered back rather
+          than logged: nobody asked for it to go in the diary, and a tracker
+          that logs food you did not confirm is a tracker you stop trusting. */}
+      {pendingMeal && (
+        <section className="card home-pending">
+          <div className="card-title">
+            <h3>Unfinished meal</h3>
+            <span className="badge badge--warn">Not saved</span>
+          </div>
+          <p className="small">
+            <b>{pendingMeal.analysis.title}</b> — {Math.round(pendingMeal.analysis.nutrients.calories)} kcal,{' '}
+            {friendlyDate(pendingMeal.date).toLowerCase()}.
+          </p>
+          <div className="row" style={{ gap: 10, marginTop: 12 }}>
+            <button type="button" className="btn btn--sm grow" onClick={() => go({ name: 'review', draft: pendingMeal })}>
+              Finish it
+            </button>
+            <button type="button" className="btn btn--sm btn--ghost" onClick={() => setPendingMeal(null)}>
+              Throw it away
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="card card--hero home-today">
         <div className="card-title">

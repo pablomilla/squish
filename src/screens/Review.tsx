@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
-import type { Draft } from '../App';
-import type { FoodItem, MealSlot, Nutrients } from '../types';
+import { useEffect, useMemo, useState } from 'react';
+import type { Draft, FoodItem, MealSlot, Nutrients } from '../types';
 import Squish from '../components/Squish';
 import { MacroBars, MacroSplitBar, MinorNutrients, ScoreMeter } from '../components/charts';
 import DictateButton from '../components/DictateButton';
@@ -40,19 +39,20 @@ const makeRow = (item: FoodItem): Row => ({
 
 export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDone: () => void; onCancel: () => void }) {
   const toast = useToast();
-  const { targets, addMeal, updateMeal, toggleFavourite, isFavourite } = useSquish();
+  const { targets, addMeal, updateMeal, toggleFavourite, isFavourite, setPendingMeal } = useSquish();
   const { analysis } = draft;
 
   const [title, setTitle] = useState(analysis.title);
   const [slot, setSlot] = useState<MealSlot>(draft.slot);
   const [rows, setRows] = useState<Row[]>(analysis.items.map(makeRow));
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(draft.note ?? '');
   /** The food picker, open either to add a food or to swap one out. */
   const [picker, setPicker] = useState<{ replacing?: string } | null>(null);
   const [query, setQuery] = useState('');
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [fix, setFix] = useState('');
   const [fixing, setFixing] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const items = useMemo(() => rows.map((row) => scaledItem(row)), [rows]);
   const totals = useMemo(() => (items.length ? sumNutrients(items) : { ...EMPTY }), [items]);
@@ -60,6 +60,34 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   const score = useMemo(() => (items.length ? qualityScore(totals, upfShare) : 0), [items, totals, upfShare]);
   const verdict = scoreLabel(score);
   const results = useMemo(() => searchFoods(query, 10), [query]);
+
+  /*
+   * Keep the meal as it is corrected, so that leaving this screen by any
+   * route other than the two buttons does not throw it away.
+   *
+   * Only new meals: abandoning an edit loses nothing, because the meal it was
+   * editing is still in the diary and putting a half-finished copy of it in
+   * the way would be worse than doing nothing.
+   *
+   * Held for a moment first. Every write goes through to localStorage, and
+   * the title field would otherwise do one per keystroke with the photo
+   * along for the ride.
+   */
+  useEffect(() => {
+    if (draft.editingId || !items.length) return;
+    const timer = setTimeout(
+      () =>
+        setPendingMeal({
+          analysis: { ...analysis, title, items, nutrients: totals, score },
+          photo: draft.photo,
+          slot,
+          date: draft.date,
+          note: note.trim() || undefined,
+        }),
+      700,
+    );
+    return () => clearTimeout(timer);
+  }, [analysis, draft.editingId, draft.photo, draft.date, items, note, score, setPendingMeal, slot, title, totals]);
 
   const setFactor = (id: string, factor: number) =>
     setRows((list) => list.map((row) => (row.item.id === id ? { ...row, factor: Math.max(0.05, factor) } : row)));
@@ -116,6 +144,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       date: draft.date,
     };
 
+    setPendingMeal(null);
+
     if (draft.editingId) {
       updateMeal(draft.editingId, payload);
       toast('Meal updated', '✏️');
@@ -126,15 +156,32 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
     onDone();
   };
 
+  const throwAway = () => {
+    setPendingMeal(null);
+    onCancel();
+  };
+
+  /** The X. It asks, because it is the one button here that destroys work. */
+  const leave = () => {
+    if (draft.editingId || !items.length) {
+      throwAway();
+      return;
+    }
+    setLeaving(true);
+  };
+
   return (
     <div className="screen review">
       <header className="review-top">
-        <button type="button" className="btn--quiet" onClick={onCancel} aria-label="Cancel">
+        <button type="button" className="btn--quiet" onClick={leave} aria-label="Cancel">
           <CloseIcon />
         </button>
         <span className="tiny muted">{friendlyDate(draft.date)}</span>
-        <button type="button" className="btn--quiet small" onClick={save}>
-          {draft.editingId ? 'Update' : 'Save'}
+        {/* A real button, and it stays put while the rest of the screen
+            scrolls under it. Meals were being lost to a save that was one
+            scroll below wherever anybody had got to. */}
+        <button type="button" className="btn btn--sm" onClick={save}>
+          {draft.editingId ? 'Update meal' : 'Save meal'}
         </button>
       </header>
 
@@ -354,6 +401,21 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       <button type="button" className="btn btn--block" onClick={save}>
         {draft.editingId ? 'Update meal' : 'Save meal'}
       </button>
+
+      <Sheet open={leaving} onClose={() => setLeaving(false)} title="Save this meal?">
+        <p className="small muted">
+          {Math.round(totals.calories)} kcal across {items.length} food{items.length === 1 ? '' : 's'}. Throw it away and
+          you will have to log it again.
+        </p>
+        <div className="stack" style={{ marginTop: 16 }}>
+          <button type="button" className="btn btn--block" onClick={save}>
+            Save it
+          </button>
+          <button type="button" className="btn btn--block btn--danger" onClick={throwAway}>
+            Throw it away
+          </button>
+        </div>
+      </Sheet>
 
       <Sheet
         open={picker !== null}

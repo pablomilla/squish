@@ -75,3 +75,7 @@
 /* A full-width action under the three-up row, for the thing that is not
    logging a meal and should not look like it is. */
 .action--wide { width: 100%; flex-direction: row; gap: 10px; margin-top: var(--s2); }
+
+/* The unfinished meal. Warm rather than alarming — it is a prompt, not an
+   error, and it sits above Today because it belongs in today. */
+.home-pending { border: 1px solid var(--warn-soft); }

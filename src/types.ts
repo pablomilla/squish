@@ -175,3 +175,22 @@ export interface AnalysisResult {
   /** True when the local estimator answered instead of Claude. */
   offline?: boolean;
 }
+
+/**
+ * A meal on its way into the diary: analysed, being checked, not yet saved.
+ *
+ * It lives here rather than beside the router because the store keeps one of
+ * these now. A meal that has been photographed and corrected is twenty
+ * seconds of somebody's attention, and losing it to a back gesture or a
+ * browser tab reclaimed in the background was losing exactly that.
+ */
+export interface Draft {
+  analysis: AnalysisResult;
+  photo?: string;
+  slot: MealSlot;
+  date: string;
+  /** Whatever they had typed in the note field when it was last kept. */
+  note?: string;
+  /** Set when editing a meal that is already in the diary. */
+  editingId?: string;
+}

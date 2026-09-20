@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Achievement, DayLog, FoodItem, MealEntry, Profile, Targets } from '../types';
+import type { Achievement, DayLog, Draft, FoodItem, MealEntry, Profile, Targets } from '../types';
 import {
   CARBS_MAX_SHARE,
   FAT_MAX_SHARE,
@@ -63,6 +63,20 @@ interface SquishState {
    */
   nutritionistNotes: NutritionistNote[];
   /**
+   * A meal that has been analysed and is being checked, held until it is
+   * either saved or thrown away.
+   *
+   * It is kept here, in the persisted store, rather than in the screen's own
+   * state, because the ways a meal was being lost were all ways that take the
+   * screen with them: the back gesture, a tab the phone reclaims while you
+   * are reading a message, a browser closed on the way to the kitchen. None
+   * of those is a decision to discard anything.
+   *
+   * Only ever a new meal. Abandoning an edit loses nothing — the meal it was
+   * editing is still in the diary.
+   */
+  pendingMeal: Draft | null;
+  /**
    * The nudge is cached against the situation it described, not just the day —
    * keyed on the date alone, the morning's "nothing logged yet" would still be
    * on screen after dinner.
@@ -93,6 +107,7 @@ interface SquishState {
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setReminders: (patch: Partial<SquishState['reminders']>) => void;
+  setPendingMeal: (draft: Draft | null) => void;
   rememberNote: (note: string) => NutritionistNote;
   forgetNote: (id: string) => boolean;
   rememberCoachNote: (message: string, mealsLogged: number) => void;
@@ -230,6 +245,7 @@ export const useSquish = create<SquishState>()(
       // is the fastest way to be told no for ever.
       reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
       nutritionistNotes: [],
+      pendingMeal: null,
       lastCoachNote: null,
       photoAnalyses: 0,
 
@@ -323,6 +339,8 @@ export const useSquish = create<SquishState>()(
       setTheme: (theme) => set({ theme }),
       setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
+      setPendingMeal: (pendingMeal) => set({ pendingMeal }),
+
       rememberNote: (note) => {
         const saved = newNote(note);
         set({ nutritionistNotes: [...get().nutritionistNotes, saved] });
@@ -349,6 +367,7 @@ export const useSquish = create<SquishState>()(
           lastCoachNote: null,
           photoAnalyses: 0,
           nutritionistNotes: [],
+          pendingMeal: null,
         }),
     }),
     {

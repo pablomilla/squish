@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { AnalysisResult, MealEntry, MealSlot } from './types';
+import type { AnalysisResult, Draft, MealEntry, MealSlot } from './types';
 import { useSquish } from './store/useSquish';
 import { ToastProvider, useAppliedTheme } from './components/ui';
 import { CameraIcon, DiaryIcon, HomeIcon, InsightsIcon, YouIcon } from './components/icons';
@@ -16,15 +16,6 @@ import Ask from './screens/Ask';
 import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
 import { aiStatus, onLocked, storedPasscode } from './lib/api';
-
-export interface Draft {
-  analysis: AnalysisResult;
-  photo?: string;
-  slot: MealSlot;
-  date: string;
-  /** Set when editing a meal that is already in the diary. */
-  editingId?: string;
-}
 
 export type Route =
   | { name: 'home' }

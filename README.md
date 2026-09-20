@@ -16,7 +16,9 @@ the way a nutrition app should, and works offline too.
 - 🔍 **Food search** — 80+ everyday foods with per-100 g data, serving sizes and emoji.
 - ⚡ **Quick add** and ❤️ **favourites** for the meals you eat every week.
 - Every analysis lands on a review screen where portions are adjustable, items removable and
-  nothing is saved until you say so.
+  nothing is saved until you say so. Save sits in a bar that stays put while the rest scrolls, and
+  a meal you leave without saving is held as an **unfinished meal** on Home rather than binned —
+  offered back, never logged for you.
 
 **Tracking**
 - Daily calorie ring, macro bars against target, and an energy split (protein / carbs / fat).
