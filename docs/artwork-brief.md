@@ -17,10 +17,28 @@ These are the only files that need a human (or an AI) to draw them.
 | `squish-wordmark.svg` | The word "Squish" as a logo | Onboarding, lock screen, store listings |
 | `squish-lockup.svg` | Character and wordmark together | Store listings, marketing, the Play feature graphic |
 
+### Squish has no gender
+
+Not a he, not a she. "It", or just "Squish", in the app, in this brief, and in
+anything written about it.
+
+This is a drawing instruction as much as a writing one, because gender in a
+character is mostly signalled by a handful of details that get added without
+anyone deciding to: **no eyelashes, no eyebrow shaping, no bow, no hair, no
+clothing, no accessories.** The current drawing has none of them — two dots,
+a mouth, and two spots of blush — and that is the whole of the face on
+purpose. If a redraw adds lashes to make it friendlier, it has picked a
+gender on the app's behalf.
+
+It matters here more than it would elsewhere. Squish is the voice that talks
+to somebody about what they eat, and a food diary is used by people who are
+sensitive to being appraised. A character with no gender is a character with
+no opinion about yours.
+
 ### How the character file must be built
 
-Squish is not a picture in this app — he is **drawn in code** (`src/components/Squish.tsx`) out of
-vector shapes. That is what lets him blink, bob, change colour in dark mode, and be baked into a
+Squish is not a picture in this app — it is **drawn in code** (`src/components/Squish.tsx`) out of
+vector shapes. That is what lets it blink, bob, change colour in dark mode, and be baked into a
 share card at any size. To keep all of that, the new drawing needs to arrive in pieces I can
 re-assemble, not as one flattened shape.
 

@@ -31,8 +31,7 @@ export default function Waking() {
         <h1>Just a moment…</h1>
         {phase === 'slow' && (
           <p className="muted center waking-note">
-            Squish has been napping. The first visit of the day takes up to a minute to wake him — after that
-            he's quick.
+            Squish has been napping. The first visit of the day takes up to a minute — after that it’s quick.
           </p>
         )}
       </div>

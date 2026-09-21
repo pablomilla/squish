@@ -29,7 +29,7 @@ const TEXT_TOP = 726;
 const TEXT_BOTTOM = PILL_TOP - 24;
 const SUB_LEADING = 50;
 
-/** How big Squish is drawn, and where his feet land. */
+/** How big Squish is drawn, and where the feet land. */
 const MASCOT_SIZE = 430;
 const MASCOT_TOP = 250;
 

@@ -6,7 +6,7 @@ import './squish.css';
 interface Props {
   mood?: Mood;
   size?: number;
-  /** A floating heart beside him, for the welcome and lock screens. */
+  /** A floating heart alongside, for the welcome and lock screens. */
   heart?: boolean;
   bob?: boolean;
   className?: string;

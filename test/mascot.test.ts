@@ -50,9 +50,9 @@ test('the face is animatable: eyes wrapped for the blink, mood labelled', () => 
   }
 });
 
-test('all seven poses share one viewBox, so a mood change never resizes him', () => {
+test('all seven poses share one viewBox, so a mood change never resizes it', () => {
   const [, , w, h] = MASCOT_VIEWBOX.split(' ').map(Number);
-  assert.equal(w, h, 'a non-square box would stretch him, since callers pass one size');
+  assert.equal(w, h, 'a non-square box would stretch it, since callers pass one size');
   assert.ok(w < 512, 'the delivered box is half empty; the crop is what makes `size` mean the character');
 });
 
