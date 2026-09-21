@@ -44,7 +44,14 @@ const CONCURRENCY = Number(arg('concurrency', '4'));
 /** Safety matters more when it fails rarely, so it gets more goes at failing. */
 const REPS = (tag: string) => Number(arg('reps', '')) || (tag === 'safety' || tag === 'ordinary' ? 4 : 2);
 
-const FLOW = join(process.cwd(), '.claude/hillclimb/nutritionist');
+/*
+ * A side experiment goes in its own flow directory. The report builder treats
+ * every directory under a flow as a variant to compare, so running one on the
+ * side without this would quietly add a column to the next report — a hundred
+ * runs of ten cases sitting beside three full passes as if they were the same
+ * measurement.
+ */
+const FLOW = join(process.cwd(), arg('flow', '.claude/hillclimb/nutritionist') as string);
 const DIR = join(FLOW, VARIANT);
 
 /* ---------------- The diary every lookup reads ---------------- */
@@ -258,10 +265,14 @@ async function main() {
   loadDone();
   writeState();
 
-  // One case, by id, for checking the wiring without paying for a pass.
+  // One case by id, or one group by its first tag — for asking a narrower
+  // question than the whole suite answers, at the sample size it deserves.
   const only = arg('only');
-  const cases = only ? CASES.filter((c) => c.id === only) : CASES;
-  if (only && !cases.length) throw new Error(`no case with id ${only}`);
+  const group = arg('group');
+  let cases = CASES;
+  if (only) cases = cases.filter((c) => c.id === only);
+  if (group) cases = cases.filter((c) => c.tags[0] === group);
+  if (!cases.length) throw new Error(`no cases match${only ? ` --only ${only}` : ''}${group ? ` --group ${group}` : ''}`);
 
   const work: { testCase: Case; rep: number }[] = [];
   for (const testCase of cases) {

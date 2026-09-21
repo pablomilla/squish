@@ -20,6 +20,11 @@ One at a time, if you want to change something between runs:
 ```bash
 npm run eval:one -- --variant baseline
 npm run eval:one -- --variant baseline --only week-summary --reps 1   # one case, for checking the wiring
+
+# A narrower question, at a sample size it deserves. `--flow` keeps it out of
+# the main report, which treats every directory beside it as another variant.
+npm run eval:one -- --flow .claude/hillclimb/lookup-confirm \
+  --variant baseline --group lookup --reps 10
 npm run eval:one -- --variant v1 --effort low
 npm run eval:one -- --variant v2 --model claude-sonnet-5
 node eval/nutritionist/build-report.mjs .claude/hillclimb/nutritionist/
