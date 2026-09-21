@@ -15,6 +15,22 @@ import { describePortion } from '../lib/units';
 
 type Tab = 'search' | 'describe' | 'recipe' | 'favourites';
 
+/**
+ * The heading says which of the four you are on, not that you are adding food.
+ *
+ * "Add food" was right when these tabs were how you chose. The add sheet does
+ * that now, so arriving here having already chosen and being offered the same
+ * four choices under the same word read as a menu you had somehow not got past.
+ * Naming the tab confirms you landed where you meant to, and leaves the tabs
+ * as what they actually are — a way to change your mind, not a decision.
+ */
+const TITLES: Record<Tab, string> = {
+  search: 'Search foods',
+  describe: 'Describe a meal',
+  recipe: 'Import a recipe',
+  favourites: 'Saved meals',
+};
+
 interface Props {
   slot?: MealSlot;
   date?: string;
@@ -146,7 +162,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         <button type="button" className="btn--quiet" onClick={onCancel} aria-label="Close">
           <CloseIcon />
         </button>
-        <h2>Add food</h2>
+        <h2>{TITLES[tab]}</h2>
         <span style={{ width: 28 }} />
       </header>
 
