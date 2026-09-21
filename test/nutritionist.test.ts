@@ -351,3 +351,10 @@ test('an empty diary says so rather than naming a range it has not got', () => {
   const answer = text('look_up_days', { from: '2026-05-01', to: '2026-05-07' }, diaryWith([]));
   assert.match(answer, /diary is empty/);
 });
+
+test('a note is never the whole answer', () => {
+  // Asked whether they had coeliac disease, it saved a note about bread and
+  // replied only "I've made a note" — no answer, no GP. Twice in four runs.
+  assert.match(CHAT_SYSTEM, /Saving a note is never an answer/);
+  assert.match(CHAT_SYSTEM, /answer the question in the same turn/);
+});
