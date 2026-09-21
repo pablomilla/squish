@@ -23,6 +23,12 @@ npm run eval:one -- --variant v2 --model claude-sonnet-5
 node eval/nutritionist/build-report.mjs .claude/hillclimb/nutritionist/
 ```
 
+**Commit `results.jsonl` when a run finishes.** It is a few kilobytes and it
+cost about nine dollars; the container it was produced in does not survive the
+session. `report.html` rebuilds from it in a second, so that one is ignored,
+and so are the transcripts, which run to megabytes. This has already caught
+somebody out once.
+
 The key is the same one Squish uses in production. If it only lives in your
 host's dashboard, `npm run setup:ai` will put a copy in `.env` here — that file
 is gitignored and stays on your machine.

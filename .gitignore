@@ -17,10 +17,11 @@ bench/report.md
 # Verification screenshots, taken while working — not the repo's business
 shots/
 
-# Eval output: results, transcripts and the rendered report are derived
+# Eval output. The scores are NOT derived — they cost real money and the
+# session that produced them is thrown away, so results.jsonl, errors.jsonl
+# and trajectory/ are committed. Only the bulky and the rebuildable are
+# ignored: transcripts run to megabytes, and report.html regenerates from the
+# results in a second.
 .claude/hillclimb/**/traces/
-.claude/hillclimb/**/results.jsonl
-.claude/hillclimb/**/errors.jsonl
 .claude/hillclimb/**/report.html
-.claude/hillclimb/**/trajectory/
 eval/nutritionist/cases.html
