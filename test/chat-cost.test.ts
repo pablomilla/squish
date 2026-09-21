@@ -16,6 +16,7 @@ import { priceUsage } from '../server/claude';
  */
 
 const context: ChatContext = {
+  date: '2026-05-20',
   goal: 'lose',
   calorieTarget: 1900,
   proteinTarget: 120,
@@ -94,4 +95,15 @@ test('a cached call is priced as a cached call', () => {
   const writing = priceUsage('claude-opus-5', { inputTokens: 200, outputTokens: 1_000, cacheWriteTokens: 9_800 });
   assert.ok((writing as number) > (uncached as number) * 0.9);
   assert.equal(priceUsage('some-other-model', { inputTokens: 1, outputTokens: 1 }), null);
+});
+
+test('it is told what day it is, because every tool here takes a date', () => {
+  const request = chatRequest([{ role: 'user', content: 'how was last week?' }], context);
+  const spoken = (request.system as Anthropic.TextBlockParam[])[1].text;
+
+  // An eval run found the models asking about the right day of the wrong
+  // year — 96 of about 800 dates landed inside the diary at all — because
+  // nothing anywhere said what today was.
+  assert.match(spoken, /Today is Wednesday 20 May 2026/);
+  assert.match(spoken, /2026-05-20/, 'and in the form the tools actually take');
 });

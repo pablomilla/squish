@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Route } from '../App';
+import type { Route } from '../types';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
 import MealCard from '../components/MealCard';

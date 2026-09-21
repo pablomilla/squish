@@ -113,6 +113,21 @@ export function clampRange(from: string | undefined, to: string | undefined, tod
   return { start, end, dates, trimmed };
 }
 
+/**
+ * What the diary actually covers, said whenever a lookup finds nothing.
+ *
+ * Belt and braces against asking about the wrong stretch of time. An empty
+ * answer on its own is indistinguishable from a person who logged nothing,
+ * and the model has no way to tell which it is looking at — so it says, and
+ * a lookup aimed at the wrong month can be aimed again instead of reported
+ * as a blank fortnight.
+ */
+function span(diary: Diary): string {
+  const logged = diary.meals.map((m) => m.date).sort();
+  if (!logged.length) return 'Their diary is empty — nothing has ever been logged.';
+  return `Their diary runs from ${sayDate(logged[0])} (${logged[0]}) to ${sayDate(logged[logged.length - 1])} (${logged[logged.length - 1]}), and today is ${sayDate(diary.today)} (${diary.today}).`;
+}
+
 const g = (value: number | undefined): string => (value === undefined ? '?' : `${Math.round(value)} g`);
 
 /** One day in one line, with everything the ceilings are judged on. */
@@ -164,6 +179,8 @@ function lookUpDays(input: Record<string, unknown>, diary: Diary): string {
   const lines = dates.map((date) => dayLine(date, diary));
   const logged = dates.filter((date) => totalsOn(diary.meals, date).calories > 0).length;
 
+  if (!logged) return `Nothing logged between ${sayDate(start)} and ${sayDate(end)}. ${span(diary)}`;
+
   return [
     `${sayDate(start)} to ${sayDate(end)}: ${logged} of ${dates.length} days logged.`,
     trimmed ? `(Range was longer than ${MAX_RANGE_DAYS} days and was trimmed to the most recent ${MAX_RANGE_DAYS}.)` : '',
@@ -206,9 +223,8 @@ function findMeals(input: Record<string, unknown>, diary: Diary): string {
 
   const shown = matches.slice(0, limit);
   if (!shown.length) {
-    return query
-      ? `No meals matching "${query}" between ${from} and ${to}.`
-      : `No meals logged between ${from} and ${to}.`;
+    const where = query ? `No meals matching "${query}"` : 'No meals logged';
+    return `${where} between ${sayDate(from)} and ${sayDate(to)}. ${span(diary)}`;
   }
 
   const head =
@@ -232,7 +248,7 @@ function nutrientReport(input: Record<string, unknown>, diary: Diary): string {
   const { start, end, dates, trimmed } = clampRange(asDate(input.from), asDate(input.to), diary.today);
   const logged = dates.filter((date) => totalsOn(diary.meals, date).calories > 0);
 
-  if (!logged.length) return `Nothing logged between ${sayDate(start)} and ${sayDate(end)}.`;
+  if (!logged.length) return `Nothing logged between ${sayDate(start)} and ${sayDate(end)}. ${span(diary)}`;
 
   const totals = logged.map((date) => totalsOn(diary.meals, date));
   const mean = (pick: (n: Nutrients) => number | undefined) => {

@@ -1,0 +1,20 @@
+.add-ways { display: flex; flex-direction: column; gap: 6px; }
+
+.add-way {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  padding: 12px 14px; border-radius: var(--r-lg); border: 1px solid transparent;
+  background: var(--surface-sunk); color: inherit; transition: transform 0.12s var(--ease);
+}
+.add-way:active { transform: scale(0.985); }
+
+/* Snapping is what most people came to do, so it does not look like a list item. */
+.add-way--primary { background: var(--brand); color: var(--on-brand); padding: 15px 14px; }
+.add-way--primary .tiny { color: inherit; opacity: 0.8; }
+.add-way--primary .add-way-icon { background: rgba(255, 255, 255, 0.18); color: inherit; }
+
+.add-way-icon {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center; background: var(--bg); color: var(--brand);
+}
+.add-way-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.add-way-text b { font-weight: 600; }

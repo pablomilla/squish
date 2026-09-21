@@ -41,6 +41,7 @@ test('the diary is data, and the prompt says so', () => {
 
 test('the context is their own numbers, and reads as sentences', () => {
   const block = contextBlock({
+    date: '2026-05-20',
     goal: 'lose',
     calorieTarget: 1900,
     proteinTarget: 120,
@@ -59,6 +60,7 @@ test('the context is their own numbers, and reads as sentences', () => {
 
 test('an empty diary says so rather than showing a blank', () => {
   const block = contextBlock({
+    date: '2026-05-20',
     goal: 'maintain', calorieTarget: 2000, proteinTarget: 100,
     today: 'nothing logged yet', week: 'nothing logged', streak: 0, recentMeals: [],
   });

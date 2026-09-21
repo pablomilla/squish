@@ -83,6 +83,54 @@ export function speechErrorMessage(code: string): string {
   return 'Dictation stopped unexpectedly. Typing still works.';
 }
 
+/** Whitespace and case are not differences worth noticing when comparing. */
+const key = (text: string) => text.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * Fold what the recogniser has said into one transcript.
+ *
+ * The naive version — join them all, or add the new ones to the old — is
+ * wrong on both browsers, in opposite ways, and produces the same wreckage:
+ *
+ *   chicken chicken chicken and chicken and chicken and bacon chicken and
+ *   bacon with chicken and bacon with mayonnaise …
+ *
+ * Safari, with `continuous` on, does not revise a result in place. It appends
+ * each longer retelling of the same utterance to the list as its own *final*
+ * result, so the list holds every snapshot on the way to the finished
+ * sentence. Chrome revises in place but re-delivers earlier results, sometimes
+ * with `resultIndex` rewound to zero, so anything that adds from there counts
+ * them twice.
+ *
+ * What both have in common is that a segment which merely restates what is
+ * already known should replace it rather than join it. So: a segment that
+ * begins with everything so far is the same sentence, further along, and
+ * supersedes it; a segment already contained at the end is a repeat and is
+ * dropped; anything else is genuinely new and is joined on with a space —
+ * Chrome pads its segments and Safari does not, which is how "chicken salad"
+ * once met "and chips" as "saladand".
+ *
+ * The cost is that somebody who says "chicken" and then "chicken and chips"
+ * gets the second only. That is almost certainly what they meant, and it is a
+ * far better failure than the one above.
+ */
+export function mergeTranscript(segments: string[]): string {
+  let text = '';
+  for (const raw of segments) {
+    const segment = raw.trim();
+    if (!segment) continue;
+    if (!text) {
+      text = segment;
+      continue;
+    }
+    const known = key(text);
+    const heard = key(segment);
+    if (heard.startsWith(known)) text = segment;
+    else if (!known.endsWith(heard)) text = `${text} ${segment}`;
+  }
+  return text;
+}
+
 /**
  * A single dictation, already started. Returns null where the browser cannot
  * do it, so callers can treat "unsupported" and "declined" the same way.
@@ -117,14 +165,15 @@ export function startDictation(handlers: DictationHandlers, lang = 'en-GB'): { s
   };
 
   recognition.onresult = (event) => {
-    let interim = '';
-    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+    const finals: string[] = [];
+    const moving: string[] = [];
+    for (let i = 0; i < event.results.length; i += 1) {
       const result = event.results[i];
       const text = result[0]?.transcript ?? '';
-      if (result.isFinal) final += text;
-      else interim += text;
+      (result.isFinal ? finals : moving).push(text);
     }
-    handlers.onChange({ final: final.trim(), interim: interim.trim() });
+    final = mergeTranscript(finals);
+    handlers.onChange({ final, interim: mergeTranscript(moving) });
   };
 
   recognition.onerror = (event) => {

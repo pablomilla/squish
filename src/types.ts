@@ -194,3 +194,18 @@ export interface Draft {
   /** Set when editing a meal that is already in the diary. */
   editingId?: string;
 }
+
+/**
+ * Where the app is. Kept here rather than beside the router so a component can
+ * name a destination without importing the thing that renders it.
+ */
+export type Route =
+  | { name: 'home' }
+  | { name: 'meals' }
+  | { name: 'insights' }
+  | { name: 'you' }
+  /** `shot` opens straight into that mode — a barcode is two taps, not three. */
+  | { name: 'capture'; slot?: MealSlot; date?: string; shot?: 'plate' | 'label' | 'barcode' }
+  | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites' }
+  | { name: 'ask' }
+  | { name: 'review'; draft: Draft };
