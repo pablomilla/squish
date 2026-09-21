@@ -1,0 +1,1 @@
+Opus 5, effort lowered from medium to low. Around a fifth off the bill with the same model, and the thing to watch is whether the lookup-planning turns get sloppier — that is where the thinking earns its keep.

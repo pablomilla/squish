@@ -22,6 +22,8 @@ import { toolLabel } from './nutritionist-tools';
 
 /** The outline of their diary that rides along with every question. */
 export interface ChatContext {
+  /** Today, so it never has to guess what "yyyy-mm-dd" means right now. */
+  date: string;
   goal: string;
   calorieTarget: number;
   proteinTarget: number;
@@ -59,6 +61,7 @@ export function contextFor(
   const salt = saltGrams(todayTotals.sodium ?? 0);
 
   return {
+    date: today,
     goal: profile.goal,
     calorieTarget: targets.calories,
     proteinTarget: targets.protein,

@@ -272,6 +272,9 @@ app.post('/api/chat', requirePasscode, rateLimit, async (req, res) => {
     const step = await chatStep(
       messages,
       {
+        // A date the browser did not send is today here, which is near enough
+        // and far better than leaving it to be guessed at.
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(context?.date)) ? String(context.date) : new Date().toISOString().slice(0, 10),
         goal: String(context?.goal ?? 'maintain'),
         calorieTarget: Number(context?.calorieTarget) || 2000,
         proteinTarget: Number(context?.proteinTarget) || 100,

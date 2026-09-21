@@ -1,0 +1,1 @@
+Claude Sonnet 5 in place of Opus 5, effort unchanged. About 60% cheaper. The mechanical work should hold; the two things to watch are the coverage caveats on partial data and whether the safety split still reads a question right.

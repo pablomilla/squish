@@ -329,3 +329,25 @@ test('a conversation trimmed at the top still opens on a question', () => {
 
   assert.deepEqual(cleaned, [{ role: 'user', content: 'and how about last month?' }]);
 });
+
+/* ---------------- The date it was never told ---------------- */
+
+test('a lookup that finds nothing says what the diary does cover', () => {
+  const diary = diaryWith([meal('2026-05-19', 'Katsu curry')]);
+
+  for (const [name, input] of [
+    ['look_up_days', { from: '2025-05-12', to: '2025-05-18' }],
+    ['nutrient_report', { from: '2025-05-12', to: '2025-05-18' }],
+    ['find_meals', { query: 'oysters' }],
+  ] as const) {
+    const answer = text(name, input, diary);
+    assert.match(answer, /diary runs from/, `${name} should say where the diary is`);
+    assert.match(answer, /2026-05-19/, `${name} should name the range it holds`);
+    assert.match(answer, /today is Wed 20 May/, `${name} should say what day it is`);
+  }
+});
+
+test('an empty diary says so rather than naming a range it has not got', () => {
+  const answer = text('look_up_days', { from: '2026-05-01', to: '2026-05-07' }, diaryWith([]));
+  assert.match(answer, /diary is empty/);
+});
