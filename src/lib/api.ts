@@ -1,5 +1,6 @@
 import type { AnalysisResult, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
+import { apiUrl } from './origin';
 import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 
@@ -81,7 +82,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     const passcode = storedPasscode();
     return await unwrap<T>(
       path,
-      await fetch(path, {
+      await fetch(apiUrl(path), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(passcode ? { 'x-squish-pass': passcode } : {}) },
         body: JSON.stringify(body),
@@ -100,7 +101,7 @@ async function get<T>(path: string): Promise<T> {
     const passcode = storedPasscode();
     return await unwrap<T>(
       path,
-      await fetch(path, { headers: passcode ? { 'x-squish-pass': passcode } : {}, signal: controller.signal }),
+      await fetch(apiUrl(path), { headers: passcode ? { 'x-squish-pass': passcode } : {}, signal: controller.signal }),
     );
   } finally {
     clearTimeout(timer);
@@ -118,7 +119,7 @@ export interface AiStatus {
 /** Check a passcode against the server. Remembers it on success. */
 export async function unlock(passcode: string): Promise<boolean> {
   try {
-    const response = await fetch('/api/unlock', {
+    const response = await fetch(apiUrl('/api/unlock'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ passcode }),
@@ -138,7 +139,7 @@ export async function aiStatus(): Promise<AiStatus> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
   try {
-    const response = await fetch('/api/health', { signal: controller.signal });
+    const response = await fetch(apiUrl('/api/health'), { signal: controller.signal });
     if (!response.ok) throw new Error(String(response.status));
     return (await response.json()) as AiStatus;
   } catch {

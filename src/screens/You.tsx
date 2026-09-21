@@ -3,7 +3,7 @@ import Squish from '../components/Squish';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
-import { disableReminders, enableReminders, explainBlocker, pushConfigured, reminderSupport } from '../lib/reminders';
+import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -33,25 +33,18 @@ export default function You() {
   const [savingReminders, setSavingReminders] = useState(false);
   const measured = profile.plateCm !== undefined || profile.bowlMl !== undefined;
   // Worked out once: whether push is possible does not change while the screen
-  // is open, and calling it in render would run it on every keystroke.
-  const [blocker, setBlocker] = useState(reminderSupport);
+  // is open, and asking the phone is a promise, not a value.
+  const [blocker, setBlocker] = useState<ReminderBlocker | null>(null);
 
-  /*
-   * The browser being capable is only half of it. A server with no keypair
-   * cannot send anything, and until that is known the card would be offering a
-   * button whose only outcome is an error — which reads as a fault rather than
-   * a decision. Nothing is shown as available until the server has agreed.
-   */
   useEffect(() => {
-    if (blocker !== 'ok') return;
     let live = true;
-    void pushConfigured().then((ready) => {
-      if (live && !ready) setBlocker('not-configured');
+    void reminderSupport().then((found) => {
+      if (live) setBlocker(found);
     });
     return () => {
       live = false;
     };
-  }, [blocker]);
+  }, []);
 
   const toggleReminders = async () => {
     setSavingReminders(true);
@@ -325,7 +318,9 @@ export default function You() {
           {reminders.on && <span className="badge badge--good">On</span>}
         </div>
 
-        {blocker !== 'ok' ? (
+        {blocker === null ? (
+          <p className="tiny muted">Checking…</p>
+        ) : blocker !== 'ok' ? (
           <p className="tiny muted">{explainBlocker(blocker)}</p>
         ) : (
           <>

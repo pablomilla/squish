@@ -136,33 +136,21 @@ With a passcode set, the app opens on a lock screen and every analysis endpoint 
 is entered. It is a shared passcode, not a login — everyone who knows it shares one Squish. Render's
 free tier sleeps after inactivity, so the first visit takes ~50s to wake.
 
-### Turning meal reminders on
+### Meal reminders
 
-Reminders are off until a keypair exists. Locally:
+Reminders are the phone app's job. The device holds the schedule and fires on
+time whether or not Squish is open, with no signal and no server involved —
+which is the whole reason they waited for the Capacitor wrap.
 
-```bash
-npm run setup:push        # prints a VAPID keypair
-```
+The web version needed the opposite of all that: VAPID keys, a subscription
+store, and a server awake at breakfast. Render's free instance sleeps after
+fifteen minutes of no traffic, so an 8am nudge would have needed a paid one;
+the subscriptions lived in a JSON file that a deploy wiped; and on an iPhone
+none of it worked at all unless Squish had been added to the home screen. All
+of that is deleted rather than carried.
 
-Paste the three lines it gives you into `.env`, or into your host's environment, and restart. The
-server says which it is on startup: *"Meal reminders on."* or *"Meal reminders off — run
-`npm run setup:push` to generate keys."* Then open **You → Meal reminders**, set the times, and
-press the button — the notification permission prompt only ever appears from that press.
-
-Three things will stop it working, and none of them announce themselves:
-
-| | |
-| --- | --- |
-| **A sleeping server** | The reminder clock is a `setInterval` on the server. Render's free instance sleeps after fifteen minutes of no traffic, and a sleeping instance cannot fire an 8am nudge. Reminders need an instance that stays awake — on Render that means a paid one. |
-| **An ephemeral disk** | Subscriptions live in `.data/push-subscriptions.json`. Without a persistent disk attached, that file is wiped on every deploy and everyone has to opt in again. Set `SQUISH_PUSH_STORE` to a path on the disk once you have one. |
-| **An iPhone in a Safari tab** | iOS only allows notifications to a web app added to the home screen, from 16.4. The screen says so rather than offering a dead button, but it is the most likely reason a tester reports nothing arriving. |
-
-Regenerating the keypair invalidates every existing subscription, so everyone already getting
-reminders has to turn them on again. `npm run setup:push` refuses to overwrite without `--force` for
-that reason.
-
-When the app is wrapped for the App Store none of this applies: a native local notification is
-scheduled on the device, needs no server, no keys and no subscription.
+In a browser the card on **You** says so, which is the honest answer rather
+than a switch that half works. See [`docs/phone-app.md`](docs/phone-app.md).
 
 ## How the AI part works
 
@@ -263,8 +251,10 @@ src/
   screens/        Onboarding, Home, Capture, Review, Diary, Insights, You, AddFood
   lib/            Nutrition maths, food table, offline estimator, selectors, dates, API client
                   nutritionist-tools.ts answers the lookups out of the store
+                  origin.ts is where every API call learns which host it is on
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
+ios/ android/     Capacitor shells — see docs/phone-app.md
 scripts/          Credential setup, and the accuracy/cost benchmark
 eval/             Model comparison for the nutritionist — cases, judge, runner
 bench/            Your benchmark photos and their real figures (gitignored)
@@ -273,6 +263,11 @@ test/             Node test-runner suite for the maths and parsing
 
 ## Planned work
 
+- [`docs/phone-app.md`](docs/phone-app.md) — Squish wrapped with Capacitor for
+  the App Store and Play Store. The code side is done: reminders moved onto the
+  device, every API call taught where its server is, permission strings filled
+  in, both platforms scaffolded. What is left needs a Mac, and nothing has run
+  on a phone yet.
 - [`docs/health-integration.md`](docs/health-integration.md) — reading weight and steps from Apple
   Health and Health Connect, and writing meals back. Both hubs are native-only, so it depends on a
   Capacitor wrap; the plan covers the provenance and write-loop problems worth solving on paper

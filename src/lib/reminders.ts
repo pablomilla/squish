@@ -1,26 +1,21 @@
 /**
- * Turning meal reminders on, from the browser's side.
+ * Meal reminders, from the phone rather than from a server.
  *
- * The awkward shape of this is the platform's, not ours. Three things have to
- * line up — a service worker, notification permission, and a push
- * subscription — and each of them can be missing for a different reason, so
- * `reminderSupport()` reports which one rather than a single yes or no. A
- * screen that says "reminders are unavailable" and nothing else is no use to
- * anybody.
+ * This is what the Capacitor wrap was waiting for. The web version needed a
+ * server awake at breakfast to push a notification at somebody, which meant
+ * VAPID keys, a subscription store, and a free-tier host that goes to sleep
+ * and wakes up at eight past eight. None of that exists now: the phone holds
+ * the schedule itself, fires on time whether or not Squish is open, and
+ * carries on working with no signal at all.
  *
- * The iPhone case is worth stating plainly, because it will be most of your
- * users: Safari only allows notifications to a web app that has been added to
- * the home screen, from iOS 16.4. In a normal Safari tab there is no
- * PushManager at all, and no amount of asking will produce one.
+ * On the web it says so rather than pretending. A browser tab cannot do this
+ * without the machinery above, and an honest "the app does this" is better
+ * than a switch that half works.
  */
+import { LocalNotifications, type PermissionStatus } from '@capacitor/local-notifications';
+import { isNative } from './origin';
 
-export type ReminderBlocker =
-  | 'ok'
-  | 'no-service-worker'
-  | 'no-push'
-  | 'needs-home-screen'
-  | 'denied'
-  | 'not-configured';
+export type ReminderBlocker = 'ok' | 'not-on-web' | 'denied' | 'unavailable';
 
 export interface ReminderTimes {
   breakfast?: string;
@@ -28,75 +23,55 @@ export interface ReminderTimes {
   dinner?: string;
 }
 
-/** True when the page is running as an installed app rather than in a tab. */
-export function isInstalled(): boolean {
-  if (typeof window === 'undefined') return false;
-  const standalone = (window.navigator as { standalone?: boolean }).standalone;
-  return standalone === true || window.matchMedia?.('(display-mode: standalone)').matches === true;
-}
-
-const isApple = (): boolean =>
-  typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-/** What, if anything, is standing in the way. */
-export function reminderSupport(): ReminderBlocker {
-  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return 'no-service-worker';
-  if (!('PushManager' in window) || !('Notification' in window)) {
-    // On an iPhone the missing PushManager is almost always the home-screen
-    // rule rather than an old browser, and saying so is actionable.
-    return isApple() && !isInstalled() ? 'needs-home-screen' : 'no-push';
-  }
-  if (Notification.permission === 'denied') return 'denied';
-  return 'ok';
-}
-
 /**
- * Whether this server can send reminders at all.
+ * Fixed ids, one per meal.
  *
- * The browser being capable is only half of it: without a keypair on the
- * server there is nothing to subscribe to. Asked up front rather than
- * discovered by pressing a button, because a control that only fails when
- * used looks like a fault rather than a decision.
+ * Scheduling over an existing id replaces it, which is what makes changing a
+ * time work. Generated ids would leave yesterday's eight o'clock in place
+ * beside today's, and a week of that is a phone that pings all morning.
  */
-export async function pushConfigured(): Promise<boolean> {
+const IDS: Record<keyof ReminderTimes, number> = { breakfast: 1, lunch: 2, dinner: 3 };
+
+/** Said in Squish's voice, because it arrives on a lock screen with its name on it. */
+const WORDS: Record<keyof ReminderTimes, { title: string; body: string }> = {
+  breakfast: { title: 'Morning', body: 'What did breakfast look like?' },
+  lunch: { title: 'Lunchtime', body: 'Worth logging while you remember it.' },
+  dinner: { title: 'Evening', body: 'Round the day off — what was dinner?' },
+};
+
+/** "08:30" → { hour: 8, minute: 30 }, or nothing if it is not a time. */
+function at(time: string | undefined): { hour: number; minute: number } | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time ?? '');
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  return hour < 24 && minute < 60 ? { hour, minute } : null;
+}
+
+/** What, if anything, stands in the way. */
+export async function reminderSupport(): Promise<ReminderBlocker> {
+  if (!isNative()) return 'not-on-web';
   try {
-    const response = await fetch('/api/push/key');
-    if (!response.ok) return false;
-    return Boolean(((await response.json()) as { publicKey?: string }).publicKey);
+    const { display } = await LocalNotifications.checkPermissions();
+    return display === 'denied' ? 'denied' : 'ok';
   } catch {
-    return false;
+    return 'unavailable';
   }
 }
 
 export function explainBlocker(blocker: ReminderBlocker): string {
   switch (blocker) {
-    case 'needs-home-screen':
-      return 'On an iPhone, reminders only work once Squish is on your home screen. Tap Share, then "Add to Home Screen", and come back.';
-    case 'no-push':
-      return 'This browser cannot send reminders. Chrome, Edge and Safari can.';
-    case 'no-service-worker':
-      return 'This browser cannot send reminders.';
+    case 'not-on-web':
+      // Not a fault, and not a thing to fix. A web page cannot wake a phone
+      // without a server awake at breakfast to do it for them.
+      return 'Reminders live in the Squish app on your phone, where they can nudge you without needing a server awake at breakfast.';
     case 'denied':
-      return 'Notifications are blocked for Squish. You can allow them again in your browser settings.';
-    case 'not-configured':
-      // Not a fault. Waking a phone from a web page needs a server that never
-      // sleeps; the app on the phone will do it on the device instead.
-      return 'Reminders are waiting on the phone app — it can nudge you without needing a server awake at breakfast.';
+      return 'Notifications are turned off for Squish. You can allow them again in your phone’s settings.';
+    case 'unavailable':
+      return 'This device will not let Squish schedule reminders.';
     default:
       return '';
   }
-}
-
-/** The browser's own base64url, which is not the one `atob` wants. */
-function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(padded);
-  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
-}
-
-async function ready(): Promise<ServiceWorkerRegistration> {
-  await navigator.serviceWorker.register('/sw.js');
-  return navigator.serviceWorker.ready;
 }
 
 export interface EnableResult {
@@ -106,74 +81,55 @@ export interface EnableResult {
 }
 
 /**
- * Ask for permission, subscribe, and tell the server when to nudge.
+ * Ask once, then hand the phone the whole week.
  *
- * The permission prompt only ever appears from here, which is to say from a
- * button somebody pressed. Asking on page load is the single fastest way to
- * get told no for ever, and "denied" is not a decision a website can revisit.
+ * `on` with only an hour and a minute repeats daily, which is the shape this
+ * wants: three standing appointments rather than a queue of one-offs that
+ * runs out while somebody is on holiday.
  */
 export async function enableReminders(times: ReminderTimes): Promise<EnableResult> {
-  const blocker = reminderSupport();
+  const blocker = await reminderSupport();
   if (blocker !== 'ok') return { ok: false, blocker, message: explainBlocker(blocker) };
 
-  let key: string;
+  let status: PermissionStatus;
   try {
-    const response = await fetch('/api/push/key');
-    if (!response.ok) return { ok: false, blocker: 'not-configured', message: explainBlocker('not-configured') };
-    key = ((await response.json()) as { publicKey: string }).publicKey;
-    if (!key) return { ok: false, blocker: 'not-configured', message: explainBlocker('not-configured') };
+    status = await LocalNotifications.requestPermissions();
   } catch {
-    return { ok: false, message: 'Could not reach Squish to set reminders up.' };
+    return { ok: false, blocker: 'unavailable', message: explainBlocker('unavailable') };
   }
-
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
+  if (status.display !== 'granted') {
     return { ok: false, blocker: 'denied', message: 'Reminders need permission to show notifications.' };
   }
 
+  const meals = (Object.keys(IDS) as (keyof ReminderTimes)[]).filter((meal) => at(times[meal]));
+  if (!meals.length) return { ok: false, message: 'Set a time for at least one meal first.' };
+
   try {
-    const registration = await ready();
-    const subscription =
-      (await registration.pushManager.getSubscription()) ??
-      (await registration.pushManager.subscribe({
-        // Silent pushes are not allowed on the web, and trying gets a site's
-        // permission revoked. Everything we send is something to show.
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
-      }));
-
-    await fetch('/api/push/subscribe', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        subscription: subscription.toJSON(),
-        times,
-        // An IANA name rather than an offset, so the clock survives the spring.
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }),
+    // Clear first: a meal whose time was removed should stop, and scheduling
+    // alone would never tell the phone that.
+    await disableReminders();
+    await LocalNotifications.schedule({
+      notifications: meals.map((meal) => ({
+        id: IDS[meal],
+        title: WORDS[meal].title,
+        body: WORDS[meal].body,
+        schedule: { on: at(times[meal]) ?? undefined, allowWhileIdle: true },
+      })),
     });
-
     return { ok: true };
   } catch {
     return { ok: false, message: 'Reminders could not be set up. Try again in a moment.' };
   }
 }
 
-/** Stop reminders, and tell the server to forget the subscription. */
+/** Stop the lot. Safe to call when none are set. */
 export async function disableReminders(): Promise<void> {
-  if (!('serviceWorker' in navigator)) return;
+  if (!isNative()) return;
   try {
-    const registration = await navigator.serviceWorker.getRegistration();
-    const subscription = await registration?.pushManager.getSubscription();
-    if (!subscription) return;
-
-    await fetch('/api/push/unsubscribe', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ endpoint: subscription.endpoint }),
-    });
-    await subscription.unsubscribe();
+    const pending = await LocalNotifications.getPending();
+    const ours = pending.notifications.filter((n) => Object.values(IDS).includes(n.id));
+    if (ours.length) await LocalNotifications.cancel({ notifications: ours.map(({ id }) => ({ id })) });
   } catch {
-    // Nothing useful to say: the reminders are off at our end either way.
+    // Nothing useful to say: they are off at our end either way.
   }
 }

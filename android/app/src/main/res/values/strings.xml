@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Squish</string>
+    <string name="title_activity_main">Squish</string>
+    <string name="package_name">app.squish.tracker</string>
+    <string name="custom_url_scheme">app.squish.tracker</string>
+</resources>

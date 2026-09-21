@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { matchStatusBar } from '../lib/native';
 import { CloseIcon } from './icons';
 
 /* ---------------- Bottom sheet ---------------- */
@@ -185,6 +186,9 @@ export function useAppliedTheme(preference: 'light' | 'dark' | 'system') {
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute('content', theme === 'dark' ? '#17151f' : '#FDF6EC');
+    // The phone's own status bar sits over the app, so it has to be told too
+    // — the meta tag it ignores. A no-op in a browser.
+    void matchStatusBar(theme === 'dark');
   }, [theme]);
 
   return theme;

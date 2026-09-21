@@ -25,3 +25,14 @@ shots/
 .claude/hillclimb/**/traces/
 .claude/hillclimb/**/report.html
 eval/nutritionist/cases.html
+
+# Capacitor: the copy of the web build it drops into each platform, and the
+# native build output. The projects themselves are committed; their builds are not.
+ios/App/App/public/
+android/app/src/main/assets/public/
+ios/App/Pods/
+ios/App/App.xcworkspace/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties

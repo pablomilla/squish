@@ -22,15 +22,21 @@
     "lint": "oxlint src server test scripts eval",
     "typecheck": "tsc -b",
     "test": "tsx --test test/*.test.ts",
-    "build:mascot": "tsx scripts/build-mascot.ts",
-    "setup:push": "tsx --env-file-if-exists=.env scripts/setup-push.ts"
+    "build:mascot": "tsx scripts/build-mascot.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "barcode-detector": "^3.2.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tsx": "^4.23.13",
-    "web-push": "^3.6.7",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -40,7 +46,6 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^10.0.5",
     "cors": "^2.8.6",
