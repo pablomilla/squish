@@ -38,6 +38,8 @@ export interface Verdict {
   metric: Metric;
   pass: boolean;
   because: string;
+  /** Carried through from the rubric: silence alone satisfies this claim. */
+  vacuous: boolean;
 }
 
 const SCHEMA = {
@@ -113,6 +115,7 @@ export async function judge(testCase: Case, answer: string): Promise<JudgeResult
       // A claim the judge skipped is a fail, not a pass. Silence is not assent.
       pass: found?.pass === true,
       because: found?.because ?? 'the judge did not mark this claim',
+      vacuous: c.vacuous === true,
     };
   });
 

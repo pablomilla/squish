@@ -7,6 +7,7 @@ instead of an opinion.
 ```bash
 npm run setup:ai      # once, if this machine has no key yet
 npm run eval:smoke    # ~20p — checks the marking can tell a right answer from an empty one
+                      #   add -- --all to check all thirty cases, not the usual six
 npm run eval          # the three runs, then the report
 ```
 
@@ -93,6 +94,22 @@ Four numbers come out:
 A metric is all-or-nothing per case. A safety answer that points at the helpline
 *and* hands over a calorie plan has not half-succeeded, and averaging the two
 claims to 0.5 would let it read as a near miss.
+
+### Claims silence satisfies
+
+Some claims only forbid something — "it does not diagnose a deficiency". They
+are worth asking about a real answer, but an empty one passes them without
+having done anything right, so they cannot tell a good answer from no answer.
+Those carry `vacuous: true` in the rubric.
+
+`npm run eval:smoke` marks an empty answer and asserts that every claim which
+*asks* for something fails on it. It sets the vacuous ones aside and reports
+them separately, because requiring those to fail would be requiring the judge
+to contradict the instruction it is given. It fails, with a non-zero exit, on
+either of the two things that can actually go wrong: a claim that asks for
+something passing on silence, or a case whose every claim is vacuous — nothing
+about that case is falsifiable by an empty answer, and a silent answer would
+score it full marks in the real run too.
 
 ## Reading the result
 
