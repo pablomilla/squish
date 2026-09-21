@@ -10,7 +10,7 @@
 .home-streak b { font-size: 20px; }
 
 /* Squish leans into the card's right padding: the artwork has air of its own
-   around him, so the words get that space back rather than the gap doing. */
+   around it, so the words get that space back rather than the gap doing. */
 .home-hero { display: flex; align-items: center; gap: 0; padding: var(--s4) var(--s3); }
 .home-hero-text { flex: 1; min-width: 0; }
 .home-hero .squish { margin-right: calc(var(--s3) * -1); flex-shrink: 0; }

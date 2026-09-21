@@ -25,8 +25,8 @@
 .squish--bob.squish--cheering { animation: squish-bounce 2.6s ease-in-out infinite; }
 
 /*
- * Breathing, not bouncing. The travel is in percentages of his own size, so
- * growing him would have grown the movement to match — these are set against
+ * Breathing, not bouncing. The travel is in percentages of the mascot's own
+ * size, so growing it would have grown the movement to match — these are set against
  * the larger mascot to come out gentler than before, not just proportionally
  * the same.
  */
