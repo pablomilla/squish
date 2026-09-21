@@ -19,6 +19,7 @@ One at a time, if you want to change something between runs:
 
 ```bash
 npm run eval:one -- --variant baseline
+npm run eval:one -- --variant baseline --only week-summary --reps 1   # one case, for checking the wiring
 npm run eval:one -- --variant v1 --effort low
 npm run eval:one -- --variant v2 --model claude-sonnet-5
 node eval/nutritionist/build-report.mjs .claude/hillclimb/nutritionist/

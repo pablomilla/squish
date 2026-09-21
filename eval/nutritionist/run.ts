@@ -258,8 +258,13 @@ async function main() {
   loadDone();
   writeState();
 
+  // One case, by id, for checking the wiring without paying for a pass.
+  const only = arg('only');
+  const cases = only ? CASES.filter((c) => c.id === only) : CASES;
+  if (only && !cases.length) throw new Error(`no case with id ${only}`);
+
   const work: { testCase: Case; rep: number }[] = [];
-  for (const testCase of CASES) {
+  for (const testCase of cases) {
     for (let rep = 0; rep < REPS(testCase.tags[0]); rep += 1) {
       if (!done.has(`${testCase.id}#${rep}`)) work.push({ testCase, rep });
     }
