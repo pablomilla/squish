@@ -151,7 +151,14 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       toast('Meal updated', '✏️');
     } else {
       addMeal(payload);
-      toast(`${Math.round(totals.calories)} kcal logged — nice one!`, '🎉');
+      /*
+       * The one place to teach the word, because it cannot be misread here:
+       * they have just done the thing, so "squished it" defines itself. The
+       * button above still says Save meal, and always will — a coined verb
+       * belongs in Squish's voice, never on the control somebody has to press
+       * to keep their dinner.
+       */
+      toast(`Squished it — ${Math.round(totals.calories)} kcal logged.`, '🎉');
     }
     onDone();
   };

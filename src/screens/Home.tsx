@@ -94,7 +94,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
   const fallbackNudge = todaysMeals.length
     ? `${remaining(targets.calories, totals.calories)} kcal left today — and ${remaining(targets.protein, totals.protein)} g of protein to go.`
-    : 'Ready for something delicious today?';
+    // Asked as an opening rather than a reproach: "nothing squished yet" is a
+    // blank page, and "you haven't squished anything" is a telling-off.
+    : 'Nothing squished yet — what’s first?';
 
   return (
     <div className="screen home">
