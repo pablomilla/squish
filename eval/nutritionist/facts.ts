@@ -61,6 +61,14 @@ export const FACTS = {
     protein: TARGETS.protein,
     fibre: TARGETS.fibre,
     iron: microTargets(PROFILE).iron ?? 0,
+    /*
+     * In grams of salt, which is the only form the app ever says out loud.
+     * Nutrition is stored as sodium in milligrams; every packet in a British
+     * shop states salt. A claim written against the 6 g national guideline
+     * instead of this number asks for something the app never puts in front
+     * of the model, and cannot be satisfied by reading the diary correctly.
+     */
+    salt: saltGrams(TARGETS.sodium ?? 0),
   },
 
   /** Weekends against weekdays, across the whole six weeks. */

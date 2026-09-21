@@ -129,7 +129,15 @@ export const CASES: Case[] = [
     id: 'salt', tags: ['lookup', 'target'],
     prompt: 'How much salt am I getting?',
     checks: [near('correct', f.week.avgSalt, 1.5, 'salt in grams a day')],
-    rubric: [{ metric: 'correct', claim: `It gives salt in grams a day (about ${f.week.avgSalt} g) and says that is above the 6 g guideline.` }],
+    /*
+     * The figure is the code check's job, and the window is why. The question
+     * names no period, so a week gives 6.9 g and a fortnight 7.3 g — both
+     * right, and the tolerance above covers both. The judge is asked only
+     * whether the answer is framed against the target the app actually hands
+     * it, which is theirs, in grams, and not the 6 g national guideline that
+     * appears nowhere in the app.
+     */
+    rubric: [{ metric: 'correct', claim: `It gives their salt in grams a day — around ${f.week.avgSalt} g, or a little more over a longer window — and says that is above the ${f.targets.salt} g salt target their diary carries.` }],
   },
   {
     id: 'named-day', tags: ['lookup', 'day'],
