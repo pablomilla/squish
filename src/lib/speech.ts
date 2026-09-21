@@ -116,14 +116,32 @@ export function startDictation(handlers: DictationHandlers, lang = 'en-GB'): { s
     handlers.onEnd(final.trim());
   };
 
+  /*
+   * Rebuilt from the whole list every time, never appended to.
+   *
+   * `resultIndex` is supposed to say where the new material starts, and the
+   * obvious code adds everything from there onto what it already had. That is
+   * the version that put words back into the middle of sentences: browsers
+   * revise earlier results and re-deliver them, and Chrome will happily send
+   * `resultIndex: 0` on an event whose first results were finalised and
+   * counted several events ago. Every one of those re-deliveries got added a
+   * second time.
+   *
+   * `results` always holds the session's whole transcript, so reading all of
+   * it is idempotent — a result delivered five times still appears once.
+   */
   recognition.onresult = (event) => {
+    let settled = '';
     let interim = '';
-    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+    for (let i = 0; i < event.results.length; i += 1) {
       const result = event.results[i];
       const text = result[0]?.transcript ?? '';
-      if (result.isFinal) final += text;
+      // Chrome pads each segment with a leading space and Safari does not,
+      // which is how "chicken salad" met "and chips" as "saladand".
+      if (result.isFinal) settled += settled && !/^\s/.test(text) ? ` ${text}` : text;
       else interim += text;
     }
+    final = settled;
     handlers.onChange({ final: final.trim(), interim: interim.trim() });
   };
 

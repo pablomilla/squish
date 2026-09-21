@@ -239,11 +239,30 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
       setScanning(true);
 
       const look = async () => {
+        if (!live) return;
         const video = videoRef.current;
-        if (!live || !video?.videoWidth) return;
+
+        /*
+         * A frame may not exist yet, and that is not a reason to give up.
+         *
+         * `cameraReady` is set the moment getUserMedia resolves, which is
+         * before the stream is attached to the element and well before
+         * `loadedmetadata` gives it a size. Whether the first look landed
+         * before or after that was a race against how long the decoder took
+         * to download — and losing it used to end the scan permanently, with
+         * the screen still saying it was scanning. Wait and look again.
+         */
+        if (!video?.videoWidth) {
+          timer = window.setTimeout(() => void look(), 120);
+          return;
+        }
+
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        canvas.getContext('2d')?.drawImage(video, 0, 0);
+        // Read back three times a second for as long as the scanner is open;
+        // without this the browser keeps the surface somewhere that makes
+        // every getImageData a copy off the GPU.
+        canvas.getContext('2d', { willReadFrequently: true })?.drawImage(video, 0, 0);
         try {
           const [found] = await detector.detect(canvas);
           if (found && live) {

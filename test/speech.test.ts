@@ -117,3 +117,81 @@ test('a stop that never comes back does not leave the microphone reading as live
     delete (globalThis as Record<string, unknown>).SpeechRecognition;
   }
 });
+
+/** The browser's own object, handed back so a test can fire its handlers. */
+function stubRecogniser() {
+  const made = {
+    lang: '', continuous: false, interimResults: false, maxAlternatives: 0,
+    onresult: null as ((e: unknown) => void) | null,
+    onerror: null as ((e: unknown) => void) | null,
+    onend: null as (() => void) | null,
+    start() {},
+    stop() { made.onend?.(); },
+    abort() {},
+  };
+  (globalThis as Record<string, unknown>).SpeechRecognition = function Stub() { return made; };
+  return made;
+}
+
+const settled = (text: string) => ({ length: 1, isFinal: true, 0: { transcript: text } });
+const moving = (text: string) => ({ length: 1, isFinal: false, 0: { transcript: text } });
+
+test('a result delivered twice is not heard twice', () => {
+  // What Chrome actually does: it revises earlier results and re-sends them,
+  // sometimes with resultIndex back at 0 long after those results settled.
+  // Adding from resultIndex each time put whole phrases back into the middle
+  // of the sentence — the bug this test exists for.
+  const made = stubRecogniser();
+  try {
+    let ended: string | null = null;
+    const session = startDictation({ onChange: () => {}, onEnd: (f) => { ended = f; }, onError: () => {} });
+
+    made.onresult?.({ resultIndex: 0, results: { length: 1, 0: settled('chicken salad') } });
+    made.onresult?.({ resultIndex: 1, results: { length: 2, 0: settled('chicken salad'), 1: moving('and a') } });
+    // The re-delivery: same two results, index rewound to zero.
+    made.onresult?.({ resultIndex: 0, results: { length: 2, 0: settled('chicken salad'), 1: settled(' and a flat white') } });
+    made.onresult?.({ resultIndex: 0, results: { length: 2, 0: settled('chicken salad'), 1: settled(' and a flat white') } });
+
+    session?.stop();
+    assert.equal(ended, 'chicken salad and a flat white');
+  } finally {
+    delete (globalThis as Record<string, unknown>).SpeechRecognition;
+  }
+});
+
+test('segments are joined with a space, whichever browser sent them', () => {
+  const made = stubRecogniser();
+  try {
+    let ended: string | null = null;
+    const session = startDictation({ onChange: () => {}, onEnd: (f) => { ended = f; }, onError: () => {} });
+
+    // Safari sends bare segments; Chrome pads them. Neither should run words
+    // together, and neither should double the gap.
+    made.onresult?.({
+      resultIndex: 0,
+      results: { length: 3, 0: settled('two eggs'), 1: settled('on toast'), 2: settled(' and a coffee') },
+    });
+
+    session?.stop();
+    assert.equal(ended, 'two eggs on toast and a coffee');
+  } finally {
+    delete (globalThis as Record<string, unknown>).SpeechRecognition;
+  }
+});
+
+test('revising a word already said corrects it rather than appending it', () => {
+  const made = stubRecogniser();
+  try {
+    let ended: string | null = null;
+    const session = startDictation({ onChange: () => {}, onEnd: (f) => { ended = f; }, onError: () => {} });
+
+    made.onresult?.({ resultIndex: 0, results: { length: 1, 0: settled('chicken tika') } });
+    // The recogniser thinks better of it — the corrected text replaces it.
+    made.onresult?.({ resultIndex: 0, results: { length: 1, 0: settled('chicken tikka masala') } });
+
+    session?.stop();
+    assert.equal(ended, 'chicken tikka masala');
+  } finally {
+    delete (globalThis as Record<string, unknown>).SpeechRecognition;
+  }
+});
