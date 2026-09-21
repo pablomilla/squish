@@ -54,6 +54,20 @@ export const PlusIcon = ({ size = 22, className }: IconProps) => (
   </svg>
 );
 
+/** Bars of uneven weight — a barcode reads as one at a glance, a grid does not. */
+export const BarcodeIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M4 6v12M8 6v12M12 6v12M16 6v12M20 6v12" />
+  </svg>
+);
+
+export const LinkIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M10 13.5a4 4 0 0 0 5.7.4l2.6-2.6a4 4 0 0 0-5.7-5.7l-1.3 1.3" />
+    <path d="M14 10.5a4 4 0 0 0-5.7-.4l-2.6 2.6a4 4 0 0 0 5.7 5.7l1.3-1.3" />
+  </svg>
+);
+
 export const SearchIcon = ({ size = 20, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <circle cx="11" cy="11" r="6.5" />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Route } from '../App';
+import type { Route } from '../types';
 import type { AnalysisResult, MealSlot } from '../types';
 import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
@@ -14,6 +14,8 @@ import './capture.css';
 interface Props {
   slot?: MealSlot;
   date?: string;
+  /** Which mode to open in. A barcode chosen from the add sheet lands ready. */
+  shot?: Shot;
   onCancel: () => void;
   onAnalysed: (analysis: AnalysisResult, options: { photo?: string; slot?: MealSlot; date?: string }) => void;
   go: (route: Route) => void;
@@ -80,7 +82,7 @@ const TIPS = [
   ['🫙', 'Dressings, oil and sauces are invisible. Mention them after, and I will add them in.'],
 ];
 
-export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props) {
+export default function Capture({ slot, date, shot: initialShot = 'plate', onCancel, onAnalysed, go }: Props) {
   const toast = useToast();
   const countPhotoAnalysis = useSquish((s) => s.countPhotoAnalysis);
   const profile = useSquish((s) => s.profile);
@@ -98,7 +100,7 @@ export default function Capture({ slot, date, onCancel, onAnalysed, go }: Props)
   const [busy, setBusy] = useState(false);
   const [line, setLine] = useState(0);
   const [tips, setTips] = useState(false);
-  const [shot, setShot] = useState<Shot>('plate');
+  const [shot, setShot] = useState<Shot>(initialShot);
   const [scanning, setScanning] = useState(false);
   const cameraReady = camera === 'ready';
 

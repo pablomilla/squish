@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { AnalysisResult, Draft, MealEntry, MealSlot } from './types';
+import type { AnalysisResult, MealEntry, MealSlot, Route } from './types';
 import { useSquish } from './store/useSquish';
 import { ToastProvider, useAppliedTheme } from './components/ui';
-import { CameraIcon, DiaryIcon, HomeIcon, InsightsIcon, YouIcon } from './components/icons';
+import AddSheet from './components/AddSheet';
+import { DiaryIcon, HomeIcon, InsightsIcon, PlusIcon, YouIcon } from './components/icons';
 import Lock from './screens/Lock';
 import Onboarding from './screens/Onboarding';
 import Waking from './screens/Waking';
@@ -16,16 +17,6 @@ import Ask from './screens/Ask';
 import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
 import { aiStatus, onLocked, storedPasscode } from './lib/api';
-
-export type Route =
-  | { name: 'home' }
-  | { name: 'meals' }
-  | { name: 'insights' }
-  | { name: 'you' }
-  | { name: 'capture'; slot?: MealSlot; date?: string }
-  | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'favourites' }
-  | { name: 'ask' }
-  | { name: 'review'; draft: Draft };
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'home', label: 'Home', Icon: HomeIcon },
@@ -59,6 +50,7 @@ function Shell() {
   const [locked, unlockApp] = useLockState();
 
   const [route, setRoute] = useState<Route>({ name: 'home' });
+  const [adding, setAdding] = useState(false);
   const isTab = useMemo(() => TABS.some((t) => t.name === route.name), [route]);
 
   // Keep the browser's back gesture working for the full-screen flows.
@@ -110,13 +102,15 @@ function Shell() {
       {route.name === 'insights' && <Insights />}
       {route.name === 'you' && <You />}
       {route.name === 'capture' && (
-        <Capture slot={route.slot} date={route.date} onCancel={home} onAnalysed={openReview} go={go} />
+        <Capture slot={route.slot} date={route.date} shot={route.shot} onCancel={home} onAnalysed={openReview} go={go} />
       )}
       {route.name === 'add' && (
         <AddFood slot={route.slot} date={route.date} initialTab={route.tab} onCancel={home} onReady={openReview} />
       )}
       {route.name === 'ask' && <Ask onClose={home} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
+
+      <AddSheet open={adding} onClose={() => setAdding(false)} go={go} />
 
       {isTab && (
         <nav className="tabbar" aria-label="Main">
@@ -126,8 +120,8 @@ function Shell() {
               {label}
             </button>
           ))}
-          <button type="button" className="tab-fab" onClick={() => go({ name: 'capture' })} aria-label="Log a meal">
-            <CameraIcon size={28} />
+          <button type="button" className="tab-fab" onClick={() => setAdding(true)} aria-label="Add food">
+            <PlusIcon size={28} />
           </button>
           {TABS.slice(2).map(({ name, label, Icon }) => (
             <button key={name} type="button" aria-current={route.name === name ? 'page' : undefined} onClick={() => go({ name } as Route)}>
