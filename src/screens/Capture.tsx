@@ -29,10 +29,20 @@ type CameraState = 'requesting' | 'ready' | 'denied' | 'unavailable' | 'unsuppor
  */
 type Shot = 'plate' | 'label' | 'barcode';
 
-/** How often to look for a barcode, before and after it stops looking likely. */
-const QUICK_MS = 400;
-const SETTLED_MS = 800;
-const SETTLE_AFTER_MS = 6_000;
+/**
+ * How often to look for a barcode.
+ *
+ * Slightly slower than it was, on the grounds that it was comfortably fast
+ * enough. It used to slow down further after a few seconds, which was clever
+ * and is gone: a scanner that stopped working turned up on a real phone right
+ * after it went in, and the saving never justified being the only thing that
+ * had changed. A decode costs about 30 ms — measured — against a camera that
+ * is on the whole time, so there was very little there to win.
+ */
+const LOOK_MS = 400;
+
+/** How long to watch before admitting, on screen, that it is not going well. */
+const STRUGGLING_MS = 10_000;
 type Facing = 'environment' | 'user';
 
 /** navigator.mediaDevices is genuinely absent on insecure origins, whatever the types say. */
@@ -107,6 +117,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
   const [tips, setTips] = useState(false);
   const [shot, setShot] = useState<Shot>(initialShot);
   const [scanning, setScanning] = useState(false);
+  const [struggling, setStruggling] = useState(false);
   const cameraReady = camera === 'ready';
 
   const track = stream?.getVideoTracks()[0];
@@ -240,8 +251,11 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
 
     let live = true;
     let timer: number | undefined;
-    const openedAt = Date.now();
     const canvas = document.createElement('canvas');
+    // Said out loud rather than left to be guessed at. A scanner that quietly
+    // watches nothing looks exactly like a scanner that is about to work, and
+    // the difference is the whole of a bug report.
+    const patience = window.setTimeout(() => setStruggling(true), STRUGGLING_MS);
 
     (async () => {
       let detector: Awaited<ReturnType<typeof scanner>>;
@@ -291,10 +305,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         } catch {
           /* a frame that will not decode is the normal case, not an error */
         }
-        if (live) {
-          const trying = Date.now() - openedAt;
-          timer = window.setTimeout(() => void look(), trying < SETTLE_AFTER_MS ? QUICK_MS : SETTLED_MS);
-        }
+        if (live) timer = window.setTimeout(() => void look(), LOOK_MS);
       };
       void look();
     })();
@@ -302,7 +313,9 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
     return () => {
       live = false;
       if (timer) clearTimeout(timer);
+      clearTimeout(patience);
       setScanning(false);
+      setStruggling(false);
     };
   }, [shot, cameraReady, busy, lookUp, toast]);
 
@@ -421,7 +434,9 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         {shot === 'barcode' ? (
           <div className="capture-watching" aria-live="polite">
             <span className="capture-watching-dot" aria-hidden="true" />
-            <span className="tiny">{scanning ? 'Watching…' : 'Getting ready…'}</span>
+            <span className="tiny">
+              {!scanning ? 'Getting the scanner ready…' : struggling ? 'Still looking — more light, or try Label' : 'Watching for a barcode…'}
+            </span>
           </div>
         ) : (
           <button type="button" className="capture-shutter" onClick={shoot} disabled={!cameraReady} aria-label="Take photo">
