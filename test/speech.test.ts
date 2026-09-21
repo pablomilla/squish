@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { speechErrorMessage, speechSupported, startDictation } from '../src/lib/speech';
+import { mergeTranscript, speechErrorMessage, speechSupported, startDictation } from '../src/lib/speech';
 
 /**
  * Node has no Web Speech API, which is the same situation as Firefox and as an
@@ -194,4 +194,75 @@ test('revising a word already said corrects it rather than appending it', () => 
   } finally {
     delete (globalThis as Record<string, unknown>).SpeechRecognition;
   }
+});
+
+/**
+ * The sandwich.
+ *
+ * Reported from a real phone: "chicken and bacon with mayonnaise on malted
+ * bread" came back as a hundred and thirty words. Every snapshot Safari sent
+ * on the way to the finished sentence had been joined together, because each
+ * one arrives as its own final result rather than as a revision of the last.
+ * The exact sequence is below, and it is the reason this file exists.
+ */
+const SAFARI_SANDWICH = [
+  'chicken',
+  'chicken',
+  'chicken and',
+  'chicken and',
+  'chicken and',
+  'chicken and',
+  'chicken and bacon',
+  'chicken and bacon',
+  'chicken and bacon with',
+  'chicken and bacon with',
+  'chicken and bacon with',
+  'chicken and bacon with',
+  'chicken and bacon with',
+  'chicken and bacon with',
+  'chicken and bacon with mayonnaise',
+  'chicken and bacon with mayonnaise on',
+  'chicken and bacon with mayonnaise on maltely',
+  'chicken and bacon with mayonnaise on maltely bread',
+];
+
+test('the sandwich comes back as a sandwich', () => {
+  assert.equal(mergeTranscript(SAFARI_SANDWICH), 'chicken and bacon with mayonnaise on maltely bread');
+});
+
+test('the same sandwich through the whole recogniser', () => {
+  const made = stubRecogniser();
+  try {
+    let ended: string | null = null;
+    const session = startDictation({ onChange: () => {}, onEnd: (f) => { ended = f; }, onError: () => {} });
+
+    // Safari's list only grows, and every entry is final.
+    SAFARI_SANDWICH.forEach((_, i) => {
+      const results: Record<number, unknown> & { length: number } = { length: i + 1 };
+      for (let j = 0; j <= i; j += 1) results[j] = settled(SAFARI_SANDWICH[j]);
+      made.onresult?.({ resultIndex: i, results });
+    });
+
+    session?.stop();
+    assert.equal(ended, 'chicken and bacon with mayonnaise on maltely bread');
+  } finally {
+    delete (globalThis as Record<string, unknown>).SpeechRecognition;
+  }
+});
+
+test('genuinely new words are still joined on', () => {
+  // Chrome's shape: separate utterances, each its own segment, padded.
+  assert.equal(mergeTranscript(['two eggs', ' on toast', ' and a coffee']), 'two eggs on toast and a coffee');
+  // Safari's shape: no padding, and nothing should run together.
+  assert.equal(mergeTranscript(['two eggs', 'on toast']), 'two eggs on toast');
+});
+
+test('a repeat that arrives after a longer version is dropped', () => {
+  assert.equal(mergeTranscript(['chicken and chips', 'chips']), 'chicken and chips');
+  assert.equal(mergeTranscript(['porridge', 'PORRIDGE', 'porridge with berries']), 'porridge with berries');
+});
+
+test('nothing said is nothing returned', () => {
+  assert.equal(mergeTranscript([]), '');
+  assert.equal(mergeTranscript(['', '   ']), '');
 });
