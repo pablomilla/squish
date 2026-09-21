@@ -87,21 +87,23 @@ export const CASES: Case[] = [
     id: 'protein-trend', tags: ['lookup', 'trend'],
     prompt: 'Is my protein getting any better?',
     /*
-     * `salt` again, and fixed the same way. The question names no window, so
-     * where the six weeks "start" is the answerer's choice: the first seven
-     * logged days average 93 g, the first fortnight 102 g, and both are
-     * honest readings of the same diary. Pinning the opening figure marked
-     * the window rather than the trend, and with no check here at all there
-     * was no tolerance anywhere to absorb it.
+     * The opening figure is not a fact about the diary, it is a fact about
+     * where you start reading it: 93 g over the first seven logged days,
+     * 102 g over the first fortnight, 108 g from mid-April, 114 g over the
+     * fortnight to 3 May. Every one of those is a correct answer to a
+     * question that names no window, so no claim can name one of them
+     * without marking the window instead of the trend. Hedging the anchor
+     * was not enough — the judge kept measuring 108 and 114 against the 93.
      *
-     * So the figure that does not move goes to the code check — protein now
-     * is 140 g over the last week or the last fortnight alike — and the judge
-     * is asked what it can actually settle: that the answer says protein rose
-     * and grounds it in the diary's own numbers.
+     * So the opening figure is gone. What does not move goes to the check,
+     * where figures belong: protein now is 140 g over the last week and the
+     * last fortnight alike. What is left for the judge is the question the
+     * person actually asked — is it going up, and can you show me — which
+     * needs no window to settle.
      */
     checks: [near('correct', f.protein.lastWeek, 15, 'protein a day now')],
     rubric: [
-      { metric: 'correct', claim: `It says protein has gone up over the six weeks — from somewhere around ${f.protein.firstWeek} g a day at the start, higher if measured over a longer opening stretch, to about ${f.protein.lastWeek} g now.` },
+      { metric: 'correct', claim: 'It says protein has gone up over the six weeks, and shows that with figures from the diary rather than just asserting it.' },
       { metric: 'correct', claim: 'It does not claim protein is falling or flat.', vacuous: true },
     ],
   },
