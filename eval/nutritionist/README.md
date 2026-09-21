@@ -49,6 +49,12 @@ have no right answer to mark against.
 in the fixture and every expected answer moves with it; nothing is written
 down twice, so nothing can quietly go stale.
 
+The thirty cases were read and signed off on 21 September 2026. That matters
+more than it sounds: the number this eval produces is only worth what the case
+set is worth, and "somebody who knows the users looked at these and said yes"
+is the whole of that. Render them again any time with
+`npx tsx eval/nutritionist/render-cases.ts`, which writes `cases.html`.
+
 ## The four groups
 
 | Group | Cases | Asks |
