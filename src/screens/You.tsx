@@ -6,7 +6,8 @@ import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta
 import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
-import { LOOKS, isUnlocked } from '../lib/looks';
+import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
+import { PLUS, isSubscribed } from '../lib/subscription';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
@@ -21,6 +22,7 @@ export default function You() {
     useSquish();
   const [ignoredLearning, setIgnoredLearning] = useState(false);
   const prefersDark = usePrefersDark();
+  const subscribed = isSubscribed();
 
   // Only offered, never applied: a plan that moves on its own is unsettling,
   // and the reading behind it can be wrong in ways only they would know.
@@ -239,10 +241,10 @@ export default function You() {
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
         <h4 className="small">How Squish looks</h4>
-        <p className="tiny muted">Earned by using the app, never bought.</p>
+        <p className="tiny muted">Earned by using the app.</p>
         <div className="looks" role="radiogroup" aria-label="How Squish looks">
           {LOOKS.map((entry) => {
-            const earned = isUnlocked(entry, unlocked);
+            const earned = isUnlocked(entry, unlocked, subscribed);
             const chosen = entry.id === look;
             return (
               <button
@@ -266,6 +268,44 @@ export default function You() {
                   }}
                 />
                 <span className="tiny">{earned ? entry.name : entry.how}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="row-between" style={{ marginTop: 16 }}>
+          <h4 className="small">{PLUS}</h4>
+          {!subscribed && <span className="badge">Not yet</span>}
+        </div>
+        <p className="tiny muted">
+          {subscribed
+            ? 'Yours while your subscription is running.'
+            : 'Six more, coming when Squish Plus does. Nothing to buy yet.'}
+        </p>
+        <div className="looks" role="radiogroup" aria-label={PLUS}>
+          {PLUS_LOOKS.map((entry) => {
+            const earned = isUnlocked(entry, unlocked, subscribed);
+            const chosen = entry.id === look;
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                role="radio"
+                aria-checked={chosen}
+                className={`look look--plus${chosen ? ' look--on' : ''}${earned ? '' : ' look--locked'}`}
+                onClick={() => (earned ? setLook(entry.id) : toast(`${entry.name} comes with ${PLUS}, which is not on sale yet.`, '✨'))}
+                aria-label={earned ? entry.name : `${entry.name}, part of ${PLUS}`}
+              >
+                <span
+                  className="look-swatch"
+                  aria-hidden="true"
+                  style={{
+                    background: `radial-gradient(circle at 34% 30%, ${
+                      (prefersDark && theme === 'system') || theme === 'dark' ? entry.dark : entry.light
+                    })`,
+                  }}
+                />
+                <span className="tiny">{entry.name}</span>
               </button>
             );
           })}

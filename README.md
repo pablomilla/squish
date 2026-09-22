@@ -263,6 +263,9 @@ test/             Node test-runner suite for the maths and parsing
 
 ## Planned work
 
+- [`docs/monetisation.md`](docs/monetisation.md) — what a user costs to serve,
+  what to charge, and what has to exist before anything can be sold. The
+  colourways are built and the Plus half is switched off until it can be.
 - [`docs/phone-app.md`](docs/phone-app.md) — Squish wrapped with Capacitor for
   the App Store and Play Store. The code side is done: reminders moved onto the
   device, every API call taught where its server is, permission strings filled

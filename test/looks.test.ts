@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { DEFAULT_LOOK, LOOKS, isUnlocked, lookById, lookVars } from '../src/lib/looks';
+import { ALL_LOOKS, DEFAULT_LOOK, LOOKS, PLUS_LOOKS, isUnlocked, lookById, lookVars } from '../src/lib/looks';
+import { isSubscribed } from '../src/lib/subscription';
 import { ACHIEVEMENTS } from '../src/store/useSquish';
 
 /**
@@ -16,33 +17,55 @@ import { ACHIEVEMENTS } from '../src/store/useSquish';
 
 test('every look is earned against an achievement that exists', () => {
   const real = new Set(ACHIEVEMENTS.map((a) => a.id));
-  for (const look of LOOKS) {
-    if (!look.needs) continue;
-    assert.ok(real.has(look.needs), `"${look.name}" needs "${look.needs}", which nothing awards`);
+  for (const look of ALL_LOOKS) {
+    if (look.unlock.kind !== 'achievement') continue;
+    assert.ok(real.has(look.unlock.id), `"${look.name}" needs "${look.unlock.id}", which nothing awards`);
   }
 });
 
 test('one look needs nothing, and it is the one everybody starts in', () => {
-  const free = LOOKS.filter((look) => !look.needs);
+  const free = ALL_LOOKS.filter((look) => look.unlock.kind === 'always');
   assert.equal(free.length, 1, 'exactly one, or a new install has a choice to make before it has done anything');
   assert.equal(free[0].id, DEFAULT_LOOK);
-  assert.ok(isUnlocked(free[0], {}));
+  assert.ok(isUnlocked(free[0], {}, false));
 });
 
 test('a look is locked until the achievement is', () => {
-  const earned = LOOKS.find((look) => look.needs === 'streak-7')!;
-  assert.equal(isUnlocked(earned, {}), false);
-  assert.equal(isUnlocked(earned, { 'streak-3': '2026-09-01' }), false, 'a different achievement is not this one');
-  assert.equal(isUnlocked(earned, { 'streak-7': '2026-09-08' }), true);
+  const earned = LOOKS.find((look) => look.unlock.kind === 'achievement' && look.unlock.id === 'streak-7')!;
+  assert.equal(isUnlocked(earned, {}, false), false);
+  assert.equal(isUnlocked(earned, { 'streak-3': '2026-09-01' }, false), false, 'a different achievement is not this one');
+  assert.equal(isUnlocked(earned, { 'streak-7': '2026-09-08' }, false), true);
+});
+
+test('a Plus look needs the subscription and nothing else opens it', () => {
+  for (const look of PLUS_LOOKS) {
+    // Not every achievement in the app, not a thirty-day streak, nothing.
+    const everything = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, '2026-09-01']));
+    assert.equal(isUnlocked(look, everything, false), false, `${look.name} opened without a subscription`);
+    assert.equal(isUnlocked(look, {}, true), true, `${look.name} did not open with one`);
+  }
+});
+
+test('nothing is both earned and sold', () => {
+  // The union makes this unwriteable; the test says why it is shaped that way.
+  // A colourway you can earn *and* buy devalues the earning and insults the
+  // buying, and it is the first shortcut anybody reaches for when a set looks
+  // thin.
+  const earned = new Set(LOOKS.map((l) => l.id));
+  for (const look of PLUS_LOOKS) assert.ok(!earned.has(look.id), `${look.name} is in both sets`);
+});
+
+test('there is nothing to subscribe to yet, and the app says so', () => {
+  assert.equal(isSubscribed(), false, 'when this changes, it must not be from localStorage — see subscription.ts');
 });
 
 test('ids are unique, and an unknown one falls back rather than blanking the mascot', () => {
-  assert.equal(new Set(LOOKS.map((l) => l.id)).size, LOOKS.length);
+  assert.equal(new Set(ALL_LOOKS.map((l) => l.id)).size, ALL_LOOKS.length);
   assert.equal(lookById('a-look-from-a-later-version').id, DEFAULT_LOOK);
 });
 
 test('each look gives three colours in each theme, and the themes differ', () => {
-  for (const look of LOOKS) {
+  for (const look of ALL_LOOKS) {
     for (const dark of [false, true]) {
       const vars = lookVars(look, dark);
       assert.deepEqual(Object.keys(vars), ['--squish-skin-0', '--squish-skin-1', '--squish-skin-2']);
