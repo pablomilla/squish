@@ -25,16 +25,6 @@ services:
       # somebody off it is the whole of revoking them.
       - key: SQUISH_ADMIN_EMAILS
         sync: false
-      # Invite codes: how a tester gets Squish Plus without paying. Set this
-      # to any string you are willing to type down the phone, hand it to the
-      # people who should have Plus, and they enter it on the You screen.
-      # Comma-separated for more than one. Clearing it revokes all of them,
-      # without touching anybody who has already redeemed.
-      - key: SQUISH_INVITE_CODES
-        sync: false
-      # How long each code is worth. Default 365.
-      - key: SQUISH_INVITE_DAYS
-        sync: false
       # The tiers. Optional — the defaults in server/plan.ts are the ones the
       # price was set against, and the arithmetic behind them is in
       # docs/monetisation.md. Set these only to change policy.

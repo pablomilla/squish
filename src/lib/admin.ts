@@ -17,8 +17,26 @@ export interface Overview {
   totalUsd: number;
   month: string;
   allowances: Record<'free' | 'plus', Record<string, number>>;
-  invites: string[];
-  inviteDays: number;
+  invites: Invite[];
+  suggestion: string;
+}
+
+export interface Invite {
+  code: string;
+  days: number;
+  usesLeft: number | null;
+  note: string | null;
+  expiresAt: string | null;
+  disabled: boolean;
+  used: number;
+  createdAt: string;
+}
+
+export interface Redemption {
+  code: string;
+  email: string;
+  days: number;
+  usedAt: string;
 }
 
 export interface Person {
@@ -76,3 +94,35 @@ export async function setPlan(email: string, days: number): Promise<PlanChange> 
     return { ok: false, message: 'Could not reach Squish just now.' };
   }
 }
+
+export const fetchInvites = (): Promise<{ invites: Invite[]; redemptions: Redemption[]; suggestion: string } | null> =>
+  ask('/api/admin/invites');
+
+export type MadeInvite = { ok: true; invite: Invite } | { ok: false; message: string };
+
+export async function createInvite(input: {
+  code: string;
+  days: number;
+  uses: number | null;
+  note: string | null;
+}): Promise<MadeInvite> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl('/api/admin/invites'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(input),
+    });
+    const payload = (await response.json().catch(() => ({}))) as Invite & { message?: string };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.' };
+    return { ok: true, invite: payload };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}
+
+export const setInviteDisabled = (code: string, disabled: boolean): Promise<unknown> =>
+  ask(`/api/admin/invites/${encodeURIComponent(code)}`, 'PATCH', { disabled });
+
+export const deleteInvite = (code: string): Promise<unknown> =>
+  ask(`/api/admin/invites/${encodeURIComponent(code)}`, 'DELETE');

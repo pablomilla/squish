@@ -207,6 +207,31 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index admin_actions_at on admin_actions(at desc);
     `,
   },
+  {
+    id: 6,
+    sql: `
+      -- Invite codes, which used to be an environment variable.
+      --
+      -- Moved into the database so they can be made and retired from the
+      -- dashboard rather than by editing a deploy. That also buys the things
+      -- an environment variable could never have: a limit on how many times
+      -- one can be used, an expiry, a note saying who it was for, and a count
+      -- of how many people took it up.
+      --
+      -- Null means no limit, for both uses and expiry. A disabled code stays
+      -- so its redemptions still make sense in the record.
+      create table invites (
+        code       text primary key,
+        days       integer not null,
+        uses_left  integer,
+        note       text,
+        expires_at timestamptz,
+        disabled   boolean not null default false,
+        created_by text,
+        created_at timestamptz not null default now()
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

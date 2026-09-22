@@ -23,7 +23,16 @@ import { deviceFor, registerDevice, spend, type Device, type Spend } from './ide
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage } from './privacy';
 import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth, type Billable, type Plan } from './plan';
-import { inviteCodes, inviteDays, invitesExist, redeem } from './invites';
+import {
+  createInvite,
+  deleteInvite,
+  invitesExist,
+  listInvites,
+  redeem,
+  redemptions,
+  setInviteDisabled,
+  suggestCode,
+} from './invites';
 import { actions, adminEmail, allowances, isAdmin, overview, people, setPlan } from './admin';
 import { billedTo } from './billing';
 import { PLUS } from '../src/lib/subscription';
@@ -410,7 +419,7 @@ app.get('/api/allowance', async (req, res) => {
       account: Boolean(req.device.accountId),
       resets: nextReset(),
       // So the app only offers a code box where codes exist.
-      invites: invitesExist(),
+      invites: await invitesExist(),
       // And only shows the dashboard to somebody who can use it.
       admin: await isAdmin(req.device),
       ...(await standingOf(req.device)),
@@ -601,7 +610,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
 
 app.get('/api/admin/overview', requireAdmin, async (_req, res) => {
   try {
-    res.json({ ...(await overview()), allowances: allowances(), invites: inviteCodes(), inviteDays: inviteDays() });
+    res.json({ ...(await overview()), allowances: allowances(), invites: await listInvites(), suggestion: suggestCode() });
   } catch (error) {
     logFailure('admin overview', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
@@ -642,6 +651,71 @@ app.post('/api/admin/plan', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/admin/invites', requireAdmin, async (_req, res) => {
+  try {
+    res.json({ invites: await listInvites(), redemptions: await redemptions(), suggestion: suggestCode() });
+  } catch (error) {
+    logFailure('admin invites', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not read those just now.' });
+  }
+});
+
+app.post('/api/admin/invites', requireAdmin, async (req, res) => {
+  const { code, days, uses, note } = req.body ?? {};
+  if (typeof code !== 'string' || typeof days !== 'number') {
+    res.status(400).json({ error: 'missing', message: 'A code and a number of days, please.' });
+    return;
+  }
+
+  try {
+    const made = await createInvite(await adminEmail(req.device!), {
+      code,
+      days,
+      uses: typeof uses === 'number' && uses > 0 ? uses : null,
+      note: typeof note === 'string' ? note : null,
+    });
+    if (made.ok) {
+      res.json(made.invite);
+      return;
+    }
+    const WHY = {
+      taken: 'There is already a code with that name.',
+      bad_code: 'Codes are 8 to 64 characters, letters, digits and dashes.',
+      bad_days: 'Between one day and ten years.',
+    };
+    res.status(409).json({ error: made.reason, message: WHY[made.reason] });
+  } catch (error) {
+    logFailure('admin invite create', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not make that just now.' });
+  }
+});
+
+app.patch('/api/admin/invites/:code', requireAdmin, async (req, res) => {
+  const code = String(req.params.code);
+  const { disabled } = req.body ?? {};
+  if (typeof disabled !== 'boolean') {
+    res.status(400).json({ error: 'missing', message: 'On or off?' });
+    return;
+  }
+  try {
+    const found = await setInviteDisabled(code, disabled);
+    res.status(found ? 200 : 404).json(found ? { code, disabled } : { error: 'not_found' });
+  } catch (error) {
+    logFailure('admin invite update', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+app.delete('/api/admin/invites/:code', requireAdmin, async (req, res) => {
+  try {
+    const gone = await deleteInvite(String(req.params.code));
+    res.status(gone ? 200 : 404).json(gone ? { deleted: true } : { error: 'not_found' });
+  } catch (error) {
+    logFailure('admin invite delete', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
 /**
  * Redeem an invite code.
  *
@@ -662,12 +736,14 @@ app.post('/api/invite', requireAccount, meter('invite'), async (req, res) => {
       res.json({ redeemed: true, days: done.days, until: done.until });
       return;
     }
-    res.status(done.reason === 'already' ? 409 : 404).json({
+    const WHY: Record<typeof done.reason, string> = {
+      already: 'You have already used that code.',
+      spent: 'That code has been used as many times as it can be.',
+      unknown: 'That code is not one of ours. Check it and try again.',
+    };
+    res.status(done.reason === 'already' ? 409 : done.reason === 'spent' ? 410 : 404).json({
       error: done.reason,
-      message:
-        done.reason === 'already'
-          ? 'You have already used that code.'
-          : 'That code is not one of ours. Check it and try again.',
+      message: WHY[done.reason],
     });
   } catch (error) {
     logFailure('invite', error);

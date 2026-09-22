@@ -4,23 +4,31 @@ import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { registerDevice } from '../server/identity';
 import { signUp } from '../server/accounts';
 import { planFor } from '../server/plan';
-import { inviteCodes, inviteDays, invitesExist, redeem, redemptions } from '../server/invites';
+import {
+  createInvite,
+  deleteInvite,
+  invitesExist,
+  listInvites,
+  redeem,
+  redemptions,
+  setInviteDisabled,
+  suggestCode,
+  tidy,
+} from '../server/invites';
 
 /**
  * Invite codes, against a real Postgres.
  *
- * The codes are an environment variable rather than a table so that giving a
- * tester Plus is editing a field in a dashboard, not opening a shell against
- * the production database. What that buys in convenience it has to pay for in
- * care: a code is worth a year of a paid tier to whoever holds one, so the
- * rules about what counts as one, and what happens when the same person tries
- * twice, are the part worth testing.
+ * A code is worth a year of a paid tier to whoever holds one, so the rules
+ * about what counts as one, how many times it works, and what happens when
+ * two people tap at the same moment are the parts worth testing.
  */
 const enabled = hasDatabase();
 const when = enabled ? test : test.skip;
 
 let n = 0;
 const anEmail = () => `invite${++n}-${Date.now()}@example.com`;
+const aCode = () => `TEST-${Date.now()}-${++n}`;
 
 before(async () => {
   if (!enabled) return;
@@ -29,8 +37,6 @@ before(async () => {
 
 after(async () => {
   if (enabled) await closeDatabase();
-  delete process.env.SQUISH_INVITE_CODES;
-  delete process.env.SQUISH_INVITE_DAYS;
 });
 
 async function anAccount() {
@@ -42,86 +48,123 @@ async function anAccount() {
 
 /* ---------------- what counts as a code ---------------- */
 
-test('with nothing set there are no codes, which is the right default', () => {
-  delete process.env.SQUISH_INVITE_CODES;
-  assert.deepEqual(inviteCodes(), []);
-  assert.equal(invitesExist(), false, 'a Squish given no codes must not have a back door');
+test('codes are compared the way a person types them', () => {
+  assert.equal(tidy('  squish-tester-7f3k '), 'SQUISH-TESTER-7F3K');
+  assert.equal(tidy('early bird'), 'EARLYBIRD');
 });
 
-test('codes are read as a list, and compared the way a person types them', () => {
-  process.env.SQUISH_INVITE_CODES = ' early-bird , PRESS-2026 ,, ';
-  assert.deepEqual(inviteCodes(), ['EARLY-BIRD', 'PRESS-2026'], 'case and stray commas should not matter');
-  assert.equal(invitesExist(), true);
+test('a suggested code avoids the characters people misread', () => {
+  // These get read down a phone and written on the back of things.
+  for (let i = 0; i < 40; i++) {
+    const body = suggestCode().split('-').slice(1).join('');
+    assert.ok(!/[O0I1]/.test(body), `${body} contains a character that will be misread`);
+    assert.equal(body.length, 8);
+  }
+  assert.equal(new Set(Array.from({ length: 50 }, () => suggestCode())).size, 50, 'codes must not repeat');
 });
 
-test('a year unless somebody says otherwise, and nonsense does not become nought', () => {
-  delete process.env.SQUISH_INVITE_DAYS;
-  assert.equal(inviteDays(), 365);
-  process.env.SQUISH_INVITE_DAYS = '30';
-  assert.equal(inviteDays(), 30);
-  process.env.SQUISH_INVITE_DAYS = 'soon';
-  assert.equal(inviteDays(), 365, 'an unreadable value must not silently mean a zero-day grant');
-  process.env.SQUISH_INVITE_DAYS = '-5';
-  assert.equal(inviteDays(), 365);
+when('a code too short to be safe is refused', async () => {
+  assert.equal((await createInvite('boss', { code: 'SHORT', days: 30, uses: null, note: null })).ok, false);
+  assert.equal((await createInvite('boss', { code: 'HAS SPACES!', days: 30, uses: null, note: null })).ok, false);
+  assert.equal((await createInvite('boss', { code: aCode(), days: 0, uses: null, note: null })).ok, false);
+  assert.equal((await createInvite('boss', { code: aCode(), days: 99_999, uses: null, note: null })).ok, false);
+});
+
+when('the same code cannot be made twice', async () => {
+  const code = aCode();
+  assert.equal((await createInvite('boss', { code, days: 30, uses: null, note: null })).ok, true);
+  const again = await createInvite('boss', { code: code.toLowerCase(), days: 30, uses: null, note: null });
+  assert.equal(again.ok, false);
+  assert.equal(!again.ok && again.reason, 'taken');
 });
 
 /* ---------------- redeeming ---------------- */
 
-when('a good code turns Plus on', async () => {
-  process.env.SQUISH_INVITE_CODES = 'TESTERS-2026';
-  process.env.SQUISH_INVITE_DAYS = '30';
+when('a good code turns Plus on, typed however', async () => {
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: null, note: 'testers' });
   const { id, device } = await anAccount();
   assert.equal(await planFor(device), 'free');
 
-  const done = await redeem(id, 'testers-2026');
-  assert.equal(done.ok, true, 'a code typed in lower case should still work');
+  const done = await redeem(id, ` ${code.toLowerCase()} `);
+  assert.equal(done.ok, true);
   assert.equal(done.ok && done.days, 30);
   assert.equal(await planFor(device), 'plus');
 });
 
-when('a code nobody issued does nothing', async () => {
-  process.env.SQUISH_INVITE_CODES = 'TESTERS-2026';
+when('a code nobody made does nothing', async () => {
   const { id, device } = await anAccount();
   const done = await redeem(id, 'PLEASE-LET-ME-IN');
-  assert.equal(done.ok, false);
   assert.equal(!done.ok && done.reason, 'unknown');
   assert.equal(await planFor(device), 'free');
 });
 
 when('the same account cannot use one code twice', async () => {
-  process.env.SQUISH_INVITE_CODES = 'TESTERS-2026';
-  process.env.SQUISH_INVITE_DAYS = '30';
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: null, note: null });
   const { id } = await anAccount();
-  assert.equal((await redeem(id, 'TESTERS-2026')).ok, true);
+  assert.equal((await redeem(id, code)).ok, true);
 
-  const again = await redeem(id, 'TESTERS-2026');
-  assert.equal(again.ok, false, 'a second go bought another month');
+  const again = await redeem(id, code);
   assert.equal(!again.ok && again.reason, 'already');
 });
 
-when('two taps on a slow connection do not buy two years', async () => {
-  process.env.SQUISH_INVITE_CODES = 'TESTERS-2026';
-  process.env.SQUISH_INVITE_DAYS = '30';
-  const { id } = await anAccount();
+when('a code with a limit stops when it runs out', async () => {
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: 2, note: null });
 
-  const [a, b] = await Promise.all([redeem(id, 'TESTERS-2026'), redeem(id, 'TESTERS-2026')]);
-  assert.equal([a.ok, b.ok].filter(Boolean).length, 1, 'both redemptions went through');
+  assert.equal((await redeem((await anAccount()).id, code)).ok, true);
+  assert.equal((await redeem((await anAccount()).id, code)).ok, true);
 
-  const rows = await query<{ n: string }>('select count(*) as n from invite_uses where account_id = $1', [id]);
-  assert.equal(Number(rows[0].n), 1);
+  const third = await redeem((await anAccount()).id, code);
+  assert.equal(third.ok, false, 'a code limited to two served a third person');
+  assert.equal(!third.ok && third.reason, 'spent');
+});
+
+when('a limited code cannot be overrun by people tapping at once', async () => {
+  // The row is locked while the count comes down, so five simultaneous taps
+  // on a code worth two uses cannot hand out five.
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: 2, note: null });
+  const people = await Promise.all([anAccount(), anAccount(), anAccount(), anAccount(), anAccount()]);
+
+  const results = await Promise.all(people.map((person) => redeem(person.id, code)));
+  assert.equal(results.filter((r) => r.ok).length, 2, 'the use limit was overrun');
+
+  const rows = await query<{ uses_left: number }>('select uses_left from invites where code = $1', [code]);
+  assert.equal(rows[0].uses_left, 0);
+});
+
+when('switching a code off stops it at once, and back on restores it', async () => {
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: null, note: null });
+
+  await setInviteDisabled(code, true);
+  assert.equal(!(await redeem((await anAccount()).id, code)).ok, true);
+
+  await setInviteDisabled(code, false);
+  assert.equal((await redeem((await anAccount()).id, code)).ok, true);
+});
+
+when('deleting a code does not take back what it bought', async () => {
+  // Deleting a coupon is not a way to un-sell what somebody already has.
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: null, note: null });
+  const { id, device } = await anAccount();
+  await redeem(id, code);
+
+  assert.equal(await deleteInvite(code), true);
+  assert.equal(await planFor(device), 'plus', 'deleting the code revoked somebody');
+  assert.ok((await redemptions()).some((row) => row.code === code), 'the record of who used it went too');
 });
 
 when('a code extends somebody rather than cutting them short', async () => {
-  // Given to somebody already on Plus, it has to add to what they have. The
-  // alternative — replacing it — would take time off a paying subscriber for
-  // the crime of accepting a gift.
-  process.env.SQUISH_INVITE_CODES = 'TESTERS-2026';
-  process.env.SQUISH_INVITE_DAYS = '30';
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: null, note: null });
   const { id } = await anAccount();
   await query(`update accounts set plus_until = now() + interval '300 days' where id = $1`, [id]);
 
-  const done = await redeem(id, 'TESTERS-2026');
-  assert.equal(done.ok, true);
+  await redeem(id, code);
   const rows = await query<{ days: number }>(
     'select extract(day from plus_until - now())::int as days from accounts where id = $1',
     [id],
@@ -130,20 +173,38 @@ when('a code extends somebody rather than cutting them short', async () => {
 });
 
 when('a lapsed account starts from today, not from when it ran out', async () => {
-  process.env.SQUISH_INVITE_CODES = 'TESTERS-2026';
-  process.env.SQUISH_INVITE_DAYS = '30';
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: null, note: null });
   const { id, device } = await anAccount();
   await query(`update accounts set plus_until = now() - interval '200 days' where id = $1`, [id]);
 
-  await redeem(id, 'TESTERS-2026');
+  await redeem(id, code);
   assert.equal(await planFor(device), 'plus', 'the grant was swallowed by the time already lapsed');
 });
 
-when('who used what is recorded, so uptake can be seen', async () => {
-  process.env.SQUISH_INVITE_CODES = 'PRESS-2026';
-  const { id } = await anAccount();
-  await redeem(id, 'PRESS-2026');
+/* ---------------- what the app is told ---------------- */
 
-  const used = await redemptions();
-  assert.ok(used.some((row) => row.code === 'PRESS-2026'), 'the redemption was not recorded');
+when('the code box is only offered while a usable code exists', async () => {
+  await query('update invites set disabled = true');
+  assert.equal(await invitesExist(), false, 'the box would be offered with nothing behind it');
+
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: null, note: null });
+  assert.equal(await invitesExist(), true);
+
+  await query('update invites set uses_left = 0 where code = $1', [code]);
+  await query('update invites set disabled = true where code <> $1', [code]);
+  assert.equal(await invitesExist(), false, 'a spent code still counted as usable');
+});
+
+when('the list shows how many people took each one up', async () => {
+  const code = aCode();
+  await createInvite('boss', { code, days: 30, uses: 5, note: 'for the podcast' });
+  await redeem((await anAccount()).id, code);
+  await redeem((await anAccount()).id, code);
+
+  const found = (await listInvites()).find((invite) => invite.code === code)!;
+  assert.equal(found.used, 2);
+  assert.equal(found.usesLeft, 3);
+  assert.equal(found.note, 'for the podcast');
 });

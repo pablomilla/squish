@@ -32,3 +32,30 @@
 @media (min-width: 720px) {
   .admin { max-width: 46rem; margin: 0 auto; width: 100%; }
 }
+
+.admin-invites { display: flex; flex-direction: column; gap: var(--s3); }
+.admin-invite { border-top: 1px solid var(--line); padding-top: var(--s2); display: flex; flex-direction: column; gap: 6px; }
+.admin-invite:first-child { border-top: 0; padding-top: 0; }
+.admin-invite p { margin: 0; }
+.admin-invite-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.admin-invite-head code {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 5px 9px;
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+}
+
+/* A retired code stays legible, just visibly not in play. */
+.admin-invite--off .admin-invite-head code { opacity: 0.55; text-decoration: line-through; }
+
+.admin-new-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px dashed var(--line);
+}
+.admin-new-invite label { display: flex; flex-direction: column; gap: 4px; }

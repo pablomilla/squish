@@ -164,8 +164,9 @@ the best customers would be the ones losing the most money.
 ### The dashboard
 
 Set `SQUISH_ADMIN_EMAILS` to your own address, sign in normally, and **You → Dashboard** shows what
-the service is doing: how many accounts, how many on Plus, what this month actually cost, and a
-list of people with buttons to grant or revoke Plus. Every grant is recorded with who made it.
+the service is doing: how many accounts, how many on Plus, what this month actually cost, the invite
+codes with how many people used each, and a list of people with buttons to grant or revoke Plus.
+Codes are made and retired here too. Every grant is recorded with who made it.
 
 There is no admin password. An admin signs in exactly as everybody else does — same hashing, same
 rate limit — and the list decides whether they also see this, so removing an address is the whole of
@@ -178,15 +179,16 @@ totals only; there is a test that fails if `server/admin.ts` ever learns the wor
 Costs shown are what Anthropic actually charged, accumulated per call — not counts multiplied by an
 assumed price. That is what makes "is Plus priced right?" a measurement rather than an opinion.
 
-**The easy way to hand out Plus** is an invite code. Set `SQUISH_INVITE_CODES` in the host's
-dashboard to anything you are happy to type down the phone — `SQUISH-TESTER-7F3K`, or several
-comma-separated — and `SQUISH_INVITE_DAYS` to how long each is worth. Testers make an account,
-open **You → Plan and usage → I have a code**, and they are on Plus.
+**The easy way to hand out Plus** is an invite code, made in the dashboard. Give it a length, a
+limit on how many people can use it and a note saying who it is for; the dashboard suggests a code
+that avoids characters people misread down a phone. Testers make an account, open **You → Plan and
+usage → I have a code**, and they are on Plus.
 
-Codes are compared loosely, so case and stray spaces do not matter. One code per account, redemptions
-are recorded, wrong guesses are rate limited, and clearing the variable revokes every unused code
-without touching anybody who already redeemed. A code extends whatever somebody has rather than
-replacing it, so giving one to a paying subscriber never costs them time.
+Codes are compared loosely, so case and stray spaces do not matter. One per account, redemptions are
+recorded and counted, wrong guesses are rate limited, and a use limit holds even if five people tap
+at the same moment. Turning one off takes effect at once. Deleting one does **not** take back what it
+bought — deleting a coupon is not a way to un-sell something — and a code extends whatever somebody
+has rather than replacing it, so giving one to a paying subscriber never costs them time.
 
 There is also a script, for one-off fixes and for seeing the state of things:
 
@@ -337,7 +339,7 @@ server/           Express API — Claude calls, offline fallback
   accounts.ts     Sign up, sign in, delete, and forgotten passwords
   mail.ts         One email to send, so: a webhook, or the log
   plan.ts         Free and Plus: who is on what, and what that allows
-  invites.ts      Codes that turn Plus on, set in the host's dashboard
+  invites.ts      Codes that turn Plus on, made and retired in the dashboard
   admin.ts        The dashboard's numbers — counts and totals, never a diary
   billing.ts      Attributing what each model call cost to whoever made it
   privacy.ts      The policy, rendered from docs/privacy.md and served at /privacy

@@ -83,11 +83,11 @@ without them:
   that is a refund request and a one-star review. It is the same storage risk
   that threatens the diary itself (`docs/phone-app.md`).
 
-**A way to give it away.** Testers, press, and goodwill after something went
-wrong all need the paid tier without a card. Invite codes do it
-(`SQUISH_INVITE_CODES`), and they are a dashboard edit rather than a database
-script — which matters, because the alternative is that comping somebody is a
-job only a developer can do.
+**A way to give it away.** Done. Testers, press, and goodwill after something
+went wrong all need the paid tier without a card, and invite codes do it —
+made in the dashboard, with a use limit and a note, and retired the same way.
+It matters that this is not a developer job: anything that needs a shell gets
+done grudgingly or not at all.
 
 **And a receipt that cannot be edited.** Half done. The answer now comes from
 the server (`src/lib/plan.ts` asks, `server/plan.ts` decides) rather than from

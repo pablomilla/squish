@@ -17,7 +17,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { CloseIcon } from '../components/icons';
 import { useToast } from '../components/ui';
 import { PLUS } from '../lib/plan';
-import { fetchOverview, fetchPeople, setPlan, type AdminAction, type Overview, type Person } from '../lib/admin';
+import {
+  createInvite,
+  deleteInvite,
+  fetchOverview,
+  fetchPeople,
+  setInviteDisabled,
+  setPlan,
+  type AdminAction,
+  type Invite,
+  type Overview,
+  type Person,
+} from '../lib/admin';
 import { friendlyDate } from '../lib/date';
 import './admin.css';
 
@@ -107,23 +118,12 @@ export default function Admin({ onClose }: { onClose: () => void }) {
             </p>
           </section>
 
-          <section className="card card--quiet">
-            <div className="card-title">
-              <h3>Invite codes</h3>
-              <span className="badge">{overview.inviteDays} days each</span>
-            </div>
-            {overview.invites.length === 0 ? (
-              <p className="tiny muted">
-                None set. Add <code>SQUISH_INVITE_CODES</code> in the host's dashboard and they appear here.
-              </p>
-            ) : (
-              <div className="admin-codes">
-                {overview.invites.map((code) => (
-                  <code key={code}>{code}</code>
-                ))}
-              </div>
-            )}
-          </section>
+          <Invites
+            invites={overview.invites}
+            suggestion={overview.suggestion}
+            onChanged={() => void load(search)}
+          />
+
         </>
       )}
 
@@ -219,5 +219,172 @@ function Figure({ label, value }: { label: string; value: number }) {
       <b>{value}</b>
       <span className="tiny muted">{label}</span>
     </div>
+  );
+}
+
+/**
+ * Making and retiring invite codes.
+ *
+ * These were an environment variable for about a day, which meant every
+ * change was a deploy and a code could never know how many people had used
+ * it. Here a code is a row: it has a length, a limit, a note saying who it
+ * was for, and a count of who took it up.
+ *
+ * Switching one off is offered before deleting it, and deleting is offered
+ * last, because off is almost always what somebody means — and deleting does
+ * not take back what the code already bought.
+ */
+function Invites({
+  invites,
+  suggestion,
+  onChanged,
+}: {
+  invites: Invite[];
+  suggestion: string;
+  onChanged: () => void;
+}) {
+  const [code, setCode] = useState(suggestion);
+  const [days, setDays] = useState(365);
+  const [uses, setUses] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [trouble, setTrouble] = useState<string | null>(null);
+  const toast = useToast();
+
+  const make = async () => {
+    setBusy(true);
+    setTrouble(null);
+    const made = await createInvite({
+      code,
+      days,
+      uses: uses.trim() ? Number(uses) : null,
+      note: note.trim() || null,
+    });
+    setBusy(false);
+    if (!made.ok) {
+      setTrouble(made.message);
+      return;
+    }
+    toast(`${made.invite.code} is live.`, '🎟️');
+    setCode('');
+    setNote('');
+    setUses('');
+    onChanged();
+  };
+
+  return (
+    <section className="card card--quiet">
+      <div className="card-title">
+        <h3>Invite codes</h3>
+      </div>
+
+      {invites.length === 0 ? (
+        <p className="tiny muted">None yet. Make one below and hand it to whoever should have Plus.</p>
+      ) : (
+        <div className="admin-invites">
+          {invites.map((invite) => (
+            <div className={`admin-invite${invite.disabled ? ' admin-invite--off' : ''}`} key={invite.code}>
+              <div className="admin-invite-head">
+                <code>{invite.code}</code>
+                <span className="tiny muted">
+                  {invite.used} used{invite.usesLeft !== null && ` · ${invite.usesLeft} left`}
+                </span>
+              </div>
+              <p className="tiny muted">
+                {invite.days} days{invite.note && ` · ${invite.note}`}
+                {invite.disabled && ' · off'}
+              </p>
+              <div className="row" style={{ gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--ghost"
+                  onClick={async () => {
+                    await setInviteDisabled(invite.code, !invite.disabled);
+                    onChanged();
+                  }}
+                >
+                  {invite.disabled ? 'Turn on' : 'Turn off'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--quiet-danger"
+                  onClick={async () => {
+                    await deleteInvite(invite.code);
+                    toast('Code deleted. Anybody who used it keeps their Plus.', '🗑️');
+                    onChanged();
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form
+        className="admin-new-invite"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void make();
+        }}
+      >
+        <div className="row" style={{ gap: 8 }}>
+          <input
+            className="input grow"
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            placeholder="CODE"
+            aria-label="New code"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => setCode(suggestion)}>
+            Suggest
+          </button>
+        </div>
+        <div className="row" style={{ gap: 8 }}>
+          <label className="tiny muted grow">
+            Days
+            <input
+              className="input"
+              type="number"
+              min={1}
+              max={3650}
+              value={days}
+              onChange={(event) => setDays(Number(event.target.value))}
+              aria-label="Days each code is worth"
+            />
+          </label>
+          <label className="tiny muted grow">
+            Uses (blank = any)
+            <input
+              className="input"
+              type="number"
+              min={1}
+              value={uses}
+              onChange={(event) => setUses(event.target.value)}
+              aria-label="How many times it can be used"
+            />
+          </label>
+        </div>
+        <input
+          className="input"
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder="What it is for — only you see this"
+          aria-label="Note"
+        />
+        {trouble && (
+          <p className="tiny account-trouble" role="alert">
+            {trouble}
+          </p>
+        )}
+        <button type="submit" className="btn btn--sm" disabled={busy || !code.trim()}>
+          {busy ? 'One moment…' : 'Make this code'}
+        </button>
+      </form>
+    </section>
   );
 }
