@@ -9,7 +9,6 @@
  * configured every endpoint still answers, using the offline estimator, and
  * marks the response `offline: true` so the UI can label it honestly.
  */
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import cors from 'cors';
@@ -20,9 +19,11 @@ import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
 import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
-import { deviceFor, registerDevice, spend, spentToday, type Device, type Spend } from './identity';
+import { deviceFor, registerDevice, spend, type Device, type Spend } from './identity';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage } from './privacy';
+import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth, type Billable, type Plan } from './plan';
+import { PLUS } from '../src/lib/subscription';
 import {
   MIN_PASSWORD,
   accountFor,
@@ -57,9 +58,14 @@ const DIST = resolve(process.cwd(), 'dist');
 const SERVE_APP = existsSync(DIST);
 
 /** Set this on a public deployment, or anyone who finds the URL spends your credit. */
-const PASSCODE = process.env.SQUISH_PASSCODE?.trim();
 
-/** Analyses per IP per hour. A backstop on the bill if the passcode leaks. */
+/**
+ * Analyses per IP per hour.
+ *
+ * A blunt backstop underneath the per-person allowance, for the case the
+ * allowance cannot be counted — no database, or a metering failure. It is the
+ * worse limit of the two: everybody on a mobile network shares an address.
+ */
 const RATE_LIMIT = Number(process.env.SQUISH_RATE_LIMIT ?? 80);
 const HOUR_MS = 3_600_000;
 
@@ -89,31 +95,6 @@ function logUsage(usage: ChatUsage, round: number): void {
       `in=${usage.inputTokens} cached=${usage.cacheReadTokens} wrote=${usage.cacheWriteTokens} ` +
       `out=${usage.outputTokens} (thinking ${usage.thinkingTokens}) ${money} ${(usage.latencyMs / 1000).toFixed(1)}s`,
   );
-}
-
-/* ------------------------------------------------------------------ *
- * Passcode
- * ------------------------------------------------------------------ */
-
-/** Compare digests, not the strings — equal length, and no early exit. */
-function matchesPasscode(candidate: unknown): boolean {
-  if (!PASSCODE) return true;
-  if (typeof candidate !== 'string' || !candidate) return false;
-  const a = createHash('sha256').update(candidate).digest();
-  const b = createHash('sha256').update(PASSCODE).digest();
-  return timingSafeEqual(a, b);
-}
-
-function requirePasscode(req: Request, res: Response, next: NextFunction): void {
-  if (!PASSCODE) {
-    next();
-    return;
-  }
-  if (matchesPasscode(req.header('x-squish-pass'))) {
-    next();
-    return;
-  }
-  res.status(401).json({ error: 'locked', message: 'This Squish needs its passcode.' });
 }
 
 /* ------------------------------------------------------------------ *
@@ -160,40 +141,67 @@ const readToken = (req: Request): string | undefined => {
 const hits = new Map<string, { count: number; resetAt: number }>();
 
 /** How much a known device may spend in a day, per kind of call. */
-const DAILY: Record<Spend, number> = {
-  photo: Number(process.env.SQUISH_DAILY_PHOTOS ?? 25),
-  chat: Number(process.env.SQUISH_DAILY_CHATS ?? 40),
-  recipe: Number(process.env.SQUISH_DAILY_RECIPES ?? 10),
-  // Twenty is generous for somebody who has forgotten which password they
-  // used, and nowhere near enough to guess one.
+/**
+ * The two guards that are not allowances.
+ *
+ * Sign-ins and reset requests cost nothing to serve and are counted to slow
+ * guessing down, so they stay per-device and per-day and have nothing to do
+ * with which tier somebody is on.
+ */
+const GUARD: Record<'signin' | 'reset', number> = {
   signin: Number(process.env.SQUISH_DAILY_SIGNINS ?? 20),
   reset: Number(process.env.SQUISH_DAILY_RESETS ?? 5),
 };
 
-/**
- * What to say when the day is spent.
- *
- * The allowances and the brakes read very differently to the person who hits
- * them. Running out of photos is a limit somebody paid nothing for; running
- * out of sign-in attempts is a door closing, and saying "that is 20 for today"
- * reads as a punishment rather than a precaution.
- */
 const SPENT: Partial<Record<Spend, string>> = {
   signin: 'Too many attempts from this device. Try again tomorrow, or use the forgotten-password link.',
   reset: 'That is enough reset links for one day. Check your inbox, including the spam folder.',
 };
 
-/** Count this call against the device, and refuse it if the day is spent. */
+/**
+ * Count this call, and refuse it if the allowance is gone.
+ *
+ * Billable actions are counted against the month and against the person — see
+ * server/plan.ts. The refusal carries the plan and what is left, because the
+ * app needs to say something more useful than "no": whether this is a wall you
+ * pay to get past, or a wall that moves on the first of the month.
+ */
 function meter(kind: Spend) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    if (!req.device || DAILY[kind] <= 0) {
+    if (!req.device) {
       rateLimit(req, res, next);
       return;
     }
+
     try {
-      const used = await spend(req.device.id, kind);
-      if (used > DAILY[kind]) {
-        res.status(429).json({ error: 'rate_limited', message: SPENT[kind] ?? `That is ${DAILY[kind]} for today. It starts again tomorrow.` });
+      if (!isBillable(kind)) {
+        const limit = GUARD[kind];
+        if (limit > 0 && (await spend(req.device.id, kind)) > limit) {
+          res.status(429).json({ error: 'rate_limited', message: SPENT[kind] });
+          return;
+        }
+        next();
+        return;
+      }
+
+      const plan = await planFor(req.device);
+      const allowance = ALLOWANCE[plan][kind];
+
+      // Counted first, then compared, so two requests at once cannot both see
+      // the last one free.
+      await spend(req.device.id, kind);
+      const used = await usedThisMonth(req.device, kind);
+
+      if (used > allowance) {
+        res.status(402).json({
+          error: 'out_of_allowance',
+          plan,
+          kind,
+          used,
+          allowance,
+          resets: nextReset(),
+          message: OUT_OF[plan][kind],
+        });
         return;
       }
     } catch (error) {
@@ -206,6 +214,26 @@ function meter(kind: Spend) {
     next();
   };
 }
+
+/**
+ * What to say when the allowance is gone.
+ *
+ * Different sentences for different tiers, because the answer is different. A
+ * free user has somewhere to go; somebody already paying does not, and telling
+ * them to upgrade would be both useless and insulting.
+ */
+const OUT_OF: Record<Plan, Record<Billable, string>> = {
+  free: {
+    photo: `That is this month's photo analyses on the free plan. ${PLUS} raises it, and the free ones come back on the 1st.`,
+    chat: `The nutritionist is part of ${PLUS}.`,
+    recipe: `That is this month's recipe imports on the free plan. ${PLUS} raises it, and they come back on the 1st.`,
+  },
+  plus: {
+    photo: `That is this month's photo analyses. They come back on the 1st — logging by hand and food search are unaffected.`,
+    chat: `That is this month's questions for the nutritionist. They come back on the 1st.`,
+    recipe: `That is this month's recipe imports. They come back on the 1st.`,
+  },
+};
 
 function rateLimit(req: Request, res: Response, next: NextFunction): void {
   if (RATE_LIMIT <= 0) {
@@ -333,8 +361,8 @@ app.delete('/api/diary', requireDevice, async (req, res) => {
 
 /* ---------------- Who is asking ---------------- *
  *
- * No passcode on this one. A device that has never been here has nothing to
- * present, and the token it gets back is what it presents from then on.
+ * Nothing to present on this one. A device that has never been here has no
+ * token, and the one it gets back is what it presents from then on.
  */
 app.post('/api/device', async (_req, res) => {
   if (!hasDatabase()) {
@@ -351,24 +379,27 @@ app.post('/api/device', async (_req, res) => {
   }
 });
 
-/** What is left today, so the app can say so before somebody runs into it. */
+/**
+ * Which tier, and what is left of the month.
+ *
+ * The app asks for this at startup and after anything that could change it,
+ * and it is the only thing that decides what a person is entitled to. There
+ * is deliberately no way to tell it otherwise from the browser: a paywall a
+ * devtools console defeats funds nothing.
+ *
+ * Unknown where there is no database, and unknown means free — failing closed
+ * on the money, open on the person.
+ */
 app.get('/api/allowance', async (req, res) => {
   if (!req.device) {
-    res.json({ known: false });
+    res.json({ known: false, plan: 'free' });
     return;
   }
   try {
-    const kinds = Object.keys(DAILY) as Spend[];
-    const used = await Promise.all(kinds.map((kind) => spentToday(req.device!.id, kind)));
-    res.json({
-      known: true,
-      account: Boolean(req.device.accountId),
-      left: Object.fromEntries(kinds.map((kind, i) => [kind, Math.max(0, DAILY[kind] - used[i])])),
-      daily: DAILY,
-    });
+    res.json({ known: true, account: Boolean(req.device.accountId), resets: nextReset(), ...(await standingOf(req.device)) });
   } catch (error) {
     logFailure('allowance', error);
-    res.json({ known: false });
+    res.json({ known: false, plan: 'free' });
   }
 });
 
@@ -589,21 +620,12 @@ app.get('/api/health', (_req, res) => {
     ok: true,
     ai: hasCredentials(),
     model: process.env.SQUISH_MODEL ?? 'claude-opus-5',
-    locked: Boolean(PASSCODE),
     // So the app knows whether to bother asking for a device, a backup or an
     // account. Without a database none of those exist and it stays local.
     accounts: hasDatabase(),
   });
 });
 
-/** Exchange the passcode for a yes/no, so the app can show its lock screen. */
-app.post('/api/unlock', (req, res) => {
-  if (matchesPasscode(req.body?.passcode)) {
-    res.json({ ok: true });
-    return;
-  }
-  res.status(401).json({ ok: false, message: 'That passcode did not match.' });
-});
 
 /** A number from a request body, or nothing. */
 const inRange = (value: unknown, min: number, max: number): number | undefined => {
@@ -612,7 +634,7 @@ const inRange = (value: unknown, min: number, max: number): number | undefined =
 };
 
 /** Vision analysis of a photo. Body: { image: dataURL | base64, mediaType?, slot?, hint?, mode?, crockery? } */
-app.post('/api/analyse/photo', requirePasscode, meter('photo'), async (req, res) => {
+app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
   const { image, mediaType, slot, hint, mode, crockery } = req.body ?? {};
   if (typeof image !== 'string' || image.length < 32) {
     res.status(400).json({ error: 'An image is required.' });
@@ -653,7 +675,7 @@ app.post('/api/analyse/photo', requirePasscode, meter('photo'), async (req, res)
 });
 
 /** Natural-language analysis. Body: { description, slot? } */
-app.post('/api/analyse/text', requirePasscode, meter('photo'), async (req, res) => {
+app.post('/api/analyse/text', meter('photo'), async (req, res) => {
   const { description, slot } = req.body ?? {};
   if (typeof description !== 'string' || !description.trim()) {
     res.status(400).json({ error: 'A description is required.' });
@@ -675,7 +697,7 @@ app.post('/api/analyse/text', requirePasscode, meter('photo'), async (req, res) 
 });
 
 /** Look a barcode up in Open Food Facts. */
-app.get('/api/barcode/:code', requirePasscode, async (req, res) => {
+app.get('/api/barcode/:code', async (req, res) => {
   try {
     // Express 5 types a route param as possibly repeated; the validator in
     // lookupBarcode rejects anything that is not plain digits regardless.
@@ -698,7 +720,7 @@ app.get('/api/barcode/:code', requirePasscode, async (req, res) => {
  * Rate limited like the analysis endpoints, because a chat box is the easiest
  * thing in the app to leave running up a bill.
  */
-app.post('/api/chat', requirePasscode, meter('chat'), async (req, res) => {
+app.post('/api/chat', meter('chat'), async (req, res) => {
   const { turns, context, notes } = req.body ?? {};
 
   const messages = cleanMessages(turns);
@@ -748,7 +770,7 @@ app.post('/api/chat', requirePasscode, meter('chat'), async (req, res) => {
  * can guess at "chicken salad" but it cannot read a web page, and returning an
  * invented recipe would be worse than saying no.
  */
-app.post('/api/recipe', requirePasscode, meter('recipe'), async (req, res) => {
+app.post('/api/recipe', meter('recipe'), async (req, res) => {
   const { url, slot } = req.body ?? {};
 
   if (typeof url !== 'string' || !url.trim()) {
@@ -774,7 +796,7 @@ app.post('/api/recipe', requirePasscode, meter('recipe'), async (req, res) => {
 });
 
 /** Correct an analysis in words. Body: { analysis, instruction, slot } */
-app.post('/api/analyse/refine', requirePasscode, meter('photo'), async (req, res) => {
+app.post('/api/analyse/refine', meter('photo'), async (req, res) => {
   const { analysis, instruction, slot } = req.body ?? {};
 
   if (typeof instruction !== 'string' || !instruction.trim()) {
@@ -801,7 +823,7 @@ app.post('/api/analyse/refine', requirePasscode, meter('photo'), async (req, res
 });
 
 /** Daily coach nudge. Body: CoachContext */
-app.post('/api/coach', requirePasscode, async (req, res) => {
+app.post('/api/coach', async (req, res) => {
   const ctx = req.body as CoachContext;
   if (!hasCredentials()) {
     res.json({ message: null, offline: true });
@@ -818,8 +840,7 @@ app.post('/api/coach', requirePasscode, async (req, res) => {
 /**
  * The privacy policy.
  *
- * Deliberately outside everything: no passcode, no device, no app shell, no
- * JavaScript. Both stores need a URL that opens the policy for somebody who
+ * Deliberately outside everything: no device, no app shell, no JavaScript. Both stores need a URL that opens the policy for somebody who
  * has installed nothing, and a policy you need a password to read is not a
  * published policy.
  *
@@ -864,9 +885,9 @@ app.listen(PORT, () => {
     console.log('    To enable photo analysis: set ANTHROPIC_API_KEY and restart.');
   }
   console.log(
-    PASSCODE
-      ? `    Passcode on · max ${RATE_LIMIT} analyses per hour per visitor`
-      : '    Passcode OFF — set SQUISH_PASSCODE before putting this on a public URL.',
+    hasDatabase()
+      ? `    Free: ${ALLOWANCE.free.photo} photos a month · ${PLUS}: ${ALLOWANCE.plus.photo} photos, ${ALLOWANCE.plus.chat} questions`
+      : `    No database — no tiers, no accounts, and nothing counted. Everything is open.`,
   );
   console.log(SERVE_APP ? '    Serving the built app from dist/' : '    API only (run Vite for the app).');
 

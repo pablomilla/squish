@@ -19,9 +19,14 @@ services:
       # Your Anthropic key. Typed into Render's dashboard, never into the repo.
       - key: ANTHROPIC_API_KEY
         sync: false
-      # Anyone with the URL needs this to use the app — without it, strangers
-      # spend your Anthropic credit.
-      - key: SQUISH_PASSCODE
+      # The tiers. Optional — the defaults in server/plan.ts are the ones the
+      # price was set against, and the arithmetic behind them is in
+      # docs/monetisation.md. Set these only to change policy.
+      - key: SQUISH_FREE_PHOTOS
+        sync: false
+      - key: SQUISH_PLUS_PHOTOS
+        sync: false
+      - key: SQUISH_PLUS_CHATS
         sync: false
       # Turns on the device token, the diary backup and accounts. Filled in by
       # Render from the database below, so there is nothing to type.

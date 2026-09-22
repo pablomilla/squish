@@ -3,7 +3,7 @@ import Squish from '../components/Squish';
 import './waking.css';
 
 /**
- * Shown while the app asks the server whether it needs a passcode.
+ * Shown while the app is waiting for the server's first answer.
  *
  * Normally that is a few hundred milliseconds and nobody sees this. On a
  * sleeping free-tier host the first request can take the best part of a

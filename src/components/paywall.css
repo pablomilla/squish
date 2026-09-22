@@ -1,0 +1,25 @@
+.paywall { align-items: center; text-align: center; }
+.paywall > p { margin: 0; }
+
+.paywall-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+}
+.paywall-list li {
+  background: var(--surface-2);
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  font-size: var(--text-label);
+  color: var(--ink-2);
+}
+.paywall-list b { color: var(--ink); display: block; }
+
+.paywall-price { font-size: var(--text-section); }
+.paywall-soon { background: var(--surface-2); border-radius: var(--r-lg); padding: 12px 14px; }
+.paywall .btn { width: 100%; margin-top: 4px; }

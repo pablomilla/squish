@@ -1,31 +1,17 @@
 /**
- * Whether this person is on Squish Plus.
+ * What the paid tier is called, in the one place that decides it.
  *
- * False, always, for now — there is no way to buy it yet. It exists as a
- * function rather than a constant so that everything which depends on a
- * subscription can be built, seen and tested before there is anything to
- * subscribe to, and switching it on later is one file rather than a feature.
- *
- * When it does become real, two rules matter more than the plumbing:
+ * This file used to answer "is this person subscribed?" with a hardcoded
+ * false, and carried the rules for doing it properly one day. That day came:
+ * the answer now comes from the server, in `lib/plan.ts`, and the rules it
+ * set out are kept there —
  *
  * 1. **Never from localStorage.** A persisted `subscribed: true` is a line in
- *    a file anybody can edit, and a paywall that a devtools console defeats is
- *    a paywall that funds nothing. The answer has to come from a receipt the
- *    store signed — via RevenueCat, or verified against Apple and Google on
- *    our own server — and it has to be re-checked, because subscriptions
- *    lapse.
- * 2. **Fail closed on the money, open on the person.** If the check cannot be
- *    made, do not hand out what has not been paid for — but do not take away
- *    anything somebody already has either. A diary must never become
- *    unreadable because a receipt server was down; the worst a failed check
- *    should do is put a colourway back in its box.
+ *    a file anybody can edit.
+ * 2. **Fail closed on the money, open on the person.** A check that cannot be
+ *    made hands out nothing unpaid, and takes nothing away either.
  *
- * The plan this belongs to is in docs/monetisation.md.
+ * What is left here is the name, which both the app and the server import so
+ * that renaming the tier is one edit rather than a search.
  */
-
-export function isSubscribed(): boolean {
-  return false;
-}
-
-/** What the tier is called, in the one place that decides it. */
 export const PLUS = 'Squish Plus';

@@ -11,7 +11,6 @@
  */
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
-import { storedPasscode } from './api';
 import { switchedIdentity } from './autobackup';
 
 export interface Who {
@@ -30,11 +29,9 @@ export type Done<T> = ({ ok: true } & T) | Trouble;
 const SOMETHING = 'Could not reach Squish just now. Try again in a moment.';
 
 async function headers(): Promise<Record<string, string>> {
-  const passcode = storedPasscode();
   const token = await deviceToken(apiUrl);
   return {
     'Content-Type': 'application/json',
-    ...(passcode ? { 'x-squish-pass': passcode } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }

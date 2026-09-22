@@ -8,6 +8,8 @@ import { askNutritionist, SquishApiError, type ChatMessage } from '../lib/api';
 import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
 import { contextFor } from '../lib/nutritionist-session';
 import { isoDate } from '../lib/date';
+import { PLUS, planNow, watchStanding, type Standing } from '../lib/plan';
+import { showPaywall } from '../lib/paywall';
 import './ask.css';
 
 const OPENERS = [
@@ -16,6 +18,12 @@ const OPENERS = [
   'When did I last eat fish?',
   'Is my protein getting better?',
 ];
+
+/**
+ * A stand-in for what the server would have said, so the explainer can open
+ * without spending a question to be refused one.
+ */
+const WALL = { plan: 'free', kind: 'chat', used: 0, allowance: 0, resets: '', message: '' } as const;
 
 /** What is on screen, as opposed to what is on the wire. */
 interface Bubble {
@@ -49,6 +57,13 @@ export default function Ask({ onClose }: { onClose: () => void }) {
   const [thinking, setThinking] = useState(false);
   const [lookups, setLookups] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Locked only where the server says this person has no questions at all.
+  // Somebody who has used up an allowance they do have gets the composer and
+  // the real refusal, which says when it comes back.
+  const [standing, setStanding] = useState<Standing>(planNow);
+  useEffect(() => watchStanding(setStanding), []);
+  const locked = standing.known && !standing.off && standing.allowance.chat === 0;
 
   const today = isoDate();
 
@@ -136,7 +151,28 @@ export default function Ask({ onClose }: { onClose: () => void }) {
         </button>
       </header>
 
-      <div className="ask-thread">
+      {/*
+        Said before a question is typed, not after it is sent.
+        Letting somebody compose a question about their own diary and only
+        then telling them it costs money is a small cruelty, and it makes the
+        paywall feel like a trick rather than a price.
+      */}
+      {locked && (
+        <div className="ask-locked">
+          <Squish mood="calm" size={88} />
+          <h2>The nutritionist is part of {PLUS}</h2>
+          <p className="small muted">
+            It reads your own diary before it answers — every day, every meal, every vitamin Squish tracks — and that
+            is the part of the app with a real bill behind it.
+          </p>
+          <button type="button" className="btn" onClick={() => showPaywall(WALL)}>
+            What comes with {PLUS}?
+          </button>
+          <p className="tiny muted">Your diary, charts, streaks and food search do not need it.</p>
+        </div>
+      )}
+
+      {!locked && <div className="ask-thread">
         {bubbles.length === 0 && (
           <div className="ask-empty">
             <Squish mood="calm" size={104} />
@@ -212,9 +248,9 @@ export default function Ask({ onClose }: { onClose: () => void }) {
         )}
 
         <div ref={endRef} />
-      </div>
+      </div>}
 
-      <div className="ask-composer">
+      {!locked && <div className="ask-composer">
         <div className="fix-row">
           <input
             className="input"
@@ -239,7 +275,7 @@ export default function Ask({ onClose }: { onClose: () => void }) {
           onText={(text) => setDraft((current) => (current ? `${current.trim()} ${text}` : text))}
           onError={(message) => toast(message, '🎤')}
         />
-      </div>
+      </div>}
     </div>
   );
 }

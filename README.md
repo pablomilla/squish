@@ -139,13 +139,38 @@ If the dashboard's **Blueprints** list is empty, it was by hand.
 | Setting | What it is |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Your key. Lives in the host's dashboard, never in the repo. |
-| `SQUISH_PASSCODE` | **Set this.** Without it, anyone who finds the URL spends your credit. |
+| `SQUISH_FREE_PHOTOS` | Photo analyses a month on the free plan. Default 10. |
+| `SQUISH_PLUS_PHOTOS` | And on Squish Plus. Default 60. |
+| `SQUISH_PLUS_CHATS` | Nutritionist questions a month on Plus. Default 30. |
 | `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
 | `DATABASE_URL` | Filled in by the blueprint from the Postgres it creates. Turns on backup and accounts. Delete both and Squish stays local. |
 
-With a passcode set, the app opens on a lock screen and every analysis endpoint returns 401 until it
-is entered. It is a shared passcode, not a login — everyone who knows it shares one Squish. Render's
-free tier sleeps after inactivity, so the first visit takes ~50s to wake.
+What stops a stranger spending your Anthropic credit is the free plan's monthly allowance, counted
+per person against the database. There is no shared passcode: it was a stopgap from before there
+were accounts, and it made the app impossible to hand to a tester. Render's free tier sleeps after
+inactivity, so the first visit takes ~50s to wake — which is what the waking screen is for.
+
+### Free and Plus
+
+The line between them falls out of what each action costs to serve, not out of preference, and the
+arithmetic is in [`docs/monetisation.md`](docs/monetisation.md). Free is everything that is nearly
+free to run — logging by hand, food search, the diary, charts, streaks, the earned colourways,
+export — plus a taste of photo analysis. Plus is the part with a bill attached: more photo
+analyses, the nutritionist, and the Plus colourways.
+
+Plus has an allowance too. A heavy user costs more per month than Plus charges, so without a ceiling
+the best customers would be the ones losing the most money.
+
+To give somebody Plus without them paying — a tester, or a subscriber who needs putting right:
+
+```bash
+npm run grant -- someone@example.com        # a year
+npm run grant -- someone@example.com 30     # thirty days
+npm run grant -- someone@example.com off    # back to free
+npm run grant -- --list                     # who is on it
+```
+
+It needs `DATABASE_URL`, so on Render run it from the service's shell.
 
 ### Meal reminders
 

@@ -6,10 +6,9 @@
  * itself. The markdown file stays the thing you edit.
  *
  * Served by the server rather than the app on purpose. Both app stores need a
- * URL that opens the policy for somebody who has not installed anything, and
- * this Squish may be behind a passcode — a privacy policy nobody can read
- * without the password is not a published policy. So this route sits outside
- * the lock, outside the app shell, and needs no JavaScript to read.
+ * URL that opens the policy for somebody who has not installed anything and
+ * has no account, so this route sits outside the app shell entirely and needs
+ * no JavaScript to read.
  *
  * The renderer covers the markdown the policy actually uses and nothing else.
  * A dependency for six constructs would be a dependency to keep patched for

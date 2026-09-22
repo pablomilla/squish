@@ -46,3 +46,21 @@
 .ask-memory ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .ask-memory li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .ask-memory li span { flex: 1 1 auto; }
+
+/*
+ * The free-plan state: the whole screen, not a banner over a chat somebody
+ * cannot use. A disabled composer invites people to try typing into it.
+ */
+.ask-locked {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  text-align: center;
+  padding: var(--s4);
+}
+.ask-locked h2 { font-size: var(--text-section); margin: 4px 0 0; }
+.ask-locked p { margin: 0; max-width: 30ch; }
+.ask-locked .btn { margin-top: var(--s2); }

@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { ALL_LOOKS, DEFAULT_LOOK, LOOKS, PLUS_LOOKS, isUnlocked, lookById, lookVars } from '../src/lib/looks';
-import { isSubscribed } from '../src/lib/subscription';
 import { ACHIEVEMENTS } from '../src/store/useSquish';
 
 /**
@@ -55,8 +54,21 @@ test('nothing is both earned and sold', () => {
   for (const look of PLUS_LOOKS) assert.ok(!earned.has(look.id), `${look.name} is in both sets`);
 });
 
-test('there is nothing to subscribe to yet, and the app says so', () => {
-  assert.equal(isSubscribed(), false, 'when this changes, it must not be from localStorage — see subscription.ts');
+test('a Plus colourway is locked until something outside the browser says otherwise', () => {
+  // The successor to "there is nothing to subscribe to yet". There is now, and
+  // the rule that replaced it matters more: the flag passed in here comes from
+  // the server (lib/plan.ts) and never from storage, because a paywall a
+  // devtools console defeats funds nothing.
+  for (const look of PLUS_LOOKS) {
+    assert.equal(isUnlocked(look, {}, false), false, `${look.name} was free`);
+    assert.equal(isUnlocked(look, {}, true), true, `${look.name} stayed locked for a subscriber`);
+  }
+
+  // And an achievement colourway is never handed over by subscribing.
+  const earned = LOOKS.filter((l) => l.unlock.kind === 'achievement');
+  for (const look of earned) {
+    assert.equal(isUnlocked(look, {}, true), false, `${look.name} was sold rather than earned`);
+  }
 });
 
 test('ids are unique, and an unknown one falls back rather than blanking the mascot', () => {

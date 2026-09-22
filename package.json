@@ -22,7 +22,8 @@
     "lint": "oxlint src server test scripts eval",
     "typecheck": "tsc -b",
     "test": "tsx --test test/*.test.ts",
-    "build:mascot": "tsx scripts/build-mascot.ts"
+    "build:mascot": "tsx scripts/build-mascot.ts",
+    "grant": "tsx scripts/grant.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -56,5 +57,5 @@
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   },
-  "description": "Squish — your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
+  "description": "Squish \u2014 your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
 }

@@ -10,7 +10,7 @@ import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
 import { backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
-import { PLUS, isSubscribed } from '../lib/subscription';
+import { PLUS, planNow, watchStanding, type Standing } from '../lib/plan';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
@@ -26,7 +26,8 @@ export default function You() {
     useSquish();
   const [ignoredLearning, setIgnoredLearning] = useState(false);
   const prefersDark = usePrefersDark();
-  const subscribed = isSubscribed();
+  const standing = usePlan();
+  const subscribed = standing.plan === 'plus';
   const backup = useBackup();
 
   // Only offered, never applied: a plan that moves on its own is unsettling,
@@ -478,6 +479,8 @@ export default function You() {
         )}
       </section>
 
+      <PlanCard standing={standing} />
+
       <AccountCard enabled={backup.kind !== 'off'} />
 
       <BackupCard />
@@ -501,8 +504,8 @@ export default function You() {
         </div>
         {/*
           Served by the server rather than routed inside the app, so it opens
-          for somebody who has not got past the passcode — which is the whole
-          point of publishing a policy.
+          for somebody who has not installed the app or made an account —
+          which is the whole point of publishing a policy.
         */}
         <p className="tiny muted" style={{ marginTop: 12 }}>
           <a href={apiUrl('/privacy')} target="_blank" rel="noopener noreferrer">
@@ -707,6 +710,12 @@ function Row({ label, value }: { label: string; value: string }) {
  * logged today on their phone, or may have deliberately started again — so
  * the only automatic behaviour is keeping a copy.
  */
+function usePlan(): Standing {
+  const [standing, setStanding] = useState(planNow);
+  useEffect(() => watchStanding(setStanding), []);
+  return standing;
+}
+
 function useBackup(): BackupState {
   const [state, setState] = useState<BackupState>(backupState);
   useEffect(() => watchBackup(setState), []);
@@ -798,6 +807,57 @@ function BackupCard() {
           </button>
         )}
       </div>
+    </section>
+  );
+}
+
+/**
+ * Which plan, and what is left of the month.
+ *
+ * Shown rather than hidden behind a limit somebody runs into. A person who
+ * can see they have eleven photo analyses left will spend them differently
+ * from one who discovers the number by being refused, and the second is how
+ * an app earns a one-star review about being "secretly limited".
+ *
+ * Nothing here decides anything: it is a reading of what the server said.
+ */
+function PlanCard({ standing }: { standing: Standing }) {
+  if (!standing.known || standing.off) return null;
+
+  const plus = standing.plan === 'plus';
+  const rows: { label: string; kind: 'photo' | 'chat' | 'recipe' }[] = [
+    { label: 'Photo analyses', kind: 'photo' },
+    { label: 'Nutritionist questions', kind: 'chat' },
+    { label: 'Recipe imports', kind: 'recipe' },
+  ];
+
+  return (
+    <section className="card card--quiet">
+      <div className="card-title">
+        {/* Not "Your plan" — the targets card above already is. */}
+        <h3>Plan and usage</h3>
+        <span className={`badge ${plus ? 'badge--good' : ''}`}>{plus ? PLUS : 'Free'}</span>
+      </div>
+
+      <div className="plan-rows">
+        {rows.map((row) => (
+          <div className="plan-row" key={row.kind}>
+            <span className="tiny">{row.label}</span>
+            <b className="small">
+              {standing.allowance[row.kind] === 0 ? (
+                <span className="muted">{PLUS}</span>
+              ) : (
+                `${standing.left[row.kind]} of ${standing.allowance[row.kind]} left`
+              )}
+            </b>
+          </div>
+        ))}
+      </div>
+
+      <p className="tiny muted" style={{ marginTop: 10 }}>
+        {standing.resets ? `The month starts again on ${friendlyDate(standing.resets.slice(0, 10)).toLowerCase()}. ` : ''}
+        Logging by hand, food search, your diary and the charts are free and always will be.
+      </p>
     </section>
   );
 }

@@ -2,63 +2,58 @@ import type { AnalysisResult, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
 import { apiUrl } from './origin';
 import { deviceToken, forgetDevice } from './identity';
+import { showPaywall } from './paywall';
+import { refreshPlan } from './plan';
 import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 
 const TIMEOUT_MS = 45_000;
-const PASS_KEY = 'squish-pass';
 
 /**
- * Errors the user needs to see rather than silently absorb. A locked or
- * rate-limited request must not quietly turn into an offline estimate — that
- * would look like a working analysis.
+ * Errors the user needs to see rather than silently absorb.
+ *
+ * A request refused for want of allowance must not quietly turn into an
+ * offline estimate — that would look like a working analysis, and somebody
+ * would go on believing the numbers.
  */
 export class SquishApiError extends Error {
-  kind: 'locked' | 'rate_limited' | 'server';
+  kind: 'out_of_allowance' | 'rate_limited' | 'server';
 
-  constructor(kind: 'locked' | 'rate_limited' | 'server', message: string) {
+  /** Present on `out_of_allowance`: what the app needs to show a paywall. */
+  standing?: OutOfAllowance;
+
+  constructor(kind: SquishApiError['kind'], message: string, standing?: OutOfAllowance) {
     super(message);
     this.name = 'SquishApiError';
     this.kind = kind;
+    this.standing = standing;
   }
 }
 
-export function storedPasscode(): string {
-  try {
-    return localStorage.getItem(PASS_KEY) ?? '';
-  } catch {
-    return '';
-  }
+/** What the server says when an allowance has run out. */
+export interface OutOfAllowance {
+  plan: 'free' | 'plus';
+  kind: 'photo' | 'chat' | 'recipe';
+  used: number;
+  allowance: number;
+  /** ISO date when the month rolls over and it comes back. */
+  resets: string;
+  message: string;
 }
 
-export function rememberPasscode(passcode: string): void {
-  try {
-    localStorage.setItem(PASS_KEY, passcode);
-  } catch {
-    /* private browsing — the passcode is simply asked for again */
-  }
-}
-
-export function forgetPasscode(): void {
-  try {
-    localStorage.removeItem(PASS_KEY);
-  } catch {
-    /* nothing to do */
-  }
-}
-
-let onLockedHandler: (() => void) | null = null;
-
-/** The app registers here so a rejected passcode sends it back to the lock screen. */
-export function onLocked(handler: () => void): void {
-  onLockedHandler = handler;
-}
 
 async function unwrap<T>(path: string, response: Response): Promise<T> {
-  if (response.status === 401) {
-    forgetPasscode();
-    onLockedHandler?.();
-    throw new SquishApiError('locked', 'This Squish needs its passcode again.');
+  // 402: the month's allowance is gone. Not an error in the app's sense — the
+  // request was understood and refused — so it carries everything a paywall
+  // needs rather than just a sentence.
+  if (response.status === 402) {
+    const payload = (await response.json().catch(() => ({}))) as Partial<OutOfAllowance>;
+    const standing = payload as OutOfAllowance;
+    // Raised here, once, so no screen has to remember to. Every caller still
+    // gets the throw and can say its own thing as well.
+    showPaywall(standing);
+    void refreshPlan();
+    throw new SquishApiError('out_of_allowance', payload.message ?? "That is this month's allowance.", standing);
   }
   if (response.status === 429) {
     const payload = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
@@ -77,16 +72,13 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
 }
 
 /**
- * The headers every call carries: the passcode where there is one, and the
- * device token where the server issues them. Both are absent on a Squish with
- * neither, and everything still works.
+ * The headers every call carries: the device token, where the server issues
+ * them. Absent on a Squish with no database, and everything still works.
  */
 async function headers(json: boolean): Promise<Record<string, string>> {
-  const passcode = storedPasscode();
   const token = await deviceToken(apiUrl);
   return {
     ...(json ? { 'Content-Type': 'application/json' } : {}),
-    ...(passcode ? { 'x-squish-pass': passcode } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
@@ -126,26 +118,8 @@ export interface AiStatus {
   ok: boolean;
   ai: boolean;
   model: string;
-  /** True when the server was started with a passcode set. */
-  locked?: boolean;
   /** True when the server has a database — so backups and accounts exist. */
   accounts?: boolean;
-}
-
-/** Check a passcode against the server. Remembers it on success. */
-export async function unlock(passcode: string): Promise<boolean> {
-  try {
-    const response = await fetch(apiUrl('/api/unlock'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passcode }),
-    });
-    if (!response.ok) return false;
-    rememberPasscode(passcode);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /** Generous: a sleeping free-tier host can take the best part of a minute to wake. */
@@ -159,8 +133,8 @@ export async function aiStatus(): Promise<AiStatus> {
     if (!response.ok) throw new Error(String(response.status));
     return (await response.json()) as AiStatus;
   } catch {
-    // Unreachable or too slow — let the app open anyway. It works offline, and
-    // a locked server will send the user to the lock screen on the first call.
+    // Unreachable or too slow — let the app open anyway. Squish works offline,
+    // and a server that comes back will be asked again when the tab does.
     return { ok: false, ai: false, model: 'offline' };
   } finally {
     clearTimeout(timer);

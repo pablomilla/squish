@@ -16,7 +16,6 @@
  */
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
-import { storedPasscode } from './api';
 
 export type BackupState =
   | { kind: 'off' }
@@ -35,11 +34,9 @@ export interface RemoteDiary {
 }
 
 async function headers(): Promise<Record<string, string>> {
-  const passcode = storedPasscode();
   const token = await deviceToken(apiUrl);
   return {
     'Content-Type': 'application/json',
-    ...(passcode ? { 'x-squish-pass': passcode } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }

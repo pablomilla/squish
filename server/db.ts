@@ -142,6 +142,21 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index resets_account on resets(account_id);
     `,
   },
+  {
+    id: 3,
+    sql: `
+      -- When Squish Plus runs out for this account. Null is the free tier,
+      -- and so is a date in the past — which is the whole point of storing an
+      -- expiry rather than a boolean: a subscription that lapses has to stop
+      -- being true on its own, without anything having to remember to run.
+      --
+      -- It is also what a comped tester looks like: the same column, a date
+      -- far enough away not to matter.
+      alter table accounts add column plus_until timestamptz;
+
+      create index accounts_plus on accounts(plus_until) where plus_until is not null;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;
