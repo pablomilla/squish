@@ -14,10 +14,11 @@ import { deleteDiary, ownerOf, readDiary, writeDiary } from '../server/diary';
 const enabled = hasDatabase();
 const when = enabled ? test : test.skip;
 
+/* No truncate — see the note in accounts.test.ts. Every test here registers
+ * its own device, so an empty database was never what any of them needed. */
 before(async () => {
   if (!enabled) return;
   await migrate();
-  await query('truncate usage, diaries, devices, accounts cascade');
 });
 
 after(async () => {

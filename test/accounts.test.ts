@@ -33,10 +33,20 @@ const when = enabled ? test : test.skip;
 let n = 0;
 const anEmail = () => `person${++n}-${Date.now()}@example.com`;
 
+/*
+ * No truncate here, deliberately.
+ *
+ * Every test file in this suite runs in one process against one database, so
+ * a `truncate ... cascade` in one file's `before` runs while another file's
+ * tests are mid-flight. That is exactly what happened: wiping `accounts`
+ * cascaded to `resets` and deleted a token this file was about to use, and
+ * the failure moved around depending on which files existed. Nothing here
+ * needs an empty database — every test makes its own device and its own
+ * address — so nothing here empties one.
+ */
 before(async () => {
   if (!enabled) return;
   await migrate();
-  await query('truncate resets, usage, diaries, devices, accounts cascade');
 });
 
 after(async () => {
@@ -257,15 +267,18 @@ when('changing the password voids every reset link outstanding', async () => {
 when('an expired link is no link at all, and gets swept up', async () => {
   const email = anEmail();
   const device = await registerDevice();
-  await signUp(device.id, email, 'four random words');
+  const made = await signUp(device.id, email, 'four random words');
   const token = await tokenFor(email);
+  const account = made.ok ? made.account.id : '';
 
-  await query("update resets set expires_at = now() - interval '1 minute'");
+  // Scoped to this account. Ageing every reset token in the database would
+  // expire whatever another test in another file was in the middle of.
+  await query("update resets set expires_at = now() - interval '1 minute' where account_id = $1", [account]);
   const late = await completeReset(token, 'four brand new words');
   assert.equal(late.ok, false);
 
   await sweepResets();
-  const left = await query<{ token_hash: string }>('select token_hash from resets');
+  const left = await query<{ token_hash: string }>('select token_hash from resets where account_id = $1', [account]);
   assert.equal(left.length, 0);
 });
 

@@ -46,6 +46,16 @@ export async function query<T extends Record<string, unknown>>(
   return result.rows as T[];
 }
 
+/** A connection of your own, for the length of one job. */
+async function withClient<T>(body: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    return await body(client);
+  } finally {
+    client.release();
+  }
+}
+
 /** Several statements that must all happen, or none of them. */
 export async function transaction<T>(body: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
@@ -136,21 +146,73 @@ const MIGRATIONS: { id: number; sql: string }[] = [
 
 let ready: Promise<void> | null = null;
 
+/**
+ * An arbitrary constant, agreed only with ourselves.
+ *
+ * Postgres advisory locks are a namespace of integers with no meaning beyond
+ * everybody using the same one. This is Squish's number for "somebody is
+ * migrating".
+ */
+const MIGRATION_LOCK = 8_273_461;
+
+/**
+ * Bring the schema up to date, once, however many instances are starting.
+ *
+ * The lock is the whole point. Two processes booting together — which is
+ * exactly what happens the moment a host is allowed to add an instance — both
+ * read an empty `migrations` table, both run `create table accounts`, and the
+ * loser dies on a duplicate-object error. Measured, not imagined: two
+ * processes against a fresh database, one up, one refusing to start.
+ *
+ * So one holds the lock and the rest wait for it. What they find when they get
+ * in is a table that says the work is done, which is why the applied set is
+ * read inside the lock and not before it.
+ */
+async function apply(): Promise<void> {
+  await withClient(async (client) => {
+    // Taken before anything is created, including the ledger itself. An
+    // advisory lock needs no table to exist, and `create table if not exists`
+    // is NOT atomic against a concurrent create — two instances running it
+    // together still collide in the system catalogue, which is precisely how
+    // this was found after the first attempt at a fix.
+    await client.query('select pg_advisory_lock($1)', [MIGRATION_LOCK]);
+    try {
+      await client.query(
+        'create table if not exists migrations (id integer primary key, applied_at timestamptz not null default now())',
+      );
+      const rows = await client.query<{ id: number }>('select id from migrations');
+      const done = new Set(rows.rows.map((row) => row.id));
+
+      for (const step of MIGRATIONS) {
+        if (done.has(step.id)) continue;
+        try {
+          await client.query('begin');
+          await client.query(step.sql);
+          await client.query('insert into migrations (id) values ($1)', [step.id]);
+          await client.query('commit');
+        } catch (error) {
+          await client.query('rollback');
+          throw error;
+        }
+        console.log(`[squish] database migration ${step.id} applied`);
+      }
+    } finally {
+      await client.query('select pg_advisory_unlock($1)', [MIGRATION_LOCK]);
+    }
+  });
+}
+
 /** Applied once per process, on the first request that needs it. */
 export function migrate(): Promise<void> {
-  ready ??= (async () => {
-    await query('create table if not exists migrations (id integer primary key, applied_at timestamptz not null default now())');
-    const done = new Set((await query<{ id: number }>('select id from migrations')).map((row) => row.id));
-
-    for (const step of MIGRATIONS) {
-      if (done.has(step.id)) continue;
-      await transaction(async (client) => {
-        await client.query(step.sql);
-        await client.query('insert into migrations (id) values ($1)', [step.id]);
-      });
-      console.log(`[squish] database migration ${step.id} applied`);
-    }
-  })();
+  ready ??= apply().catch((error: unknown) => {
+    // Forgotten rather than remembered. A cached rejection would be handed to
+    // every later request too, so one unlucky moment at startup — a database
+    // still waking up, a migration that raced — left the instance refusing to
+    // serve anything for as long as it ran. Clearing it means the next request
+    // tries again.
+    ready = null;
+    throw error;
+  });
   return ready;
 }
 
