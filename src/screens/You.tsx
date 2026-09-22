@@ -14,6 +14,7 @@ import { PLUS, isSubscribed } from '../lib/subscription';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
+import { apiUrl } from '../lib/origin';
 import { friendlyDate, isoDate } from '../lib/date';
 import { streakOf } from '../lib/selectors';
 import type { Activity, Goal, Sex } from '../types';
@@ -498,6 +499,17 @@ export default function You() {
             Reset
           </button>
         </div>
+        {/*
+          Served by the server rather than routed inside the app, so it opens
+          for somebody who has not got past the passcode — which is the whole
+          point of publishing a policy.
+        */}
+        <p className="tiny muted" style={{ marginTop: 12 }}>
+          <a href={apiUrl('/privacy')} target="_blank" rel="noopener noreferrer">
+            Privacy policy
+          </a>{' '}
+          — what is kept, where it goes, and how to get rid of it.
+        </p>
       </section>
 
       <p className="script center you-footer">Small steps. Big progress. ♡</p>

@@ -195,15 +195,29 @@ it last changed.
 
 ## Contact
 
-<!--
-  TODO before publishing: put a real contact address here.
+Squish is run by **Industry Logic Ltd**, a company registered in England and
+Wales, which is the data controller for everything described here.
 
-  Use one you are willing to have on a public page and in an app store
-  listing — a dedicated address rather than your personal inbox is the usual
-  advice. Both stores also require a policy URL, and the ICO expects a
-  contact route for data requests.
+<!--
+  TODO before publishing: fill in the three lines below.
+
+  Company number and registered office are on your Companies House record and
+  are expected on a public policy. The email should be one you are willing to
+  have in an app store listing — a dedicated address such as
+  privacy@yourdomain rather than a personal inbox.
+
+  Also: as a controller processing health data you almost certainly have to
+  pay the ICO's annual data protection fee. Check your tier at
+  ico.org.uk/for-organisations/data-protection-fee.
 -->
+
+**Company number:** `[your Companies House number]`
+
+**Registered office:** `[your registered address]`
 
 **Email:** `[your contact address]`
 
-**Data controller:** `[your name or company name]`
+Write to us about anything in this policy, to make a request about your data,
+or to report a security problem. If you are not satisfied with how we handle
+it, you can complain to the Information Commissioner's Office at
+[ico.org.uk](https://ico.org.uk).

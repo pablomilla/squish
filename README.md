@@ -274,6 +274,7 @@ server/           Express API — Claude calls, offline fallback
   diary.ts        The backed-up diary, and refusing a stale write
   accounts.ts     Sign up, sign in, delete, and forgotten passwords
   mail.ts         One email to send, so: a webhook, or the log
+  privacy.ts      The policy, rendered from docs/privacy.md and served at /privacy
 src/
   components/     Squish mascot, charts, icons, sheets and toasts
   screens/        Onboarding, Home, Capture, Review, Diary, Insights, You, AddFood
@@ -303,9 +304,10 @@ test/             Node test-runner suite for the maths and parsing
 - [`docs/accounts.md`](docs/accounts.md) — device tokens, diary backup and
   accounts, all three optional and all three off without a database. Built and
   tested against a real Postgres.
-- [`docs/privacy.md`](docs/privacy.md) — the privacy policy. Needs a contact
-  address filling in and a public URL before it is worth anything; both stores
-  require one, and so does holding health data.
+- [`docs/privacy.md`](docs/privacy.md) — the privacy policy, served at
+  `/privacy` outside the passcode so it opens for somebody who has installed
+  nothing. Edit the markdown; the page follows. A contact address and the
+  company's registered details are still to fill in.
 - [`docs/health-integration.md`](docs/health-integration.md) — reading weight and steps from Apple
   Health and Health Connect, and writing meals back. Both hubs are native-only, so it depends on a
   Capacitor wrap; the plan covers the provenance and write-loop problems worth solving on paper

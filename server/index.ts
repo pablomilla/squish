@@ -22,6 +22,7 @@ import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from 
 import { hasDatabase } from './db';
 import { deviceFor, registerDevice, spend, spentToday, type Device, type Spend } from './identity';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
+import { privacyPage } from './privacy';
 import {
   MIN_PASSWORD,
   accountFor,
@@ -802,6 +803,26 @@ app.post('/api/coach', requirePasscode, async (req, res) => {
     logFailure('coach message', error);
     res.json({ message: null, offline: true });
   }
+});
+
+/**
+ * The privacy policy.
+ *
+ * Deliberately outside everything: no passcode, no device, no app shell, no
+ * JavaScript. Both stores need a URL that opens the policy for somebody who
+ * has installed nothing, and a policy you need a password to read is not a
+ * published policy.
+ *
+ * Registered before the static handler so it wins over the app's catch-all.
+ */
+app.get('/privacy', async (_req, res) => {
+  const html = await privacyPage();
+  if (!html) {
+    logFailure('privacy policy', new Error(`could not read docs/privacy.md from ${process.cwd()}`));
+    res.status(404).type('text/plain').send('The privacy policy is missing from this deployment.');
+    return;
+  }
+  res.type('html').send(html);
 });
 
 /* ------------------------------------------------------------------ *
