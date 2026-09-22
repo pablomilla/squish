@@ -1,6 +1,7 @@
 import type { AnalysisResult, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
 import { apiUrl } from './origin';
+import { deviceToken, forgetDevice } from './identity';
 import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 
@@ -75,16 +76,30 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+/**
+ * The headers every call carries: the passcode where there is one, and the
+ * device token where the server issues them. Both are absent on a Squish with
+ * neither, and everything still works.
+ */
+async function headers(json: boolean): Promise<Record<string, string>> {
+  const passcode = storedPasscode();
+  const token = await deviceToken(apiUrl);
+  return {
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    ...(passcode ? { 'x-squish-pass': passcode } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 async function post<T>(path: string, body: unknown): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const passcode = storedPasscode();
     return await unwrap<T>(
       path,
       await fetch(apiUrl(path), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(passcode ? { 'x-squish-pass': passcode } : {}) },
+        headers: await headers(true),
         body: JSON.stringify(body),
         signal: controller.signal,
       }),
@@ -98,10 +113,9 @@ async function get<T>(path: string): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const passcode = storedPasscode();
     return await unwrap<T>(
       path,
-      await fetch(apiUrl(path), { headers: passcode ? { 'x-squish-pass': passcode } : {}, signal: controller.signal }),
+      await fetch(apiUrl(path), { headers: await headers(false), signal: controller.signal }),
     );
   } finally {
     clearTimeout(timer);
@@ -251,6 +265,34 @@ export async function askNutritionist(options: {
   onLookup?: (labels: string[]) => void;
 }): Promise<AskResult> {
   return runConversation({ ...options, step: chatStep });
+}
+
+export interface Allowance {
+  known: boolean;
+  account?: boolean;
+  left?: Record<string, number>;
+  daily?: Record<string, number>;
+}
+
+/**
+ * What is left today — and a check that this browser is still who it thinks.
+ *
+ * The second part is the one that matters. A token from a database that has
+ * since been replaced is not rejected anywhere: the server simply does not
+ * recognise it and treats the request as anonymous, for ever, silently. Here
+ * is where that becomes visible — if we are holding a token and the server
+ * says it knows nobody, the token is stale, so it goes and the next call gets
+ * a new one.
+ */
+export async function allowance(): Promise<Allowance> {
+  try {
+    const held = await deviceToken(apiUrl);
+    const found = await get<Allowance>('/api/allowance');
+    if (held && !found.known) forgetDevice();
+    return found;
+  } catch {
+    return { known: false };
+  }
 }
 
 export interface CoachRequest {

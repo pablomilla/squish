@@ -19,6 +19,8 @@ import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
 import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
 import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
+import { hasDatabase } from './db';
+import { deviceFor, registerDevice, spend, spentToday, type Device, type Spend } from './identity';
 import {
   analyseLabel,
   analysePhoto,
@@ -34,6 +36,7 @@ import {
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '12mb' }));
+app.use(identify);
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DIST = resolve(process.cwd(), 'dist');
@@ -100,10 +103,81 @@ function requirePasscode(req: Request, res: Response, next: NextFunction): void 
 }
 
 /* ------------------------------------------------------------------ *
- * Rate limit — per IP, in memory. Resets when the service restarts.
+ * Who is asking
+ * ------------------------------------------------------------------ */
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    device?: Device;
+  }
+}
+
+/**
+ * Attach the device, if there is one, before anything that counts.
+ *
+ * Never rejects. A request with no token, a stale token or no database at all
+ * carries on as an anonymous one and meets the old per-IP limit instead —
+ * which is what keeps every existing browser working on the day this ships,
+ * and what keeps the app running on a laptop with no database at all.
+ */
+async function identify(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  try {
+    req.device = (await deviceFor(readToken(req))) ?? undefined;
+  } catch (error) {
+    logFailure('device lookup', error);
+  }
+  next();
+}
+
+const readToken = (req: Request): string | undefined => {
+  const header = req.header('authorization');
+  return header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+};
+
+/* ------------------------------------------------------------------ *
+ * Rate limit — per device where one is known, per IP where it is not.
+ *
+ * The IP version is the fallback rather than the rule now. Everybody on the
+ * same mobile network shares an address, so it could lock out a whole carrier
+ * because of one enthusiastic user, and being in memory it forgave everybody
+ * whenever the service restarted. A device is the thing worth counting.
  * ------------------------------------------------------------------ */
 
 const hits = new Map<string, { count: number; resetAt: number }>();
+
+/** How much a known device may spend in a day, per kind of call. */
+const DAILY: Record<Spend, number> = {
+  photo: Number(process.env.SQUISH_DAILY_PHOTOS ?? 25),
+  chat: Number(process.env.SQUISH_DAILY_CHATS ?? 40),
+  recipe: Number(process.env.SQUISH_DAILY_RECIPES ?? 10),
+};
+
+/** Count this call against the device, and refuse it if the day is spent. */
+function meter(kind: Spend) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.device || DAILY[kind] <= 0) {
+      rateLimit(req, res, next);
+      return;
+    }
+    try {
+      const used = await spend(req.device.id, kind);
+      if (used > DAILY[kind]) {
+        res.status(429).json({
+          error: 'rate_limited',
+          message: `That is ${DAILY[kind]} for today. It starts again tomorrow.`,
+        });
+        return;
+      }
+    } catch (error) {
+      // A metering failure must not stop somebody logging their lunch. It
+      // falls back to the address-based limit, which is worse but is not off.
+      logFailure('metering', error);
+      rateLimit(req, res, next);
+      return;
+    }
+    next();
+  };
+}
 
 function rateLimit(req: Request, res: Response, next: NextFunction): void {
   if (RATE_LIMIT <= 0) {
@@ -143,12 +217,56 @@ app.set('trust proxy', 1);
  * Routes
  * ------------------------------------------------------------------ */
 
+/* ---------------- Who is asking ---------------- *
+ *
+ * No passcode on this one. A device that has never been here has nothing to
+ * present, and the token it gets back is what it presents from then on.
+ */
+app.post('/api/device', async (_req, res) => {
+  if (!hasDatabase()) {
+    // Not an error. It is how Squish runs on a laptop, and the client is
+    // written to carry on without one.
+    res.status(503).json({ error: 'no_database', message: 'This Squish keeps nothing on the server.' });
+    return;
+  }
+  try {
+    res.json(await registerDevice());
+  } catch (error) {
+    logFailure('device registration', error);
+    res.status(503).json({ error: 'no_database', message: 'Could not set this device up just now.' });
+  }
+});
+
+/** What is left today, so the app can say so before somebody runs into it. */
+app.get('/api/allowance', async (req, res) => {
+  if (!req.device) {
+    res.json({ known: false });
+    return;
+  }
+  try {
+    const kinds = Object.keys(DAILY) as Spend[];
+    const used = await Promise.all(kinds.map((kind) => spentToday(req.device!.id, kind)));
+    res.json({
+      known: true,
+      account: Boolean(req.device.accountId),
+      left: Object.fromEntries(kinds.map((kind, i) => [kind, Math.max(0, DAILY[kind] - used[i])])),
+      daily: DAILY,
+    });
+  } catch (error) {
+    logFailure('allowance', error);
+    res.json({ known: false });
+  }
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     ai: hasCredentials(),
     model: process.env.SQUISH_MODEL ?? 'claude-opus-5',
     locked: Boolean(PASSCODE),
+    // So the app knows whether to bother asking for a device, a backup or an
+    // account. Without a database none of those exist and it stays local.
+    accounts: hasDatabase(),
   });
 });
 
@@ -168,7 +286,7 @@ const inRange = (value: unknown, min: number, max: number): number | undefined =
 };
 
 /** Vision analysis of a photo. Body: { image: dataURL | base64, mediaType?, slot?, hint?, mode?, crockery? } */
-app.post('/api/analyse/photo', requirePasscode, rateLimit, async (req, res) => {
+app.post('/api/analyse/photo', requirePasscode, meter('photo'), async (req, res) => {
   const { image, mediaType, slot, hint, mode, crockery } = req.body ?? {};
   if (typeof image !== 'string' || image.length < 32) {
     res.status(400).json({ error: 'An image is required.' });
@@ -209,7 +327,7 @@ app.post('/api/analyse/photo', requirePasscode, rateLimit, async (req, res) => {
 });
 
 /** Natural-language analysis. Body: { description, slot? } */
-app.post('/api/analyse/text', requirePasscode, rateLimit, async (req, res) => {
+app.post('/api/analyse/text', requirePasscode, meter('photo'), async (req, res) => {
   const { description, slot } = req.body ?? {};
   if (typeof description !== 'string' || !description.trim()) {
     res.status(400).json({ error: 'A description is required.' });
@@ -254,7 +372,7 @@ app.get('/api/barcode/:code', requirePasscode, async (req, res) => {
  * Rate limited like the analysis endpoints, because a chat box is the easiest
  * thing in the app to leave running up a bill.
  */
-app.post('/api/chat', requirePasscode, rateLimit, async (req, res) => {
+app.post('/api/chat', requirePasscode, meter('chat'), async (req, res) => {
   const { turns, context, notes } = req.body ?? {};
 
   const messages = cleanMessages(turns);
@@ -304,7 +422,7 @@ app.post('/api/chat', requirePasscode, rateLimit, async (req, res) => {
  * can guess at "chicken salad" but it cannot read a web page, and returning an
  * invented recipe would be worse than saying no.
  */
-app.post('/api/recipe', requirePasscode, rateLimit, async (req, res) => {
+app.post('/api/recipe', requirePasscode, meter('recipe'), async (req, res) => {
   const { url, slot } = req.body ?? {};
 
   if (typeof url !== 'string' || !url.trim()) {
@@ -330,7 +448,7 @@ app.post('/api/recipe', requirePasscode, rateLimit, async (req, res) => {
 });
 
 /** Correct an analysis in words. Body: { analysis, instruction, slot } */
-app.post('/api/analyse/refine', requirePasscode, rateLimit, async (req, res) => {
+app.post('/api/analyse/refine', requirePasscode, meter('photo'), async (req, res) => {
   const { analysis, instruction, slot } = req.body ?? {};
 
   if (typeof instruction !== 'string' || !instruction.trim()) {
