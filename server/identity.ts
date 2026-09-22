@@ -79,7 +79,14 @@ export function sameSecret(a: string, b: string): boolean {
  * What a device has spent
  * ------------------------------------------------------------------ */
 
-export type Spend = 'photo' | 'chat' | 'recipe';
+/**
+ * `signin` and `reset` are counted for a different reason from the rest.
+ *
+ * The others are an allowance: somebody has used their photos for today. These
+ * two are a brake on guessing — an offline scrypt attack is expensive, but an
+ * online one against this server should not be worth starting.
+ */
+export type Spend = 'photo' | 'chat' | 'recipe' | 'signin' | 'reset';
 
 /**
  * Count one, and say how many have been counted today.

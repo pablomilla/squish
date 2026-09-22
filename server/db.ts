@@ -115,6 +115,23 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index devices_account on devices(account_id);
     `,
   },
+  {
+    id: 2,
+    sql: `
+      -- A password reset in flight. The token is stored hashed, the same way
+      -- the device token is: it is a bearer credential for the two hours it
+      -- lives, and a database somebody has read should not hand them anybody's
+      -- account.
+      create table resets (
+        token_hash text primary key,
+        account_id text not null references accounts(id) on delete cascade,
+        expires_at timestamptz not null,
+        created_at timestamptz not null default now()
+      );
+
+      create index resets_account on resets(account_id);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

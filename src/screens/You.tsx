@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
+import AccountCard from '../components/AccountCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
@@ -7,7 +8,7 @@ import { disableReminders, enableReminders, explainBlocker, reminderSupport, typ
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
-import { backupState, resumeBackup, watchBackup } from '../lib/autobackup';
+import { backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { PLUS, isSubscribed } from '../lib/subscription';
 import { useSquish } from '../store/useSquish';
@@ -476,6 +477,8 @@ export default function You() {
         )}
       </section>
 
+      <AccountCard enabled={backup.kind !== 'off'} />
+
       <BackupCard />
 
       <section className="card card--quiet">
@@ -704,6 +707,11 @@ function BackupCard() {
   const [busy, setBusy] = useState(false);
   const toast = useToast();
 
+  // Signing in or out points this device at a different diary, and the state
+  // is `idle` either side of that — so the look-up has to be told separately.
+  const [switched, setSwitched] = useState(0);
+  useEffect(() => watchIdentity(() => setSwitched((n) => n + 1)), []);
+
   useEffect(() => {
     if (state.kind === 'off') return;
     let live = true;
@@ -713,7 +721,7 @@ function BackupCard() {
     return () => {
       live = false;
     };
-  }, [state.kind]);
+  }, [state.kind, switched]);
 
   if (state.kind === 'off') return null;
 

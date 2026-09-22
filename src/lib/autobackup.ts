@@ -106,3 +106,27 @@ export function resumeBackup(version: number | null): void {
   stopped = false;
   announce({ kind: 'idle', at: null });
 }
+
+/**
+ * Signing in, signing out or deleting an account changes whose diary the
+ * server thinks this device holds.
+ *
+ * Announced separately from the state, because the state does not change —
+ * before and after are both `idle` — and anything showing what is on the
+ * server has to go and look again. Without this, somebody signing in on a new
+ * phone finds Restore greyed out, which is the one thing they signed in for.
+ */
+const onSwitch = new Set<() => void>();
+
+export function watchIdentity(listener: () => void): () => void {
+  onSwitch.add(listener);
+  return () => onSwitch.delete(listener);
+}
+
+export function switchedIdentity(): void {
+  // Whatever version this browser last agreed about referred to a different
+  // diary. Forgetting it means the next push either starts cleanly or is told
+  // there is already one there — and being told is the whole point.
+  resumeBackup(null);
+  for (const listener of onSwitch) listener();
+}

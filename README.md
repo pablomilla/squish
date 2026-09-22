@@ -131,6 +131,7 @@ secrets rather than you editing any files.
 | `ANTHROPIC_API_KEY` | Your key. Lives in the host's dashboard, never in the repo. |
 | `SQUISH_PASSCODE` | **Set this.** Without it, anyone who finds the URL spends your credit. |
 | `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
+| `DATABASE_URL` | Optional. A Postgres URL turns on diary backup and accounts. |
 
 With a passcode set, the app opens on a lock screen and every analysis endpoint returns 401 until it
 is entered. It is a shared passcode, not a login — everyone who knows it shares one Squish. Render's
@@ -151,6 +152,28 @@ of that is deleted rather than carried.
 
 In a browser the card on **You** says so, which is the honest answer rather
 than a switch that half works. See [`docs/phone-app.md`](docs/phone-app.md).
+
+### Backup and accounts
+
+Without a `DATABASE_URL` the diary lives in the browser and nowhere else, which
+is how Squish has always worked and still works. Point `DATABASE_URL` at a
+Postgres and three things switch on, in this order:
+
+- **A device token**, automatically, so the daily allowance is counted per phone
+  rather than per IP address — everybody on the same mobile network used to
+  share one.
+- **A backup** of the diary, automatically, so a cleared browser or a lost phone
+  is an inconvenience rather than the end of six weeks of logging. It is a
+  backup and not a sync: Restore is a button, never a behaviour.
+- **An account**, only if somebody asks for one. It does the one thing a device
+  cannot — follow them to a new phone.
+
+Squish will not merge two diaries. Whether it is two phones backing up or
+somebody signing in where the account already has one, it stops and asks which
+to keep, because merging means guessing whether two similar lunches are one
+lunch logged twice. See [`docs/accounts.md`](docs/accounts.md), which also
+covers reset emails, the schema, and what is still missing before the app
+stores.
 
 ## How the AI part works
 
@@ -246,12 +269,18 @@ server/           Express API — Claude calls, offline fallback
   chat.ts         The nutritionist's prompt, safety rules, tool loop and caching
   nutritionist-tools.ts  What it can look up — declared here, run in the browser
   index.ts        Routes, key detection, graceful degradation
+  db.ts           Postgres, its migrations, and behaving well without one
+  identity.ts     Device tokens and what each device has spent today
+  diary.ts        The backed-up diary, and refusing a stale write
+  accounts.ts     Sign up, sign in, delete, and forgotten passwords
+  mail.ts         One email to send, so: a webhook, or the log
 src/
   components/     Squish mascot, charts, icons, sheets and toasts
   screens/        Onboarding, Home, Capture, Review, Diary, Insights, You, AddFood
   lib/            Nutrition maths, food table, offline estimator, selectors, dates, API client
                   nutritionist-tools.ts answers the lookups out of the store
                   origin.ts is where every API call learns which host it is on
+                  identity.ts, backup.ts, autobackup.ts, account.ts — the browser half
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
 ios/ android/     Capacitor shells — see docs/phone-app.md
@@ -271,6 +300,10 @@ test/             Node test-runner suite for the maths and parsing
   device, every API call taught where its server is, permission strings filled
   in, both platforms scaffolded. What is left needs a Mac, and nothing has run
   on a phone yet.
+- [`docs/accounts.md`](docs/accounts.md) — device tokens, diary backup and
+  accounts, all three optional and all three off without a database. Built and
+  tested against a real Postgres; what is left before the stores is a privacy
+  policy, since Squish now holds an email address and a copy of the diary.
 - [`docs/health-integration.md`](docs/health-integration.md) — reading weight and steps from Apple
   Health and Health Connect, and writing meals back. Both hubs are native-only, so it depends on a
   Capacitor wrap; the plan covers the provenance and write-loop problems worth solving on paper

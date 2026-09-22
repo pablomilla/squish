@@ -18,6 +18,8 @@ import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
 import { aiStatus, onLocked, storedPasscode } from './lib/api';
 import { startBackup } from './lib/autobackup';
+import { resetTokenInUrl } from './lib/account';
+import ResetPassword from './screens/ResetPassword';
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'home', label: 'Home', Icon: HomeIcon },
@@ -153,6 +155,12 @@ function Shell() {
 }
 
 export default function App() {
+  // A reset link is its own screen, not a sheet inside the app. Whoever
+  // followed it may be on a phone with no diary on it yet, and has one thing
+  // to do. Read once, at startup: nothing in the app changes the address bar.
+  const resetToken = useMemo(() => resetTokenInUrl(), []);
+  if (resetToken) return <ResetPassword token={resetToken} />;
+
   return (
     <ToastProvider>
       <Shell />

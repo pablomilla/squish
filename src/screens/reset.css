@@ -1,0 +1,19 @@
+.reset {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  padding: var(--s4) var(--s4) calc(var(--s4) + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.reset h1 { font-size: var(--text-title); margin: 0; }
+.reset-form { width: 100%; max-width: 360px; text-align: left; }
+.reset-trouble { color: var(--bad); margin: 0; }
+
+/* Full width, because it is the only thing on the page to press. */
+.reset-form .btn { width: 100%; }
+
+.reset-mark { font-size: var(--text-caption); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin: 0; }

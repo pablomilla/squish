@@ -23,6 +23,18 @@ import { hasDatabase } from './db';
 import { deviceFor, registerDevice, spend, spentToday, type Device, type Spend } from './identity';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import {
+  MIN_PASSWORD,
+  accountFor,
+  changePassword,
+  completeReset,
+  deleteAccount,
+  requestReset,
+  signIn,
+  signOut,
+  signUp,
+  verifyPassword,
+} from './accounts';
+import {
   analyseLabel,
   analysePhoto,
   analyseRecipe,
@@ -151,6 +163,23 @@ const DAILY: Record<Spend, number> = {
   photo: Number(process.env.SQUISH_DAILY_PHOTOS ?? 25),
   chat: Number(process.env.SQUISH_DAILY_CHATS ?? 40),
   recipe: Number(process.env.SQUISH_DAILY_RECIPES ?? 10),
+  // Twenty is generous for somebody who has forgotten which password they
+  // used, and nowhere near enough to guess one.
+  signin: Number(process.env.SQUISH_DAILY_SIGNINS ?? 20),
+  reset: Number(process.env.SQUISH_DAILY_RESETS ?? 5),
+};
+
+/**
+ * What to say when the day is spent.
+ *
+ * The allowances and the brakes read very differently to the person who hits
+ * them. Running out of photos is a limit somebody paid nothing for; running
+ * out of sign-in attempts is a door closing, and saying "that is 20 for today"
+ * reads as a punishment rather than a precaution.
+ */
+const SPENT: Partial<Record<Spend, string>> = {
+  signin: 'Too many attempts from this device. Try again tomorrow, or use the forgotten-password link.',
+  reset: 'That is enough reset links for one day. Check your inbox, including the spam folder.',
 };
 
 /** Count this call against the device, and refuse it if the day is spent. */
@@ -163,10 +192,7 @@ function meter(kind: Spend) {
     try {
       const used = await spend(req.device.id, kind);
       if (used > DAILY[kind]) {
-        res.status(429).json({
-          error: 'rate_limited',
-          message: `That is ${DAILY[kind]} for today. It starts again tomorrow.`,
-        });
+        res.status(429).json({ error: 'rate_limited', message: SPENT[kind] ?? `That is ${DAILY[kind]} for today. It starts again tomorrow.` });
         return;
       }
     } catch (error) {
@@ -334,6 +360,218 @@ app.get('/api/allowance', async (req, res) => {
     res.json({ known: false });
   }
 });
+
+/* ---------------- Accounts ---------------- *
+ *
+ * An account is optional and always will be. The device token underneath it
+ * carries a diary perfectly well; an account exists so the diary can follow
+ * somebody to a new phone, and be got back after the old one went in the sea.
+ *
+ * There is no session token. Signing in attaches the account to the device
+ * row, and the device token stays the only credential anything presents —
+ * it is already long-lived, already a bearer credential, and already holds
+ * the whole diary. A second one would only be a second thing to leak.
+ */
+
+/** What these routes say back, with nothing in it worth intercepting. */
+const whoami = (account: { id: string; email: string } | null) =>
+  account ? { signedIn: true as const, email: account.email } : { signedIn: false as const };
+
+app.get('/api/account', requireDevice, async (req, res) => {
+  try {
+    const id = req.device!.accountId;
+    res.json(whoami(id ? await accountFor(id) : null));
+  } catch (error) {
+    logFailure('account read', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
+  }
+});
+
+app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
+  const { email, password } = req.body ?? {};
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'An address and a password, please.' });
+    return;
+  }
+
+  try {
+    const made = await signUp(req.device!.id, email, password);
+    if (made.ok) {
+      res.json({ ...whoami(made.account), broughtDiary: made.broughtDiary });
+      return;
+    }
+    res.status(409).json({ error: made.reason, message: SIGNUP_TROUBLE[made.reason] });
+  } catch (error) {
+    logFailure('sign up', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not make that account just now.' });
+  }
+});
+
+const SIGNUP_TROUBLE: Record<'taken' | 'bad_email' | 'weak_password', string> = {
+  taken: 'There is already an account on that address. Try signing in.',
+  bad_email: 'That does not look like an email address.',
+  weak_password: `A password needs ${MIN_PASSWORD} characters or more. Four words you will remember beats one word with a number on the end.`,
+};
+
+app.post('/api/session', requireDevice, meter('signin'), async (req, res) => {
+  const { email, password } = req.body ?? {};
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'An address and a password, please.' });
+    return;
+  }
+
+  try {
+    const back = await signIn(req.device!.id, email, password);
+    if (back.ok) {
+      res.json({ ...whoami(back.account), broughtDiary: back.broughtDiary });
+      return;
+    }
+    // One message for both a wrong password and an address with no account.
+    // Telling them apart is a way of finding out who has an account here.
+    res.status(401).json({ error: 'wrong', message: 'That address and password do not go together.' });
+  } catch (error) {
+    logFailure('sign in', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not sign in just now.' });
+  }
+});
+
+app.delete('/api/session', requireDevice, async (req, res) => {
+  try {
+    await signOut(req.device!.id);
+    res.json({ signedIn: false });
+  } catch (error) {
+    logFailure('sign out', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not sign out just now.' });
+  }
+});
+
+/** Needs an account, not just a device: there is nothing here for a stranger. */
+function requireAccount(req: Request, res: Response, next: NextFunction): void {
+  requireDevice(req, res, () => {
+    if (!req.device?.accountId) {
+      res.status(401).json({ error: 'no_account', message: 'Sign in first.' });
+      return;
+    }
+    next();
+  });
+}
+
+app.post('/api/account/password', requireAccount, meter('signin'), async (req, res) => {
+  const { current, next: replacement } = req.body ?? {};
+  if (typeof current !== 'string' || typeof replacement !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'The old password and the new one, please.' });
+    return;
+  }
+
+  try {
+    const changed = await changePassword(req.device!.accountId!, current, replacement);
+    if (changed.ok) {
+      res.json({ changed: true });
+      return;
+    }
+    res.status(changed.reason === 'weak_password' ? 400 : 401).json({
+      error: changed.reason,
+      message: changed.reason === 'weak_password' ? SIGNUP_TROUBLE.weak_password : 'That is not the current password.',
+    });
+  } catch (error) {
+    logFailure('password change', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not change that just now.' });
+  }
+});
+
+/**
+ * Delete the account and everything on the server with it.
+ *
+ * Both app stores require this from inside the app rather than by emailing
+ * somebody, and the password is asked for again because a phone somebody left
+ * on a train should not be able to do this.
+ */
+app.delete('/api/account', requireAccount, meter('signin'), async (req, res) => {
+  const { password } = req.body ?? {};
+  if (typeof password !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'Your password, to be sure it is you.' });
+    return;
+  }
+
+  try {
+    const id = req.device!.accountId!;
+    // Checked with verifyPassword rather than signIn: signing in also decides
+    // what happens to the diary on this device, and moving one onto an account
+    // that is about to be deleted would delete it too.
+    if (!(await verifyPassword(id, password))) {
+      res.status(401).json({ error: 'wrong', message: 'That is not your password.' });
+      return;
+    }
+    await deleteAccount(id);
+    res.json({ deleted: true });
+  } catch (error) {
+    logFailure('account deletion', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not delete that just now.' });
+  }
+});
+
+/**
+ * Forgotten passwords.
+ *
+ * Always answers the same way. An endpoint that says "no such account" is a
+ * tool for finding out who has one.
+ */
+app.post('/api/account/reset', requireDevice, meter('reset'), async (req, res) => {
+  const { email } = req.body ?? {};
+  if (typeof email !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'Which address?' });
+    return;
+  }
+
+  try {
+    await requestReset(email, (token) => `${publicOrigin(req)}/reset?token=${encodeURIComponent(token)}`);
+  } catch (error) {
+    // Logged, not reported. The answer is the same either way, and a failure
+    // that only happens for addresses that exist is itself a leak.
+    logFailure('reset request', error);
+  }
+  res.json({ sent: true });
+});
+
+app.post('/api/account/reset/confirm', requireDevice, meter('reset'), async (req, res) => {
+  const { token, password } = req.body ?? {};
+  if (typeof token !== 'string' || typeof password !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'The link and a new password, please.' });
+    return;
+  }
+
+  try {
+    const done = await completeReset(token, password);
+    if (done.ok) {
+      res.json({ changed: true });
+      return;
+    }
+    res.status(done.reason === 'weak_password' ? 400 : 410).json({
+      error: done.reason,
+      message:
+        done.reason === 'weak_password'
+          ? SIGNUP_TROUBLE.weak_password
+          : 'That link has been used or has run out. Ask for another.',
+    });
+  } catch (error) {
+    logFailure('reset', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+  }
+});
+
+/**
+ * Where this Squish lives, for a link somebody will click in an email.
+ *
+ * Taken from the request rather than configured, so it is right on a laptop,
+ * on Render and on a preview deploy without anybody setting anything — unless
+ * SQUISH_PUBLIC_ORIGIN says otherwise, which it should where a proxy makes the
+ * request look like it arrived somewhere else.
+ */
+function publicOrigin(req: Request): string {
+  const configured = process.env.SQUISH_PUBLIC_ORIGIN?.trim();
+  if (configured) return configured.replace(/\/$/, '');
+  return `${req.protocol}://${req.get('host') ?? 'localhost'}`;
+}
 
 app.get('/api/health', (_req, res) => {
   res.json({

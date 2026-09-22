@@ -1,0 +1,35 @@
+.account-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.account-actions .btn { flex: 1 1 auto; }
+
+/*
+ * Deleting an account is rare, irreversible, and must be findable — both app
+ * stores require it from inside the app. Findable is not the same as
+ * prominent, so it sits on its own line, quiet, under the things somebody is
+ * actually likely to want.
+ *
+ * Written as .btn.btn--quiet-danger rather than .btn--quiet-danger: the same
+ * specificity as .btn would leave which one wins up to the order the
+ * stylesheets happen to be bundled in, and it lost.
+ */
+.account-danger { margin-top: 10px; }
+
+.btn.btn--quiet-danger {
+  background: transparent;
+  color: var(--bad);
+  border: 1px solid var(--bad-soft);
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.account-trouble { color: var(--bad); margin: 0; }
+
+.linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  align-self: flex-start;
+}
