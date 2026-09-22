@@ -13,9 +13,13 @@ funds the app; they are a top-up on people who already pay.
 The per-action costs below are measured — from real prompt sizes, real token
 counts and the Claude pricing at the time. **The actions per person are a
 guess**, and they are the number that matters most, so treat the monthly
-totals as a shape rather than a figure. When there are real users, replace
-them: the nutritionist already logs its own usage (see the README), and the
-analysers have priced every call since the benchmark was written.
+totals as a shape rather than a figure.
+
+Replacing that guess is now a matter of looking: every call's price is kept
+against the person who made it, and the dashboard (`You → Dashboard`, for
+addresses in `SQUISH_ADMIN_EMAILS`) shows the month's real spend by kind. When
+there are enough users to mean anything, take the numbers from there rather
+than from this table.
 
 | | Moderate (2 photos + 1 question a day) | Heavy (3 + 3) |
 |---|---|---|

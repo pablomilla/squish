@@ -178,6 +178,35 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index invite_uses_account on invite_uses(account_id);
     `,
   },
+  {
+    id: 5,
+    sql: `
+      -- What each day's calls actually cost.
+      --
+      -- The price of every call has been worked out since the benchmark was
+      -- written, and then thrown away into a log line. Keeping it is what
+      -- turns the costings in docs/monetisation.md from a guess into a
+      -- measurement, and it is the only way to answer "is Plus priced right"
+      -- with anything other than an opinion.
+      --
+      -- Numeric rather than a float: these are fractions of a cent added up
+      -- thousands of times, and binary floating point drifts.
+      alter table usage add column cost_usd numeric(12, 6) not null default 0;
+
+      -- What an admin did, because granting somebody a paid tier is the sort
+      -- of thing you want a record of when it is later disputed.
+      create table admin_actions (
+        id         bigserial primary key,
+        admin      text not null,
+        action     text not null,
+        subject    text,
+        detail     text,
+        at         timestamptz not null default now()
+      );
+
+      create index admin_actions_at on admin_actions(at desc);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

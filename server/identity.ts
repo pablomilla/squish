@@ -115,3 +115,23 @@ export async function spentToday(deviceId: string, kind: Spend): Promise<number>
   );
   return rows[0]?.count ?? 0;
 }
+
+/**
+ * Record what a call actually cost, once it is known.
+ *
+ * Separate from `spend` because the two happen at different moments: the
+ * count has to go up before the call, so an allowance cannot be overrun by
+ * firing ten at once, and the price is only known after it comes back.
+ *
+ * Never awaited by anything the person is waiting on, and never allowed to
+ * fail a request. A missing price is a gap in a report; a failed analysis
+ * because the bookkeeping fell over would be somebody's lunch.
+ */
+export async function recordCost(deviceId: string, kind: Spend, usd: number | null): Promise<void> {
+  if (!usd || !Number.isFinite(usd) || usd <= 0) return;
+  await query(
+    `update usage set cost_usd = cost_usd + $3
+      where device_id = $1 and day = current_date and kind = $2`,
+    [deviceId, kind, usd.toFixed(6)],
+  );
+}

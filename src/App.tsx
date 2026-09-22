@@ -13,6 +13,7 @@ import Diary from './screens/Diary';
 import Insights from './screens/Insights';
 import You from './screens/You';
 import Ask from './screens/Ask';
+import Admin from './screens/Admin';
 import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
 import { THUMB, aiStatus, reshrink, type AiStatus, type OutOfAllowance } from './lib/api';
@@ -154,7 +155,7 @@ function Shell() {
       {route.name === 'home' && <Home go={go} />}
       {route.name === 'meals' && <Diary go={go} onEditMeal={editMeal} />}
       {route.name === 'insights' && <Insights />}
-      {route.name === 'you' && <You />}
+      {route.name === 'you' && <You go={go} />}
       {route.name === 'capture' && (
         <Capture slot={route.slot} date={route.date} shot={route.shot} onCancel={home} onAnalysed={openReview} go={go} />
       )}
@@ -162,6 +163,7 @@ function Shell() {
         <AddFood slot={route.slot} date={route.date} initialTab={route.tab} onCancel={home} onReady={openReview} />
       )}
       {route.name === 'ask' && <Ask onClose={home} />}
+      {route.name === 'admin' && <Admin onClose={() => setRoute({ name: 'you' })} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
 
       <AddSheet open={adding} onClose={() => setAdding(false)} go={go} />

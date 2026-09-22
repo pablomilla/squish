@@ -1,0 +1,34 @@
+.admin { display: flex; flex-direction: column; gap: var(--s3); padding-bottom: var(--s6); }
+
+.admin-figures { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2); text-align: center; }
+.admin-figure { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.admin-figure b { font-size: var(--text-section); }
+.admin-figure span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.admin-rows { display: flex; flex-direction: column; gap: 8px; }
+.admin-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s2); }
+.admin-row > :first-child { flex: 1; min-width: 0; }
+
+.admin-codes { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-codes code {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 6px 10px;
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+}
+
+.admin-people { display: flex; flex-direction: column; gap: var(--s3); margin-top: var(--s2); }
+.admin-person { border-top: 1px solid var(--line); padding-top: var(--s2); display: flex; flex-direction: column; gap: 6px; }
+.admin-person:first-child { border-top: 0; }
+.admin-person-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.admin-person-head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-person p { margin: 0; }
+
+.admin-foot { text-align: center; padding: 0 var(--s4); }
+
+/* Roomier where there is room: this is the one screen somebody uses sitting down. */
+@media (min-width: 720px) {
+  .admin { max-width: 46rem; margin: 0 auto; width: 100%; }
+}

@@ -23,7 +23,9 @@ import { deviceFor, registerDevice, spend, type Device, type Spend } from './ide
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage } from './privacy';
 import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth, type Billable, type Plan } from './plan';
-import { invitesExist, redeem } from './invites';
+import { inviteCodes, inviteDays, invitesExist, redeem } from './invites';
+import { actions, adminEmail, allowances, isAdmin, overview, people, setPlan } from './admin';
+import { billedTo } from './billing';
 import { PLUS } from '../src/lib/subscription';
 import {
   MIN_PASSWORD,
@@ -197,26 +199,28 @@ function meter(kind: Spend) {
       await spend(req.device.id, kind);
       const used = await usedThisMonth(req.device, kind);
 
-      if (used > allowance) {
-        res.status(402).json({
-          error: 'out_of_allowance',
-          plan,
-          kind,
-          used,
-          allowance,
-          resets: nextReset(),
-          message: OUT_OF[plan][kind],
-        });
+      if (used <= allowance) {
+        // Everything downstream of here runs with somewhere to put its bill.
+        billedTo(req.device.id, kind, next);
         return;
       }
+
+      res.status(402).json({
+        error: 'out_of_allowance',
+        plan,
+        kind,
+        used,
+        allowance,
+        resets: nextReset(),
+        message: OUT_OF[plan][kind],
+      });
+      return;
     } catch (error) {
       // A metering failure must not stop somebody logging their lunch. It
       // falls back to the address-based limit, which is worse but is not off.
       logFailure('metering', error);
       rateLimit(req, res, next);
-      return;
     }
-    next();
   };
 }
 
@@ -407,6 +411,8 @@ app.get('/api/allowance', async (req, res) => {
       resets: nextReset(),
       // So the app only offers a code box where codes exist.
       invites: invitesExist(),
+      // And only shows the dashboard to somebody who can use it.
+      admin: await isAdmin(req.device),
       ...(await standingOf(req.device)),
     });
   } catch (error) {
@@ -561,6 +567,78 @@ app.delete('/api/account', requireAccount, meter('signin'), async (req, res) => 
   } catch (error) {
     logFailure('account deletion', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not delete that just now.' });
+  }
+});
+
+/* ---------------- The dashboard ---------------- *
+ *
+ * Everything here needs an account whose address is in SQUISH_ADMIN_EMAILS.
+ * There is no separate admin credential to leak and no way to promote
+ * yourself from inside the app — an admin signs in like anybody else, and the
+ * list decides whether they also see this.
+ *
+ * None of it can reach a diary. Counts and totals only; see server/admin.ts.
+ */
+function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  requireDevice(req, res, () => {
+    void isAdmin(req.device)
+      .then((yes) => {
+        if (yes) {
+          next();
+          return;
+        }
+        // The same answer whether they are signed out, signed in as somebody
+        // ordinary, or there are no admins at all. A 403 that distinguishes
+        // those is a way of finding out that a dashboard exists.
+        res.status(404).json({ error: 'not_found' });
+      })
+      .catch((error: unknown) => {
+        logFailure('admin check', error);
+        res.status(503).json({ error: 'unavailable' });
+      });
+  });
+}
+
+app.get('/api/admin/overview', requireAdmin, async (_req, res) => {
+  try {
+    res.json({ ...(await overview()), allowances: allowances(), invites: inviteCodes(), inviteDays: inviteDays() });
+  } catch (error) {
+    logFailure('admin overview', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+  }
+});
+
+app.get('/api/admin/people', requireAdmin, async (req, res) => {
+  try {
+    const search = typeof req.query.q === 'string' ? req.query.q : '';
+    res.json({ people: await people(search), actions: await actions() });
+  } catch (error) {
+    logFailure('admin people', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+  }
+});
+
+app.post('/api/admin/plan', requireAdmin, async (req, res) => {
+  const { email, days } = req.body ?? {};
+  if (typeof email !== 'string' || typeof days !== 'number' || !Number.isFinite(days)) {
+    res.status(400).json({ error: 'missing', message: 'An address and a number of days, please.' });
+    return;
+  }
+  if (days > 3650) {
+    res.status(400).json({ error: 'too_long', message: 'Ten years is not a grant, it is a mistake.' });
+    return;
+  }
+
+  try {
+    const done = await setPlan(await adminEmail(req.device!), email, days);
+    if (done.ok) {
+      res.json(done);
+      return;
+    }
+    res.status(404).json({ error: 'no_account', message: 'No account on that address.' });
+  } catch (error) {
+    logFailure('admin plan', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not change that just now.' });
   }
 });
 

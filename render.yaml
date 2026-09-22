@@ -19,6 +19,12 @@ services:
       # Your Anthropic key. Typed into Render's dashboard, never into the repo.
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Who sees the dashboard: comma-separated email addresses of accounts
+      # that already exist. There is no admin password — an admin signs in
+      # like anybody else and this list decides what they also see, so taking
+      # somebody off it is the whole of revoking them.
+      - key: SQUISH_ADMIN_EMAILS
+        sync: false
       # Invite codes: how a tester gets Squish Plus without paying. Set this
       # to any string you are willing to type down the phone, hand it to the
       # people who should have Plus, and they enter it on the You screen.

@@ -225,4 +225,6 @@ export type Route =
   | { name: 'capture'; slot?: MealSlot; date?: string; shot?: 'plate' | 'label' | 'barcode' }
   | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites' }
   | { name: 'ask' }
+  /** The dashboard, for whoever runs this Squish. Not a tab; reached from You. */
+  | { name: 'admin' }
   | { name: 'review'; draft: Draft };

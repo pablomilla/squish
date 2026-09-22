@@ -23,6 +23,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NUTRITIONIST_TOOLS, type ToolCall } from './nutritionist-tools';
 import { priceUsage } from './claude';
+import { bill } from './billing';
+
+/** Charge a price to whoever is being served, and hand it straight back. */
+const billed = (usd: number | null): number | null => {
+  bill(usd);
+  return usd;
+};
 
 const MODEL = process.env.SQUISH_CHAT_MODEL ?? process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
@@ -360,12 +367,14 @@ export async function chatStep(
     cacheWriteTokens,
     outputTokens: response.usage.output_tokens,
     thinkingTokens: response.usage.output_tokens_details?.thinking_tokens ?? 0,
-    costUsd: priceUsage(response.model, {
-      inputTokens: response.usage.input_tokens,
-      outputTokens: response.usage.output_tokens,
-      cacheReadTokens,
-      cacheWriteTokens,
-    }),
+    costUsd: billed(
+      priceUsage(response.model, {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+        cacheReadTokens,
+        cacheWriteTokens,
+      }),
+    ),
     latencyMs: Date.now() - startedAt,
   };
 

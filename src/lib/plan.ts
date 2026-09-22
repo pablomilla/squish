@@ -34,12 +34,20 @@ export interface Standing {
   invites: boolean;
   /** Whether this device is signed in, as the server sees it. */
   account: boolean;
+  /**
+   * Whether the server will serve this person the dashboard.
+   *
+   * Only ever used to decide whether to show the way in. The routes
+   * themselves answer 404 to everybody else, so this is a convenience and
+   * never the lock.
+   */
+  admin: boolean;
 }
 
 const NONE: Record<Billable, number> = { photo: 0, chat: 0, recipe: 0 };
 
 /** Free, and knowing nothing: what everything starts as and falls back to. */
-const UNKNOWN: Standing = { known: false, plan: 'free', used: NONE, allowance: NONE, left: NONE, resets: null, off: false, invites: false, account: false };
+const UNKNOWN: Standing = { known: false, plan: 'free', used: NONE, allowance: NONE, left: NONE, resets: null, off: false, invites: false, account: false, admin: false };
 
 let standing: Standing = UNKNOWN;
 const listeners = new Set<(standing: Standing) => void>();
@@ -84,6 +92,7 @@ export async function refreshPlan(): Promise<Standing> {
       resets: body.resets ?? null,
       invites: Boolean(body.invites),
       account: Boolean(body.account),
+      admin: Boolean(body.admin),
     });
   } catch {
     // Left as it was. An unreachable server is not evidence that somebody

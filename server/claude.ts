@@ -10,6 +10,7 @@ import type { AnalysisResult, MealSlot, Micros, Nutrients } from '../src/types';
 import { MICROS } from '../src/types';
 import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
+import { bill } from './billing';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
@@ -325,6 +326,12 @@ export interface TokenCounts {
 }
 
 /** What a call cost, in dollars, or null for a model with no price on file. */
+/** Charge a price to whoever is being served, and hand it straight back. */
+function billed(usd: number | null): number | null {
+  bill(usd);
+  return usd;
+}
+
 export function priceUsage(model: string, counts: TokenCounts): number | null {
   const rate = PRICING[model];
   if (!rate) return null;
@@ -374,12 +381,14 @@ async function requestMeal(
       inputTokens,
       outputTokens,
       cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
-      costUsd: priceUsage(model, {
-        inputTokens,
-        outputTokens,
-        cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
-        cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
-      }),
+      costUsd: billed(
+        priceUsage(model, {
+          inputTokens,
+          outputTokens,
+          cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+          cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
+        }),
+      ),
       latencyMs,
     },
   };

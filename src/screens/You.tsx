@@ -17,10 +17,10 @@ import { aiStatus, type AiStatus } from '../lib/api';
 import { apiUrl } from '../lib/origin';
 import { friendlyDate, isoDate } from '../lib/date';
 import { streakOf } from '../lib/selectors';
-import type { Activity, Goal, Sex } from '../types';
+import type { Activity, Goal, Route, Sex } from '../types';
 import './you.css';
 
-export default function You() {
+export default function You({ go }: { go: (route: Route) => void }) {
   const toast = useToast();
   const { profile, targets, meals, days, theme, look, setLook, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked, nutritionistNotes, forgetNote } =
     useSquish();
@@ -478,6 +478,22 @@ export default function You() {
           </>
         )}
       </section>
+
+      {/*
+        Only where the server says so, and the server decides again on every
+        request — hiding this is a convenience, never the lock.
+      */}
+      {standing.admin && (
+        <section className="card card--quiet">
+          <div className="card-title">
+            <h3>Dashboard</h3>
+          </div>
+          <p className="tiny muted">Who is signed up, what they are on, and what it is costing.</p>
+          <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={() => go({ name: 'admin' })}>
+            Open the dashboard
+          </button>
+        </section>
+      )}
 
       <PlanCard standing={standing} />
 

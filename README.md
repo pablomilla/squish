@@ -161,6 +161,23 @@ analyses, the nutritionist, and the Plus colourways.
 Plus has an allowance too. A heavy user costs more per month than Plus charges, so without a ceiling
 the best customers would be the ones losing the most money.
 
+### The dashboard
+
+Set `SQUISH_ADMIN_EMAILS` to your own address, sign in normally, and **You → Dashboard** shows what
+the service is doing: how many accounts, how many on Plus, what this month actually cost, and a
+list of people with buttons to grant or revoke Plus. Every grant is recorded with who made it.
+
+There is no admin password. An admin signs in exactly as everybody else does — same hashing, same
+rate limit — and the list decides whether they also see this, so removing an address is the whole of
+revoking someone. With the variable unset, nobody is an admin and the routes answer 404 to
+everybody, including you.
+
+**It cannot read anybody's diary**, and the server would not serve one if it asked. Counts and
+totals only; there is a test that fails if `server/admin.ts` ever learns the word `diaries`.
+
+Costs shown are what Anthropic actually charged, accumulated per call — not counts multiplied by an
+assumed price. That is what makes "is Plus priced right?" a measurement rather than an opinion.
+
 **The easy way to hand out Plus** is an invite code. Set `SQUISH_INVITE_CODES` in the host's
 dashboard to anything you are happy to type down the phone — `SQUISH-TESTER-7F3K`, or several
 comma-separated — and `SQUISH_INVITE_DAYS` to how long each is worth. Testers make an account,
@@ -319,6 +336,10 @@ server/           Express API — Claude calls, offline fallback
   diary.ts        The backed-up diary, and refusing a stale write
   accounts.ts     Sign up, sign in, delete, and forgotten passwords
   mail.ts         One email to send, so: a webhook, or the log
+  plan.ts         Free and Plus: who is on what, and what that allows
+  invites.ts      Codes that turn Plus on, set in the host's dashboard
+  admin.ts        The dashboard's numbers — counts and totals, never a diary
+  billing.ts      Attributing what each model call cost to whoever made it
   privacy.ts      The policy, rendered from docs/privacy.md and served at /privacy
 src/
   components/     Squish mascot, charts, icons, sheets and toasts
