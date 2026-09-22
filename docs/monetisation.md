@@ -71,19 +71,27 @@ A new character is not a colourway: it is seven commissioned poses plus a
 without them:
 
 - **Billing.** Obvious, and the least interesting of the three.
-- **Capping.** The rate limit today is per-IP and in memory. Mobile users share
-  carrier addresses, so one heavy user can lock out a network, and a restart
-  forgets everybody.
+- **Capping.** Done: allowances are counted per person per month against the
+  database. The per-IP limit it replaced is still there underneath, for the
+  case there is no database to count against.
 - **Somewhere for a purchase to live.** This is the one people miss. A
   purchase in `localStorage` evaporates when somebody clears their browser, and
   that is a refund request and a one-star review. It is the same storage risk
   that threatens the diary itself (`docs/phone-app.md`).
 
-**And a receipt that cannot be edited.** `src/lib/subscription.ts` returns
-false and explains the rule at length: the answer must come from something the
-store signed — RevenueCat, or Apple and Google verified on our own server —
-and never from a value in the browser. A paywall a devtools console defeats
-funds nothing.
+**A way to give it away.** Testers, press, and goodwill after something went
+wrong all need the paid tier without a card. Invite codes do it
+(`SQUISH_INVITE_CODES`), and they are a dashboard edit rather than a database
+script — which matters, because the alternative is that comping somebody is a
+job only a developer can do.
+
+**And a receipt that cannot be edited.** Half done. The answer now comes from
+the server (`src/lib/plan.ts` asks, `server/plan.ts` decides) rather than from
+a value in the browser, which was the rule that mattered — a paywall a devtools
+console defeats funds nothing. What is still missing is the receipt itself:
+`plus_until` is set by hand or by an invite code today, and when there is real
+money it has to be set by something a store signed, via RevenueCat or by
+verifying Apple and Google on our own server.
 
 ## When this moves to the phone
 

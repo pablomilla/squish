@@ -80,13 +80,14 @@ export function sameSecret(a: string, b: string): boolean {
  * ------------------------------------------------------------------ */
 
 /**
- * `signin` and `reset` are counted for a different reason from the rest.
+ * `signin`, `reset` and `invite` are counted for a different reason from the
+ * rest.
  *
  * The others are an allowance: somebody has used their photos for today. These
- * two are a brake on guessing — an offline scrypt attack is expensive, but an
- * online one against this server should not be worth starting.
+ * these are a brake on guessing — a password, or an invite code that is worth
+ * money to whoever finds one.
  */
-export type Spend = 'photo' | 'chat' | 'recipe' | 'signin' | 'reset';
+export type Spend = 'photo' | 'chat' | 'recipe' | 'signin' | 'reset' | 'invite';
 
 /**
  * Count one, and say how many have been counted today.

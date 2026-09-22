@@ -12,6 +12,7 @@
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
 import { switchedIdentity } from './autobackup';
+import { refreshPlan } from './plan';
 
 export interface Who {
   signedIn: boolean;
@@ -78,7 +79,14 @@ export interface Arrived {
  */
 async function enter(path: string, email: string, password: string): Promise<Done<Arrived>> {
   const answer = await ask<Arrived>('POST', path, { email, password });
-  if (answer.ok) switchedIdentity();
+  if (answer.ok) {
+    switchedIdentity();
+    // The tier hangs off the account, so signing in or up can change it —
+    // and anything on screen that asks whether there is an account at all is
+    // reading the same answer. Without this the app believed you were still
+    // signed out until the tab lost focus and came back.
+    await refreshPlan();
+  }
   return answer;
 }
 
@@ -87,7 +95,10 @@ export const signIn = (email: string, password: string): Promise<Done<Arrived>> 
 
 export async function signOut(): Promise<Done<Record<string, never>>> {
   const answer = await ask<Record<string, never>>('DELETE', '/api/session');
-  if (answer.ok) switchedIdentity();
+  if (answer.ok) {
+    switchedIdentity();
+    await refreshPlan();
+  }
   return answer;
 }
 
@@ -99,7 +110,10 @@ export async function deleteAccount(password: string): Promise<Done<Record<strin
   // The device is detached rather than deleted, so it goes back to owning its
   // own diary on the server — a different one, which is a switch like any
   // other.
-  if (answer.ok) switchedIdentity();
+  if (answer.ok) {
+    switchedIdentity();
+    await refreshPlan();
+  }
   return answer;
 }
 

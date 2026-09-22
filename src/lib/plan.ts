@@ -30,12 +30,16 @@ export interface Standing {
   resets: string | null;
   /** True where this Squish keeps nothing, so there are no tiers at all. */
   off: boolean;
+  /** True where invite codes exist, so the app knows whether to offer the box. */
+  invites: boolean;
+  /** Whether this device is signed in, as the server sees it. */
+  account: boolean;
 }
 
 const NONE: Record<Billable, number> = { photo: 0, chat: 0, recipe: 0 };
 
 /** Free, and knowing nothing: what everything starts as and falls back to. */
-const UNKNOWN: Standing = { known: false, plan: 'free', used: NONE, allowance: NONE, left: NONE, resets: null, off: false };
+const UNKNOWN: Standing = { known: false, plan: 'free', used: NONE, allowance: NONE, left: NONE, resets: null, off: false, invites: false, account: false };
 
 let standing: Standing = UNKNOWN;
 const listeners = new Set<(standing: Standing) => void>();
@@ -78,6 +82,8 @@ export async function refreshPlan(): Promise<Standing> {
       allowance: { ...NONE, ...body.allowance },
       left: { ...NONE, ...body.left },
       resets: body.resets ?? null,
+      invites: Boolean(body.invites),
+      account: Boolean(body.account),
     });
   } catch {
     // Left as it was. An unreachable server is not evidence that somebody
@@ -112,3 +118,30 @@ export function watchPlan(enabled: boolean): () => void {
 
 /** What the tier is called, in the one place that decides it. */
 export { PLUS } from './subscription';
+
+export type RedeemResult = { ok: true; until: string } | { ok: false; message: string };
+
+/**
+ * Hand a code to the server.
+ *
+ * Nothing is decided here: the code is checked against the environment on the
+ * server and the account's expiry is moved there. All this does is ask, and
+ * then re-read the standing so the app updates without a reload.
+ */
+export async function redeemInvite(code: string): Promise<RedeemResult> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl('/api/invite'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ code }),
+    });
+    const body = (await response.json().catch(() => ({}))) as { until?: string; message?: string };
+
+    if (!response.ok) return { ok: false, message: body.message ?? 'That did not work. Try again in a moment.' };
+    await refreshPlan();
+    return { ok: true, until: body.until ?? '' };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}

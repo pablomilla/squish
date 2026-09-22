@@ -161,7 +161,17 @@ analyses, the nutritionist, and the Plus colourways.
 Plus has an allowance too. A heavy user costs more per month than Plus charges, so without a ceiling
 the best customers would be the ones losing the most money.
 
-To give somebody Plus without them paying — a tester, or a subscriber who needs putting right:
+**The easy way to hand out Plus** is an invite code. Set `SQUISH_INVITE_CODES` in the host's
+dashboard to anything you are happy to type down the phone — `SQUISH-TESTER-7F3K`, or several
+comma-separated — and `SQUISH_INVITE_DAYS` to how long each is worth. Testers make an account,
+open **You → Plan and usage → I have a code**, and they are on Plus.
+
+Codes are compared loosely, so case and stray spaces do not matter. One code per account, redemptions
+are recorded, wrong guesses are rate limited, and clearing the variable revokes every unused code
+without touching anybody who already redeemed. A code extends whatever somebody has rather than
+replacing it, so giving one to a paying subscriber never costs them time.
+
+There is also a script, for one-off fixes and for seeing the state of things:
 
 ```bash
 npm run grant -- someone@example.com        # a year

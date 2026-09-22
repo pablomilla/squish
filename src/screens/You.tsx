@@ -10,7 +10,7 @@ import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
 import { backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
-import { PLUS, planNow, watchStanding, type Standing } from '../lib/plan';
+import { PLUS, planNow, redeemInvite, watchStanding, type Standing } from '../lib/plan';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
@@ -858,6 +858,86 @@ function PlanCard({ standing }: { standing: Standing }) {
         {standing.resets ? `The month starts again on ${friendlyDate(standing.resets.slice(0, 10)).toLowerCase()}. ` : ''}
         Logging by hand, food search, your diary and the charts are free and always will be.
       </p>
+
+      {standing.invites && <InviteBox signedIn={standing.account} />}
     </section>
+  );
+}
+
+/**
+ * Somewhere to type a code that turns Plus on.
+ *
+ * Only shown where codes exist, so an app with none does not advertise a box
+ * that can never work. It needs an account first, and says so rather than
+ * failing at the point of use — Plus lives on an account because a
+ * subscription kept in a browser disappears when somebody clears it.
+ */
+function InviteBox({ signedIn }: { signedIn: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [trouble, setTrouble] = useState<string | null>(null);
+  const toast = useToast();
+
+  if (!open) {
+    return (
+      <button type="button" className="linkish tiny plan-invite-open" onClick={() => setOpen(true)}>
+        I have a code
+      </button>
+    );
+  }
+
+  if (!signedIn) {
+    return (
+      <p className="tiny muted plan-invite">
+        Make an account first — that is where {PLUS} lives, so it follows you to a new phone instead of vanishing with
+        this browser.
+      </p>
+    );
+  }
+
+  const go = async () => {
+    setBusy(true);
+    setTrouble(null);
+    const done = await redeemInvite(code);
+    setBusy(false);
+    if (!done.ok) {
+      setTrouble(done.message);
+      return;
+    }
+    setOpen(false);
+    setCode('');
+    toast(`That is ${PLUS} switched on. Enjoy.`, '🎉');
+  };
+
+  return (
+    <form
+      className="plan-invite"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void go();
+      }}
+    >
+      <div className="row" style={{ gap: 8 }}>
+        <input
+          className="input grow"
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          placeholder="Your code"
+          aria-label="Invite code"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <button type="submit" className="btn btn--sm" disabled={busy || !code.trim()}>
+          {busy ? '…' : 'Use it'}
+        </button>
+      </div>
+      {trouble && (
+        <p className="tiny account-trouble" role="alert">
+          {trouble}
+        </p>
+      )}
+    </form>
   );
 }

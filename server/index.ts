@@ -23,6 +23,7 @@ import { deviceFor, registerDevice, spend, type Device, type Spend } from './ide
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage } from './privacy';
 import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth, type Billable, type Plan } from './plan';
+import { invitesExist, redeem } from './invites';
 import { PLUS } from '../src/lib/subscription';
 import {
   MIN_PASSWORD,
@@ -148,14 +149,18 @@ const hits = new Map<string, { count: number; resetAt: number }>();
  * guessing down, so they stay per-device and per-day and have nothing to do
  * with which tier somebody is on.
  */
-const GUARD: Record<'signin' | 'reset', number> = {
+const GUARD: Record<'signin' | 'reset' | 'invite', number> = {
   signin: Number(process.env.SQUISH_DAILY_SIGNINS ?? 20),
   reset: Number(process.env.SQUISH_DAILY_RESETS ?? 5),
+  // Low on purpose. A wrong code is a typo, and ten typos is somebody
+  // guessing at something worth a year of Plus.
+  invite: Number(process.env.SQUISH_DAILY_INVITES ?? 10),
 };
 
 const SPENT: Partial<Record<Spend, string>> = {
   signin: 'Too many attempts from this device. Try again tomorrow, or use the forgotten-password link.',
   reset: 'That is enough reset links for one day. Check your inbox, including the spam folder.',
+  invite: 'Too many codes tried from this device. Try again tomorrow.',
 };
 
 /**
@@ -396,7 +401,14 @@ app.get('/api/allowance', async (req, res) => {
     return;
   }
   try {
-    res.json({ known: true, account: Boolean(req.device.accountId), resets: nextReset(), ...(await standingOf(req.device)) });
+    res.json({
+      known: true,
+      account: Boolean(req.device.accountId),
+      resets: nextReset(),
+      // So the app only offers a code box where codes exist.
+      invites: invitesExist(),
+      ...(await standingOf(req.device)),
+    });
   } catch (error) {
     logFailure('allowance', error);
     res.json({ known: false, plan: 'free' });
@@ -549,6 +561,39 @@ app.delete('/api/account', requireAccount, meter('signin'), async (req, res) => 
   } catch (error) {
     logFailure('account deletion', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not delete that just now.' });
+  }
+});
+
+/**
+ * Redeem an invite code.
+ *
+ * Needs an account, because that is where Plus lives — a subscription in a
+ * browser evaporates when somebody clears it, which is a refund request and a
+ * one-star review. Counted per device so a code cannot be guessed at.
+ */
+app.post('/api/invite', requireAccount, meter('invite'), async (req, res) => {
+  const { code } = req.body ?? {};
+  if (typeof code !== 'string' || !code.trim()) {
+    res.status(400).json({ error: 'missing', message: 'Which code?' });
+    return;
+  }
+
+  try {
+    const done = await redeem(req.device!.accountId!, code);
+    if (done.ok) {
+      res.json({ redeemed: true, days: done.days, until: done.until });
+      return;
+    }
+    res.status(done.reason === 'already' ? 409 : 404).json({
+      error: done.reason,
+      message:
+        done.reason === 'already'
+          ? 'You have already used that code.'
+          : 'That code is not one of ours. Check it and try again.',
+    });
+  } catch (error) {
+    logFailure('invite', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
   }
 });
 

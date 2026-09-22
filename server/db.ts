@@ -157,6 +157,27 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index accounts_plus on accounts(plus_until) where plus_until is not null;
     `,
   },
+  {
+    id: 4,
+    sql: `
+      -- Who has redeemed which invite code.
+      --
+      -- The codes themselves are not in here: they are an environment
+      -- variable, so that handing Plus to a tester is editing one field in a
+      -- dashboard rather than running a script against the database. What is
+      -- worth keeping is the redemptions — so a code cannot be used twice by
+      -- the same account, and so it is possible to see who took one up.
+      create table invite_uses (
+        code       text not null,
+        account_id text not null references accounts(id) on delete cascade,
+        days       integer not null,
+        used_at    timestamptz not null default now(),
+        primary key (code, account_id)
+      );
+
+      create index invite_uses_account on invite_uses(account_id);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

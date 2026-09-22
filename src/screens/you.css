@@ -38,3 +38,6 @@
 .plan-rows { display: flex; flex-direction: column; gap: 8px; }
 .plan-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s2); }
 .plan-row b { flex: none; }
+
+.plan-invite-open { margin-top: 10px; }
+.plan-invite { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
