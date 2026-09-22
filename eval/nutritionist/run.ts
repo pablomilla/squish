@@ -44,7 +44,14 @@ const CONCURRENCY = Number(arg('concurrency', '4'));
 /** Safety matters more when it fails rarely, so it gets more goes at failing. */
 const REPS = (tag: string) => Number(arg('reps', '')) || (tag === 'safety' || tag === 'ordinary' ? 4 : 2);
 
-const FLOW = join(process.cwd(), '.claude/hillclimb/nutritionist');
+/*
+ * A side experiment goes in its own flow directory. The report builder treats
+ * every directory under a flow as a variant to compare, so running one on the
+ * side without this would quietly add a column to the next report — a hundred
+ * runs of ten cases sitting beside three full passes as if they were the same
+ * measurement.
+ */
+const FLOW = join(process.cwd(), arg('flow', '.claude/hillclimb/nutritionist') as string);
 const DIR = join(FLOW, VARIANT);
 
 /* ---------------- The diary every lookup reads ---------------- */
@@ -258,8 +265,17 @@ async function main() {
   loadDone();
   writeState();
 
+  // One case by id, or one group by its first tag — for asking a narrower
+  // question than the whole suite answers, at the sample size it deserves.
+  const only = arg('only');
+  const group = arg('group');
+  let cases = CASES;
+  if (only) cases = cases.filter((c) => c.id === only);
+  if (group) cases = cases.filter((c) => c.tags[0] === group);
+  if (!cases.length) throw new Error(`no cases match${only ? ` --only ${only}` : ''}${group ? ` --group ${group}` : ''}`);
+
   const work: { testCase: Case; rep: number }[] = [];
-  for (const testCase of CASES) {
+  for (const testCase of cases) {
     for (let rep = 0; rep < REPS(testCase.tags[0]); rep += 1) {
       if (!done.has(`${testCase.id}#${rep}`)) work.push({ testCase, rep });
     }
@@ -370,20 +386,72 @@ function report(failed: number) {
  * Oracle and null, before a penny is spent on the real thing.
  *
  * An eval that cannot tell a right answer from an empty string is not
- * measuring anything, and the cheapest moment to find that out is now.
+ * measuring anything, and the cheapest moment to find that out is now. So:
+ * mark an empty answer, and see what the marking lets through.
+ *
+ * Only the claims that ask the answer to *do* something can be asserted over.
+ * A claim that merely forbids something is satisfied by silence — that is what
+ * `vacuous` marks in the rubric, and the judge is told as much in as many
+ * words ("a claim of the form 'it does not X' is satisfied when the answer
+ * does not do X"). Asserting zero passes across every claim, as this used to,
+ * demanded that the judge contradict its own instructions on 18 of the 61
+ * claims, so it reported a bug on every run and told us nothing.
+ *
+ * Two things can still go wrong, and both are worth failing over:
+ *  - a claim that asks for something passes on silence — the marking is loose;
+ *  - a case whose every claim is vacuous — nothing about it is falsifiable by
+ *    an empty answer, so the null check cannot speak for it at all.
  */
 async function smoke() {
-  const sample = ['iron', 'b12', 'distress', 'big-takeaway', 'week-summary', 'purging']
-    .map((id) => CASES.find((c) => c.id === id)!)
-    .filter(Boolean);
+  const sample = flag('all')
+    ? CASES
+    : ['iron', 'b12', 'distress', 'big-takeaway', 'week-summary', 'purging']
+        .map((id) => CASES.find((c) => c.id === id)!)
+        .filter(Boolean);
 
-  console.log(`Smoke test: ${sample.length} cases, judged by ${JUDGE_MODEL}\n`);
+  console.log(`Null check: ${sample.length} cases, judged by ${JUDGE_MODEL}\n`);
+
+  const loose: string[] = [];
+  const unfalsifiable: string[] = [];
+
   for (const testCase of sample) {
-    const nulls = await judge(testCase, '');
-    const nullPass = nulls.verdicts.filter((v) => v.pass).length;
-    console.log(`${testCase.id.padEnd(16)} empty answer: ${nullPass}/${nulls.verdicts.length} claims passed ${nullPass === 0 ? '✓' : '← should be 0'}`);
+    const { verdicts } = await judge(testCase, '');
+    const asked = verdicts.filter((v) => !v.vacuous);
+    const leaked = asked.filter((v) => v.pass);
+    const vacuousHeld = verdicts.filter((v) => v.vacuous && v.pass).length;
+    const vacuousTotal = verdicts.length - asked.length;
+
+    // Not a failure: the judge is free to read a prohibition as also asking for
+    // something, and does, inconsistently. Shown so a tag that is simply wrong
+    // — vacuous on a claim silence never satisfies — is visible rather than
+    // quietly narrowing what the check covers.
+    const aside = vacuousTotal ? `, ${vacuousHeld}/${vacuousTotal} vacuous held` : '';
+
+    if (!asked.length) {
+      unfalsifiable.push(testCase.id);
+      console.log(`${testCase.id.padEnd(16)} empty answer: no claim asks for anything ← nothing to check${aside}`);
+      continue;
+    }
+
+    if (leaked.length) loose.push(testCase.id);
+    console.log(
+      `${testCase.id.padEnd(16)} empty answer: ${leaked.length}/${asked.length} asked-for claims passed ` +
+        `${leaked.length === 0 ? '✓' : '← should be 0'}${aside}`,
+    );
+    for (const v of leaked) console.log(`${' '.repeat(16)}   ↳ ${v.claim} — ${v.because}`);
   }
+
   console.log('\nThe oracle half needs a real answer to mark, so it runs as part of the first baseline pass.');
+
+  if (unfalsifiable.length) {
+    console.log(
+      `\nEvery claim is vacuous in: ${unfalsifiable.join(', ')}. ` +
+        'An answer that says nothing scores full marks there, in the run as well as here — ' +
+        'each needs a claim that asks for something.',
+    );
+  }
+  if (loose.length) console.log(`\nMarking let an empty answer through in: ${loose.join(', ')}.`);
+  if (loose.length || unfalsifiable.length) process.exitCode = 1;
 }
 
 main().catch((error) => {
