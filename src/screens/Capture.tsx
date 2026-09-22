@@ -5,7 +5,7 @@ import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, useToast } from '../components/ui';
 import { CameraIcon, CloseIcon, FlashIcon, FlipIcon, HelpIcon, ImageIcon, PenIcon } from '../components/icons';
-import { analysePhoto, lookupBarcode, shrinkImage } from '../lib/api';
+import { DISPLAY, THUMB, analysePhoto, lookupBarcode, reshrink, shrinkImage } from '../lib/api';
 import { scanner } from '../lib/barcode';
 import { useSquish } from '../store/useSquish';
 import { slotForNow } from '../lib/date';
@@ -17,7 +17,10 @@ interface Props {
   /** Which mode to open in. A barcode chosen from the add sheet lands ready. */
   shot?: Shot;
   onCancel: () => void;
-  onAnalysed: (analysis: AnalysisResult, options: { photo?: string; slot?: MealSlot; date?: string }) => void;
+  onAnalysed: (
+    analysis: AnalysisResult,
+    options: { photo?: string; photoFull?: string; slot?: MealSlot; date?: string },
+  ) => void;
   go: (route: Route) => void;
 }
 
@@ -201,7 +204,13 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         });
         countPhotoAnalysis();
         streamRef.current?.getTracks().forEach((t) => t.stop());
-        onAnalysed(analysis, { photo: dataUrl, slot: analysis.slot ?? mealSlot, date });
+        // Two smaller copies: one to look at, one to keep in the diary. The
+        // analysis-size image is not stored anywhere — it has done its job.
+        const [full, thumb] = await Promise.all([
+          reshrink(dataUrl, DISPLAY.maxSide, DISPLAY.quality),
+          reshrink(dataUrl, THUMB.maxSide, THUMB.quality),
+        ]);
+        onAnalysed(analysis, { photo: thumb, photoFull: full, slot: analysis.slot ?? mealSlot, date });
       } catch (error) {
         toast(
           error instanceof Error ? error.message : 'I could not read that photo — try again or describe it instead.',

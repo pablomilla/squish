@@ -23,7 +23,10 @@ export type BackupState =
   | { kind: 'idle'; at: string | null }
   | { kind: 'saving' }
   | { kind: 'conflict' }
-  | { kind: 'failed' };
+  /** The network, or the server. Worth retrying, and it retries itself. */
+  | { kind: 'failed' }
+  /** The diary is larger than the server will keep. Retrying cannot help. */
+  | { kind: 'too_big' };
 
 export interface RemoteDiary {
   state: unknown;
@@ -56,6 +59,7 @@ export async function pullDiary(): Promise<RemoteDiary | null> {
 export type PushResult =
   | { kind: 'saved'; version: number; at: string }
   | { kind: 'conflict'; current: RemoteDiary }
+  | { kind: 'too_big' }
   | { kind: 'failed' };
 
 export async function pushDiary(state: unknown, version: number | null): Promise<PushResult> {
@@ -70,6 +74,9 @@ export async function pushDiary(state: unknown, version: number | null): Promise
       const body = (await response.json()) as { current: RemoteDiary };
       return { kind: 'conflict', current: body.current };
     }
+    // Distinguished from a failure because the answer is different: one is
+    // waited out, the other has to be acted on.
+    if (response.status === 413) return { kind: 'too_big' };
     if (!response.ok) return { kind: 'failed' };
 
     const body = (await response.json()) as { version: number; updatedAt: string };

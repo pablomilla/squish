@@ -121,8 +121,9 @@ when('two phones at once: the second is refused and shown the first', async () =
   const laptop = await writeDiary(owner, { meals: ['breakfast', 'dinner'] }, 1);
   assert.equal(laptop.ok, false, 'the stale write went through and ate the lunch');
   assert.equal(!laptop.ok && laptop.reason, 'stale');
-  assert.deepEqual(!laptop.ok && laptop.current.state, { meals: ['breakfast', 'lunch'] }, 'and it should be handed what it is up against');
-  assert.equal(!laptop.ok && laptop.current.version, 2);
+  assert.ok(!laptop.ok && laptop.reason === 'stale', 'the refusal should be about staleness');
+  assert.deepEqual(laptop.current.state, { meals: ['breakfast', 'lunch'] }, 'and it should be handed what it is up against');
+  assert.equal(laptop.current.version, 2);
 });
 
 when('two first-writes race and only one wins', async () => {
@@ -138,10 +139,18 @@ when('two first-writes race and only one wins', async () => {
   assert.equal(kept?.version, 1);
 });
 
-when('a diary too big to be real is refused rather than stored', async () => {
+when('a diary too big to be real is refused, and says so rather than looking offline', async () => {
+  // It used to throw, which the route turned into a 503, which the app showed
+  // as "Offline" — telling somebody their network was down while it was fine,
+  // about a condition that would be exactly as true tomorrow.
   const device = await registerDevice();
   const owner = ownerOf({ id: device.id, accountId: null });
-  await assert.rejects(() => writeDiary(owner, { padding: 'x'.repeat(7_000_000) }, null), /over the/);
+  const huge = await writeDiary(owner, { padding: 'x'.repeat(7_000_000) }, null);
+
+  assert.equal(huge.ok, false);
+  assert.ok(!huge.ok && huge.reason === 'too_big', 'the caller cannot tell this from a conflict');
+  assert.ok(huge.size > huge.limit, 'the refusal should carry what was measured against what');
+  assert.equal(await readDiary(owner), null, 'the oversized diary was stored anyway');
 });
 
 when('deleting a diary leaves nothing behind, and the next backup starts again at one', async () => {

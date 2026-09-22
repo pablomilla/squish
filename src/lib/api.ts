@@ -323,6 +323,24 @@ export async function coachNudge(ctx: CoachRequest): Promise<string | null> {
 }
 
 /** Downscale a captured photo before it travels anywhere. */
+/**
+ * Three sizes, for three jobs.
+ *
+ * ANALYSIS goes to Claude and is never stored: recognising what is on a plate
+ * wants the detail, and it costs nothing to keep afterwards because we do not.
+ *
+ * DISPLAY is what gets kept in IndexedDB and shown at 210px tall. A phone at
+ * three times pixel density wants about 1170px across for that; 700 is a
+ * compromise that looks right and is a fifth of the bytes.
+ *
+ * THUMB is what goes in the diary itself and therefore into the backup, shown
+ * at 46 square. At about six kilobytes, a thousand meals still fit inside the
+ * six-megabyte backup — where the old full-size photo managed nineteen.
+ */
+export const ANALYSIS = { maxSide: 1024, quality: 0.82 } as const;
+export const DISPLAY = { maxSide: 700, quality: 0.72 } as const;
+export const THUMB = { maxSide: 128, quality: 0.65 } as const;
+
 export function shrinkImage(file: Blob, maxSide = 1024, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -346,5 +364,32 @@ export function shrinkImage(file: Blob, maxSide = 1024, quality = 0.82): Promise
       reject(new Error('That image could not be read'));
     };
     img.src = url;
+  });
+}
+
+/**
+ * Shrink something that is already a data URL.
+ *
+ * Used to make the display copy and the thumbnail out of the image that was
+ * sent for analysis, rather than reading the original file three times.
+ */
+export function reshrink(dataUrl: string, maxSide: number, quality: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas is unavailable'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('That image could not be read'));
+    img.src = dataUrl;
   });
 }

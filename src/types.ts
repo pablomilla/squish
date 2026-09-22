@@ -95,6 +95,14 @@ export interface MealEntry {
   score: number;
   note?: string;
   coachNote?: string;
+  /**
+   * A thumbnail, a few kilobytes, not the photograph.
+   *
+   * The full-size one lives in IndexedDB under this meal's id — see
+   * lib/photos.ts for why. This is what the 46px row in the diary shows, what
+   * survives a restore, and what anything can rely on being present without
+   * waiting.
+   */
   photo?: string;
   source: 'photo' | 'describe' | 'search' | 'manual' | 'favourite';
   aiConfidence?: 'high' | 'medium' | 'low';
@@ -186,7 +194,16 @@ export interface AnalysisResult {
  */
 export interface Draft {
   analysis: AnalysisResult;
+  /** The thumbnail, as it will be stored on the meal. */
   photo?: string;
+  /**
+   * The display-size photo, held only until the meal is saved.
+   *
+   * Deliberately not persisted with the rest of the draft: it is a fifth of a
+   * megabyte, and the draft is written to localStorage on every keystroke in
+   * the title field. The thumbnail above is what a recovered draft shows.
+   */
+  photoFull?: string;
   slot: MealSlot;
   date: string;
   /** Whatever they had typed in the note field when it was last kept. */

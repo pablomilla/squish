@@ -294,6 +294,16 @@ app.put('/api/diary', requireDevice, async (req, res) => {
       res.json(result);
       return;
     }
+    if (result.reason === 'too_big') {
+      // 413, not 503. Retrying will not help and saying "try later" would be
+      // a lie: this diary will be exactly as large tomorrow.
+      res.status(413).json({
+        ...result,
+        error: 'too_big',
+        message: 'This diary is too large to back up.',
+      });
+      return;
+    }
     // 409, and the newer diary with it — the client cannot resolve this
     // without seeing what it is up against.
     res.status(409).json(result);

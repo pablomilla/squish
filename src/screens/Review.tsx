@@ -8,6 +8,7 @@ import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, Tra
 import { NumberField } from '../components/fields';
 import { useSquish } from '../store/useSquish';
 import { refineAnalysis } from '../lib/api';
+import { savePhoto } from '../lib/photos';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
 import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
 import { friendlyDate } from '../lib/date';
@@ -148,9 +149,16 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
     if (draft.editingId) {
       updateMeal(draft.editingId, payload);
+      // Only when this edit brought a new photograph with it. Editing the
+      // title of a meal photographed last week must not wipe its picture.
+      if (draft.photoFull) void savePhoto(draft.editingId, draft.photoFull);
       toast('Meal updated', '✏️');
     } else {
-      addMeal(payload);
+      const saved = addMeal(payload);
+      // The diary keeps the thumbnail; the photograph goes beside it, under
+      // the meal's id. Not awaited — the meal is saved either way, and a
+      // picture that failed to store is a smaller loss than a wait.
+      if (draft.photoFull) void savePhoto(saved.id, draft.photoFull);
       /*
        * The one place to teach the word, because it cannot be misread here:
        * they have just done the thing, so "squished it" defines itself. The
@@ -192,7 +200,10 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         </button>
       </header>
 
-      {draft.photo && <img className="review-photo" src={draft.photo} alt="The meal you logged" />}
+      {/* The full one while it is in hand; the thumbnail for a recovered draft. */}
+      {(draft.photoFull ?? draft.photo) && (
+        <img className="review-photo" src={draft.photoFull ?? draft.photo} alt="The meal you logged" />
+      )}
 
       <div className="review-title-row">
         <input className="input review-title" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Meal name" />

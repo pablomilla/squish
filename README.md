@@ -292,6 +292,7 @@ src/
                   nutritionist-tools.ts answers the lookups out of the store
                   origin.ts is where every API call learns which host it is on
                   identity.ts, backup.ts, autobackup.ts, account.ts — the browser half
+                  photos.ts keeps meal photographs out of the 5 MB localStorage budget
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
 ios/ android/     Capacitor shells — see docs/phone-app.md

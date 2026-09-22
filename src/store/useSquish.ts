@@ -403,6 +403,19 @@ export const useSquish = create<SquishState>()(
        * So targets are left to migrations, which compute them per person, and
        * to the guard test that fails when a new one arrives without a step.
        */
+      /*
+       * What is written to localStorage, which is not quite what is in memory.
+       *
+       * A draft's full-size photo is a fifth of a megabyte and the draft is
+       * saved on every keystroke in the title field. Persisting it would put
+       * that through JSON.stringify on each one and spend a twentieth of the
+       * whole storage budget on a meal not yet saved. The thumbnail on the
+       * draft is what a recovered draft shows, which is what it is for.
+       */
+      partialize: (state) => ({
+        ...state,
+        pendingMeal: state.pendingMeal ? { ...state.pendingMeal, photoFull: undefined } : null,
+      }),
       merge: (persisted, current) => {
         const saved = (persisted ?? {}) as Partial<SquishState>;
         return {

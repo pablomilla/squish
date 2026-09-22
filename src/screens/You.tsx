@@ -760,9 +760,16 @@ function BackupCard() {
         {state.kind === 'saving' && <span className="badge">Saving…</span>}
         {state.kind === 'conflict' && <span className="badge badge--warn">Paused</span>}
         {state.kind === 'failed' && <span className="badge badge--warn">Offline</span>}
+        {state.kind === 'too_big' && <span className="badge badge--bad">Too large</span>}
       </div>
 
-      {state.kind === 'conflict' ? (
+      {state.kind === 'too_big' ? (
+        <p className="tiny muted">
+          Your diary has grown past what the backup will hold, so it has stopped. Nothing on this device has been lost
+          and nothing is wrong with your connection — the copy on the server is simply older than your diary now.
+          Deleting some older meals, particularly photographed ones, will let it start again.
+        </p>
+      ) : state.kind === 'conflict' ? (
         <p className="tiny muted">
           Another device has backed up something this one has not seen. Squish will not merge two diaries — that means
           guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say

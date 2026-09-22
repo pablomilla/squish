@@ -16,8 +16,10 @@ import You from './screens/You';
 import Ask from './screens/Ask';
 import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
-import { aiStatus, onLocked, storedPasscode } from './lib/api';
+import { THUMB, aiStatus, onLocked, reshrink, storedPasscode } from './lib/api';
 import { startBackup } from './lib/autobackup';
+import { savePhoto, watchPhotos } from './lib/photos';
+import { isOversized, rehomePhotos } from './lib/rehome';
 import { resetTokenInUrl } from './lib/account';
 import ResetPassword from './screens/ResetPassword';
 
@@ -69,6 +71,29 @@ function Shell() {
   }, []);
 
   useEffect(() => startBackup(keepsData), [keepsData]);
+
+  // Photographs live outside the diary, in IndexedDB, so nothing removes one
+  // just because its meal went. Reconciled here, where every way a meal can
+  // leave — deleted, Reset, replaced by a restore — passes through the store.
+  const meals = useSquish((s) => s.meals);
+  useEffect(() => watchPhotos(() => useSquish.getState().meals.map((m) => m.id)), [meals]);
+
+  // Once, for anybody whose diary still has full-size photographs inside it.
+  // Until this runs their browser store is close to full and the next meal
+  // may not save at all, so it goes early and is not waited on.
+  useEffect(() => {
+    const current = useSquish.getState().meals;
+    if (!current.some((meal) => isOversized(meal.photo))) return;
+
+    void rehomePhotos(current, (dataUrl) => reshrink(dataUrl, THUMB.maxSide, THUMB.quality), savePhoto).then((moved) => {
+      if (!Object.keys(moved).length) return;
+      useSquish.setState({
+        // Read afresh rather than closing over `current`: rehoming decodes an
+        // image per meal, and a diary edited while that happened must win.
+        meals: useSquish.getState().meals.map((meal) => (moved[meal.id] ? { ...meal, photo: moved[meal.id] } : meal)),
+      });
+    });
+  }, []);
   const [adding, setAdding] = useState(false);
   const isTab = useMemo(() => TABS.some((t) => t.name === route.name), [route]);
 
@@ -88,12 +113,16 @@ function Shell() {
   const go = (next: Route) => setRoute(next);
   const home = () => setRoute({ name: 'home' });
 
-  const openReview = (analysis: AnalysisResult, options: { photo?: string; slot?: MealSlot; date?: string; editingId?: string } = {}) =>
+  const openReview = (
+    analysis: AnalysisResult,
+    options: { photo?: string; photoFull?: string; slot?: MealSlot; date?: string; editingId?: string } = {},
+  ) =>
     setRoute({
       name: 'review',
       draft: {
         analysis,
         photo: options.photo,
+        photoFull: options.photoFull,
         slot: options.slot ?? analysis.slot ?? slotForNow(),
         date: options.date ?? isoDate(),
         editingId: options.editingId,

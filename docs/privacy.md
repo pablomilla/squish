@@ -35,7 +35,8 @@ an account or a backup.
 | What | Examples |
 |---|---|
 | Your profile | The name you typed, if any; sex, age, height, weight, target weight, activity level, goal, and units |
-| Your meals | Titles, foods, portions, nutrition figures, your notes, and **the photos you took** |
+| Your meals | Titles, foods, portions, nutrition figures, and your notes |
+| Your photos | **The meal photographs themselves, which stay here.** Only a thumbnail of each — a few kilobytes — is part of the backup below |
 | Your days | Water, weight entries, and the day's totals |
 | Your settings | Saved foods, achievements earned, colourway, light or dark, reminder times |
 | Nutritionist notes | Anything the nutritionist wrote down because you told it — an allergy, a food you avoid, what you are training for |
@@ -44,8 +45,14 @@ an account or a backup.
 
 Backup is on by default where this copy of Squish has a database.
 
-- **Everything in the table above, including your meal photos.** It is stored
-  as one document per person, updated as you log.
+- **Everything in the table above except the photographs**, which stay on your
+  device. What is backed up is a thumbnail of each — roughly five kilobytes,
+  the small square you see in the diary list. It is stored as one document per
+  person, updated as you log.
+
+  This means a restore onto a new phone brings your diary and those
+  thumbnails, but not the full pictures: those were never sent. If that
+  matters to you, export before you change phones.
 - **A device identifier** — a random token your browser is given on first use,
   stored in a form we cannot reverse, plus when it was created and last seen.
   It is how a daily limit can be counted per phone rather than per network.
@@ -93,7 +100,7 @@ Sent to Anthropic's Claude API, and only when you do one of these things:
 
 | When you | What is sent |
 |---|---|
-| Photograph a meal | The photo |
+| Photograph a meal | The photo, to be read. It is not kept afterwards — not by us and not on our server |
 | Describe a meal in words or by voice | What you wrote or said |
 | Import a recipe from a link | The text of that page |
 | Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept |
@@ -128,6 +135,8 @@ to sees a request from our server, not from you — your address is not passed o
 
 - **Your diary backup:** until you delete it. Deleting your account or pressing
   Reset removes it immediately.
+- **Your photographs:** on your device only, until you delete the meal or press
+  Reset. Deleting a meal deletes its picture.
 - **Your account:** until you delete it.
 - **Device records and usage counts:** device records persist while the device
   is in use. Usage counts are per day and are of no interest after it.

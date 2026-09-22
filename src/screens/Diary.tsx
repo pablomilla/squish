@@ -9,6 +9,7 @@ import { CameraIcon, ChevronIcon, PenIcon, PlusIcon, TrashIcon } from '../compon
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
+import { loadPhoto } from '../lib/photos';
 import { GLASS_ML, dayVerdict } from '../lib/nutrition';
 import { WeightField } from '../components/fields';
 import './diary.css';
@@ -184,7 +185,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
       <Sheet open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.title}>
         {selected && (
           <div className="stack">
-            {selected.photo && <img src={selected.photo} alt="" className="review-photo" />}
+            {selected.photo && <MealPhoto meal={selected} />}
             <div className="row" style={{ gap: 12 }}>
               <ScoreMeter score={selected.score} size={54} />
               <div>
@@ -243,4 +244,30 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
       </Sheet>
     </div>
   );
+}
+
+/**
+ * The photograph of a meal, with its thumbnail standing in until it arrives.
+ *
+ * The full-size one is in IndexedDB and reading it is asynchronous, so the
+ * thumbnail — already in hand, a few kilobytes — is shown first and swapped
+ * when the real one loads. Nobody sees an empty box, and a device that cannot
+ * produce the photograph at all simply keeps showing the thumbnail rather
+ * than an error nobody can act on.
+ */
+function MealPhoto({ meal }: { meal: MealEntry }) {
+  const [full, setFull] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    setFull(null);
+    void loadPhoto(meal.id).then((found) => {
+      if (live) setFull(found);
+    });
+    return () => {
+      live = false;
+    };
+  }, [meal.id]);
+
+  return <img src={full ?? meal.photo} alt="" className="review-photo" />;
 }

@@ -54,6 +54,13 @@ async function push(): Promise<void> {
     announce({ kind: 'idle', at: result.at });
     return;
   }
+  if (result.kind === 'too_big') {
+    // Stopped, like a conflict, because every further push would be refused
+    // the same way and a card that says "saving…" for ever is a lie.
+    stopped = true;
+    announce({ kind: 'too_big' });
+    return;
+  }
   if (result.kind === 'conflict') {
     // Stop. Another device has written something this one has not seen, and
     // choosing between two diaries is not a decision to take silently.

@@ -32,6 +32,13 @@ leads with "you do not need one".
 
 ## Decisions worth keeping
 
+**Photographs are not in the backup.** They live in IndexedDB on the device;
+the diary carries a ~5 KB thumbnail of each, and that is what is backed up. The
+reason is measured rather than aesthetic: a full-size meal photo is 300 KB, a
+browser's localStorage is about 5 MB, and seventeen photographed meals filled
+it — the eighteenth could not be saved at all. Thumbnails put a thousand meals
+inside the 6 MB backup where nineteen used to fit.
+
 **Backup, not sync.** The browser holds the diary and decides what is true; the
 server holds a spare. Nothing the backup does changes what is on the device
 without somebody pressing Restore.

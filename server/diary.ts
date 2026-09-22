@@ -38,7 +38,13 @@ export async function readDiary(owner: string): Promise<Backup | null> {
 export type WriteResult =
   | { ok: true; version: number; updatedAt: string }
   /** Somebody else wrote since this client last read. Theirs is returned. */
-  | { ok: false; reason: 'stale'; current: Backup };
+  | { ok: false; reason: 'stale'; current: Backup }
+  /**
+   * Too big to keep. A refusal, not a failure — which is the distinction
+   * that matters, because the app used to throw here and the person was
+   * told they were offline while their network was perfectly fine.
+   */
+  | { ok: false; reason: 'too_big'; size: number; limit: number };
 
 /**
  * Write, unless somebody got there first.
@@ -56,7 +62,7 @@ export type WriteResult =
  */
 export async function writeDiary(owner: string, state: unknown, expected: number | null): Promise<WriteResult> {
   const size = JSON.stringify(state ?? null).length;
-  if (size > MAX_BYTES) throw new Error(`diary is ${size} bytes, over the ${MAX_BYTES} limit`);
+  if (size > MAX_BYTES) return { ok: false, reason: 'too_big', size, limit: MAX_BYTES };
 
   // A first write has nothing to conflict with; after that the version has to
   // match. Both cases are one statement so nothing can slip between a check
