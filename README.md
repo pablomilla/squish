@@ -122,9 +122,19 @@ or a rate limit at request time, with the reason logged server-side.
 
 ## Putting it online
 
-The server serves the built app as well as the API, so it deploys as one service.
-`render.yaml` is a Render blueprint: **New → Blueprint → pick this repo**, and it asks for the two
-secrets rather than you editing any files.
+The server serves the built app as well as the API, so it deploys as one service. There are two
+ways to put it on Render, and it matters which you used.
+
+**As a blueprint** — **New → Blueprint → pick this repo**. Render reads `render.yaml`, creates the
+web service and its Postgres together, and asks for the secrets rather than you editing any files.
+Everything below is then set for you.
+
+**By hand** — **New → Web Service**. `render.yaml` is never read, and the settings below have to be
+typed into the service's **Environment** tab in the dashboard. A database has to be created
+separately (**New → Postgres**, same region) and its *Internal Database URL* pasted in as
+`DATABASE_URL`.
+
+If the dashboard's **Blueprints** list is empty, it was by hand.
 
 | Setting | What it is |
 | --- | --- |

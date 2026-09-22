@@ -1,5 +1,12 @@
 # One-click deploy config. In Render: New → Blueprint → pick this repo.
-# It reads this file, then asks for the two secrets below.
+# It reads this file, then asks for the secrets below.
+#
+# THIS FILE ONLY DOES ANYTHING IF THE SERVICE WAS CREATED AS A BLUEPRINT.
+# A web service made by hand (New → Web Service) never reads it, however much
+# it changes — settings for one of those live in the Render dashboard, under
+# the service's own Environment tab, and this file is then documentation of
+# what they should say rather than the thing that says it. The dashboard shows
+# "Blueprints" in the sidebar: an empty list there means by hand.
 services:
   - type: web
     name: squish
