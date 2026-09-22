@@ -19,19 +19,21 @@ import {
   requestReset,
   signIn,
   signOut,
+  signOutEverywhere,
   signUp,
   whoAmI,
   type Who,
 } from '../lib/account';
 import './account-card.css';
 
-type Form = 'in' | 'up' | 'forgot' | 'password' | 'delete' | null;
+type Form = 'in' | 'up' | 'forgot' | 'password' | 'devices' | 'delete' | null;
 
 const TITLES: Record<Exclude<Form, null>, string> = {
   in: 'Sign in',
   up: 'Create an account',
   forgot: 'Forgotten password',
   password: 'Change your password',
+  devices: 'Sign out your other devices',
   delete: 'Delete your account',
 };
 
@@ -70,6 +72,11 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('password')}>
               Change password
             </button>
+            {Boolean(who.otherDevices) && (
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('devices')}>
+                Sign out {who.otherDevices} other {who.otherDevices === 1 ? 'device' : 'devices'}
+              </button>
+            )}
             <button
               type="button"
               className="btn btn--sm btn--ghost"
@@ -159,6 +166,17 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             onDone={() => {
               setForm(null);
               toast('Password changed.', '🔒');
+            }}
+          />
+        )}
+
+        {form === 'devices' && (
+          <ForgetDevices
+            count={who.otherDevices ?? 0}
+            onDone={() => {
+              setWho({ ...who, otherDevices: 0 });
+              setForm(null);
+              toast('Signed out everywhere else.', '🔒');
             }}
           />
         )}
@@ -371,6 +389,43 @@ function DeleteAccount({ email, onDone }: { email: string; onDone: () => void })
       <Trouble says={trouble} />
       <button type="submit" className="btn btn--danger" disabled={busy || !password}>
         {busy ? 'One moment…' : 'Delete my account'}
+      </button>
+    </form>
+  );
+}
+
+/**
+ * Cutting loose a device somebody no longer has.
+ *
+ * The case this exists for is a lost or stolen phone. A device token has no
+ * expiry — whoever holds it is that device — so without this, losing a phone
+ * meant whoever found it stayed signed in for ever, and changing the password
+ * did nothing, because the password is not what the token proves.
+ *
+ * The password is asked for because this is a lock, and because a phone left
+ * on a train must not be able to sign its owner out of their own account.
+ */
+function ForgetDevices({ count, onDone }: { count: number; onDone: () => void }) {
+  const [password, setPassword] = useState('');
+  const { busy, trouble, go } = useSubmit(() => signOutEverywhere(password), onDone);
+
+  return (
+    <form
+      className="stack"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void go();
+      }}
+    >
+      <p className="tiny muted">
+        {count === 1 ? 'One other device is' : `${count} other devices are`} signed in. This signs{' '}
+        {count === 1 ? 'it' : 'them'} out — use it if you have lost a phone, or used somebody else's computer. This
+        device stays signed in, and nothing in anybody's diary is deleted.
+      </p>
+      <PasswordField label="Your password" value={password} onChange={setPassword} autoComplete="current-password" />
+      <Trouble says={trouble} />
+      <button type="submit" className="btn" disabled={busy || !password}>
+        {busy ? 'One moment…' : `Sign ${count === 1 ? 'it' : 'them'} out`}
       </button>
     </form>
   );

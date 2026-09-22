@@ -17,6 +17,8 @@ import { refreshPlan } from './plan';
 export interface Who {
   signedIn: boolean;
   email?: string;
+  /** How many devices besides this one are signed in. */
+  otherDevices?: number;
 }
 
 /** What the server says went wrong, in words meant for a person. */
@@ -56,7 +58,9 @@ async function ask<T>(method: string, path: string, body?: unknown): Promise<Don
 /** Who this browser is, as far as the server is concerned. */
 export async function whoAmI(): Promise<Who> {
   const answer = await ask<Who>('GET', '/api/account');
-  return answer.ok ? { signedIn: answer.signedIn, email: answer.email } : { signedIn: false };
+  return answer.ok
+    ? { signedIn: answer.signedIn, email: answer.email, otherDevices: answer.otherDevices }
+    : { signedIn: false };
 }
 
 export interface Arrived {
@@ -142,3 +146,7 @@ export function clearResetUrl(): void {
     /* nothing to do */
   }
 }
+
+/** Cut every other device loose. The password again, because this is a lock. */
+export const signOutEverywhere = (password: string): Promise<Done<{ signedOut?: number }>> =>
+  ask('POST', '/api/account/devices/forget', { password });

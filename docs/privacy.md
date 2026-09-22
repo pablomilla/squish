@@ -119,6 +119,24 @@ When you scan a barcode, the number alone goes to
 product. Nothing about you goes with it. Scanning the same barcode twice does
 not ask them twice.
 
+### Have I Been Pwned — checking passwords
+
+When you choose a password, we check whether it already appears in a known
+data breach, because a password that does is one of the first an attacker
+tries.
+
+**Your password is not sent.** We take a SHA-1 hash of it and send the *first
+five characters of that hash* to
+[haveibeenpwned.com](https://haveibeenpwned.com), which returns every leaked
+hash beginning with those five — hundreds of them — and we look for yours in
+the list ourselves. They learn that somebody asked about one of roughly half a
+million possibilities. They do not learn your password, that it was you, or
+whether there was a match.
+
+If that check cannot be made, your password is accepted anyway. We would
+rather let a weak password through than stop you making an account because
+somebody else's service is down.
+
 ### Our host
 
 The server and its database run on Render. They hold the data on our behalf and
@@ -138,6 +156,10 @@ to sees a request from our server, not from you — your address is not passed o
 - **Your photographs:** on your device only, until you delete the meal or press
   Reset. Deleting a meal deletes its picture.
 - **Your account:** until you delete it.
+- **Signed-in devices:** until you sign them out. **You → Account → Sign out
+  other devices** ends every other session at once, which is what to use if
+  you lose a phone. Changing your password does the same thing, and resetting
+  it signs out everything including the device doing the resetting.
 - **Device records and usage counts:** device records persist while the device
   is in use. Usage counts are per day and are of no interest after it.
 - **Reset tokens:** two hours, or until used, whichever comes first.
@@ -180,6 +202,10 @@ complain to the Information Commissioner's Office at
 - A wrong password and an unknown email address produce the same answer, so the
   app cannot be used to find out who has an account.
 - Sign-in attempts are rate limited per device.
+- Passwords are checked against known breaches when you set one, without the
+  password leaving — see above.
+- You can end every other signed-in session at once, without waiting for
+  anything to expire.
 
 No system is perfect, and Squish is a small one. If you find a security problem,
 please tell us at the address below rather than anywhere else first.

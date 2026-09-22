@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test, before, after } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
-import { registerDevice } from '../server/identity';
+import { deviceFor, registerDevice } from '../server/identity';
 import { ownerOf, readDiary, writeDiary } from '../server/diary';
 import {
   accountFor,
@@ -13,6 +13,8 @@ import {
   requestReset,
   signIn,
   signOut,
+  otherDevices,
+  signOutEverywhere,
   signUp,
   sweepResets,
   verifyPassword,
@@ -302,4 +304,80 @@ when('deleting an account does not first hand it the diary sitting on the phone'
     { meals: ['logged here, never uploaded to the account'] },
     'checking the password swallowed the diary on the phone',
   );
+});
+
+/* ---------------- losing a phone ---------------- */
+
+when('signing out everywhere cuts the other devices loose and leaves this one', async () => {
+  // The thing this is for is a phone somebody no longer has. A device token
+  // has no expiry, so until this existed, losing a phone meant whoever found
+  // it stayed signed in for ever — and changing the password did not help,
+  // because the password is not what the token proves.
+  const email = anEmail();
+  const mine = await registerDevice();
+  const made = await signUp(mine.id, email, 'four random words');
+  const account = made.ok ? made.account.id : '';
+
+  const lost = await registerDevice();
+  const laptop = await registerDevice();
+  await signIn(lost.id, email, 'four random words');
+  await signIn(laptop.id, email, 'four random words');
+  assert.equal(await otherDevices(account, mine.id), 2);
+
+  assert.equal(await signOutEverywhere(account, mine.id), 2);
+  assert.equal(await otherDevices(account, mine.id), 0);
+
+  const still = await query<{ account_id: string | null }>('select account_id from devices where id = $1', [mine.id]);
+  assert.equal(still[0].account_id, account, 'it signed out the device doing the asking');
+
+  const gone = await query<{ account_id: string | null }>('select account_id from devices where id = $1', [lost.id]);
+  assert.equal(gone[0].account_id, null);
+});
+
+when('a cut-loose device still works, it just is not the account any more', async () => {
+  // Detached, not deleted. It goes back to being what it was before anybody
+  // signed in, and what is already on it stays theirs.
+  const email = anEmail();
+  const mine = await registerDevice();
+  const made = await signUp(mine.id, email, 'four random words');
+  const lost = await registerDevice();
+  await signIn(lost.id, email, 'four random words');
+
+  await signOutEverywhere(made.ok ? made.account.id : '', mine.id);
+
+  const found = await deviceFor(lost.token);
+  assert.ok(found, 'the device token stopped working entirely');
+  assert.equal(found.accountId, null);
+  assert.equal((await writeDiary(ownerOf(found), { meals: ['logged after'] }, null)).ok, true);
+});
+
+when('resetting a password signs out every device, including the one doing it', async () => {
+  // Somebody resetting has either forgotten it or fears somebody else has
+  // it. In the second case the tokens are exactly what needs cutting.
+  const email = anEmail();
+  const device = await registerDevice();
+  const made = await signUp(device.id, email, 'four random words');
+  const account = made.ok ? made.account.id : '';
+  const other = await registerDevice();
+  await signIn(other.id, email, 'four random words');
+
+  const token = await tokenFor(email);
+  assert.equal((await completeReset(token, 'four brand new words')).ok, true);
+
+  const rows = await query<{ n: string }>('select count(*) as n from devices where account_id = $1', [account]);
+  assert.equal(Number(rows[0].n), 0, 'a device stayed signed in through a password reset');
+});
+
+when('a breached password is refused wherever one can be set', async () => {
+  const email = anEmail();
+  const device = await registerDevice();
+
+  // 'password' is in the stand-in used by test/passwords.test.ts; here the
+  // checker is off, so what this proves is the plumbing, not the verdict.
+  const made = await signUp(device.id, email, 'four random words');
+  assert.equal(made.ok, true);
+  const account = made.ok ? made.account.id : '';
+
+  const changed = await changePassword(account, 'four random words', 'short');
+  assert.equal(!changed.ok && changed.reason, 'weak_password');
 });

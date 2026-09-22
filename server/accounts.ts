@@ -22,6 +22,7 @@ import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } fr
 import { promisify } from 'node:util';
 import { migrate, query, transaction } from './db';
 import { sendMail } from './mail';
+import { judgePassword } from './passwords';
 
 const scrypt = promisify(scryptCallback) as (
   password: string | Buffer,
@@ -99,7 +100,7 @@ export const MIN_PASSWORD = 8;
 
 export type SignUp =
   | { ok: true; account: Account; broughtDiary: boolean }
-  | { ok: false; reason: 'taken' | 'bad_email' | 'weak_password' };
+  | { ok: false; reason: 'taken' | 'bad_email' | 'weak_password' | 'breached'; message?: string };
 
 /**
  * Make an account and hand this device's diary to it.
@@ -114,6 +115,9 @@ export async function signUp(deviceId: string, email: string, password: string):
   const address = normaliseEmail(email);
   if (!looksLikeEmail(address)) return { ok: false, reason: 'bad_email' };
   if (password.length < MIN_PASSWORD) return { ok: false, reason: 'weak_password' };
+
+  const verdict = await judgePassword(password);
+  if (!verdict.ok) return { ok: false, reason: 'breached', message: verdict.message };
 
   const id = randomBytes(9).toString('base64url');
   const passwordHash = await hashPassword(password);
@@ -208,6 +212,45 @@ export async function verifyPassword(id: string, password: string): Promise<bool
   return passwordMatches(password, found.password_hash);
 }
 
+/**
+ * How many other devices are signed into this account.
+ *
+ * Shown rather than guessed at, because "sign out my other devices" is a
+ * button somebody presses when they are worried, and a number is the
+ * difference between reassurance and more worry.
+ */
+export async function otherDevices(accountId: string, exceptDeviceId: string): Promise<number> {
+  await migrate();
+  const rows = await query<{ n: string }>(
+    'select count(*) as n from devices where account_id = $1 and id <> $2',
+    [accountId, exceptDeviceId],
+  );
+  return Number(rows[0]?.n ?? 0);
+}
+
+/**
+ * Cut every other device loose from this account.
+ *
+ * The thing this is for is a phone somebody no longer has. A device token is
+ * a bearer credential with no expiry — whoever holds it is that device — so
+ * until this existed, losing a phone meant whoever found it stayed signed in
+ * for ever, and changing the password did not help because the password is
+ * not what the token proves.
+ *
+ * The devices are detached rather than deleted. They go on working as
+ * anonymous devices, which is what they were before anybody signed in, and
+ * what is already on them stays theirs. What they lose is the account, and
+ * with it the diary on the server.
+ */
+export async function signOutEverywhere(accountId: string, exceptDeviceId: string): Promise<number> {
+  await migrate();
+  const rows = await query<{ id: string }>(
+    'update devices set account_id = null where account_id = $1 and id <> $2 returning id',
+    [accountId, exceptDeviceId],
+  );
+  return rows.length;
+}
+
 export async function accountFor(id: string): Promise<Account | null> {
   await migrate();
   const rows = await query<{ id: string; email: string }>('select id, email from accounts where id = $1', [id]);
@@ -233,7 +276,7 @@ export async function deleteAccount(id: string): Promise<void> {
   });
 }
 
-export type PasswordChange = { ok: true } | { ok: false; reason: 'wrong' | 'weak_password' };
+export type PasswordChange = { ok: true } | { ok: false; reason: 'wrong' | 'weak_password' | 'breached'; message?: string };
 
 export async function changePassword(id: string, current: string, next: string): Promise<PasswordChange> {
   await migrate();
@@ -242,6 +285,11 @@ export async function changePassword(id: string, current: string, next: string):
   const rows = await query<{ password_hash: string }>('select password_hash from accounts where id = $1', [id]);
   const found = rows[0];
   if (!found || !(await passwordMatches(current, found.password_hash))) return { ok: false, reason: 'wrong' };
+
+  // Checked after the current password, so this cannot be used to test
+  // whether a password is breached without knowing the account's.
+  const verdict = await judgePassword(next);
+  if (!verdict.ok) return { ok: false, reason: 'breached', message: verdict.message };
 
   await query('update accounts set password_hash = $1 where id = $2', [await hashPassword(next), id]);
   // Every reset link outstanding for this account is now void: somebody who
@@ -295,12 +343,15 @@ export async function requestReset(email: string, link: (token: string) => strin
   });
 }
 
-export type ResetResult = { ok: true } | { ok: false; reason: 'bad_token' | 'weak_password' };
+export type ResetResult = { ok: true } | { ok: false; reason: 'bad_token' | 'weak_password' | 'breached'; message?: string };
 
 /** Finish a reset. The token is spent whether or not it is used again. */
 export async function completeReset(token: string, password: string): Promise<ResetResult> {
   await migrate();
   if (password.length < MIN_PASSWORD) return { ok: false, reason: 'weak_password' };
+
+  const verdict = await judgePassword(password);
+  if (!verdict.ok) return { ok: false, reason: 'breached', message: verdict.message };
 
   const passwordHash = await hashPassword(password);
 
@@ -316,6 +367,11 @@ export async function completeReset(token: string, password: string): Promise<Re
 
     await client.query('update accounts set password_hash = $1 where id = $2', [passwordHash, row.account_id]);
     await client.query('delete from resets where account_id = $1', [row.account_id]);
+    // Every device, including whichever one is doing this. Somebody resetting
+    // a password has either forgotten it or fears somebody else has it, and
+    // in the second case the device tokens are exactly what needs cutting —
+    // a new password does nothing to a credential that is not the password.
+    await client.query('update devices set account_id = null where account_id = $1', [row.account_id]);
     return { ok: true as const };
   });
 }

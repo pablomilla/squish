@@ -338,6 +338,7 @@ server/           Express API — Claude calls, offline fallback
   diary.ts        The backed-up diary, and refusing a stale write
   accounts.ts     Sign up, sign in, delete, and forgotten passwords
   mail.ts         One email to send, so: a webhook, or the log
+  passwords.ts    Refusing passwords already in a breach, without sending one
   plan.ts         Free and Plus: who is on what, and what that allows
   invites.ts      Codes that turn Plus on, made and retired in the dashboard
   admin.ts        The dashboard's numbers — counts and totals, never a diary

@@ -44,7 +44,9 @@ import {
   deleteAccount,
   requestReset,
   signIn,
+  otherDevices,
   signOut,
+  signOutEverywhere,
   signUp,
   verifyPassword,
 } from './accounts';
@@ -449,7 +451,11 @@ const whoami = (account: { id: string; email: string } | null) =>
 app.get('/api/account', requireDevice, async (req, res) => {
   try {
     const id = req.device!.accountId;
-    res.json(whoami(id ? await accountFor(id) : null));
+    if (!id) {
+      res.json(whoami(null));
+      return;
+    }
+    res.json({ ...whoami(await accountFor(id)), otherDevices: await otherDevices(id, req.device!.id) });
   } catch (error) {
     logFailure('account read', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
@@ -469,14 +475,15 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
       res.json({ ...whoami(made.account), broughtDiary: made.broughtDiary });
       return;
     }
-    res.status(409).json({ error: made.reason, message: SIGNUP_TROUBLE[made.reason] });
+    res.status(409).json({ error: made.reason, message: made.message ?? SIGNUP_TROUBLE[made.reason] });
   } catch (error) {
     logFailure('sign up', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not make that account just now.' });
   }
 });
 
-const SIGNUP_TROUBLE: Record<'taken' | 'bad_email' | 'weak_password', string> = {
+const SIGNUP_TROUBLE: Record<'taken' | 'bad_email' | 'weak_password' | 'breached', string> = {
+  breached: 'That password has appeared in a known data breach. Please pick another.',
   taken: 'There is already an account on that address. Try signing in.',
   bad_email: 'That does not look like an email address.',
   weak_password: `A password needs ${MIN_PASSWORD} characters or more. Four words you will remember beats one word with a number on the end.`,
@@ -514,6 +521,33 @@ app.delete('/api/session', requireDevice, async (req, res) => {
   }
 });
 
+/**
+ * Sign every other device out.
+ *
+ * The password is asked for again because this is a security action, and
+ * because a phone somebody left on a train should not be able to lock its
+ * owner out of their own account.
+ */
+app.post('/api/account/devices/forget', requireAccount, meter('signin'), async (req, res) => {
+  const { password } = req.body ?? {};
+  if (typeof password !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'Your password, to be sure it is you.' });
+    return;
+  }
+
+  try {
+    const id = req.device!.accountId!;
+    if (!(await verifyPassword(id, password))) {
+      res.status(401).json({ error: 'wrong', message: 'That is not your password.' });
+      return;
+    }
+    res.json({ signedOut: await signOutEverywhere(id, req.device!.id) });
+  } catch (error) {
+    logFailure('sign out everywhere', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+  }
+});
+
 /** Needs an account, not just a device: there is nothing here for a stranger. */
 function requireAccount(req: Request, res: Response, next: NextFunction): void {
   requireDevice(req, res, () => {
@@ -535,12 +569,18 @@ app.post('/api/account/password', requireAccount, meter('signin'), async (req, r
   try {
     const changed = await changePassword(req.device!.accountId!, current, replacement);
     if (changed.ok) {
-      res.json({ changed: true });
+      // Anybody signed in elsewhere is signed out. Changing a password is
+      // what people do when they are worried, and leaving the other sessions
+      // alive is the opposite of what they just asked for.
+      const cut = await signOutEverywhere(req.device!.accountId!, req.device!.id);
+      res.json({ changed: true, signedOut: cut });
       return;
     }
-    res.status(changed.reason === 'weak_password' ? 400 : 401).json({
+    res.status(changed.reason === 'wrong' ? 401 : 400).json({
       error: changed.reason,
-      message: changed.reason === 'weak_password' ? SIGNUP_TROUBLE.weak_password : 'That is not the current password.',
+      message:
+        changed.message ??
+        (changed.reason === 'weak_password' ? SIGNUP_TROUBLE.weak_password : 'That is not the current password.'),
     });
   } catch (error) {
     logFailure('password change', error);
@@ -787,12 +827,13 @@ app.post('/api/account/reset/confirm', requireDevice, meter('reset'), async (req
       res.json({ changed: true });
       return;
     }
-    res.status(done.reason === 'weak_password' ? 400 : 410).json({
+    res.status(done.reason === 'bad_token' ? 410 : 400).json({
       error: done.reason,
       message:
-        done.reason === 'weak_password'
+        done.message ??
+        (done.reason === 'weak_password'
           ? SIGNUP_TROUBLE.weak_password
-          : 'That link has been used or has run out. Ask for another.',
+          : 'That link has been used or has run out. Ask for another.'),
     });
   } catch (error) {
     logFailure('reset', error);

@@ -19,6 +19,12 @@ services:
       # Your Anthropic key. Typed into Render's dashboard, never into the repo.
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Checking passwords against known breaches. Optional and on by default;
+      # set it to "off" to skip the check entirely, or point it at something
+      # else that speaks the same range protocol. It already fails open, so
+      # there is no need to turn it off because of an outage.
+      - key: SQUISH_PWNED_API
+        sync: false
       # Who sees the dashboard: comma-separated email addresses of accounts
       # that already exist. There is no admin password — an admin signs in
       # like anybody else and this list decides what they also see, so taking
