@@ -12,6 +12,7 @@
  */
 import { useState } from 'react';
 import Squish from '../components/Squish';
+import PasswordField from '../components/PasswordField';
 import { clearResetUrl, completeReset } from '../lib/account';
 import './reset.css';
 
@@ -53,19 +54,14 @@ export default function ResetPassword({ token }: { token: string }) {
         <>
           <h1>Pick a new password</h1>
           <form className="stack reset-form" onSubmit={(event) => void go(event)}>
-            <div className="field">
-              <label htmlFor="reset-password">New password</label>
-              <input
-                id="reset-password"
-                className="input"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-              <p className="tiny muted">Four words you will remember beats one word with a number on the end.</p>
-            </div>
+            <PasswordField
+              id="reset-password"
+              label="New password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="new-password"
+              hint="Four words you will remember beats one word with a number on the end."
+            />
             {trouble && (
               <p className="tiny reset-trouble" role="alert">
                 {trouble}

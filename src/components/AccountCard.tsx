@@ -12,6 +12,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Sheet, useToast } from './ui';
+import PasswordField from './PasswordField';
 import {
   changePassword,
   deleteAccount,
@@ -247,19 +248,14 @@ function Credentials({
           required
         />
       </div>
-      <div className="field">
-        <label htmlFor="account-password">Password</label>
-        <input
-          id="account-password"
-          className="input"
-          type="password"
-          autoComplete={submit === 'Sign in' ? 'current-password' : 'new-password'}
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
-        {hint && <p className="tiny muted">{hint}</p>}
-      </div>
+      <PasswordField
+        id="account-password"
+        label="Password"
+        value={password}
+        onChange={setPassword}
+        autoComplete={submit === 'Sign in' ? 'current-password' : 'new-password'}
+        hint={hint}
+      />
       <Trouble says={trouble} />
       <button type="submit" className="btn" disabled={busy || !email || !password}>
         {busy ? 'One moment…' : submit}
@@ -319,30 +315,20 @@ function NewPassword({ onDone }: { onDone: () => void }) {
         void go();
       }}
     >
-      <div className="field">
-        <label htmlFor="old-password">Current password</label>
-        <input
-          id="old-password"
-          className="input"
-          type="password"
-          autoComplete="current-password"
-          value={current}
-          onChange={(event) => setCurrent(event.target.value)}
-          required
-        />
-      </div>
-      <div className="field">
-        <label htmlFor="new-password">New password</label>
-        <input
-          id="new-password"
-          className="input"
-          type="password"
-          autoComplete="new-password"
-          value={next}
-          onChange={(event) => setNext(event.target.value)}
-          required
-        />
-      </div>
+      <PasswordField
+        id="old-password"
+        label="Current password"
+        value={current}
+        onChange={setCurrent}
+        autoComplete="current-password"
+      />
+      <PasswordField
+        id="new-password"
+        label="New password"
+        value={next}
+        onChange={setNext}
+        autoComplete="new-password"
+      />
       <Trouble says={trouble} />
       <button type="submit" className="btn" disabled={busy || !current || !next}>
         {busy ? 'One moment…' : 'Change password'}
@@ -375,18 +361,13 @@ function DeleteAccount({ email, onDone }: { email: string; onDone: () => void })
         This deletes the account on <b>{email}</b> and the copy of your diary kept with it. Your diary stays on this
         device — this is the spare going, not the original. It cannot be undone.
       </p>
-      <div className="field">
-        <label htmlFor="delete-password">Your password</label>
-        <input
-          id="delete-password"
-          className="input"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
-      </div>
+      <PasswordField
+        id="delete-password"
+        label="Your password"
+        value={password}
+        onChange={setPassword}
+        autoComplete="current-password"
+      />
       <Trouble says={trouble} />
       <button type="submit" className="btn btn--danger" disabled={busy || !password}>
         {busy ? 'One moment…' : 'Delete my account'}
