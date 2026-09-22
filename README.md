@@ -302,8 +302,10 @@ test/             Node test-runner suite for the maths and parsing
   on a phone yet.
 - [`docs/accounts.md`](docs/accounts.md) — device tokens, diary backup and
   accounts, all three optional and all three off without a database. Built and
-  tested against a real Postgres; what is left before the stores is a privacy
-  policy, since Squish now holds an email address and a copy of the diary.
+  tested against a real Postgres.
+- [`docs/privacy.md`](docs/privacy.md) — the privacy policy. Needs a contact
+  address filling in and a public URL before it is worth anything; both stores
+  require one, and so does holding health data.
 - [`docs/health-integration.md`](docs/health-integration.md) — reading weight and steps from Apple
   Health and Health Connect, and writing meals back. Both hubs are native-only, so it depends on a
   Capacitor wrap; the plan covers the provenance and write-loop problems worth solving on paper
