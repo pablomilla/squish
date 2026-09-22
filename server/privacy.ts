@@ -28,9 +28,10 @@ function inline(text: string): string {
   return text
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    // Only http(s), and only into the href — a link is the one place this
-    // renderer puts caller text somewhere a browser will act on.
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" rel="noopener">$1</a>');
+    // Only http(s) and mailto, and only into the href — a link is the one
+    // place this renderer puts text somewhere a browser will act on. Anything
+    // else, javascript: above all, stays as the characters somebody typed.
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|mailto:[^)\s]+)\)/g, '<a href="$2" rel="noopener">$1</a>');
 }
 
 const cells = (row: string): string[] =>

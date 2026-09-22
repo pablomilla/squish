@@ -195,27 +195,22 @@ it last changed.
 
 ## Contact
 
-Squish is run by **Industry Logic Ltd**, a company registered in England and
-Wales, which is the data controller for everything described here.
+Squish is run by **Industry Logic Limited**, a company registered in England
+and Wales, which is the data controller for everything described here.
 
 <!--
-  TODO before publishing: fill in the three lines below.
-
-  Company number and registered office are on your Companies House record and
-  are expected on a public policy. The email should be one you are willing to
-  have in an app store listing — a dedicated address such as
-  privacy@yourdomain rather than a personal inbox.
-
-  Also: as a controller processing health data you almost certainly have to
-  pay the ICO's annual data protection fee. Check your tier at
+  Still outstanding, and not for this page: as a controller processing health
+  data, Industry Logic Limited almost certainly has to pay the ICO's annual
+  data protection fee. Check the tier at
   ico.org.uk/for-organisations/data-protection-fee.
 -->
 
-**Company number:** `[your Companies House number]`
+**Company number:** 08236014
 
-**Registered office:** `[your registered address]`
+**Registered office:** 38a Bowes Street, Blyth, Northumberland, NE24 1BE,
+United Kingdom
 
-**Email:** `[your contact address]`
+**Email:** [privacy@squish.online](mailto:privacy@squish.online)
 
 Write to us about anything in this policy, to make a request about your data,
 or to report a security problem. If you are not satisfied with how we handle

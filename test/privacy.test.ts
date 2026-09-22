@@ -60,10 +60,23 @@ test('markdown cannot smuggle HTML onto the page', () => {
   assert.ok(html.includes('&lt;script&gt;'));
 });
 
-test('only http links become links', () => {
-  const html = render('[ok](https://ico.org.uk) and [not ok](javascript:alert(1))');
-  assert.match(html, /<a href="https:\/\/ico\.org\.uk" rel="noopener">ok<\/a>/);
-  assert.ok(!html.includes('javascript:alert(1)"'), 'a javascript: URL became a link');
+test('only http and mailto become links', () => {
+  // The contact address has to be tappable — a policy whose contact route is
+  // a string you retype is not much of a contact route. Everything else, and
+  // javascript: above all, stays as characters.
+  const html = render('[web](https://ico.org.uk), [mail](mailto:privacy@squish.online), [no](javascript:alert(1))');
+  assert.match(html, /<a href="https:\/\/ico\.org\.uk" rel="noopener">web<\/a>/);
+  assert.match(html, /<a href="mailto:privacy@squish\.online" rel="noopener">mail<\/a>/);
+  assert.ok(!html.includes('href="javascript:'), 'a javascript: URL became a link');
+});
+
+test('the published policy names a real controller and a reachable address', () => {
+  // A policy with a placeholder where the controller should be is worse than
+  // none: it looks finished. This fails the day somebody blanks either.
+  const html = render(readFileSync('docs/privacy.md', 'utf8'));
+  assert.ok(html.includes('Industry Logic Limited'), 'the data controller is not named');
+  assert.match(html, /<a href="mailto:[^"]+@[^"]+" rel="noopener">/, 'there is no tappable contact address');
+  assert.ok(!/\[your [a-z ]+\]/i.test(html), 'a placeholder is still on the published page');
 });
 
 test('bold and code survive', () => {
