@@ -21,6 +21,7 @@ import { FetchGuardError, readRecipePage } from './recipe';
 import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
 import { deviceFor, registerDevice, spend, spentToday, type Device, type Spend } from './identity';
+import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import {
   analyseLabel,
   analysePhoto,
@@ -216,6 +217,82 @@ app.set('trust proxy', 1);
 /* ------------------------------------------------------------------ *
  * Routes
  * ------------------------------------------------------------------ */
+
+/* ---------------- The diary, backed up ---------------- *
+ *
+ * A backup, never a source of truth. The browser keeps the diary; these two
+ * routes keep a copy that survives a cleared browser or a lost phone.
+ */
+
+/** Needs a device — an anonymous request has no diary of its own to fetch. */
+function requireDevice(req: Request, res: Response, next: NextFunction): void {
+  if (!hasDatabase()) {
+    res.status(503).json({ error: 'no_database', message: 'This Squish keeps nothing on the server.' });
+    return;
+  }
+  if (!req.device) {
+    res.status(401).json({ error: 'no_device', message: 'This browser has not introduced itself yet.' });
+    return;
+  }
+  next();
+}
+
+app.get('/api/diary', requireDevice, async (req, res) => {
+  try {
+    const found = await readDiary(ownerOf(req.device!));
+    res.json(found ?? { state: null, version: 0, updatedAt: null });
+  } catch (error) {
+    logFailure('diary read', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not fetch your backup just now.' });
+  }
+});
+
+app.put('/api/diary', requireDevice, async (req, res) => {
+  const { state, version } = req.body ?? {};
+  if (state === undefined || state === null) {
+    res.status(400).json({ error: 'empty', message: 'Nothing to back up.' });
+    return;
+  }
+  // `null` means "I believe there is nothing there yet"; a number means "I
+  // last saw this one". Anything else is a client that has lost track, and
+  // guessing on its behalf is how somebody's afternoon gets overwritten.
+  if (version !== null && !Number.isInteger(version)) {
+    res.status(400).json({ error: 'bad_version', message: 'A backup needs to say which version it last saw.' });
+    return;
+  }
+
+  try {
+    const result = await writeDiary(ownerOf(req.device!), state, version);
+    if (result.ok) {
+      res.json(result);
+      return;
+    }
+    // 409, and the newer diary with it — the client cannot resolve this
+    // without seeing what it is up against.
+    res.status(409).json(result);
+  } catch (error) {
+    logFailure('diary write', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save your backup just now.' });
+  }
+});
+
+/**
+ * Throw the backup away.
+ *
+ * Reset on the You screen means reset, and a spare copy sitting on a server
+ * after somebody has asked to be forgotten is the opposite of what they
+ * asked for. It is also what an app store expects an account to be able to
+ * do from inside the app.
+ */
+app.delete('/api/diary', requireDevice, async (req, res) => {
+  try {
+    await deleteDiary(ownerOf(req.device!));
+    res.json({ deleted: true });
+  } catch (error) {
+    logFailure('diary delete', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not delete your backup just now.' });
+  }
+});
 
 /* ---------------- Who is asking ---------------- *
  *

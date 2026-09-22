@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test, before, after } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { deviceFor, registerDevice, spend, spentToday } from '../server/identity';
+import { deleteDiary, ownerOf, readDiary, writeDiary } from '../server/diary';
 
 /**
  * Device identity, against a real Postgres.
@@ -79,4 +80,88 @@ when('two calls at the same instant both count', async () => {
 
   assert.equal(await spentToday(device.id, 'photo'), 12, 'a count was lost to a race');
   assert.deepEqual([...results].sort((x, y) => x - y), Array.from({ length: 12 }, (_, i) => i + 1));
+});
+
+/* ---------------- The backup ---------------- */
+
+when('a diary is kept and comes back as it went in', async () => {
+  const device = await registerDevice();
+  const owner = ownerOf({ id: device.id, accountId: null });
+  const diary = { meals: [{ id: 'a', title: 'Katsu curry' }], profile: { name: 'Mia' } };
+
+  assert.equal(await readDiary(owner), null, 'nothing kept for a device that has kept nothing');
+
+  const first = await writeDiary(owner, diary, null);
+  assert.deepEqual(first, { ok: true, version: 1, updatedAt: first.ok ? first.updatedAt : '' });
+
+  const back = await readDiary(owner);
+  assert.deepEqual(back?.state, diary);
+  assert.equal(back?.version, 1);
+});
+
+when('a second write has to say which version it saw', async () => {
+  const device = await registerDevice();
+  const owner = ownerOf({ id: device.id, accountId: null });
+  await writeDiary(owner, { meals: [] }, null);
+
+  const second = await writeDiary(owner, { meals: ['one'] }, 1);
+  assert.equal(second.ok, true);
+  assert.equal(second.ok && second.version, 2);
+});
+
+when('two phones at once: the second is refused and shown the first', async () => {
+  // Without this, whichever closed last silently erased the other's afternoon.
+  const device = await registerDevice();
+  const owner = ownerOf({ id: device.id, accountId: null });
+  await writeDiary(owner, { meals: ['breakfast'] }, null);
+
+  const phone = await writeDiary(owner, { meals: ['breakfast', 'lunch'] }, 1);
+  assert.equal(phone.ok, true);
+
+  const laptop = await writeDiary(owner, { meals: ['breakfast', 'dinner'] }, 1);
+  assert.equal(laptop.ok, false, 'the stale write went through and ate the lunch');
+  assert.equal(!laptop.ok && laptop.reason, 'stale');
+  assert.deepEqual(!laptop.ok && laptop.current.state, { meals: ['breakfast', 'lunch'] }, 'and it should be handed what it is up against');
+  assert.equal(!laptop.ok && laptop.current.version, 2);
+});
+
+when('two first-writes race and only one wins', async () => {
+  const device = await registerDevice();
+  const owner = ownerOf({ id: device.id, accountId: null });
+
+  const [a, b] = await Promise.all([
+    writeDiary(owner, { from: 'a' }, null),
+    writeDiary(owner, { from: 'b' }, null),
+  ]);
+  assert.equal([a.ok, b.ok].filter(Boolean).length, 1, 'both first writes succeeded, so one diary was lost');
+  const kept = await readDiary(owner);
+  assert.equal(kept?.version, 1);
+});
+
+when('a diary too big to be real is refused rather than stored', async () => {
+  const device = await registerDevice();
+  const owner = ownerOf({ id: device.id, accountId: null });
+  await assert.rejects(() => writeDiary(owner, { padding: 'x'.repeat(7_000_000) }, null), /over the/);
+});
+
+when('deleting a diary leaves nothing behind, and the next backup starts again at one', async () => {
+  // Reset on the You screen has to mean it: a spare copy left on the server
+  // after somebody asked to be forgotten is the opposite of what they asked
+  // for. And what comes after must not inherit the old version number, or
+  // the browser that wrote v4 would find its v5 refused for ever.
+  const device = await registerDevice();
+  const owner = ownerOf({ id: device.id, accountId: null });
+  await writeDiary(owner, { meals: ['lunch'] }, null);
+
+  await deleteDiary(owner);
+  assert.equal(await readDiary(owner), null, 'the diary was still there after a delete');
+
+  const fresh = await writeDiary(owner, { meals: [] }, null);
+  assert.equal(fresh.ok, true, 'the browser could not start a new backup after resetting');
+  assert.equal(fresh.ok && fresh.version, 1);
+});
+
+when('deleting a diary that was never there is not an error', async () => {
+  const device = await registerDevice();
+  await assert.doesNotReject(() => deleteDiary(ownerOf({ id: device.id, accountId: null })));
 });

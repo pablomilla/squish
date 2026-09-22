@@ -7,11 +7,13 @@ import { disableReminders, enableReminders, explainBlocker, reminderSupport, typ
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
+import { backupState, resumeBackup, watchBackup } from '../lib/autobackup';
+import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { PLUS, isSubscribed } from '../lib/subscription';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
-import { isoDate } from '../lib/date';
+import { friendlyDate, isoDate } from '../lib/date';
 import { streakOf } from '../lib/selectors';
 import type { Activity, Goal, Sex } from '../types';
 import './you.css';
@@ -23,6 +25,7 @@ export default function You() {
   const [ignoredLearning, setIgnoredLearning] = useState(false);
   const prefersDark = usePrefersDark();
   const subscribed = isSubscribed();
+  const backup = useBackup();
 
   // Only offered, never applied: a plan that moves on its own is unsettling,
   // and the reading behind it can be wrong in ways only they would know.
@@ -473,11 +476,17 @@ export default function You() {
         )}
       </section>
 
+      <BackupCard />
+
       <section className="card card--quiet">
         <div className="card-title">
           <h3>Your data</h3>
         </div>
-        <p className="small muted">Everything lives in this browser. Nothing is uploaded except the photo you choose to analyse.</p>
+        <p className="small muted">
+          {backup.kind === 'off'
+            ? 'Everything lives in this browser. Nothing is uploaded except the photo you choose to analyse.'
+            : 'Your diary lives in this browser. A copy is kept on the Squish server so you can get it back, along with any photo you choose to analyse. Nothing else leaves this device.'}
+        </p>
         <div className="row" style={{ gap: 10, marginTop: 12 }}>
           <button type="button" className="btn btn--ghost grow" onClick={exportData}>
             Export JSON
@@ -637,7 +646,11 @@ export default function You() {
       </Sheet>
 
       <Sheet open={confirmReset} onClose={() => setConfirmReset(false)} title="Start over?">
-        <p className="small muted">This clears every meal, day log and badge on this device. It cannot be undone.</p>
+        <p className="small muted">
+          {backup.kind === 'off'
+            ? 'This clears every meal, day log and badge on this device. It cannot be undone.'
+            : 'This clears every meal, day log and badge on this device, and deletes the backup too. It cannot be undone.'}
+        </p>
         <div className="row" style={{ gap: 10, marginTop: 16 }}>
           <button type="button" className="btn btn--ghost grow" onClick={() => setConfirmReset(false)}>
             Keep my data
@@ -646,7 +659,10 @@ export default function You() {
             type="button"
             className="btn btn--danger grow"
             onClick={() => {
-              resetAll();
+              // Deleted first: the automatic backup would otherwise push the
+              // emptied diary up a few seconds later, which gets to the same
+              // place by accident rather than because anybody asked.
+              void forgetBackup().finally(() => resetAll());
               setConfirmReset(false);
               toast('All cleared', '🧼');
             }}
@@ -665,5 +681,96 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="grow small muted">{label}</span>
       <b className="small">{value}</b>
     </div>
+  );
+}
+
+/**
+ * What the backup is doing, and the two things somebody might want from it.
+ *
+ * Restore is offered rather than done. A diary on the server that is newer
+ * than this browser's is not obviously the right one — somebody may have
+ * logged today on their phone, or may have deliberately started again — so
+ * the only automatic behaviour is keeping a copy.
+ */
+function useBackup(): BackupState {
+  const [state, setState] = useState<BackupState>(backupState);
+  useEffect(() => watchBackup(setState), []);
+  return state;
+}
+
+function BackupCard() {
+  const state = useBackup();
+  const [remote, setRemote] = useState<RemoteDiary | null>(null);
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (state.kind === 'off') return;
+    let live = true;
+    void pullDiary().then((found) => {
+      if (live) setRemote(found);
+    });
+    return () => {
+      live = false;
+    };
+  }, [state.kind]);
+
+  if (state.kind === 'off') return null;
+
+  const restore = async () => {
+    const found = remote ?? (await pullDiary());
+    if (!found?.state) {
+      toast('There is no backup to restore.', '📦');
+      return;
+    }
+    setBusy(true);
+    // Merged over the current state rather than replacing it, so a key this
+    // version has and the backup does not keeps its default instead of
+    // becoming undefined halfway down the app.
+    useSquish.setState(found.state as Partial<ReturnType<typeof useSquish.getState>>);
+    resumeBackup(found.version);
+    setBusy(false);
+    toast('Restored from your backup.', '📦');
+  };
+
+  return (
+    <section className="card card--quiet">
+      <div className="card-title">
+        <h3>Backup</h3>
+        {state.kind === 'saving' && <span className="badge">Saving…</span>}
+        {state.kind === 'conflict' && <span className="badge badge--warn">Paused</span>}
+        {state.kind === 'failed' && <span className="badge badge--warn">Offline</span>}
+      </div>
+
+      {state.kind === 'conflict' ? (
+        <p className="tiny muted">
+          Another device has backed up something this one has not seen. Squish will not merge two diaries — that means
+          guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say
+          which to keep.
+        </p>
+      ) : (
+        <p className="tiny muted">
+          A copy of your diary is kept so a cleared browser or a lost phone is an inconvenience rather than the end of
+          it. Your diary still lives on this device; this is the spare.
+        </p>
+      )}
+
+      {remote?.updatedAt && (
+        <p className="tiny muted" style={{ marginTop: 8 }}>
+          Last kept {friendlyDate(remote.updatedAt.slice(0, 10)).toLowerCase()}.
+        </p>
+      )}
+
+      <div className="row" style={{ gap: 10, marginTop: 12 }}>
+        <button type="button" className="btn btn--sm btn--ghost grow" disabled={busy || !remote} onClick={() => void restore()}>
+          {state.kind === 'conflict' ? 'Use the other one' : 'Restore from backup'}
+        </button>
+        {state.kind === 'conflict' && (
+          <button type="button" className="btn btn--sm" onClick={() => { resumeBackup(remote?.version ?? null); toast('Keeping this one.', '📦'); }}>
+            Keep this one
+          </button>
+        )}
+      </div>
+    </section>
   );
 }

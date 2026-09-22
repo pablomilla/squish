@@ -128,6 +128,8 @@ export interface AiStatus {
   model: string;
   /** True when the server was started with a passcode set. */
   locked?: boolean;
+  /** True when the server has a database — so backups and accounts exist. */
+  accounts?: boolean;
 }
 
 /** Check a passcode against the server. Remembers it on success. */

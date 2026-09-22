@@ -17,6 +17,7 @@ import Ask from './screens/Ask';
 import AddFood from './screens/AddFood';
 import { isoDate, slotForNow } from './lib/date';
 import { aiStatus, onLocked, storedPasscode } from './lib/api';
+import { startBackup } from './lib/autobackup';
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'home', label: 'Home', Icon: HomeIcon },
@@ -51,6 +52,21 @@ function Shell() {
   const [locked, unlockApp] = useLockState();
 
   const [route, setRoute] = useState<Route>({ name: 'home' });
+  const [keepsData, setKeepsData] = useState(false);
+
+  // Whether this Squish keeps anything on the server at all. Asked once; the
+  // answer decides whether there is a backup, an account or neither.
+  useEffect(() => {
+    let live = true;
+    void aiStatus().then((status) => {
+      if (live) setKeepsData(Boolean(status.accounts));
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  useEffect(() => startBackup(keepsData), [keepsData]);
   const [adding, setAdding] = useState(false);
   const isTab = useMemo(() => TABS.some((t) => t.name === route.name), [route]);
 
