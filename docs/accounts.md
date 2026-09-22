@@ -79,7 +79,7 @@ which is the right behaviour in development and on a laptop.
 | `DATABASE_URL` | unset | Turns all three layers on |
 | `SQUISH_MAIL_WEBHOOK` | unset | Where reset emails are posted |
 | `SQUISH_MAIL_TOKEN` | unset | Bearer token for that webhook |
-| `SQUISH_PUBLIC_ORIGIN` | from the request | The origin in reset links, where a proxy makes the request look wrong |
+| `SQUISH_PUBLIC_ORIGIN` | from the request | The origin in reset links. Set it to the address people actually use — a custom domain, or anything behind a proxy or a redirect — or the links point at wherever the request appeared to arrive. A trailing slash is fine; it is stripped |
 | `SQUISH_DAILY_PHOTOS` | 25 | Per device, per day |
 | `SQUISH_DAILY_CHATS` | 40 | Per device, per day |
 | `SQUISH_DAILY_RECIPES` | 10 | Per device, per day |

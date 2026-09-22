@@ -26,6 +26,16 @@ services:
         fromDatabase:
           name: squish-db
           property: connectionString
+      # The address Squish tells people to come back to, used for the links in
+      # password reset emails.
+      #
+      # Without this the origin is read off the incoming request, which is
+      # right on a laptop and right on a plain Render URL. It is wrong the
+      # moment a proxy or a redirect makes the request arrive looking like it
+      # came somewhere else — and a reset link pointing at the wrong host is a
+      # reset that does not work.
+      - key: SQUISH_PUBLIC_ORIGIN
+        value: https://squish.online
       # Where password reset links are sent. Optional: with no webhook they are
       # printed to the Render log instead, which is a working reset for whoever
       # can read it. See docs/accounts.md.
