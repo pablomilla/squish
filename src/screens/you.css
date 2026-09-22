@@ -8,3 +8,23 @@
 .learned { margin-top: var(--s3); padding: var(--s3); border-radius: var(--r-md); background: var(--brand-soft); }
 .learned p + p { margin-top: 6px; }
 .link-button { color: var(--brand-ink); text-decoration: underline; font: inherit; }
+
+/* The colourway picker. Swatches rather than six little mascots: six copies of
+   the artwork is a lot of SVG for a row somebody scrolls past. */
+.looks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.look {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 4px; border-radius: var(--r-lg); border: 1px solid transparent;
+  background: var(--surface-sunk); color: var(--ink-2); text-align: center;
+  transition: transform 0.12s var(--ease);
+}
+.look:active { transform: scale(0.97); }
+.look--on { border-color: var(--brand); color: var(--ink); font-weight: 600; }
+/* Dimmed, not hidden: seeing what is coming is most of the reason to carry on. */
+.look--locked .look-swatch { filter: grayscale(0.7); opacity: 0.45; }
+.look--locked { color: var(--ink-3); }
+
+.look-swatch {
+  width: 42px; height: 42px; border-radius: 50%;
+  box-shadow: inset 0 -2px 6px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
+}

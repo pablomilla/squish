@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AnalysisResult, MealEntry, MealSlot, Route } from './types';
 import { useSquish } from './store/useSquish';
-import { ToastProvider, useAppliedTheme } from './components/ui';
+import { ToastProvider, useAppliedLook, useAppliedTheme } from './components/ui';
 import AddSheet from './components/AddSheet';
 import { DiaryIcon, HomeIcon, InsightsIcon, PlusIcon, YouIcon } from './components/icons';
 import Lock from './screens/Lock';
@@ -46,7 +46,8 @@ function useLockState(): [boolean | undefined, () => void] {
 function Shell() {
   const onboarded = useSquish((s) => s.profile.onboarded);
   const theme = useSquish((s) => s.theme);
-  useAppliedTheme(theme);
+  const look = useSquish((s) => s.look);
+  useAppliedLook(look, useAppliedTheme(theme) === 'dark');
   const [locked, unlockApp] = useLockState();
 
   const [route, setRoute] = useState<Route>({ name: 'home' });

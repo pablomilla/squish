@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { matchStatusBar } from '../lib/native';
+import { DEFAULT_LOOK, lookById, lookVars } from '../lib/looks';
 import { CloseIcon } from './icons';
 
 /* ---------------- Bottom sheet ---------------- */
@@ -175,6 +176,29 @@ export function usePrefersDark(): boolean {
   }, [media]);
 
   return dark;
+}
+
+/**
+ * Dress every Squish on the page at once.
+ *
+ * Set on the document rather than passed to each mascot, because they are not
+ * all reachable: the share card rasterises whatever is on screen, and a prop
+ * threaded through six screens is a prop somebody forgets on the seventh.
+ * Removed rather than set for the default look, so the stylesheet keeps
+ * owning it and there is one place the original colours live.
+ */
+export function useAppliedLook(look: string, dark: boolean) {
+  useEffect(() => {
+    const { style } = document.documentElement;
+    const chosen = lookById(look);
+    const vars = lookVars(chosen, dark);
+
+    if (chosen.id === DEFAULT_LOOK) {
+      for (const name of Object.keys(vars)) style.removeProperty(name);
+      return;
+    }
+    for (const [name, value] of Object.entries(vars)) style.setProperty(name, value);
+  }, [look, dark]);
 }
 
 export function useAppliedTheme(preference: 'light' | 'dark' | 'system') {

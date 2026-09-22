@@ -6,6 +6,7 @@ import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta
 import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
+import { LOOKS, isUnlocked } from '../lib/looks';
 import { useSquish } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
@@ -16,7 +17,7 @@ import './you.css';
 
 export default function You() {
   const toast = useToast();
-  const { profile, targets, meals, days, theme, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked, nutritionistNotes, forgetNote } =
+  const { profile, targets, meals, days, theme, look, setLook, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked, nutritionistNotes, forgetNote } =
     useSquish();
   const [ignoredLearning, setIgnoredLearning] = useState(false);
   const prefersDark = usePrefersDark();
@@ -234,6 +235,41 @@ export default function You() {
             are two separate switches.
           </p>
         )}
+
+        <div className="divider" style={{ margin: '16px 0 12px' }} />
+
+        <h4 className="small">How Squish looks</h4>
+        <p className="tiny muted">Earned by using the app, never bought.</p>
+        <div className="looks" role="radiogroup" aria-label="How Squish looks">
+          {LOOKS.map((entry) => {
+            const earned = isUnlocked(entry, unlocked);
+            const chosen = entry.id === look;
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                role="radio"
+                aria-checked={chosen}
+                className={`look${chosen ? ' look--on' : ''}${earned ? '' : ' look--locked'}`}
+                // A locked one is not disabled: pressing it should say how to
+                // get it, which is the only thing somebody wants to know.
+                onClick={() => (earned ? setLook(entry.id) : toast(entry.how, '🔒'))}
+                aria-label={earned ? entry.name : `${entry.name}, locked — ${entry.how}`}
+              >
+                <span
+                  className="look-swatch"
+                  aria-hidden="true"
+                  style={{
+                    background: `radial-gradient(circle at 34% 30%, ${
+                      (prefersDark && theme === 'system') || theme === 'dark' ? entry.dark : entry.light
+                    })`,
+                  }}
+                />
+                <span className="tiny">{earned ? entry.name : entry.how}</span>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <section className="card card--quiet">

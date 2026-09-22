@@ -5,18 +5,28 @@
  * properties so one set of files serves both themes. The values here match the
  * light and dark deliveries in design/artwork exactly.
  */
-.squish {
+/*
+ * On :root rather than on .squish, so a chosen look can override them with an
+ * inline property on the document element. Set on .squish they would sit
+ * closer to the mascot and win, and every look but the first would be
+ * invisible. The values are the "Squish" entry in lib/looks.ts and must stay
+ * in step with it.
+ */
+:root {
   --squish-skin-0: #fffaf4;
   --squish-skin-1: #fdeadc;
   --squish-skin-2: #f6d7c4;
-  display: block;
-  overflow: visible;
 }
 
-:root[data-theme='dark'] .squish {
+:root[data-theme='dark'] {
   --squish-skin-0: #fdf3ea;
   --squish-skin-1: #f4ddcc;
   --squish-skin-2: #e2bfa9;
+}
+
+.squish {
+  display: block;
+  overflow: visible;
 }
 
 /* Idle breathing, and a livelier version for the two happy poses. */

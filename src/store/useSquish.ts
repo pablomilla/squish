@@ -12,6 +12,7 @@ import {
   microTargets,
 } from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
+import { DEFAULT_LOOK } from '../lib/looks';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow } from '../lib/date';
 
@@ -50,6 +51,8 @@ interface SquishState {
   favourites: FoodItem[];
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
+  /** Which colourway Squish is wearing. Earned, never bought. */
+  look: string;
   /**
    * When to nudge, and whether to at all. The times live here rather than only
    * on the server so the screen can show them without a round trip, and so
@@ -106,6 +109,7 @@ interface SquishState {
   unlock: (id: string) => void;
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setLook: (look: string) => void;
   setReminders: (patch: Partial<SquishState['reminders']>) => void;
   setPendingMeal: (draft: Draft | null) => void;
   rememberNote: (note: string) => NutritionistNote;
@@ -241,6 +245,7 @@ export const useSquish = create<SquishState>()(
       favourites: [],
       unlocked: {},
       theme: 'system',
+      look: DEFAULT_LOOK,
       // Off until asked for. A notification permission prompt nobody invited
       // is the fastest way to be told no for ever.
       reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
@@ -337,6 +342,7 @@ export const useSquish = create<SquishState>()(
       },
 
       setTheme: (theme) => set({ theme }),
+      setLook: (look) => set({ look }),
       setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
       setPendingMeal: (pendingMeal) => set({ pendingMeal }),
@@ -368,6 +374,7 @@ export const useSquish = create<SquishState>()(
           photoAnalyses: 0,
           nutritionistNotes: [],
           pendingMeal: null,
+          look: DEFAULT_LOOK,
         }),
     }),
     {
