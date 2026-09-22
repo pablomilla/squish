@@ -16,16 +16,28 @@ services:
       # spend your Anthropic credit.
       - key: SQUISH_PASSCODE
         sync: false
-      # Meal reminders. Optional — leave these blank and the app works, minus
-      # the nudges. Generate the pair with `npm run setup:push`.
+      # Turns on the device token, the diary backup and accounts. Filled in by
+      # Render from the database below, so there is nothing to type.
       #
-      # Note the plan above: reminders need a server that is awake at 8am, and
-      # a free instance sleeps after fifteen minutes. See the README.
-      - key: VAPID_PUBLIC_KEY
+      # Remove this and the database, and Squish still works — the diary lives
+      # in the browser and nothing is kept on the server. That is the mode it
+      # was written in and it is not a degraded one.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: squish-db
+          property: connectionString
+      # Where password reset links are sent. Optional: with no webhook they are
+      # printed to the Render log instead, which is a working reset for whoever
+      # can read it. See docs/accounts.md.
+      - key: SQUISH_MAIL_WEBHOOK
         sync: false
-      - key: VAPID_PRIVATE_KEY
-        sync: false
-      - key: VAPID_SUBJECT
+      - key: SQUISH_MAIL_TOKEN
         sync: false
       - key: NODE_VERSION
         value: 22.12.0
+
+databases:
+  - name: squish-db
+    plan: free
+    databaseName: squish
+    user: squish

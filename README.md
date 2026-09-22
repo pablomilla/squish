@@ -131,7 +131,7 @@ secrets rather than you editing any files.
 | `ANTHROPIC_API_KEY` | Your key. Lives in the host's dashboard, never in the repo. |
 | `SQUISH_PASSCODE` | **Set this.** Without it, anyone who finds the URL spends your credit. |
 | `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
-| `DATABASE_URL` | Optional. A Postgres URL turns on diary backup and accounts. |
+| `DATABASE_URL` | Filled in by the blueprint from the Postgres it creates. Turns on backup and accounts. Delete both and Squish stays local. |
 
 With a passcode set, the app opens on a lock screen and every analysis endpoint returns 401 until it
 is entered. It is a shared passcode, not a login — everyone who knows it shares one Squish. Render's
