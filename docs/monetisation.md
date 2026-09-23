@@ -95,6 +95,17 @@ Everything on the left is near-free to serve, so there is no reason to gate it,
 and gating it would make the app useless to somebody deciding whether to pay.
 Everything on the right is the part with a bill attached.
 
+### Plus recipe imports: 10 a month
+
+Plus came with 30 recipe imports a month until 23 September 2026. A recipe
+import reads a whole web page (up to 12,000 characters), which makes it the
+dearest thing Squish does — about $0.05 each, estimated from its prompt size.
+At 30, a yearly subscriber who used all of Plus cost about £3.70 a month in AI
+against the £2.70 they leave after VAT, the store, refunds and affiliates.
+At 10 that is about £2.92 — about 20p a month short, and only for somebody who
+uses every last allowance; everybody else is comfortably profitable. `SQUISH_PLUS_RECIPES`
+changes it without a deploy.
+
 ### Why the free AI is a taste, not an allowance
 
 Until 23 September 2026 the free plan had 10 AI analyses and 2 recipe imports

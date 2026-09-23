@@ -142,6 +142,7 @@ If the dashboard's **Blueprints** list is empty, it was by hand.
 | `SQUISH_FREE_TASTE` | AI analyses a free account gets to try, once — not monthly. Default 5. |
 | `SQUISH_PLUS_PHOTOS` | And on Squish Plus. Default 60. |
 | `SQUISH_PLUS_CHATS` | Nutritionist questions a month on Plus. Default 30. |
+| `SQUISH_PLUS_RECIPES` | Recipe imports a month on Plus. Default 10 — the dearest thing Squish does. |
 | `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
 | `DATABASE_URL` | Filled in by the blueprint from the Postgres it creates. Turns on backup and accounts. Delete both and Squish stays local. |
 | `SQUISH_PUBLIC_ORIGIN` | Where the app lives — `https://app.squish.online`. Links in emails point here. |

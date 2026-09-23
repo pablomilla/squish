@@ -106,7 +106,7 @@ export default function Paywall({
                   <b>The nutritionist</b> — 30 questions a month about your own diary, not the internet's
                 </li>
                 <li>
-                  <b>30 recipe imports a month</b> — paste a link, get a portion's nutrition
+                  <b>10 recipe imports a month</b> — paste a link, get a portion's nutrition
                 </li>
                 <li>
                   <b>Six more colourways</b> for Squish

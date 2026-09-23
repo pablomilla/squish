@@ -57,10 +57,14 @@ const count = (name: string, fallback: number): number => {
  * Free is five AI analyses — a photo or a description — and nothing else that
  * costs money. Enough to find out whether the analysis is any good.
  *
- * Plus at 60 photos and 30 questions is at most about $3.40 (£2.65) of usage.
- * Against £6.99 a month that leaves room after VAT and the stores' cut, and
- * the £49.99 year still covers somebody who uses every last one. Raising it is
- * a decision about margin, not a kindness — see docs/monetisation.md.
+ * Plus at 60 analyses, 30 questions and 10 recipe imports is at most about
+ * $3.75 (£2.92) of usage. Recipes are the dearest thing Squish does — a whole
+ * web page read for each — and at 30 a month a yearly subscriber who used
+ * everything cost about £1 a month more than they paid. At 10 that is about
+ * 20p, only for somebody using every last allowance, and everybody else is
+ * comfortably in profit.
+ * Raising any of these is a decision about margin, not a kindness — see
+ * docs/monetisation.md.
  */
 export const ALLOWANCE: Record<Plan, Record<Billable, number>> = {
   free: {
@@ -71,7 +75,7 @@ export const ALLOWANCE: Record<Plan, Record<Billable, number>> = {
   plus: {
     photo: count('SQUISH_PLUS_PHOTOS', 60),
     chat: count('SQUISH_PLUS_CHATS', 30),
-    recipe: count('SQUISH_PLUS_RECIPES', 30),
+    recipe: count('SQUISH_PLUS_RECIPES', 10),
   },
 };
 
