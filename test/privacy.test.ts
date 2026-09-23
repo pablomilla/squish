@@ -84,3 +84,12 @@ test('bold and code survive', () => {
   assert.match(html, /<strong>special category data<\/strong>/);
   assert.match(html, /<code>docs\/privacy\.md<\/code>/);
 });
+
+test('a page reached from an email does not send people into an empty Squish', async () => {
+  const { standalonePage } = await import('../server/privacy');
+  assert.match(standalonePage('<p>x</p>'), /Back to Squish/, 'the policy lost its way back');
+  assert.doesNotMatch(standalonePage('<p>x</p>', 'Confirmed', 'd', { back: false }), /Back to Squish/);
+  const route = readFileSync('server/index.ts', 'utf8');
+  const verify = route.slice(route.indexOf("app.get('/verify'"), route.indexOf('const escapeHtml'));
+  assert.match(verify, /back: false/, 'the confirmation page links back into the app again');
+});

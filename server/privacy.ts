@@ -168,6 +168,11 @@ export const standalonePage = (
   body: string,
   title = 'Privacy — Squish',
   description = 'What Squish keeps, where it goes, and how to get rid of it.',
+  // Off for pages reached from an email. Those usually open in the email app's
+  // own browser, and a link from there opens a Squish with nothing in it — a
+  // stranger's empty app, as far as the person is concerned — rather than the
+  // one they were using.
+  { back = true }: { back?: boolean } = {},
 ): string => `<!doctype html>
 <html lang="en-GB">
 <head>
@@ -180,7 +185,7 @@ export const standalonePage = (
 <body>
 <main>
 ${body}
-<a class="back" href="/">← Back to Squish</a>
+${back ? '<a class="back" href="/">← Back to Squish</a>' : ''}
 </main>
 </body>
 </html>`;

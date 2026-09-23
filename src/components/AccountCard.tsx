@@ -10,7 +10,7 @@
  * and then never look at. Anything that needs a form gets a sheet, and the
  * sheet closes.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sheet, useToast } from './ui';
 import PasswordField from './PasswordField';
 import {
@@ -44,6 +44,8 @@ const TITLES: Record<Exclude<Form, null>, string> = {
 export default function AccountCard({ enabled }: { enabled: boolean }) {
   const [who, setWho] = useState<Who>({ signedIn: false });
   const [form, setForm] = useState<Form>(null);
+  /** The last answer from the server, to notice the moment an address becomes confirmed. */
+  const seen = useRef<Who | null>(null);
   const toast = useToast();
 
   // Sent here by the paywall to make an account: open the form and bring it into view.
@@ -58,13 +60,30 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (!enabled) return;
     let live = true;
-    void whoAmI().then((found) => {
-      if (live) setWho(found);
-    });
+    const look = () =>
+      void whoAmI().then((found) => {
+        if (!live) return;
+        const before = seen.current;
+        // Confirmed in another tab, or in the email app's browser, while this one waited.
+        if (before?.signedIn && before.verified === false && found.verified === true) toast('Email confirmed. Thank you!', '✅');
+        seen.current = found;
+        setWho(found);
+      });
+    look();
+    // Asked again whenever Squish comes back into view: the confirmation link
+    // opens somewhere else, and this card should not go on asking for
+    // something that has already been done.
+    const onShow = () => {
+      if (document.visibilityState === 'visible') look();
+    };
+    document.addEventListener('visibilitychange', onShow);
+    window.addEventListener('focus', onShow);
     return () => {
       live = false;
+      document.removeEventListener('visibilitychange', onShow);
+      window.removeEventListener('focus', onShow);
     };
-  }, [enabled]);
+  }, [enabled, toast]);
 
   if (!enabled) return null;
 

@@ -722,15 +722,21 @@ app.get('/verify', async (req, res) => {
   const body = done.ok
     ? `<h1>That is confirmed</h1>
 <p><strong>${escapeHtml(done.email)}</strong> is yours, as far as Squish is concerned. If anything
-important happens on your account — a new sign-in, a changed password — this is where we will tell you.</p>`
+important happens on your account — a new sign-in, a changed password — this is where we will tell you.</p>
+<p>You can close this page now and carry on in Squish, in the app or browser tab you were using. It
+will notice by itself.</p>`
     : `<h1>That link has run out</h1>
-<p>Confirmation links work for a week. Open Squish, go to <strong>You → Account</strong>, and send
-yourself a fresh one.</p>`;
+<p>Confirmation links work for a week. Go back to Squish where you use it, open <strong>You → Account</strong>,
+and send yourself a fresh one. You can close this page.</p>`;
 
   res
     .status(done.ok ? 200 : 410)
     .type('html')
-    .send(standalonePage(body, done.ok ? 'Confirmed — Squish' : 'Link expired — Squish', 'Confirming your email for Squish.'));
+    .send(
+      standalonePage(body, done.ok ? 'Confirmed — Squish' : 'Link expired — Squish', 'Confirming your email for Squish.', {
+        back: false,
+      }),
+    );
 });
 
 const escapeHtml = (text: string): string =>
