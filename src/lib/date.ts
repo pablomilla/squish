@@ -60,9 +60,29 @@ export function slotForNow(date: Date = new Date()): 'breakfast' | 'lunch' | 'di
   return 'snack';
 }
 
-export function greeting(date: Date = new Date()): string {
+export type PartOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+
+/** Which part of the day it is where the person is — for greetings, and for knowing when one has gone stale. */
+export function partOfDay(date: Date = new Date()): PartOfDay {
   const h = date.getHours();
-  if (h < 12) return 'Good morning!';
-  if (h < 18) return 'Good afternoon!';
+  if (h < 5) return 'night';
+  if (h < 12) return 'morning';
+  if (h < 18) return 'afternoon';
+  if (h < 22) return 'evening';
+  return 'night';
+}
+
+export function greeting(date: Date = new Date()): string {
+  const part = partOfDay(date);
+  if (part === 'morning') return 'Good morning!';
+  if (part === 'afternoon') return 'Good afternoon!';
   return 'Good evening!';
+}
+
+/** "evening, 21:40" — the time as the coach is told it, so it never wishes anybody good morning at ten at night. */
+export function timeOfDayWords(date: Date = new Date()): string {
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const part = partOfDay(date);
+  return `${part === 'night' ? 'late at night' : part}, ${hh}:${mm}`;
 }

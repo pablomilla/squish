@@ -14,7 +14,7 @@ import {
 import { STARTING_WEIGHTS } from '../lib/units';
 import { DEFAULT_LOOK } from '../lib/looks';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
-import { isoDate, nowTime, slotForNow } from '../lib/date';
+import { isoDate, nowTime, slotForNow, type PartOfDay } from '../lib/date';
 
 /**
  * Squish is for adults. It sets calorie targets and gives diet feedback, and
@@ -89,9 +89,10 @@ interface SquishState {
   /**
    * The nudge is cached against the situation it described, not just the day —
    * keyed on the date alone, the morning's "nothing logged yet" would still be
-   * on screen after dinner.
+   * on screen after dinner. The part of the day counts too: with nothing
+   * logged, "Morning, Paul!" would otherwise still be there at ten at night.
    */
-  lastCoachNote: { date: string; message: string; mealsLogged: number } | null;
+  lastCoachNote: { date: string; message: string; mealsLogged: number; part?: PartOfDay } | null;
   photoAnalyses: number;
 
   setProfile: (patch: Partial<Profile>) => void;
@@ -121,7 +122,7 @@ interface SquishState {
   setPendingMeal: (draft: Draft | null) => void;
   rememberNote: (note: string) => NutritionistNote;
   forgetNote: (id: string) => boolean;
-  rememberCoachNote: (message: string, mealsLogged: number) => void;
+  rememberCoachNote: (message: string, mealsLogged: number, part: PartOfDay) => void;
   resetAll: () => void;
 }
 
@@ -367,7 +368,7 @@ export const useSquish = create<SquishState>()(
         return true;
       },
 
-      rememberCoachNote: (message, mealsLogged) => set({ lastCoachNote: { date: isoDate(), message, mealsLogged } }),
+      rememberCoachNote: (message, mealsLogged, part) => set({ lastCoachNote: { date: isoDate(), message, mealsLogged, part } }),
 
       resetAll: () =>
         set({

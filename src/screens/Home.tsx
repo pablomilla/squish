@@ -9,7 +9,7 @@ import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
 import { formatWeight } from '../lib/units';
 import { useSquish } from '../store/useSquish';
-import { friendlyDate, greeting, isoDate, slotForNow, weekOf } from '../lib/date';
+import { friendlyDate, greeting, isoDate, partOfDay, timeOfDayWords, weekOf } from '../lib/date';
 import { habitCount, habitsOn, habitTally, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
 import { GLASS_ML, overTargets, pct, remaining, waterVolume } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
@@ -61,8 +61,11 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   // about. Log a meal and it is stale, so a fresh one is asked for and the live
   // fallback below covers the gap.
   const mealsLogged = todaysMeals.length;
+  const part = partOfDay();
   const nudge =
-    lastCoachNote?.date === today && lastCoachNote.mealsLogged === mealsLogged ? lastCoachNote.message : null;
+    lastCoachNote?.date === today && lastCoachNote.mealsLogged === mealsLogged && lastCoachNote.part === part
+      ? lastCoachNote.message
+      : null;
 
   useEffect(() => {
     if (nudge) return;
@@ -79,24 +82,27 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       water: day?.water ?? 0,
       waterTarget: targets.water,
       mealsLogged,
-      timeOfDay: slotForNow(),
+      timeOfDay: timeOfDayWords(),
       recentMeals: todaysMeals.map((m) => m.title),
     }).then((message) => {
       if (!live || !message) return;
-      rememberCoachNote(message, mealsLogged);
+      rememberCoachNote(message, mealsLogged, part);
     });
     return () => {
       live = false;
     };
     // Asked once per change of situation, not once per render: the rest of the
     // context is read fresh at call time.
-  }, [nudge, mealsLogged, today]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [nudge, mealsLogged, today, part]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fallbackNudge = todaysMeals.length
     ? `${remaining(targets.calories, totals.calories)} kcal left today — and ${remaining(targets.protein, totals.protein)} g of protein to go.`
     // Asked as an opening rather than a reproach: "nothing squished yet" is a
     // blank page, and "you haven't squished anything" is a telling-off.
-    : 'Nothing squished yet — what’s first?';
+    : part === 'night'
+      ? // Late on, "what's first?" reads as an invitation to eat. The day can simply end.
+        'Nothing squished today — that’s fine. Tomorrow is a fresh page.'
+      : 'Nothing squished yet — what’s first?';
 
   return (
     <div className="screen home">

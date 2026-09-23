@@ -607,7 +607,7 @@ export async function coachMessage(ctx: CoachContext): Promise<string> {
       {
         role: 'user',
         content: `Write today's nudge for ${ctx.name || 'my friend'}.
-Time of day: ${ctx.timeOfDay}
+Their local time: ${String(ctx.timeOfDay ?? '').slice(0, 40)}
 Goal: ${ctx.goal}
 Streak: ${ctx.streak} days
 Meals logged today: ${ctx.mealsLogged} (${ctx.recentMeals.join(', ') || 'nothing yet'})
@@ -616,7 +616,7 @@ Protein: ${Math.round(ctx.protein)} of ${Math.round(ctx.proteinTarget)} g
 Fibre so far: ${Math.round(ctx.fibre)} g
 Water: ${ctx.water} of ${ctx.waterTarget} glasses
 
-Pick the one thing most worth mentioning right now and say it kindly.`,
+Pick the one thing most worth mentioning right now and say it kindly. Fit it to the time given: no "good morning" in the evening, and late at night nothing that asks them to eat or drink more.`,
       },
     ],
   });
