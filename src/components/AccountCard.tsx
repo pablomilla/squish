@@ -241,7 +241,7 @@ function Trouble({ says }: { says: string | null }) {
   );
 }
 
-function Credentials({
+export function Credentials({
   submit,
   hint,
   onSubmit,
@@ -297,7 +297,7 @@ function Credentials({
   );
 }
 
-function Forgot({ onDone }: { onDone: () => void }) {
+export function Forgot({ onDone }: { onDone: () => void }) {
   const [email, setEmail] = useState('');
   const { busy, trouble, go } = useSubmit(() => requestReset(email), onDone);
 

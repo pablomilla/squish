@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
-import { Segmented } from '../components/ui';
+import { Segmented, Sheet, useToast } from '../components/ui';
+import { Credentials, Forgot } from '../components/AccountCard';
+import { signIn, type Arrived } from '../lib/account';
+import { pullDiary } from '../lib/backup';
+import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { useSquish, DEFAULT_PROFILE } from '../store/useSquish';
@@ -20,10 +24,37 @@ const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string }> =
   gain: { title: 'Build up', blurb: 'A little surplus to grow on', emoji: '💪' },
 };
 
-export default function Onboarding() {
+/**
+ * First run. `accounts` is whether this Squish keeps anything on the server —
+ * where it does, somebody arriving on a new phone can sign in here and get
+ * their diary back, rather than being walked through making a profile they
+ * already have.
+ */
+export default function Onboarding({ accounts = false }: { accounts?: boolean }) {
   const completeOnboarding = useSquish((s) => s.completeOnboarding);
   const [step, setStep] = useState<Step>('welcome');
   const [draft, setDraft] = useState<Profile>(DEFAULT_PROFILE);
+  const [signing, setSigning] = useState<'in' | 'forgot' | null>(null);
+  const toast = useToast();
+
+  /**
+   * Signed in: bring the account's diary onto this device. With a profile in
+   * it, that is the whole of onboarding — the app opens on their diary. With
+   * none (an account made but never used), they are signed in and carry on
+   * setting up, and the backup starts from what they make here.
+   */
+  const arrived = async (who: Arrived) => {
+    setSigning(null);
+    const found = await pullDiary();
+    const profile = (found?.state as { profile?: Partial<Profile> } | null)?.profile;
+    if (found && profile?.onboarded) {
+      adoptBackup(found);
+      toast(`Welcome back${profile.name ? `, ${profile.name}` : ''}. Your diary is here.`, '🫧');
+      return;
+    }
+    toast(`Signed in as ${who.email ?? 'you'}. There is no diary saved yet, so let's set one up.`, '🫧');
+    setStep('about');
+  };
 
   const index = STEPS.indexOf(step);
   const targets = useMemo(() => computeTargets(draft), [draft]);
@@ -229,6 +260,38 @@ export default function Onboarding() {
             </button>
           )}
         </div>
+        {step === 'welcome' && accounts && (
+          <button type="button" className="btn btn--quiet onboard-signin" onClick={() => setSigning('in')}>
+            I already have an account
+          </button>
+        )}
+
+        <Sheet
+          open={signing !== null}
+          onClose={() => setSigning(null)}
+          title={signing === 'forgot' ? 'Forgotten password' : 'Sign in'}
+        >
+          {signing === 'in' && (
+            <Credentials
+              submit="Sign in"
+              onSubmit={signIn}
+              onDone={(who) => void arrived(who)}
+              footer={
+                <button type="button" className="linkish tiny" onClick={() => setSigning('forgot')}>
+                  I have forgotten my password
+                </button>
+              }
+            />
+          )}
+          {signing === 'forgot' && (
+            <Forgot
+              onDone={() => {
+                setSigning(null);
+                toast('If that address has an account, a link is on its way.', '📮');
+              }}
+            />
+          )}
+        </Sheet>
       </div>
     </div>
   );

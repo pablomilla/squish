@@ -11,7 +11,7 @@
  * could interrupt somebody logging their lunch would be worse than no backup.
  */
 import { useSquish } from '../store/useSquish';
-import { knownVersion, pushDiary, rememberVersion, type BackupState } from './backup';
+import { knownVersion, pushDiary, rememberVersion, type BackupState, type RemoteDiary } from './backup';
 
 /** Long enough that a burst of edits is one push, short enough to be a backup. */
 const QUIET_MS = 6_000;
@@ -105,6 +105,19 @@ export function startBackup(enabled: boolean): () => void {
     document.removeEventListener('visibilitychange', onHide);
     clearTimeout(timer);
   };
+}
+
+/**
+ * Make a backup this device's diary — Restore on the You screen, and signing
+ * in on a new phone.
+ *
+ * Merged over the current state rather than replacing it, so a key this
+ * version has and the backup does not keeps its default instead of becoming
+ * undefined halfway down the app.
+ */
+export function adoptBackup(found: RemoteDiary): void {
+  useSquish.setState(found.state as Partial<ReturnType<typeof useSquish.getState>>);
+  resumeBackup(found.version);
 }
 
 /** After a restore or a resolved conflict: this browser is the truth again. */

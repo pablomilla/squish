@@ -144,7 +144,7 @@ function Shell() {
   if (!onboarded)
     return (
       <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
-        <Onboarding />
+        <Onboarding accounts={keepsData} />
       </Suspense>
     );
 

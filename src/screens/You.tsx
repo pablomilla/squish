@@ -8,7 +8,7 @@ import { disableReminders, enableReminders, explainBlocker, reminderSupport, typ
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
-import { backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
+import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { PLUS, planNow, redeemInvite, watchStanding, type Standing } from '../lib/plan';
 import { useSquish } from '../store/useSquish';
@@ -769,11 +769,7 @@ function BackupCard() {
       return;
     }
     setBusy(true);
-    // Merged over the current state rather than replacing it, so a key this
-    // version has and the backup does not keeps its default instead of
-    // becoming undefined halfway down the app.
-    useSquish.setState(found.state as Partial<ReturnType<typeof useSquish.getState>>);
-    resumeBackup(found.version);
+    adoptBackup(found);
     setBusy(false);
     toast('Restored from your backup.', '📦');
   };
