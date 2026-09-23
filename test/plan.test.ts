@@ -3,7 +3,7 @@ import { test, before, after } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { registerDevice, spend } from '../server/identity';
 import { signUp } from '../server/accounts';
-import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth } from '../server/plan';
+import { ALLOWANCE, PERIOD, allowanceFor, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, usedThisMonth } from '../server/plan';
 
 /**
  * Tiers, against a real Postgres.
@@ -65,13 +65,67 @@ when('a subscription that has run out is free again, with nothing having to run'
 
 /* ---------------- what that entitles them to ---------------- */
 
-when('the free plan gets a taste of photos and no nutritionist', async () => {
-  // Straight from docs/monetisation.md: everything cheap to serve is free,
-  // the nutritionist is the thing with the biggest bill attached.
-  assert.ok(ALLOWANCE.free.photo > 0, 'somebody has to be able to try the analysis');
+when('the free plan gets a taste of the analysis, and nothing else that costs money', async () => {
+  // Straight from docs/monetisation.md: everything cheap to serve is free, and
+  // of the AI, only enough to find out whether it is any good.
+  assert.equal(ALLOWANCE.free.photo, 5, 'somebody has to be able to try the analysis');
   assert.equal(ALLOWANCE.free.chat, 0);
+  assert.equal(ALLOWANCE.free.recipe, 0);
   assert.ok(ALLOWANCE.plus.photo > ALLOWANCE.free.photo);
   assert.ok(ALLOWANCE.plus.chat > 0);
+});
+
+when('the free taste is once, and Plus is by the month', async () => {
+  // A monthly free allowance is a bill that grows with every free user who
+  // never pays. A taste costs once per person.
+  assert.equal(PERIOD.free, 'ever');
+  assert.equal(PERIOD.plus, 'month');
+});
+
+when('the taste needs an account; a signed-out browser is told so, not given it', async () => {
+  const device = await registerDevice();
+  const me = { id: device.id, accountId: null };
+  assert.deepEqual(allowanceFor(me, 'free'), { photo: 0, chat: 0, recipe: 0 });
+  assert.equal(needsAccount(me, 'free'), true);
+
+  const standing = await standingOf(me);
+  assert.equal(standing.needsAccount, true);
+  assert.equal(standing.left.photo, 0);
+
+  const { device: signedIn } = await anAccount(null);
+  assert.equal(needsAccount(signedIn, 'free'), false);
+  assert.equal((await standingOf(signedIn)).left.photo, ALLOWANCE.free.photo);
+});
+
+when('the taste does not come back next month', async () => {
+  const { device } = await anAccount(null);
+  for (let i = 0; i < ALLOWANCE.free.photo; i++) await spend(device.id, 'photo');
+  // Move all of it into last month: a monthly count would forget it, the taste must not.
+  await query("update usage set day = (date_trunc('month', current_date) - interval '1 day')::date where device_id = $1", [device.id]);
+
+  assert.equal(await usedThisMonth(device, 'photo'), 0, 'a monthly count forgets it');
+  assert.equal(await usedFor(device, 'photo', 'free'), ALLOWANCE.free.photo, 'the taste does not');
+  assert.equal((await standingOf(device)).left.photo, 0);
+});
+
+when('a second account in the same browser does not get a second taste', async () => {
+  const { device } = await anAccount(null);
+  for (let i = 0; i < ALLOWANCE.free.photo; i++) await spend(device.id, 'photo');
+
+  // The same browser, now signed into a brand-new account.
+  const other = await signUp(device.id, anEmail(), 'four random words');
+  assert.ok(other.ok);
+  const again = { id: device.id, accountId: other.account.id };
+  assert.equal((await standingOf(again)).left.photo, 0);
+});
+
+when('a subscriber who lapses to free has already had their taste', async () => {
+  const { device, id } = await anAccount(30);
+  for (let i = 0; i < 20; i++) await spend(device.id, 'photo');
+  await query("update accounts set plus_until = now() - interval '1 day' where id = $1", [id]);
+  const standing = await standingOf(device);
+  assert.equal(standing.plan, 'free');
+  assert.equal(standing.left.photo, 0);
 });
 
 when('Plus has an allowance too', async () => {

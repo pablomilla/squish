@@ -7,7 +7,7 @@ import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { NumberField } from '../components/fields';
 import { useSquish } from '../store/useSquish';
-import { refineAnalysis } from '../lib/api';
+import { isPaywalled, refineAnalysis } from '../lib/api';
 import { savePhoto } from '../lib/photos';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
 import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
@@ -112,7 +112,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       setFix('');
       toast('Sorted — have a look', '✨');
     } catch (error) {
-      toast(error instanceof Error ? error.message : 'I could not work that out.', '😅');
+      if (!isPaywalled(error)) toast(error instanceof Error ? error.message : 'I could not work that out.', '😅');
     } finally {
       setFixing(false);
     }

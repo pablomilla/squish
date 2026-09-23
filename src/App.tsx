@@ -17,7 +17,7 @@ import { savePhoto, watchPhotos } from './lib/photos';
 import { isOversized, rehomePhotos } from './lib/rehome';
 import { refreshPlan, watchPlan } from './lib/plan';
 import { onPaywall } from './lib/paywall';
-import { resetTokenInUrl } from './lib/account';
+import { askForAccount, resetTokenInUrl } from './lib/account';
 
 /*
  * Home and the waking screen arrive with the app, because they are the first
@@ -261,7 +261,15 @@ function Shell() {
       {/* Only fetched the first time somebody actually runs out of something. */}
       {paywall && (
         <Suspense fallback={null}>
-          <Paywall standing={paywall} onClose={() => setPaywall(null)} />
+          <Paywall
+            standing={paywall}
+            onClose={() => setPaywall(null)}
+            onCreateAccount={() => {
+              setPaywall(null);
+              askForAccount();
+              setRoute({ name: 'you' });
+            }}
+          />
         </Suspense>
       )}
     </div>

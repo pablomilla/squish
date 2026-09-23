@@ -166,3 +166,30 @@ export const signOutEverywhere = (password: string): Promise<Done<{ signedOut?: 
 /** Send the confirmation link again. */
 export const resendVerification = (): Promise<Done<{ result?: 'sent' | 'already' }>> =>
   ask('POST', '/api/account/verify');
+
+/* ---------------- Asking for an account from elsewhere ---------------- */
+
+/**
+ * The paywall asks for an account ("your first five are on us"), but the form
+ * lives on the You screen, which may not have been opened yet. So the ask is
+ * remembered until the account card is there to take it.
+ */
+let accountAsked = false;
+const askListeners = new Set<() => void>();
+
+export function askForAccount(): void {
+  accountAsked = true;
+  for (const listener of askListeners) listener();
+}
+
+/** Called by the account card: runs `open` now if an ask is waiting, and on any later one. */
+export function onAccountAsked(open: () => void): () => void {
+  const take = () => {
+    if (!accountAsked) return;
+    accountAsked = false;
+    open();
+  };
+  askListeners.add(take);
+  take();
+  return () => askListeners.delete(take);
+}

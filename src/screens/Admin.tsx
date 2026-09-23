@@ -193,8 +193,8 @@ function Dashboard({
               </div>
             )}
             <p className="tiny muted" style={{ marginTop: 10 }}>
-              What Anthropic charged, added up per call — not an estimate. Free gets{' '}
-              {overview.allowances.free.photo} photos a month; {PLUS} gets {overview.allowances.plus.photo} and{' '}
+              What Anthropic charged, added up per call — not an estimate. Free gets a one-off taste of{' '}
+              {overview.allowances.free.photo} analyses; {PLUS} gets {overview.allowances.plus.photo} a month and{' '}
               {overview.allowances.plus.chat} questions.
             </p>
           </section>

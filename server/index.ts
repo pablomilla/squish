@@ -27,7 +27,7 @@ import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
 import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
 import { renderEmail } from './emailRender';
-import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth, type Billable, type Plan } from './plan';
+import { ALLOWANCE, PERIOD, allowanceFor, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, type Billable, type Plan } from './plan';
 import {
   createInvite,
   deleteInvite,
@@ -215,12 +215,30 @@ function meter(kind: Spend) {
       }
 
       const plan = await planFor(req.device);
-      const allowance = ALLOWANCE[plan][kind];
+      const allowance = allowanceFor(req.device, plan)[kind];
+
+      // Signed out, on the free plan: nothing is spent and nothing is served,
+      // but the answer says an account would change that.
+      if (allowance === 0 && needsAccount(req.device, plan) && ALLOWANCE.free[kind] > 0) {
+        res.status(402).json({
+          error: 'out_of_allowance',
+          plan,
+          kind,
+          used: 0,
+          allowance: 0,
+          period: PERIOD[plan],
+          needsAccount: true,
+          taste: ALLOWANCE.free[kind],
+          resets: null,
+          message: `Make a free account and your first ${ALLOWANCE.free[kind]} ${KIND_WORDS[kind]} are on us.`,
+        });
+        return;
+      }
 
       // Counted first, then compared, so two requests at once cannot both see
       // the last one free.
       await spend(req.device.id, kind);
-      const used = await usedThisMonth(req.device, kind);
+      const used = await usedFor(req.device, kind, plan);
 
       if (used <= allowance) {
         // Everything downstream of here runs with somewhere to put its bill.
@@ -234,7 +252,9 @@ function meter(kind: Spend) {
         kind,
         used,
         allowance,
-        resets: nextReset(),
+        period: PERIOD[plan],
+        needsAccount: false,
+        resets: PERIOD[plan] === 'month' ? nextReset() : null,
         message: OUT_OF[plan][kind],
       });
       return;
@@ -254,14 +274,20 @@ function meter(kind: Spend) {
  * free user has somewhere to go; somebody already paying does not, and telling
  * them to upgrade would be both useless and insulting.
  */
+const KIND_WORDS: Record<Billable, string> = {
+  photo: 'AI meal analyses',
+  chat: 'questions for the nutritionist',
+  recipe: 'recipe imports',
+};
+
 const OUT_OF: Record<Plan, Record<Billable, string>> = {
   free: {
-    photo: `That is this month's photo analyses on the free plan. ${PLUS} raises it, and the free ones come back on the 1st.`,
+    photo: `That was your free taste of the AI. ${PLUS} has ${ALLOWANCE.plus.photo} analyses a month — and logging by hand, food search and your diary stay free.`,
     chat: `The nutritionist is part of ${PLUS}.`,
-    recipe: `That is this month's recipe imports on the free plan. ${PLUS} raises it, and they come back on the 1st.`,
+    recipe: `Recipe imports are part of ${PLUS}.`,
   },
   plus: {
-    photo: `That is this month's photo analyses. They come back on the 1st — logging by hand and food search are unaffected.`,
+    photo: `That is this month's AI meal analyses. They come back on the 1st — logging by hand and food search are unaffected.`,
     chat: `That is this month's questions for the nutritionist. They come back on the 1st.`,
     recipe: `That is this month's recipe imports. They come back on the 1st.`,
   },
@@ -464,6 +490,8 @@ app.get('/api/allowance', async (req, res) => {
       known: true,
       account: Boolean(req.device.accountId),
       resets: nextReset(),
+      // How big the taste an account would unlock is, for the signed-out.
+      taste: ALLOWANCE.free.photo,
       // So the app only offers a code box where codes exist.
       invites: await invitesExist(),
       // And only shows the dashboard to somebody who can use it.
@@ -1520,7 +1548,7 @@ app.listen(PORT, () => {
   }
   console.log(
     hasDatabase()
-      ? `    Free: ${ALLOWANCE.free.photo} photos a month · ${PLUS}: ${ALLOWANCE.plus.photo} photos, ${ALLOWANCE.plus.chat} questions`
+      ? `    Free: a taste of ${ALLOWANCE.free.photo} analyses, once · ${PLUS}: ${ALLOWANCE.plus.photo} a month, ${ALLOWANCE.plus.chat} questions`
       : `    No database — no tiers, no accounts, and nothing counted. Everything is open.`,
   );
   console.log(SERVE_APP ? '    Serving the built app from dist/' : '    API only (run Vite for the app).');

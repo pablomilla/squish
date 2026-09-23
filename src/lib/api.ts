@@ -30,14 +30,26 @@ export class SquishApiError extends Error {
   }
 }
 
+/**
+ * Whether the paywall has already said what there is to say about this error.
+ * Screens use it to stay quiet rather than repeat it as a toast underneath.
+ */
+export const isPaywalled = (error: unknown): boolean =>
+  error instanceof SquishApiError && error.kind === 'out_of_allowance';
+
 /** What the server says when an allowance has run out. */
 export interface OutOfAllowance {
   plan: 'free' | 'plus';
   kind: 'photo' | 'chat' | 'recipe';
   used: number;
   allowance: number;
-  /** ISO date when the month rolls over and it comes back. */
-  resets: string;
+  /** 'month' for Plus; 'ever' for the free taste, which does not come back. */
+  period?: 'month' | 'ever';
+  /** Signed out on the free plan: an account would unlock `taste` of these. */
+  needsAccount?: boolean;
+  taste?: number;
+  /** ISO date when the month rolls over and it comes back; null for the free taste. */
+  resets: string | null;
   message: string;
 }
 

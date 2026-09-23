@@ -139,7 +139,7 @@ If the dashboard's **Blueprints** list is empty, it was by hand.
 | Setting | What it is |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Your key. Lives in the host's dashboard, never in the repo. |
-| `SQUISH_FREE_PHOTOS` | Photo analyses a month on the free plan. Default 10. |
+| `SQUISH_FREE_TASTE` | AI analyses a free account gets to try, once — not monthly. Default 5. |
 | `SQUISH_PLUS_PHOTOS` | And on Squish Plus. Default 60. |
 | `SQUISH_PLUS_CHATS` | Nutritionist questions a month on Plus. Default 30. |
 | `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
@@ -185,8 +185,14 @@ retakes them, and `npm run build:site-art` re-exports the mascot and wordmark fr
 The line between them falls out of what each action costs to serve, not out of preference, and the
 arithmetic is in [`docs/monetisation.md`](docs/monetisation.md). Free is everything that is nearly
 free to run — logging by hand, food search, the diary, charts, streaks, the earned colourways,
-export — plus a taste of photo analysis. Plus is the part with a bill attached: more photo
-analyses, the nutritionist, and the Plus colourways.
+export — plus a one-off taste of the AI: 5 analyses, with a free account, that never reset. Plus
+is the part with a bill attached: AI meal analyses, the nutritionist, recipe imports and the Plus
+colourways.
+
+The taste is once rather than monthly on purpose. A monthly free allowance is a bill that grows
+with every free user who never pays, and with a few per cent converting it cost more than the
+subscribers' own AI. It needs an account so that clearing a browser is not a fresh taste, and it is
+also counted per browser, so a second account in the same one does not start it again.
 
 Plus has an allowance too. A heavy user costs more per month than Plus charges, so without a ceiling
 the best customers would be the ones losing the most money.

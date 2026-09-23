@@ -23,9 +23,11 @@ import {
   signUp,
   resendVerification,
   whoAmI,
+  onAccountAsked,
   type Arrived,
   type Who,
 } from '../lib/account';
+import { planNow } from '../lib/plan';
 import './account-card.css';
 
 type Form = 'in' | 'up' | 'forgot' | 'password' | 'devices' | 'delete' | null;
@@ -44,6 +46,15 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
   const [form, setForm] = useState<Form>(null);
   const toast = useToast();
 
+  // Sent here by the paywall to make an account: open the form and bring it into view.
+  useEffect(() => {
+    if (!enabled) return;
+    return onAccountAsked(() => {
+      setForm('up');
+      document.querySelector('.account-card')?.scrollIntoView({ block: 'center' });
+    });
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled) return;
     let live = true;
@@ -58,7 +69,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
   if (!enabled) return null;
 
   return (
-    <section className="card card--quiet">
+    <section className="card card--quiet account-card">
       <div className="card-title">
         <h3>Account</h3>
         {who.signedIn && <span className="badge badge--good">Signed in</span>}
@@ -156,10 +167,15 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             onDone={(arrived) => {
               setForm(null);
               void whoAmI().then(setWho);
+              const taste = planNow().plan === 'free' ? planNow().left.photo : 0;
               toast(
-                arrived.verificationSent
-                  ? 'Account made. Check your email to confirm the address.'
-                  : 'Account made. Your diary came with you.',
+                [
+                  'Account made.',
+                  taste > 0 ? `Your ${taste} free AI analyses are ready.` : 'Your diary came with you.',
+                  arrived.verificationSent ? 'Check your email to confirm the address.' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' '),
                 '🫧',
               );
             }}

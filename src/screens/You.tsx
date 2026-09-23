@@ -838,7 +838,7 @@ function PlanCard({ standing }: { standing: Standing }) {
 
   const plus = standing.plan === 'plus';
   const rows: { label: string; kind: 'photo' | 'chat' | 'recipe' }[] = [
-    { label: 'Photo analyses', kind: 'photo' },
+    { label: 'AI meal analyses', kind: 'photo' },
     { label: 'Nutritionist questions', kind: 'chat' },
     { label: 'Recipe imports', kind: 'recipe' },
   ];
@@ -856,10 +856,14 @@ function PlanCard({ standing }: { standing: Standing }) {
           <div className="plan-row" key={row.kind}>
             <span className="tiny">{row.label}</span>
             <b className="small">
-              {standing.allowance[row.kind] === 0 ? (
+              {row.kind === 'photo' && standing.needsAccount ? (
+                <span className="muted">{standing.taste} free with an account</span>
+              ) : standing.allowance[row.kind] === 0 ? (
                 <span className="muted">{PLUS}</span>
-              ) : (
+              ) : plus ? (
                 `${standing.left[row.kind]} of ${standing.allowance[row.kind]} left`
+              ) : (
+                `${standing.left[row.kind]} of ${standing.allowance[row.kind]} free left`
               )}
             </b>
           </div>
@@ -867,7 +871,11 @@ function PlanCard({ standing }: { standing: Standing }) {
       </div>
 
       <p className="tiny muted" style={{ marginTop: 10 }}>
-        {standing.resets ? `The month starts again on ${friendlyDate(standing.resets.slice(0, 10)).toLowerCase()}. ` : ''}
+        {plus && standing.resets
+          ? `The month starts again on ${friendlyDate(standing.resets.slice(0, 10)).toLowerCase()}. `
+          : standing.needsAccount
+            ? `Make a free account below to try ${standing.taste} AI meal analyses. `
+            : 'The free analyses are a one-off taste of the AI; they do not reset. '}
         Logging by hand, food search, your diary and the charts are free and always will be.
       </p>
 

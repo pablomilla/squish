@@ -86,14 +86,41 @@ The free/paid line falls out of the costs rather than being chosen:
 
 | Free, forever | Paid |
 |---|---|
-| Manual logging, food search, favourites | Photo analysis, beyond a small monthly allowance |
+| Manual logging, food search, barcodes, favourites | AI meal analysis — photo or description — after a one-off taste of 5 |
 | The diary, charts, streaks, achievements | The nutritionist |
-| The earned colourways | The Plus colourways |
-| Export | |
+| The earned colourways | Recipe imports |
+| Export | The Plus colourways |
 
 Everything on the left is near-free to serve, so there is no reason to gate it,
 and gating it would make the app useless to somebody deciding whether to pay.
 Everything on the right is the part with a bill attached.
+
+### Why the free AI is a taste, not an allowance
+
+Until 23 September 2026 the free plan had 10 AI analyses and 2 recipe imports
+**every month**. The costing (`squish-costing` calculator, and the figures
+below) showed that to be the biggest cost in the business: at 5% of active
+users paying, there are 19 free users behind every subscriber, and at 1,000
+active users their AI came to about £120 a month — more than the subscribers'
+own, and about 70% of everything that reached the company. It grows with every
+free user who never pays, so growth made the loss bigger, not smaller.
+
+So the free plan is now a diary, which costs almost nothing to run, plus a
+**one-off taste** of 5 analyses. That answers the only question a free user is
+asking — is the analysis any good? — at a capped cost of about 12p per person,
+once. The taste:
+
+- **needs an account**, so clearing a browser is not a fresh taste;
+- is **counted per browser as well as per account**, so a second account in
+  the same browser does not start it again;
+- is **already spent** for anybody who has used 5 analyses before, including a
+  subscriber whose Plus lapses.
+
+At 300 new accounts a month that is about £36 a month on Opus 5, flat, rather
+than a free-user bill that grows without end. Running the taste on Sonnet 5
+would make it about £14; it stays on Opus 5 for now, because the taste is the
+thing somebody decides to pay for, and it should be the analysis they would
+get.
 
 ## The cosmetics layer
 

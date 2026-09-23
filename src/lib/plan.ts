@@ -19,10 +19,18 @@ import { deviceToken } from './identity';
 export type Plan = 'free' | 'plus';
 export type Billable = 'photo' | 'chat' | 'recipe';
 
+export type Period = 'month' | 'ever';
+
 export interface Standing {
   /** False until the server has answered once. */
   known: boolean;
   plan: Plan;
+  /** 'month' comes back on the 1st (Plus); 'ever' is the free taste, which does not. */
+  period: Period;
+  /** Signed out on the free plan: an account would unlock a taste of the AI. */
+  needsAccount: boolean;
+  /** How many free analyses an account unlocks. */
+  taste: number;
   used: Record<Billable, number>;
   allowance: Record<Billable, number>;
   left: Record<Billable, number>;
@@ -47,7 +55,7 @@ export interface Standing {
 const NONE: Record<Billable, number> = { photo: 0, chat: 0, recipe: 0 };
 
 /** Free, and knowing nothing: what everything starts as and falls back to. */
-const UNKNOWN: Standing = { known: false, plan: 'free', used: NONE, allowance: NONE, left: NONE, resets: null, off: false, invites: false, account: false, admin: false };
+const UNKNOWN: Standing = { known: false, plan: 'free', period: 'ever', needsAccount: false, taste: 0, used: NONE, allowance: NONE, left: NONE, resets: null, off: false, invites: false, account: false, admin: false };
 
 let standing: Standing = UNKNOWN;
 const listeners = new Set<(standing: Standing) => void>();
@@ -86,6 +94,9 @@ export async function refreshPlan(): Promise<Standing> {
       known: true,
       off: false,
       plan: body.plan === 'plus' ? 'plus' : 'free',
+      period: body.period === 'month' ? 'month' : 'ever',
+      needsAccount: Boolean(body.needsAccount),
+      taste: Number(body.taste) || 0,
       used: { ...NONE, ...body.used },
       allowance: { ...NONE, ...body.allowance },
       left: { ...NONE, ...body.left },

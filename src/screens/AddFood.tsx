@@ -8,7 +8,7 @@ import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../compon
 import { useSquish } from '../store/useSquish';
 import { searchFoods, toFoodItem } from '../lib/foods';
 import { qualityScore, scaleNutrients, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
-import { analyseText, importRecipe, SquishApiError, type RecipeImport } from '../lib/api';
+import { analyseText, importRecipe, isPaywalled, SquishApiError, type RecipeImport } from '../lib/api';
 import { slotForNow } from '../lib/date';
 import './addfood.css';
 import { describePortion } from '../lib/units';
@@ -93,7 +93,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
       setRecipe(imported);
       setHelpings(1);
     } catch (error) {
-      toast(error instanceof SquishApiError ? error.message : 'That recipe could not be read.', '📖');
+      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'That recipe could not be read.', '📖');
     } finally {
       setBusy(false);
     }
@@ -141,7 +141,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
       }
       onReady(analysis, { slot: analysis.slot ?? mealSlot, date });
     } catch (error) {
-      toast(error instanceof SquishApiError ? error.message : 'That did not work — give it another go.', '😕');
+      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'That did not work — give it another go.', '😕');
       setBusy(false);
     }
   };

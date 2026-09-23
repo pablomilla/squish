@@ -4,7 +4,7 @@ import DictateButton from '../components/DictateButton';
 import { CloseIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { useToast } from '../components/ui';
 import { useSquish } from '../store/useSquish';
-import { askNutritionist, SquishApiError, type ChatMessage } from '../lib/api';
+import { askNutritionist, isPaywalled, SquishApiError, type ChatMessage } from '../lib/api';
 import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
 import { contextFor } from '../lib/nutritionist-session';
 import { isoDate } from '../lib/date';
@@ -132,7 +132,7 @@ export default function Ask({ onClose }: { onClose: () => void }) {
       setWire(wire);
       setBubbles((current) => current.filter((b, i) => !(i === current.length - 1 && b.role === 'user')));
       setDraft(text);
-      toast(error instanceof SquishApiError ? error.message : 'I could not answer just then.', '💭');
+      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'I could not answer just then.', '💭');
     } finally {
       setThinking(false);
       setLookups([]);

@@ -34,7 +34,7 @@ services:
       # The tiers. Optional — the defaults in server/plan.ts are the ones the
       # price was set against, and the arithmetic behind them is in
       # docs/monetisation.md. Set these only to change policy.
-      - key: SQUISH_FREE_PHOTOS
+      - key: SQUISH_FREE_TASTE
         sync: false
       - key: SQUISH_PLUS_PHOTOS
         sync: false

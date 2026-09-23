@@ -5,17 +5,29 @@
  * what each action costs, and it is written down in docs/monetisation.md.
  * Everything cheap to serve is free forever: manual logging, food search, the
  * diary, charts, streaks, the earned colourways, export. Everything with a
- * bill attached is Plus: photo analysis beyond a taste of it, the
+ * bill attached is Plus: AI meal analysis beyond a one-off taste of it, the
  * nutritionist, recipe import, and the Plus colourways.
  *
- * Two things about the allowances are deliberate and easy to get wrong later.
+ * **Free gets a taste, once — not an allowance every month.** A monthly free
+ * allowance is a bill that grows with every free user who ever signs up and
+ * never pays; with a few per cent converting, it came to more than the
+ * subscribers' own AI (see docs/monetisation.md). A taste is a one-off cost
+ * per person, capped, and it answers the only question a free user is asking
+ * — is the analysis any good? — just as well.
+ *
+ * **The taste needs an account.** Otherwise clearing a browser's data is a
+ * fresh taste, for ever. It is also counted against the browser, so making a
+ * second account in the same one does not start it again.
+ *
+ * Two more things about the allowances are deliberate and easy to get wrong
+ * later.
  *
  * **Plus has an allowance too.** A heavy user costs more per month than Plus
  * charges, so without a ceiling the best customers are the ones losing the
  * most money. The numbers below are the "moderate" profile from the costings —
  * two photos and a question a day — which is what the price was set against.
  *
- * **They are monthly, not daily.** A daily cap punishes the person who logs a
+ * **Plus's are monthly, not daily.** A daily cap punishes the person who logs a
  * week's meals on Sunday evening and lets a steady user spend twice as much.
  * The month is the billing period, so the month is the budget.
  *
@@ -40,11 +52,10 @@ const count = (name: string, fallback: number): number => {
 };
 
 /**
- * What each tier gets a month.
+ * What each tier gets: Plus a month, free once — see PERIOD.
  *
- * Free is a taste of the thing that costs money and none of the thing that
- * costs most. Ten photos is enough to find out whether the analysis is any
- * good, which is the only question somebody deciding whether to pay is asking.
+ * Free is five AI analyses — a photo or a description — and nothing else that
+ * costs money. Enough to find out whether the analysis is any good.
  *
  * Plus at 60 photos and 30 questions is at most about $3.40 (£2.65) of usage.
  * Against £6.99 a month that leaves room after VAT and the stores' cut, and
@@ -53,9 +64,9 @@ const count = (name: string, fallback: number): number => {
  */
 export const ALLOWANCE: Record<Plan, Record<Billable, number>> = {
   free: {
-    photo: count('SQUISH_FREE_PHOTOS', 10),
+    photo: count('SQUISH_FREE_TASTE', 5),
     chat: count('SQUISH_FREE_CHATS', 0),
-    recipe: count('SQUISH_FREE_RECIPES', 2),
+    recipe: count('SQUISH_FREE_RECIPES', 0),
   },
   plus: {
     photo: count('SQUISH_PLUS_PHOTOS', 60),
@@ -63,6 +74,26 @@ export const ALLOWANCE: Record<Plan, Record<Billable, number>> = {
     recipe: count('SQUISH_PLUS_RECIPES', 30),
   },
 };
+
+export type Period = 'month' | 'ever';
+
+/** How each tier's allowance is counted: Plus by the month, free once. */
+export const PERIOD: Record<Plan, Period> = { free: 'ever', plus: 'month' };
+
+const NOTHING: Record<Billable, number> = { photo: 0, chat: 0, recipe: 0 };
+
+/**
+ * What this device may spend on its plan. A signed-out device on the free
+ * plan gets nothing: the taste belongs to an account.
+ */
+export function allowanceFor(device: Device, plan: Plan): Record<Billable, number> {
+  if (plan === 'free' && !device.accountId) return NOTHING;
+  return ALLOWANCE[plan];
+}
+
+/** Whether signing up would give this device something to try. */
+export const needsAccount = (device: Device, plan: Plan): boolean =>
+  plan === 'free' && !device.accountId && BILLABLE.some((kind) => ALLOWANCE.free[kind] > 0);
 
 /**
  * The tier this device is on.
@@ -103,8 +134,34 @@ export async function usedThisMonth(device: Device, kind: Billable): Promise<num
   return Number(rows[0]?.used ?? 0);
 }
 
+/**
+ * Everything this person has ever spent of one kind — the free taste's count.
+ *
+ * The larger of the person's total and this browser's, so a second account
+ * made in the same browser starts where the first left off.
+ */
+export async function usedEver(device: Device, kind: Billable): Promise<number> {
+  const owner = device.accountId ?? device.id;
+  const rows = await query<{ person: string; here: string }>(
+    `select
+       coalesce((select sum(u.count) from usage u join devices d on d.id = u.device_id
+                  where coalesce(d.account_id, d.id) = $1 and u.kind = $3), 0) as person,
+       coalesce((select sum(count) from usage where device_id = $2 and kind = $3), 0) as here`,
+    [owner, device.id, kind],
+  );
+  return Math.max(Number(rows[0]?.person ?? 0), Number(rows[0]?.here ?? 0));
+}
+
+/** What counts against this plan's allowance: this month's for Plus, all of it for free. */
+export const usedFor = (device: Device, kind: Billable, plan: Plan): Promise<number> =>
+  PERIOD[plan] === 'ever' ? usedEver(device, kind) : usedThisMonth(device, kind);
+
 export interface Standing {
   plan: Plan;
+  /** How the allowance is counted: 'month' comes back on the 1st, 'ever' does not. */
+  period: Period;
+  /** A signed-out device on the free plan, which an account would give a taste to. */
+  needsAccount: boolean;
   used: Record<Billable, number>;
   allowance: Record<Billable, number>;
   left: Record<Billable, number>;
@@ -113,13 +170,15 @@ export interface Standing {
 /** Everything the app needs to know to show a paywall before somebody hits it. */
 export async function standingOf(device: Device): Promise<Standing> {
   const plan = await planFor(device);
-  const allowance = ALLOWANCE[plan];
+  const allowance = allowanceFor(device, plan);
   const used = Object.fromEntries(
-    await Promise.all(BILLABLE.map(async (kind) => [kind, await usedThisMonth(device, kind)] as const)),
+    await Promise.all(BILLABLE.map(async (kind) => [kind, await usedFor(device, kind, plan)] as const)),
   ) as Record<Billable, number>;
 
   return {
     plan,
+    period: PERIOD[plan],
+    needsAccount: needsAccount(device, plan),
     used,
     allowance,
     left: Object.fromEntries(BILLABLE.map((kind) => [kind, Math.max(0, allowance[kind] - used[kind])])) as Record<Billable, number>,

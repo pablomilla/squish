@@ -22,25 +22,55 @@ import type { OutOfAllowance } from '../lib/api';
 import './paywall.css';
 
 const WHAT: Record<OutOfAllowance['kind'], string> = {
-  photo: 'photo analyses',
+  photo: 'AI meal analyses',
   chat: 'questions for the nutritionist',
   recipe: 'recipe imports',
 };
 
 /** The day the month turns over, said the way a person would say it. */
-function comesBack(iso: string | undefined): string {
+function comesBack(iso: string | null | undefined): string {
   if (!iso) return 'next month';
   const when = new Date(iso);
   if (Number.isNaN(when.getTime())) return 'next month';
   return `on ${when.toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}`;
 }
 
-export default function Paywall({ standing, onClose }: { standing: OutOfAllowance | null; onClose: () => void }) {
+export default function Paywall({
+  standing,
+  onClose,
+  onCreateAccount,
+}: {
+  standing: OutOfAllowance | null;
+  onClose: () => void;
+  /** Take somebody who is signed out to the create-account form. */
+  onCreateAccount: () => void;
+}) {
   const paying = standing?.plan === 'plus';
+  // Signed out on the free plan: the answer is an account, not a subscription.
+  const signUp = Boolean(standing?.needsAccount);
 
   return (
-    <Sheet open={Boolean(standing)} onClose={onClose} title={paying ? 'That is this month' : PLUS}>
-      {standing && (
+    <Sheet open={Boolean(standing)} onClose={onClose} title={paying ? 'That is this month' : signUp ? 'Try it free' : PLUS}>
+      {standing && signUp && (
+        <div className="stack paywall">
+          <Squish mood="excited" size={84} />
+          <p className="small">
+            Make a free account and your first {standing.taste ?? 5} AI meal analyses are on us — snap the plate, or
+            just say what you ate.
+          </p>
+          <p className="tiny muted">
+            An account also keeps a copy of your diary, so a new phone is not a fresh start. Logging by hand, food
+            search and everything else stay free without one.
+          </p>
+          <button type="button" className="btn btn--block" onClick={onCreateAccount}>
+            Make a free account
+          </button>
+          <button type="button" className="btn btn--quiet btn--block" onClick={onClose}>
+            Not now
+          </button>
+        </div>
+      )}
+      {standing && !signUp && (
         <div className="stack paywall">
           <Squish mood={paying ? 'calm' : 'excited'} size={84} />
 
@@ -65,15 +95,18 @@ export default function Paywall({ standing, onClose }: { standing: OutOfAllowanc
               <p className="small">
                 {standing.allowance === 0
                   ? `${WHAT[standing.kind][0].toUpperCase()}${WHAT[standing.kind].slice(1)} come with ${PLUS}.`
-                  : `You have used your ${standing.allowance} free ${WHAT[standing.kind]} this month. They come back ${comesBack(standing.resets)}.`}
+                  : `That was your ${standing.allowance} free AI meal analyses. From here, they are part of ${PLUS}.`}
               </p>
 
               <ul className="paywall-list">
                 <li>
-                  <b>60 photo analyses a month</b> — snap the plate and let Squish work it out
+                  <b>60 AI meal analyses a month</b> — snap the plate, or say or type what you ate
                 </li>
                 <li>
-                  <b>The nutritionist</b> — ask about your own diary, not the internet's
+                  <b>The nutritionist</b> — 30 questions a month about your own diary, not the internet's
+                </li>
+                <li>
+                  <b>30 recipe imports a month</b> — paste a link, get a portion's nutrition
                 </li>
                 <li>
                   <b>Six more colourways</b> for Squish

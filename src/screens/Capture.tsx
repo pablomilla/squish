@@ -5,7 +5,7 @@ import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, useToast } from '../components/ui';
 import { CameraIcon, CloseIcon, FlashIcon, FlipIcon, HelpIcon, ImageIcon, PenIcon } from '../components/icons';
-import { DISPLAY, THUMB, analysePhoto, lookupBarcode, reshrink, shrinkImage } from '../lib/api';
+import { DISPLAY, THUMB, analysePhoto, isPaywalled, lookupBarcode, reshrink, shrinkImage } from '../lib/api';
 import { scanner } from '../lib/barcode';
 import { useSquish } from '../store/useSquish';
 import { slotForNow } from '../lib/date';
@@ -212,10 +212,12 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         ]);
         onAnalysed(analysis, { photo: thumb, photoFull: full, slot: analysis.slot ?? mealSlot, date });
       } catch (error) {
-        toast(
-          error instanceof Error ? error.message : 'I could not read that photo — try again or describe it instead.',
-          '😅',
-        );
+        if (!isPaywalled(error)) {
+          toast(
+            error instanceof Error ? error.message : 'I could not read that photo — try again or describe it instead.',
+            '😅',
+          );
+        }
         setBusy(false);
         setPreview(null);
       }
