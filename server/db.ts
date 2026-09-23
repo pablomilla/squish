@@ -232,6 +232,31 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 7,
+    sql: `
+      -- Whether the address on an account has been shown to belong to whoever
+      -- made it. Null until a link sent to it is followed.
+      --
+      -- It matters for one thing above all: security notices only go to a
+      -- confirmed address. Otherwise anybody could sign up as a stranger and
+      -- have Squish send them mail about an account they never made.
+      alter table accounts add column email_verified_at timestamptz;
+
+      -- Links sent to confirm an address. Hashed, like reset tokens, and kept
+      -- until they expire rather than deleted on first use — mail scanners
+      -- follow links before people do, and somebody clicking theirs after a
+      -- scanner got there first should see "confirmed", not "expired".
+      create table verifications (
+        token_hash text primary key,
+        account_id text not null references accounts(id) on delete cascade,
+        expires_at timestamptz not null,
+        created_at timestamptz not null default now()
+      );
+
+      create index verifications_account on verifications(account_id);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

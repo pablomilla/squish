@@ -19,6 +19,7 @@ export interface Overview {
   allowances: Record<'free' | 'plus', Record<string, number>>;
   invites: Invite[];
   suggestion: string;
+  mailReady: boolean;
 }
 
 export interface Invite {
@@ -42,6 +43,7 @@ export interface Redemption {
 export interface Person {
   id: string;
   email: string;
+  verified: boolean;
   plan: 'free' | 'plus';
   plusUntil: string | null;
   joined: string;
@@ -126,3 +128,21 @@ export const setInviteDisabled = (code: string, disabled: boolean): Promise<unkn
 
 export const deleteInvite = (code: string): Promise<unknown> =>
   ask(`/api/admin/invites/${encodeURIComponent(code)}`, 'DELETE');
+
+export type TestMail = { ok: true; to: string } | { ok: false; message: string };
+
+/** Send the admin one email, to prove the setup works end to end. */
+export async function sendTestMail(): Promise<TestMail> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl('/api/admin/test-mail'), {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const payload = (await response.json().catch(() => ({}))) as { to?: string; message?: string };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'It did not send.' };
+    return { ok: true, to: payload.to ?? '' };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}

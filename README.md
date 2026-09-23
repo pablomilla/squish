@@ -337,7 +337,9 @@ server/           Express API — Claude calls, offline fallback
   identity.ts     Device tokens and what each device has spent today
   diary.ts        The backed-up diary, and refusing a stale write
   accounts.ts     Sign up, sign in, delete, and forgotten passwords
-  mail.ts         One email to send, so: a webhook, or the log
+  mail.ts         Email through a provider's webhook, or the log if there is none
+  verify.ts       Confirming an address belongs to whoever typed it
+  notices.ts      Telling people when their account is signed into or changed
   passwords.ts    Refusing passwords already in a breach, without sending one
   plan.ts         Free and Plus: who is on what, and what that allows
   invites.ts      Codes that turn Plus on, made and retired in the dashboard

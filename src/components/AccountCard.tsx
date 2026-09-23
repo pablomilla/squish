@@ -21,7 +21,9 @@ import {
   signOut,
   signOutEverywhere,
   signUp,
+  resendVerification,
   whoAmI,
+  type Arrived,
   type Who,
 } from '../lib/account';
 import './account-card.css';
@@ -68,6 +70,12 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             Signed in as <b>{who.email}</b>. Your diary follows this address, so a new phone is a sign-in rather than a
             fresh start.
           </p>
+          {who.mailReady && who.verified === false && (
+            <Unconfirmed
+              email={who.email ?? ''}
+              onConfirmed={() => setWho({ ...who, verified: true })}
+            />
+          )}
           <div className="account-actions">
             <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('password')}>
               Change password
@@ -123,6 +131,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             onSubmit={signIn}
             onDone={(arrived) => {
               setWho({ signedIn: true, email: arrived.email });
+              void whoAmI().then(setWho);
               setForm(null);
               toast(
                 arrived.broughtDiary === false
@@ -145,9 +154,14 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             hint="Four words you will remember beats one word with a number on the end."
             onSubmit={signUp}
             onDone={(arrived) => {
-              setWho({ signedIn: true, email: arrived.email });
               setForm(null);
-              toast('Account made. Your diary came with you.', '🫧');
+              void whoAmI().then(setWho);
+              toast(
+                arrived.verificationSent
+                  ? 'Account made. Check your email to confirm the address.'
+                  : 'Account made. Your diary came with you.',
+                '🫧',
+              );
             }}
           />
         )}
@@ -236,8 +250,8 @@ function Credentials({
 }: {
   submit: string;
   hint?: string;
-  onSubmit: (email: string, password: string) => Promise<{ ok: true; email?: string; broughtDiary?: boolean } | { ok: false; message: string }>;
-  onDone: (arrived: { email?: string; broughtDiary?: boolean }) => void;
+  onSubmit: (email: string, password: string) => Promise<({ ok: true } & Arrived) | { ok: false; message: string }>;
+  onDone: (arrived: Arrived) => void;
   footer?: React.ReactNode;
 }) {
   const [email, setEmail] = useState('');
@@ -428,5 +442,52 @@ function ForgetDevices({ count, onDone }: { count: number; onDone: () => void })
         {busy ? 'One moment…' : `Sign ${count === 1 ? 'it' : 'them'} out`}
       </button>
     </form>
+  );
+}
+
+/**
+ * A nudge to confirm the address, and a way to get the link again.
+ *
+ * A nudge, not a wall: nothing in Squish is withheld from an unconfirmed
+ * account. What it changes is whether Squish will email you about your own
+ * account — security notices only go to an address somebody has shown is
+ * theirs — and that is what this says, rather than implying something is
+ * broken.
+ */
+function Unconfirmed({ email, onConfirmed }: { email: string; onConfirmed: () => void }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [trouble, setTrouble] = useState<string | null>(null);
+
+  const again = async () => {
+    setState('sending');
+    setTrouble(null);
+    const done = await resendVerification();
+    if (!done.ok) {
+      setState('idle');
+      setTrouble(done.message);
+      return;
+    }
+    if (done.result === 'already') {
+      onConfirmed();
+      return;
+    }
+    setState('sent');
+  };
+
+  return (
+    <div className="account-unconfirmed">
+      <p className="tiny">
+        <b>Confirm your email.</b>{' '}
+        {state === 'sent'
+          ? `Sent — look for it at ${email}, and in spam if it is not there.`
+          : "Until you do, Squish won't email you if somebody signs into your account."}
+      </p>
+      {state !== 'sent' && (
+        <button type="button" className="linkish tiny" disabled={state === 'sending'} onClick={() => void again()}>
+          {state === 'sending' ? 'Sending…' : 'Send the link again'}
+        </button>
+      )}
+      <Trouble says={trouble} />
+    </div>
   );
 }

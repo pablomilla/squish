@@ -60,12 +60,19 @@ services:
       # reset that does not work.
       - key: SQUISH_PUBLIC_ORIGIN
         value: https://squish.online
-      # Where password reset links are sent. Optional: with no webhook they are
-      # printed to the Render log instead, which is a working reset for whoever
-      # can read it. See docs/accounts.md.
+      # Email: confirmation links, password resets and security notices.
+      # Optional — with no webhook nothing is emailed, reset links go to the
+      # Render log, and the app does not ask anybody to confirm an address.
+      #
+      # The payload is { from, to, subject, text }, which Resend takes as it
+      # stands: set the webhook to https://api.resend.com/emails, the token to
+      # the Resend API key, and the from-address to one on a domain you have
+      # verified with them. Then use "Send me a test email" in the dashboard.
       - key: SQUISH_MAIL_WEBHOOK
         sync: false
       - key: SQUISH_MAIL_TOKEN
+        sync: false
+      - key: SQUISH_MAIL_FROM
         sync: false
       - key: NODE_VERSION
         value: 22.12.0

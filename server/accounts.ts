@@ -343,7 +343,7 @@ export async function requestReset(email: string, link: (token: string) => strin
   });
 }
 
-export type ResetResult = { ok: true } | { ok: false; reason: 'bad_token' | 'weak_password' | 'breached'; message?: string };
+export type ResetResult = { ok: true; accountId: string } | { ok: false; reason: 'bad_token' | 'weak_password' | 'breached'; message?: string };
 
 /** Finish a reset. The token is spent whether or not it is used again. */
 export async function completeReset(token: string, password: string): Promise<ResetResult> {
@@ -372,7 +372,7 @@ export async function completeReset(token: string, password: string): Promise<Re
     // in the second case the device tokens are exactly what needs cutting —
     // a new password does nothing to a credential that is not the password.
     await client.query('update devices set account_id = null where account_id = $1', [row.account_id]);
-    return { ok: true as const };
+    return { ok: true as const, accountId: row.account_id };
   });
 }
 

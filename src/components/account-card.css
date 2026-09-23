@@ -33,3 +33,15 @@
   cursor: pointer;
   align-self: flex-start;
 }
+
+.account-unconfirmed {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-lg);
+  background: var(--warn-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.account-unconfirmed p { margin: 0; color: var(--ink); }

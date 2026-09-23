@@ -23,6 +23,7 @@ import {
   fetchOverview,
   fetchPeople,
   setInviteDisabled,
+  sendTestMail,
   setPlan,
   type AdminAction,
   type Invite,
@@ -118,6 +119,8 @@ export default function Admin({ onClose }: { onClose: () => void }) {
             </p>
           </section>
 
+          <MailStatus ready={overview.mailReady} />
+
           <Invites
             invites={overview.invites}
             suggestion={overview.suggestion}
@@ -144,7 +147,10 @@ export default function Admin({ onClose }: { onClose: () => void }) {
           {people.map((person) => (
             <div className="admin-person" key={person.id}>
               <div className="admin-person-head">
-                <b className="small">{person.email}</b>
+                <b className="small">
+                  {person.email}
+                  {!person.verified && <span className="tiny muted admin-unconfirmed"> · unconfirmed</span>}
+                </b>
                 <span className={`badge ${person.plan === 'plus' ? 'badge--good' : ''}`}>
                   {person.plan === 'plus' ? PLUS : 'Free'}
                 </span>
@@ -385,6 +391,63 @@ function Invites({
           {busy ? 'One moment…' : 'Make this code'}
         </button>
       </form>
+    </section>
+  );
+}
+
+/**
+ * Whether Squish can send email, and a way to find out for certain.
+ *
+ * Configured is not the same as working. The only honest check is receiving
+ * one, and the likeliest failure — the provider not yet trusting the
+ * from-address domain — only shows up when something is actually sent. The
+ * provider's own explanation is passed through, because it is the useful
+ * part.
+ */
+function MailStatus({ ready }: { ready: boolean }) {
+  const [state, setState] = useState<{ kind: 'idle' | 'sending' } | { kind: 'sent'; to: string } | { kind: 'failed'; message: string }>({
+    kind: 'idle',
+  });
+
+  return (
+    <section className="card card--quiet">
+      <div className="card-title">
+        <h3>Email</h3>
+        <span className={`badge ${ready ? 'badge--good' : 'badge--warn'}`}>{ready ? 'Set up' : 'Not set up'}</span>
+      </div>
+      {ready ? (
+        <>
+          <p className="tiny muted">
+            Confirmation links, password resets and security notices go out through your provider. Send yourself one to
+            be sure it arrives.
+          </p>
+          <button
+            type="button"
+            className="btn btn--sm btn--ghost"
+            style={{ marginTop: 10 }}
+            disabled={state.kind === 'sending'}
+            onClick={async () => {
+              setState({ kind: 'sending' });
+              const done = await sendTestMail();
+              setState(done.ok ? { kind: 'sent', to: done.to } : { kind: 'failed', message: done.message });
+            }}
+          >
+            {state.kind === 'sending' ? 'Sending…' : 'Send me a test email'}
+          </button>
+          {state.kind === 'sent' && <p className="tiny" style={{ marginTop: 8 }}>Sent to {state.to}. Check spam if it is not there in a minute.</p>}
+          {state.kind === 'failed' && (
+            <p className="tiny account-trouble" role="alert" style={{ marginTop: 8 }}>
+              {state.message}
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="tiny muted">
+          Nothing is emailed yet: password-reset links go to the server log, and the app does not ask anybody to confirm
+          their address. Set <code>SQUISH_MAIL_WEBHOOK</code>, <code>SQUISH_MAIL_TOKEN</code> and{' '}
+          <code>SQUISH_MAIL_FROM</code> in the host's dashboard to turn it on.
+        </p>
+      )}
     </section>
   );
 }

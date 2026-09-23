@@ -61,6 +61,8 @@ Backup is on by default where this copy of Squish has a database.
   a scrypt hash. We never store the password itself and cannot read it.
 - **If you ask to reset a password:** a hashed, single-use token that expires
   after two hours.
+- **Whether you have confirmed your email address**, and, until you do, a
+  hashed confirmation link that expires after a week.
 
 ### What we do not hold
 
@@ -137,6 +139,26 @@ If that check cannot be made, your password is accepted anyway. We would
 rather let a weak password through than stop you making an account because
 somebody else's service is down.
 
+### Our email provider — the emails we send you
+
+<!--
+  Name the provider here once one is chosen (e.g. "Resend, Inc."), and link
+  to their privacy policy. The ICO expects processors to be identifiable.
+-->
+
+Squish sends exactly three kinds of email, and only these:
+
+- **A link to confirm your address**, when you make an account.
+- **A password-reset link**, when you ask for one.
+- **A security notice**, when your account is signed into, or its password is
+  changed or reset — so that if it was not you, you find out.
+
+Security notices only go to an address you have confirmed, so nobody can use
+Squish to send mail to someone else. There is no marketing, no newsletter, and
+nothing else. To send these, your address and the message pass through our
+email provider, who delivers them on our behalf and does not use them for
+anything else.
+
 ### Our host
 
 The server and its database run on Render. They hold the data on our behalf and
@@ -206,6 +228,8 @@ complain to the Information Commissioner's Office at
   password leaving — see above.
 - You can end every other signed-in session at once, without waiting for
   anything to expire.
+- Once your address is confirmed, you are emailed whenever your account is
+  signed into or its password changes.
 
 No system is perfect, and Squish is a small one. If you find a security problem,
 please tell us at the address below rather than anywhere else first.

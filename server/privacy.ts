@@ -157,13 +157,24 @@ th { color: var(--ink); font-weight: 600; }
 @media (max-width: 480px) { body { padding: 28px 16px 72px; } table { font-size: 0.86rem; } th, td { padding: 8px; } }
 `;
 
-const page = (body: string): string => `<!doctype html>
+/**
+ * A page that stands on its own: no app, no JavaScript, Squish's colours.
+ *
+ * Shared with the page an email confirmation link lands on, which has the
+ * same constraints for the same reason — somebody arriving from an inbox may
+ * have nothing installed and nothing signed in.
+ */
+export const standalonePage = (
+  body: string,
+  title = 'Privacy — Squish',
+  description = 'What Squish keeps, where it goes, and how to get rid of it.',
+): string => `<!doctype html>
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacy — Squish</title>
-<meta name="description" content="What Squish keeps, where it goes, and how to get rid of it.">
+<title>${escape(title)}</title>
+<meta name="description" content="${escape(description)}">
 <style>${STYLE}</style>
 </head>
 <body>
@@ -186,7 +197,7 @@ let cached: string | null = null;
 export async function privacyPage(): Promise<string | null> {
   if (cached) return cached;
   try {
-    cached = page(render(await readFile(SOURCE, 'utf8')));
+    cached = standalonePage(render(await readFile(SOURCE, 'utf8')));
     return cached;
   } catch {
     return null;

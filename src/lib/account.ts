@@ -19,6 +19,10 @@ export interface Who {
   email?: string;
   /** How many devices besides this one are signed in. */
   otherDevices?: number;
+  /** Whether the address has been confirmed by following a link. */
+  verified?: boolean;
+  /** Whether this Squish can send email at all. Nothing about confirming is shown where it cannot. */
+  mailReady?: boolean;
 }
 
 /** What the server says went wrong, in words meant for a person. */
@@ -59,7 +63,13 @@ async function ask<T>(method: string, path: string, body?: unknown): Promise<Don
 export async function whoAmI(): Promise<Who> {
   const answer = await ask<Who>('GET', '/api/account');
   return answer.ok
-    ? { signedIn: answer.signedIn, email: answer.email, otherDevices: answer.otherDevices }
+    ? {
+        signedIn: answer.signedIn,
+        email: answer.email,
+        otherDevices: answer.otherDevices,
+        verified: answer.verified,
+        mailReady: answer.mailReady,
+      }
     : { signedIn: false };
 }
 
@@ -73,6 +83,8 @@ export interface Arrived {
    * either diary being touched.
    */
   broughtDiary?: boolean;
+  /** True where a confirmation link has been sent to the new address. */
+  verificationSent?: boolean;
 }
 
 /**
@@ -150,3 +162,7 @@ export function clearResetUrl(): void {
 /** Cut every other device loose. The password again, because this is a lock. */
 export const signOutEverywhere = (password: string): Promise<Done<{ signedOut?: number }>> =>
   ask('POST', '/api/account/devices/forget', { password });
+
+/** Send the confirmation link again. */
+export const resendVerification = (): Promise<Done<{ result?: 'sent' | 'already' }>> =>
+  ask('POST', '/api/account/verify');

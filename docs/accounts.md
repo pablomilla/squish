@@ -70,22 +70,46 @@ a password change. Asking to reset an unknown address reports success.
 
 ## Sending email
 
-Squish sends exactly one kind of email, so there is no SMTP dependency and no
-provider baked in. Set `SQUISH_MAIL_WEBHOOK` to something that accepts a JSON
-post of `{ to, subject, text }` (and `SQUISH_MAIL_TOKEN` if it wants a bearer
-token). Any transactional provider will, directly or behind three lines of glue.
+Squish sends three kinds of email — a link to confirm an address, a
+password-reset link, and security notices — so there is no SMTP dependency and
+no provider baked in. It posts `{ from, to, subject, text }` as JSON with a
+bearer token, which is exactly what Resend's `POST /emails` takes:
+
+| Variable | Value |
+|---|---|
+| `SQUISH_MAIL_WEBHOOK` | `https://api.resend.com/emails` |
+| `SQUISH_MAIL_TOKEN` | the provider's API key |
+| `SQUISH_MAIL_FROM` | `Squish <hello@squish.online>` — on a domain the provider has verified |
+
+Then press **Send me a test email** in the dashboard. Configured is not the
+same as working, and the likeliest failure — the provider not yet trusting the
+from-address domain — only shows up when something is sent. The dashboard
+passes the provider's own explanation through.
 
 With no webhook set, the email is printed to the server log, loudly, saying it
-was not sent. That is a working password reset for whoever can read the log,
-which is the right behaviour in development and on a laptop.
+was not sent, and the app hides everything that depends on somebody receiving
+mail. Asking people to click a link that will never arrive is worse than not
+asking.
+
+**Confirming an address is soft.** Nothing in the app is withheld from an
+unconfirmed account. What it gates is security notices: they only go to a
+confirmed address, so nobody can sign up as a stranger and have Squish mail
+them. Confirmation links survive being followed more than once, because mail
+scanners follow links before people do.
+
+**Security notices** go out on a sign-in, a password change and a reset, name
+the device coarsely ("Edge on Windows") and never hold up the request that
+triggered them — a mail provider having a bad minute must not turn a
+successful sign-in into an error.
 
 ## Environment
 
 | Variable | Default | What it does |
 |---|---|---|
 | `DATABASE_URL` | unset | Turns all three layers on |
-| `SQUISH_MAIL_WEBHOOK` | unset | Where reset emails are posted |
+| `SQUISH_MAIL_WEBHOOK` | unset | Where email is posted |
 | `SQUISH_MAIL_TOKEN` | unset | Bearer token for that webhook |
+| `SQUISH_MAIL_FROM` | `Squish <no-reply@squish.online>` | The sender, on a domain your provider has verified |
 | `SQUISH_PUBLIC_ORIGIN` | from the request | The origin in reset links. Set it to the address people actually use — a custom domain, or anything behind a proxy or a redirect — or the links point at wherever the request appeared to arrive. A trailing slash is fine; it is stripped |
 | `SQUISH_DAILY_PHOTOS` | 25 | Per device, per day |
 | `SQUISH_DAILY_CHATS` | 40 | Per device, per day |

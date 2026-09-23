@@ -21,7 +21,10 @@ import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from 
 import { hasDatabase } from './db';
 import { deviceFor, registerDevice, spend, type Device, type Spend } from './identity';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
-import { privacyPage } from './privacy';
+import { privacyPage, standalonePage } from './privacy';
+import { confirm, isVerified, sendVerification } from './verify';
+import { noticePasswordChanged, noticeSignIn } from './notices';
+import { canSendMail } from './mail';
 import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth, type Billable, type Plan } from './plan';
 import {
   createInvite,
@@ -33,7 +36,7 @@ import {
   setInviteDisabled,
   suggestCode,
 } from './invites';
-import { actions, adminEmail, allowances, isAdmin, overview, people, setPlan } from './admin';
+import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, sendTestMail, setPlan } from './admin';
 import { billedTo } from './billing';
 import { PLUS } from '../src/lib/subscription';
 import {
@@ -162,7 +165,11 @@ const hits = new Map<string, { count: number; resetAt: number }>();
  * guessing down, so they stay per-device and per-day and have nothing to do
  * with which tier somebody is on.
  */
-const GUARD: Record<'signin' | 'reset' | 'invite', number> = {
+const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify', number> = {
+  // Each one is an email to an address. Five a day is plenty for somebody
+  // whose first one went to spam, and not much of a tool for mailing a
+  // stranger over and over.
+  verify: Number(process.env.SQUISH_DAILY_VERIFY_MAILS ?? 5),
   signin: Number(process.env.SQUISH_DAILY_SIGNINS ?? 20),
   reset: Number(process.env.SQUISH_DAILY_RESETS ?? 5),
   // Low on purpose. A wrong code is a typo, and ten typos is somebody
@@ -174,6 +181,7 @@ const SPENT: Partial<Record<Spend, string>> = {
   signin: 'Too many attempts from this device. Try again tomorrow, or use the forgotten-password link.',
   reset: 'That is enough reset links for one day. Check your inbox, including the spam folder.',
   invite: 'Too many codes tried from this device. Try again tomorrow.',
+  verify: 'That is enough confirmation emails for one day. Check your spam folder for the last one.',
 };
 
 /**
@@ -455,7 +463,15 @@ app.get('/api/account', requireDevice, async (req, res) => {
       res.json(whoami(null));
       return;
     }
-    res.json({ ...whoami(await accountFor(id)), otherDevices: await otherDevices(id, req.device!.id) });
+    res.json({
+      ...whoami(await accountFor(id)),
+      otherDevices: await otherDevices(id, req.device!.id),
+      verified: await isVerified(id),
+      // Nothing about confirming an address is shown where mail cannot be
+      // sent — asking somebody to click a link that will never arrive is
+      // worse than not asking.
+      mailReady: canSendMail(),
+    });
   } catch (error) {
     logFailure('account read', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
@@ -472,7 +488,14 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
   try {
     const made = await signUp(req.device!.id, email, password);
     if (made.ok) {
-      res.json({ ...whoami(made.account), broughtDiary: made.broughtDiary });
+      // Not awaited into the response, and never allowed to fail it: the
+      // account exists either way, and there is a button to send it again.
+      if (canSendMail()) {
+        void sendVerification(made.account.id, (token) => verifyLink(req, token)).catch((error: unknown) =>
+          logFailure('verification email', error),
+        );
+      }
+      res.json({ ...whoami(made.account), broughtDiary: made.broughtDiary, verificationSent: canSendMail() });
       return;
     }
     res.status(409).json({ error: made.reason, message: made.message ?? SIGNUP_TROUBLE[made.reason] });
@@ -499,6 +522,9 @@ app.post('/api/session', requireDevice, meter('signin'), async (req, res) => {
   try {
     const back = await signIn(req.device!.id, email, password);
     if (back.ok) {
+      void noticeSignIn(back.account.id, req.get('user-agent'), publicOrigin(req)).catch((error: unknown) =>
+        logFailure('sign-in notice', error),
+      );
       res.json({ ...whoami(back.account), broughtDiary: back.broughtDiary });
       return;
     }
@@ -548,6 +574,66 @@ app.post('/api/account/devices/forget', requireAccount, meter('signin'), async (
   }
 });
 
+/** The link in a confirmation email. */
+const verifyLink = (req: Request, token: string): string =>
+  `${publicOrigin(req)}/verify?token=${encodeURIComponent(token)}`;
+
+/**
+ * Send the confirmation link again.
+ *
+ * Awaited, unlike the one at sign-up, because somebody pressed a button and is
+ * waiting to be told whether it went.
+ */
+app.post('/api/account/verify', requireDevice, meter('verify'), async (req, res) => {
+  const id = req.device!.accountId;
+  if (!id) {
+    res.status(401).json({ error: 'no_account', message: 'Sign in first.' });
+    return;
+  }
+  if (!canSendMail()) {
+    res.status(503).json({ error: 'no_mail', message: 'This Squish cannot send email yet.' });
+    return;
+  }
+  try {
+    const result = await sendVerification(id, (token) => verifyLink(req, token));
+    res.json({ result });
+  } catch (error) {
+    logFailure('verification email', error);
+    res.status(502).json({ error: 'not_sent', message: 'That email did not go. Try again in a few minutes.' });
+  }
+});
+
+/**
+ * Where a confirmation link lands.
+ *
+ * A page rather than an app route, for the same reason the privacy policy is:
+ * somebody tapping a link in their inbox may be on a device with nothing
+ * installed and nobody signed in. It confirms on GET, which is usually a
+ * mistake and here is deliberate — the worst a mail scanner following it
+ * early can do is confirm the address for the inbox it was sent to, which is
+ * the whole point of the link.
+ */
+app.get('/verify', async (req, res) => {
+  const token = typeof req.query.token === 'string' ? req.query.token : '';
+  const done = token ? await confirm(token).catch(() => ({ ok: false as const })) : { ok: false as const };
+
+  const body = done.ok
+    ? `<h1>That is confirmed</h1>
+<p><strong>${escapeHtml(done.email)}</strong> is yours, as far as Squish is concerned. If anything
+important happens on your account — a new sign-in, a changed password — this is where we will tell you.</p>`
+    : `<h1>That link has run out</h1>
+<p>Confirmation links work for a week. Open Squish, go to <strong>You → Account</strong>, and send
+yourself a fresh one.</p>`;
+
+  res
+    .status(done.ok ? 200 : 410)
+    .type('html')
+    .send(standalonePage(body, done.ok ? 'Confirmed — Squish' : 'Link expired — Squish', 'Confirming your email for Squish.'));
+});
+
+const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 /** Needs an account, not just a device: there is nothing here for a stranger. */
 function requireAccount(req: Request, res: Response, next: NextFunction): void {
   requireDevice(req, res, () => {
@@ -573,6 +659,9 @@ app.post('/api/account/password', requireAccount, meter('signin'), async (req, r
       // what people do when they are worried, and leaving the other sessions
       // alive is the opposite of what they just asked for.
       const cut = await signOutEverywhere(req.device!.accountId!, req.device!.id);
+      void noticePasswordChanged(req.device!.accountId!, 'changed', publicOrigin(req)).catch((error: unknown) =>
+        logFailure('password notice', error),
+      );
       res.json({ changed: true, signedOut: cut });
       return;
     }
@@ -650,10 +739,32 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
 
 app.get('/api/admin/overview', requireAdmin, async (_req, res) => {
   try {
-    res.json({ ...(await overview()), allowances: allowances(), invites: await listInvites(), suggestion: suggestCode() });
+    res.json({
+      ...(await overview()),
+      allowances: allowances(),
+      invites: await listInvites(),
+      suggestion: suggestCode(),
+      mailReady: mailReady(),
+    });
   } catch (error) {
     logFailure('admin overview', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+  }
+});
+
+app.post('/api/admin/test-mail', requireAdmin, async (req, res) => {
+  if (!mailReady()) {
+    res.status(503).json({ error: 'no_mail', message: 'SQUISH_MAIL_WEBHOOK is not set, so there is nothing to test yet.' });
+    return;
+  }
+  const to = await adminEmail(req.device!);
+  try {
+    await sendTestMail(to);
+    res.json({ sent: true, to });
+  } catch (error) {
+    logFailure('test email', error);
+    // The provider's own words, because they are the useful part.
+    res.status(502).json({ error: 'not_sent', message: error instanceof Error ? error.message : 'It did not send.' });
   }
 });
 
@@ -824,6 +935,9 @@ app.post('/api/account/reset/confirm', requireDevice, meter('reset'), async (req
   try {
     const done = await completeReset(token, password);
     if (done.ok) {
+      void noticePasswordChanged(done.accountId, 'reset', publicOrigin(req)).catch((error: unknown) =>
+        logFailure('password notice', error),
+      );
       res.json({ changed: true });
       return;
     }

@@ -23,6 +23,28 @@
 import { query } from './db';
 import type { Device } from './identity';
 import { ALLOWANCE, type Plan } from './plan';
+import { canSendMail, sendMail } from './mail';
+
+/**
+ * Send one email to the admin asking, to prove the setup works.
+ *
+ * The only honest way to know mail is configured is to receive one. Throws
+ * with the provider's own explanation, because "the from-address domain is
+ * not verified" is the likeliest failure and the least guessable.
+ */
+export async function sendTestMail(to: string): Promise<void> {
+  await sendMail({
+    to,
+    subject: 'Squish can send email',
+    text: [
+      'This is the test email from the Squish dashboard.',
+      '',
+      'If you are reading it, confirmation links, password resets and security notices will reach people too.',
+    ].join('\n'),
+  });
+}
+
+export const mailReady = (): boolean => canSendMail();
 
 const admins = (): string[] =>
   (process.env.SQUISH_ADMIN_EMAILS ?? '')
@@ -100,6 +122,7 @@ export async function overview(): Promise<Overview> {
 export interface Person {
   id: string;
   email: string;
+  verified: boolean;
   plan: Plan;
   plusUntil: string | null;
   joined: string;
@@ -119,6 +142,7 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
   const rows = await query<{
     id: string;
     email: string;
+    verified: boolean;
     plus_until: Date | null;
     created_at: Date;
     photo: string;
@@ -126,7 +150,7 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
     recipe: string;
     usd: string;
   }>(
-    `select a.id, a.email, a.plus_until, a.created_at,
+    `select a.id, a.email, a.email_verified_at is not null as verified, a.plus_until, a.created_at,
             coalesce(sum(u.count) filter (where u.kind = 'photo'), 0)::text  as photo,
             coalesce(sum(u.count) filter (where u.kind = 'chat'), 0)::text   as chat,
             coalesce(sum(u.count) filter (where u.kind = 'recipe'), 0)::text as recipe,
@@ -144,6 +168,7 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
   return rows.map((row) => ({
     id: row.id,
     email: row.email,
+    verified: row.verified,
     plan: row.plus_until && row.plus_until > new Date() ? 'plus' : 'free',
     plusUntil: row.plus_until?.toISOString() ?? null,
     joined: row.created_at.toISOString(),
