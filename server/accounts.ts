@@ -172,6 +172,9 @@ export async function signIn(deviceId: string, email: string, password: string):
 
   const broughtDiary = await transaction(async (client) => {
     await client.query('update devices set account_id = $1 where id = $2', [found.id, deviceId]);
+    // A new sign-in starts without the dashboard's second step, whoever held
+    // this device before and whatever they had passed.
+    await client.query('delete from admin_sessions where device_id = $1', [deviceId]);
     const held = await client.query('select 1 from diaries where owner_id = $1', [found.id]);
     if ((held.rowCount ?? 0) > 0) return false;
     const moved = await client.query('update diaries set owner_id = $1 where owner_id = $2', [found.id, deviceId]);
@@ -192,6 +195,7 @@ export async function signIn(deviceId: string, email: string, password: string):
 export async function signOut(deviceId: string): Promise<void> {
   await migrate();
   await query('update devices set account_id = null where id = $1', [deviceId]);
+  await query('delete from admin_sessions where device_id = $1', [deviceId]);
 }
 
 /**

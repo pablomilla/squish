@@ -207,3 +207,51 @@ export const resetEmail = (key: string): Promise<EmailDone> => send(emailPath(ke
 /** Send the admin this wording — unsaved, if that is what is in the editor. */
 export const testEmail = (key: string, wording: EmailWording): Promise<EmailDone> =>
   send(`${emailPath(key)}/test`, 'POST', wording);
+
+/* ---------------- The second step ---------------- */
+
+export interface TwoFactorState {
+  enrolled: boolean;
+  passed: boolean;
+  until: string | null;
+  recoveryLeft: number;
+}
+
+export interface TwoFactorSetup {
+  secret: string;
+  uri: string;
+  qr: string;
+}
+
+export type Answer<T> = ({ ok: true } & T) | { ok: false; message: string };
+
+async function call<T>(path: string, body: unknown = {}): Promise<Answer<T>> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl(path), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+    });
+    const payload = (await response.json().catch(() => ({}))) as T & { message?: string };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.' };
+    return { ok: true, ...payload };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}
+
+export const fetchTwoFactor = (): Promise<TwoFactorState | null> => ask('/api/admin/2fa');
+
+export const startTwoFactor = (): Promise<Answer<TwoFactorSetup>> => call('/api/admin/2fa/setup');
+
+export const enableTwoFactor = (password: string, code: string): Promise<Answer<{ recoveryCodes: string[] }>> =>
+  call('/api/admin/2fa/enable', { password, code });
+
+export const verifyTwoFactor = (code: string): Promise<Answer<{ usedRecovery: boolean; recoveryLeft: number }>> =>
+  call('/api/admin/2fa/verify', { code });
+
+export const newRecoveryCodes = (password: string): Promise<Answer<{ recoveryCodes: string[] }>> =>
+  call('/api/admin/2fa/recovery', { password });
+
+export const lockDashboard = (): Promise<Answer<object>> => call('/api/admin/2fa/lock');

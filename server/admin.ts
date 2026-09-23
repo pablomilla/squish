@@ -202,6 +202,21 @@ export async function setPlan(actor: string, email: string, days: number): Promi
   return { ok: true, plan: until && until > new Date() ? 'plus' : 'free', until: until?.toISOString() ?? null };
 }
 
+/** Write one line to "What has been done". */
+export async function recordAdminAction(
+  admin: string,
+  action: string,
+  subject: string | null,
+  detail: string | null,
+): Promise<void> {
+  await query('insert into admin_actions (admin, action, subject, detail) values ($1, $2, $3, $4)', [
+    admin,
+    action,
+    subject,
+    detail,
+  ]);
+}
+
 /** What has been done from here, most recent first. */
 export async function actions(limit = 30) {
   const rows = await query<{ admin: string; action: string; subject: string | null; detail: string | null; at: Date }>(

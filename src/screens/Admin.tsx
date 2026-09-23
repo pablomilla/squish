@@ -16,12 +16,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CloseIcon } from '../components/icons';
 import { Sheet, useToast } from '../components/ui';
+import { TwoFactorPrompt, TwoFactorSetup, TwoFactorStatus } from '../components/TwoFactor';
 import { PLUS } from '../lib/plan';
 import {
   createInvite,
   deleteInvite,
   fetchEmails,
   fetchOverview,
+  fetchTwoFactor,
+  lockDashboard,
   fetchPeople,
   previewEmail,
   resetEmail,
@@ -37,6 +40,7 @@ import {
   type Invite,
   type Overview,
   type Person,
+  type TwoFactorState,
 } from '../lib/admin';
 import { friendlyDate } from '../lib/date';
 import './admin.css';
@@ -46,7 +50,73 @@ const day = (iso: string | null) => (iso ? friendlyDate(iso.slice(0, 10)) : '—
 
 const KIND: Record<string, string> = { photo: 'Photo analyses', chat: 'Nutritionist', recipe: 'Recipe imports' };
 
+/**
+ * The door. Nothing below is fetched until the server says this device has
+ * passed the second step — and the server says no to every dashboard request
+ * until it has, so this is the app keeping up, not the lock.
+ */
 export default function Admin({ onClose }: { onClose: () => void }) {
+  const [state, setState] = useState<TwoFactorState | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const check = useCallback(async () => {
+    const next = await fetchTwoFactor();
+    setFailed(!next);
+    setState(next);
+  }, []);
+
+  useEffect(() => {
+    void check();
+  }, [check]);
+
+  if (state?.passed) {
+    return <Dashboard onClose={onClose} twoFactor={state} onRecheck={check} />;
+  }
+
+  return (
+    <div className="screen admin">
+      <Head subtitle="Two-step sign-in" onClose={onClose} />
+      {!state ? (
+        <p className="tiny muted admin-foot">{failed ? 'Could not reach Squish just now.' : 'Loading…'}</p>
+      ) : state.enrolled ? (
+        <TwoFactorPrompt onPassed={() => void check()} />
+      ) : (
+        <TwoFactorSetup onDone={() => void check()} />
+      )}
+    </div>
+  );
+}
+
+function Head({ subtitle, onClose, onLock }: { subtitle: string; onClose: () => void; onLock?: () => void }) {
+  return (
+    <header className="screen-head">
+      <div>
+        <h1>Dashboard</h1>
+        <p>{subtitle}</p>
+      </div>
+      <div className="row" style={{ gap: 8 }}>
+        {onLock && (
+          <button type="button" className="btn btn--sm btn--ghost" onClick={onLock}>
+            Lock
+          </button>
+        )}
+        <button type="button" className="btn btn--sm btn--ghost" onClick={onClose} aria-label="Close">
+          <CloseIcon size={18} />
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function Dashboard({
+  onClose,
+  twoFactor,
+  onRecheck,
+}: {
+  onClose: () => void;
+  twoFactor: TwoFactorState;
+  onRecheck: () => void;
+}) {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [actions, setActions] = useState<AdminAction[]>([]);
@@ -56,12 +126,15 @@ export default function Admin({ onClose }: { onClose: () => void }) {
 
   const load = useCallback(async (q: string) => {
     const [head, list] = await Promise.all([fetchOverview(), fetchPeople(q)]);
+    // Most likely the twelve hours are up. Asking again puts the code box back
+    // if so, and changes nothing if it was only a blip.
+    if (!head) onRecheck();
     if (head) setOverview(head);
     if (list) {
       setPeople(list.people);
       setActions(list.actions);
     }
-  }, []);
+  }, [onRecheck]);
 
   useEffect(() => {
     void load(search);
@@ -81,15 +154,14 @@ export default function Admin({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="screen admin">
-      <header className="screen-head">
-        <div>
-          <h1>Dashboard</h1>
-          <p>{overview ? `This month, ${overview.month}` : 'Loading…'}</p>
-        </div>
-        <button type="button" className="btn btn--sm btn--ghost" onClick={onClose} aria-label="Close">
-          <CloseIcon size={18} />
-        </button>
-      </header>
+      <Head
+        subtitle={overview ? `This month, ${overview.month}` : 'Loading…'}
+        onClose={onClose}
+        onLock={async () => {
+          await lockDashboard();
+          onRecheck();
+        }}
+      />
 
       {overview && (
         <>
@@ -221,6 +293,8 @@ export default function Admin({ onClose }: { onClose: () => void }) {
           </div>
         </section>
       )}
+
+      <TwoFactorStatus recoveryLeft={twoFactor.recoveryLeft} onChanged={onRecheck} />
 
       <p className="tiny muted admin-foot">
         Counts and totals only. Nobody's diary is readable from here, by design — see docs/privacy.md.

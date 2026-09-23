@@ -273,6 +273,43 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 9,
+    sql: `
+      -- An admin's authenticator app. The secret is the shared key the app and
+      -- the server both derive codes from; enabled_at stays null until the
+      -- admin has proved, with a code, that their app has it. last_step is the
+      -- newest 30-second window a code has been accepted for, so a code
+      -- somebody watched being typed cannot be used again.
+      create table admin_totp (
+        account_id   text primary key references accounts(id) on delete cascade,
+        secret       text not null,
+        enabled_at   timestamptz,
+        last_step    bigint not null default 0,
+        failures     integer not null default 0,
+        locked_until timestamptz,
+        created_at   timestamptz not null default now()
+      );
+
+      -- One-time codes for a lost phone, stored hashed like every other
+      -- credential here.
+      create table admin_recovery_codes (
+        account_id text not null references accounts(id) on delete cascade,
+        code_hash  text not null,
+        used_at    timestamptz,
+        primary key (account_id, code_hash)
+      );
+
+      -- Which devices have passed the second step, as whom, and until when.
+      -- Keyed on the device and checked against the account, so a device that
+      -- changes hands does not carry the pass with it.
+      create table admin_sessions (
+        device_id  text primary key references devices(id) on delete cascade,
+        account_id text not null references accounts(id) on delete cascade,
+        until      timestamptz not null
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

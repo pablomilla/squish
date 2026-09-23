@@ -173,6 +173,23 @@ rate limit — and the list decides whether they also see this, so removing an a
 revoking someone. With the variable unset, nobody is an admin and the routes answer 404 to
 everybody, including you.
 
+**It also asks for a code from an authenticator app.** The first time you open it, it walks you
+through scanning a QR code with any authenticator app (Google or Microsoft Authenticator, 1Password,
+the iPhone's Passwords app) and gives you ten one-time recovery codes to keep somewhere safe. After
+that, each device asks for a six-digit code every 12 hours; **Lock** at the top ends it sooner. A
+password alone gets nothing from the dashboard's routes — not the numbers, not the people, not the
+power to grant Plus.
+
+Lost the phone? Use a recovery code, then **Make new recovery codes** inside. Lost the codes too?
+From Render's **Shell** tab on the web service:
+
+```bash
+npm run reset-2fa -- you@example.com
+```
+
+and you will be asked to set it up again next time. That is deliberately something only somebody
+with the Render login can do.
+
 **It cannot read anybody's diary**, and the server would not serve one if it asked. Counts and
 totals only; there is a test that fails if `server/admin.ts` ever learns the word `diaries`.
 
@@ -346,6 +363,7 @@ server/           Express API — Claude calls, offline fallback
   plan.ts         Free and Plus: who is on what, and what that allows
   invites.ts      Codes that turn Plus on, made and retired in the dashboard
   admin.ts        The dashboard's numbers — counts and totals, never a diary
+  twofactor.ts    The dashboard's second step: authenticator codes and recovery codes
   billing.ts      Attributing what each model call cost to whoever made it
   privacy.ts      The policy, rendered from docs/privacy.md and served at /privacy
 src/
@@ -359,7 +377,7 @@ src/
   store/          Zustand store, persisted to localStorage
   styles/         Design tokens (light + dark) and global styles
 ios/ android/     Capacitor shells — see docs/phone-app.md
-scripts/          Credential setup, and the accuracy/cost benchmark
+scripts/          Credential setup, the benchmark, granting Plus, and resetting an admin's 2FA
 eval/             Model comparison for the nutritionist — cases, judge, runner
 bench/            Your benchmark photos and their real figures (gitignored)
 test/             Node test-runner suite for the maths and parsing

@@ -38,7 +38,8 @@ import {
   setInviteDisabled,
   suggestCode,
 } from './invites';
-import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, sendTestMail, setPlan } from './admin';
+import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
+import { beginSetup, checkCode, endSession, finishSetup, hasPassed, replaceRecoveryCodes, stateFor } from './twofactor';
 import { billedTo } from './billing';
 import { PLUS } from '../src/lib/subscription';
 import {
@@ -719,25 +720,155 @@ app.delete('/api/account', requireAccount, meter('signin'), async (req, res) => 
  *
  * None of it can reach a diary. Counts and totals only; see server/admin.ts.
  */
-function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  requireDevice(req, res, () => {
-    void isAdmin(req.device)
-      .then((yes) => {
-        if (yes) {
-          next();
+function adminGate(secondStep: boolean) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    requireDevice(req, res, () => {
+      void (async () => {
+        if (!(await isAdmin(req.device))) {
+          // The same answer whether they are signed out, signed in as somebody
+          // ordinary, or there are no admins at all. A 403 that distinguishes
+          // those is a way of finding out that a dashboard exists.
+          res.status(404).json({ error: 'not_found' });
           return;
         }
-        // The same answer whether they are signed out, signed in as somebody
-        // ordinary, or there are no admins at all. A 403 that distinguishes
-        // those is a way of finding out that a dashboard exists.
-        res.status(404).json({ error: 'not_found' });
-      })
-      .catch((error: unknown) => {
+        if (secondStep && !(await hasPassed(req.device!.accountId!, req.device!.id))) {
+          // Past this point they are known to be an admin, so saying why is
+          // safe — and the app needs to know whether to ask for a code or to
+          // set an authenticator up.
+          const state = await stateFor(req.device!.accountId!, req.device!.id);
+          res.status(403).json({ error: 'two_factor', enrolled: state.enrolled });
+          return;
+        }
+        next();
+      })().catch((error: unknown) => {
         logFailure('admin check', error);
         res.status(503).json({ error: 'unavailable' });
       });
-  });
+    });
+  };
 }
+
+/** An admin who has also passed the second step on this device. */
+const requireAdmin = adminGate(true);
+/** An admin by address, who may not have passed it yet — for the routes that let them. */
+const requireAdminIdentity = adminGate(false);
+
+/* ---------------- The dashboard's second step ---------------- */
+
+app.get('/api/admin/2fa', requireAdminIdentity, async (req, res) => {
+  try {
+    res.json(await stateFor(req.device!.accountId!, req.device!.id));
+  } catch (error) {
+    logFailure('2fa state', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+app.post('/api/admin/2fa/setup', requireAdminIdentity, async (req, res) => {
+  try {
+    const setup = await beginSetup(req.device!.accountId!, await adminEmail(req.device!));
+    if (!setup) {
+      res.status(409).json({ error: 'already_on', message: 'Two-step sign-in is already on for this account.' });
+      return;
+    }
+    res.json(setup);
+  } catch (error) {
+    logFailure('2fa setup', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not start that just now.' });
+  }
+});
+
+const TWO_FACTOR_MESSAGE: Record<string, string> = {
+  wrong: "That code didn't work. Check it is the one for Squish, and that it hasn't just changed.",
+  not_started: 'Start again — that setup has gone.',
+  already_on: 'Two-step sign-in is already on.',
+  not_on: 'Two-step sign-in is not set up yet.',
+};
+
+function refuseCode(res: Response, done: { reason: string; minutes?: number }): void {
+  if (done.reason === 'locked') {
+    res.status(429).json({
+      error: 'locked',
+      message: `Too many wrong codes. Try again in ${done.minutes} minute${done.minutes === 1 ? '' : 's'}.`,
+    });
+    return;
+  }
+  res.status(400).json({ error: done.reason, message: TWO_FACTOR_MESSAGE[done.reason] ?? 'That did not work.' });
+}
+
+app.post('/api/admin/2fa/enable', requireAdminIdentity, meter('signin'), async (req, res) => {
+  const { password, code } = req.body ?? {};
+  if (typeof password !== 'string' || typeof code !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'Your password and a code from the app, please.' });
+    return;
+  }
+  try {
+    const accountId = req.device!.accountId!;
+    if (!(await verifyPassword(accountId, password))) {
+      res.status(400).json({ error: 'wrong_password', message: "That isn't your password." });
+      return;
+    }
+    const done = await finishSetup(accountId, req.device!.id, code);
+    if (!done.ok) {
+      refuseCode(res, done);
+      return;
+    }
+    await recordAdminAction(await adminEmail(req.device!), 'turn on 2FA', null, null);
+    res.json({ recoveryCodes: done.recoveryCodes });
+  } catch (error) {
+    logFailure('2fa enable', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+  }
+});
+
+app.post('/api/admin/2fa/verify', requireAdminIdentity, meter('signin'), async (req, res) => {
+  const { code } = req.body ?? {};
+  if (typeof code !== 'string') {
+    res.status(400).json({ error: 'missing', message: 'A code, please.' });
+    return;
+  }
+  try {
+    const done = await checkCode(req.device!.accountId!, req.device!.id, code);
+    if (!done.ok) {
+      refuseCode(res, done);
+      return;
+    }
+    if (done.usedRecovery) {
+      await recordAdminAction(await adminEmail(req.device!), 'use recovery code', null, `${done.recoveryLeft} left`);
+    }
+    res.json({ passed: true, usedRecovery: done.usedRecovery, recoveryLeft: done.recoveryLeft });
+  } catch (error) {
+    logFailure('2fa verify', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
+  }
+});
+
+/** New recovery codes, for somebody inside the dashboard who can also give the password. */
+app.post('/api/admin/2fa/recovery', requireAdmin, meter('signin'), async (req, res) => {
+  const { password } = req.body ?? {};
+  try {
+    if (typeof password !== 'string' || !(await verifyPassword(req.device!.accountId!, password))) {
+      res.status(400).json({ error: 'wrong_password', message: "That isn't your password." });
+      return;
+    }
+    const recoveryCodes = await replaceRecoveryCodes(req.device!.accountId!);
+    await recordAdminAction(await adminEmail(req.device!), 'new recovery codes', null, null);
+    res.json({ recoveryCodes });
+  } catch (error) {
+    logFailure('2fa recovery', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+  }
+});
+
+app.post('/api/admin/2fa/lock', requireAdminIdentity, async (req, res) => {
+  try {
+    await endSession(req.device!.id);
+    res.json({ locked: true });
+  } catch (error) {
+    logFailure('2fa lock', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
 
 app.get('/api/admin/overview', requireAdmin, async (_req, res) => {
   try {

@@ -178,6 +178,7 @@ on the first request that needs them.
 6. `invites`
 7. `accounts.email_verified_at`, `verifications`
 8. `email_templates` — wording changed from the dashboard; no row means the original
+9. `admin_totp`, `admin_recovery_codes`, `admin_sessions` — the dashboard's second step
 
 A device survives its account being deleted, detached rather than removed, so
 deleting an account never leaves somebody unable to log lunch.
