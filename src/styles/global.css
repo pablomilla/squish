@@ -265,3 +265,6 @@ a { color: var(--brand-ink); }
 .meal-card-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meal-card-macros { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meal-card-ai { color: var(--brand); flex: none; }
+
+/* Holds the space while a screen arrives, so nothing jumps when it does. */
+.screen-loading { min-height: 60vh; }

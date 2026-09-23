@@ -1,20 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import type { AnalysisResult, MealEntry, MealSlot, Route } from './types';
 import { useSquish } from './store/useSquish';
 import { ToastProvider, useAppliedLook, useAppliedTheme } from './components/ui';
 import AddSheet from './components/AddSheet';
 import { DiaryIcon, HomeIcon, InsightsIcon, PlusIcon, YouIcon } from './components/icons';
-import Onboarding from './screens/Onboarding';
 import Waking from './screens/Waking';
 import Home from './screens/Home';
-import Capture from './screens/Capture';
-import Review from './screens/Review';
-import Diary from './screens/Diary';
-import Insights from './screens/Insights';
-import You from './screens/You';
-import Ask from './screens/Ask';
-import Admin from './screens/Admin';
-import AddFood from './screens/AddFood';
+import { lazyScreen } from './lib/lazyScreen';
 import { isoDate, slotForNow } from './lib/date';
 import { THUMB, aiStatus, reshrink, type AiStatus, type OutOfAllowance } from './lib/api';
 import { startBackup } from './lib/autobackup';
@@ -22,9 +14,24 @@ import { savePhoto, watchPhotos } from './lib/photos';
 import { isOversized, rehomePhotos } from './lib/rehome';
 import { watchPlan } from './lib/plan';
 import { onPaywall } from './lib/paywall';
-import Paywall from './components/Paywall';
 import { resetTokenInUrl } from './lib/account';
-import ResetPassword from './screens/ResetPassword';
+
+/*
+ * Home and the waking screen arrive with the app, because they are the first
+ * thing anybody sees. Everything else is fetched when first opened — see
+ * lib/lazyScreen.ts for why, and for the one failure that comes with it.
+ */
+const Onboarding = lazyScreen(() => import('./screens/Onboarding'));
+const Capture = lazyScreen(() => import('./screens/Capture'));
+const Review = lazyScreen(() => import('./screens/Review'));
+const Diary = lazyScreen(() => import('./screens/Diary'));
+const Insights = lazyScreen(() => import('./screens/Insights'));
+const You = lazyScreen(() => import('./screens/You'));
+const Ask = lazyScreen(() => import('./screens/Ask'));
+const Admin = lazyScreen(() => import('./screens/Admin'));
+const AddFood = lazyScreen(() => import('./screens/AddFood'));
+const Paywall = lazyScreen(() => import('./components/Paywall'));
+const ResetPassword = lazyScreen(() => import('./screens/ResetPassword'));
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'home', label: 'Home', Icon: HomeIcon },
@@ -114,8 +121,32 @@ function Shell() {
     return () => window.removeEventListener('popstate', onPop);
   }, [isTab, route.name]);
 
+  // Once Home is on screen, fetch the everyday screens in the background.
+  // Splitting them out makes the first load faster; this makes the first tap
+  // on Diary as quick as it was before, and puts them in the browser's cache
+  // before anybody walks into a basement with no signal.
+  useEffect(() => {
+    if (!awake || !onboarded) return;
+    const warm = () => {
+      void import('./screens/Diary');
+      void import('./screens/Insights');
+      void import('./screens/You');
+      void import('./screens/Capture');
+      void import('./screens/AddFood');
+      void import('./screens/Review');
+    };
+    const idle = (window as { requestIdleCallback?: (fn: () => void) => number }).requestIdleCallback;
+    if (idle) idle(warm);
+    else setTimeout(warm, 1500);
+  }, [awake, onboarded]);
+
   if (!awake) return <Waking />;
-  if (!onboarded) return <Onboarding />;
+  if (!onboarded)
+    return (
+      <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
+        <Onboarding />
+      </Suspense>
+    );
 
   const go = (next: Route) => setRoute(next);
   const home = () => setRoute({ name: 'home' });
@@ -152,6 +183,11 @@ function Shell() {
 
   return (
     <div className="app">
+      {/*
+        Around the screens and not the whole app, so the tab bar stays put
+        while a screen's file arrives instead of the page going blank.
+      */}
+      <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
       {route.name === 'home' && <Home go={go} />}
       {route.name === 'meals' && <Diary go={go} onEditMeal={editMeal} />}
       {route.name === 'insights' && <Insights />}
@@ -165,6 +201,7 @@ function Shell() {
       {route.name === 'ask' && <Ask onClose={home} />}
       {route.name === 'admin' && <Admin onClose={() => setRoute({ name: 'you' })} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
+      </Suspense>
 
       <AddSheet open={adding} onClose={() => setAdding(false)} go={go} />
 
@@ -188,7 +225,12 @@ function Shell() {
         </nav>
       )}
 
-      <Paywall standing={paywall} onClose={() => setPaywall(null)} />
+      {/* Only fetched the first time somebody actually runs out of something. */}
+      {paywall && (
+        <Suspense fallback={null}>
+          <Paywall standing={paywall} onClose={() => setPaywall(null)} />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -198,7 +240,12 @@ export default function App() {
   // followed it may be on a phone with no diary on it yet, and has one thing
   // to do. Read once, at startup: nothing in the app changes the address bar.
   const resetToken = useMemo(() => resetTokenInUrl(), []);
-  if (resetToken) return <ResetPassword token={resetToken} />;
+  if (resetToken)
+    return (
+      <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
+        <ResetPassword token={resetToken} />
+      </Suspense>
+    );
 
   return (
     <ToastProvider>
