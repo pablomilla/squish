@@ -158,13 +158,36 @@ privacy policy, at
 
 ### Our host
 
-The server and its database run on Render. They hold the data on our behalf and
-do not use it for anything else.
+The server and its database run on Render, in their Frankfurt data centre in
+Germany. They hold the data on our behalf and do not use it for anything else.
 
 ### Recipe links
 
 When you paste a recipe link, our server fetches that page. The site you linked
 to sees a request from our server, not from you — your address is not passed on.
+
+### Outside the UK
+
+<!--
+  Worth confirming once, and re-checking if a provider changes: that the data
+  processing terms are in place with Anthropic (part of their commercial terms
+  for API customers) and with Resend (their DPA, on their legal pages). This
+  section says those terms carry the safeguards for US transfers.
+-->
+
+Our server and the companies above are not in the UK, so here is where
+your data goes when it leaves your device:
+
+- **Your backup and account** are stored in Germany, in the EU. UK law treats
+  the EU as protecting personal data to the same standard as the UK, so no
+  extra safeguards are needed.
+- **Anthropic and Resend** are in the United States. What goes to them — what
+  you ask the AI, and the emails we send you — is covered by the data
+  protection terms each of them has with us, which include the safeguards UK
+  law requires when personal data leaves the UK.
+
+The barcode and password checks above send nothing that identifies you, so
+where those services are makes no difference to you.
 
 ---
 
@@ -255,12 +278,12 @@ Squish is run by **Industry Logic Limited**, a company registered in England
 and Wales, which is the data controller for everything described here.
 
 <!--
-  The ICO data protection fee is paid (September 2026); it renews yearly. Once
-  the ICO registration number arrives (it starts ZA or ZB), it can go under the
-  company number below as "ICO registration: ZB…". Optional, but reassuring.
+  The ICO data protection fee renews every year, from September 2026.
 -->
 
 **Company number:** 08236014
+
+**ICO registration:** ZC255410
 
 **Registered office:** 38a Bowes Street, Blyth, Northumberland, NE24 1BE,
 United Kingdom
