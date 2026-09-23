@@ -22,6 +22,7 @@ import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } fr
 import { promisify } from 'node:util';
 import { migrate, query, transaction } from './db';
 import { sendMail } from './mail';
+import { compose, originOf } from './emails';
 import { judgePassword } from './passwords';
 
 const scrypt = promisify(scryptCallback) as (
@@ -329,18 +330,8 @@ export async function requestReset(email: string, link: (token: string) => strin
     [hashToken(token), found.id],
   );
 
-  await sendMail({
-    to: address,
-    subject: 'Reset your Squish password',
-    text: [
-      'Somebody asked to reset the password on this Squish account.',
-      '',
-      link(token),
-      '',
-      `That link works for ${RESET_HOURS} hours and once only.`,
-      'If it was not you, nothing has happened and you can ignore this.',
-    ].join('\n'),
-  });
+  const url = link(token);
+  await sendMail(await compose('reset', address, { link: url, hours: String(RESET_HOURS) }, originOf(url)));
 }
 
 export type ResetResult = { ok: true; accountId: string } | { ok: false; reason: 'bad_token' | 'weak_password' | 'breached'; message?: string };

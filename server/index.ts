@@ -24,7 +24,9 @@ import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
 import { noticePasswordChanged, noticeSignIn } from './notices';
-import { canSendMail } from './mail';
+import { canSendMail, sendMail } from './mail';
+import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
+import { renderEmail } from './emailRender';
 import { ALLOWANCE, isBillable, nextReset, planFor, standingOf, usedThisMonth, type Billable, type Plan } from './plan';
 import {
   createInvite,
@@ -759,11 +761,119 @@ app.post('/api/admin/test-mail', requireAdmin, async (req, res) => {
   }
   const to = await adminEmail(req.device!);
   try {
-    await sendTestMail(to);
+    await sendTestMail(to, publicOrigin(req));
     res.json({ sent: true, to });
   } catch (error) {
     logFailure('test email', error);
     // The provider's own words, because they are the useful part.
+    res.status(502).json({ error: 'not_sent', message: error instanceof Error ? error.message : 'It did not send.' });
+  }
+});
+
+/* ---------------- Email wording ---------------- *
+ *
+ * Every email's subject, body and button, editable here. The default always
+ * survives in the code, so "put back the original" is deleting a row.
+ */
+
+/** A proposed wording from a request body, or null where it is not one. */
+function wordingFrom(body: unknown): Wording | null {
+  const b = (body ?? {}) as Record<string, unknown>;
+  if (typeof b.subject !== 'string' || typeof b.body !== 'string') return null;
+  return { subject: b.subject, body: b.body, buttonLabel: typeof b.buttonLabel === 'string' ? b.buttonLabel : null };
+}
+
+app.get('/api/admin/emails', requireAdmin, async (_req, res) => {
+  try {
+    res.json({ emails: await listWording() });
+  } catch (error) {
+    logFailure('admin emails', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not read those just now.' });
+  }
+});
+
+/**
+ * What a wording would look like, filled in with sample values — for the
+ * editor to show as somebody types, without saving anything.
+ */
+app.post('/api/admin/emails/:key/preview', requireAdmin, (req, res) => {
+  const key = String(req.params.key);
+  const wording = wordingFrom(req.body);
+  if (!isEmailKey(key) || !wording) {
+    res.status(400).json({ error: 'missing' });
+    return;
+  }
+  const definition = EMAILS[key];
+  res.json({
+    problems: problemsWith(definition, wording),
+    ...renderEmail(definition, wording, samplesFor(definition), publicOrigin(req)),
+  });
+});
+
+app.put('/api/admin/emails/:key', requireAdmin, async (req, res) => {
+  const key = String(req.params.key);
+  const wording = wordingFrom(req.body);
+  if (!isEmailKey(key) || !wording) {
+    res.status(400).json({ error: 'missing', message: 'A subject and a body, please.' });
+    return;
+  }
+  try {
+    const problems = await saveWording(key, wording, await adminEmail(req.device!));
+    if (problems.length) {
+      res.status(400).json({ error: 'problems', problems, message: problems[0] });
+      return;
+    }
+    res.json({ saved: true });
+  } catch (error) {
+    logFailure('admin email save', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+  }
+});
+
+app.delete('/api/admin/emails/:key', requireAdmin, async (req, res) => {
+  const key = String(req.params.key);
+  if (!isEmailKey(key)) {
+    res.status(404).json({ error: 'not_found' });
+    return;
+  }
+  try {
+    await resetWording(key, await adminEmail(req.device!));
+    res.json({ reset: true });
+  } catch (error) {
+    logFailure('admin email reset', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+  }
+});
+
+/**
+ * Send the admin one copy of a wording — the unsaved draft, if that is what
+ * is in the editor — so it can be seen in a real inbox before anybody else
+ * gets it.
+ */
+app.post('/api/admin/emails/:key/test', requireAdmin, async (req, res) => {
+  const key = String(req.params.key);
+  const wording = wordingFrom(req.body);
+  if (!isEmailKey(key) || !wording) {
+    res.status(400).json({ error: 'missing' });
+    return;
+  }
+  if (!mailReady()) {
+    res.status(503).json({ error: 'no_mail', message: 'Email is not set up yet, so there is nothing to send with.' });
+    return;
+  }
+  const definition = EMAILS[key];
+  const problems = problemsWith(definition, wording);
+  if (problems.length) {
+    res.status(400).json({ error: 'problems', problems, message: problems[0] });
+    return;
+  }
+  const to = await adminEmail(req.device!);
+  try {
+    const rendered = renderEmail(definition, wording, samplesFor(definition), publicOrigin(req));
+    await sendMail({ to, ...rendered, subject: `[Test] ${rendered.subject}` });
+    res.json({ sent: true, to });
+  } catch (error) {
+    logFailure('admin email test', error);
     res.status(502).json({ error: 'not_sent', message: error instanceof Error ? error.message : 'It did not send.' });
   }
 });

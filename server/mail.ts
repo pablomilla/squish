@@ -6,7 +6,7 @@
  * an account. None of that justifies an SMTP dependency or a provider baked
  * into the code, so this posts JSON somewhere, or writes to the log.
  *
- * The payload is `{ from, to, subject, text }`, which is what Resend's
+ * The payload is `{ from, to, subject, text, html }`, which is what Resend's
  * `POST /emails` takes as it stands, so pointing at a real provider is
  * environment variables rather than glue code:
  *
@@ -35,6 +35,8 @@ export interface Mail {
   to: string;
   subject: string;
   text: string;
+  /** The branded version. Sent alongside the text, never instead of it. */
+  html?: string;
 }
 
 /** True when mail actually leaves the building. */

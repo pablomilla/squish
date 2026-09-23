@@ -257,6 +257,22 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index verifications_account on verifications(account_id);
     `,
   },
+  {
+    id: 8,
+    sql: `
+      -- Wording for the emails, as edited in the dashboard. A row exists only
+      -- where the default has been replaced; deleting it is "put back the
+      -- original", because the default lives in the code and never goes away.
+      create table email_templates (
+        key          text primary key,
+        subject      text not null,
+        body         text not null,
+        button_label text,
+        updated_by   text,
+        updated_at   timestamptz not null default now()
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

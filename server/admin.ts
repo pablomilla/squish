@@ -24,6 +24,7 @@ import { query } from './db';
 import type { Device } from './identity';
 import { ALLOWANCE, type Plan } from './plan';
 import { canSendMail, sendMail } from './mail';
+import { compose } from './emails';
 
 /**
  * Send one email to the admin asking, to prove the setup works.
@@ -32,16 +33,8 @@ import { canSendMail, sendMail } from './mail';
  * with the provider's own explanation, because "the from-address domain is
  * not verified" is the likeliest failure and the least guessable.
  */
-export async function sendTestMail(to: string): Promise<void> {
-  await sendMail({
-    to,
-    subject: 'Squish can send email',
-    text: [
-      'This is the test email from the Squish dashboard.',
-      '',
-      'If you are reading it, confirmation links, password resets and security notices will reach people too.',
-    ].join('\n'),
-  });
+export async function sendTestMail(to: string, origin: string): Promise<void> {
+  await sendMail(await compose('test', to, {}, origin));
 }
 
 export const mailReady = (): boolean => canSendMail();

@@ -338,6 +338,8 @@ server/           Express API — Claude calls, offline fallback
   diary.ts        The backed-up diary, and refusing a stale write
   accounts.ts     Sign up, sign in, delete, and forgotten passwords
   mail.ts         Email through a provider's webhook, or the log if there is none
+  emails.ts       Every email's wording and placeholders, editable from the dashboard
+  emailRender.ts  Turning wording into the branded HTML email and its plain-text twin
   verify.ts       Confirming an address belongs to whoever typed it
   notices.ts      Telling people when their account is signed into or changed
   passwords.ts    Refusing passwords already in a breach, without sending one

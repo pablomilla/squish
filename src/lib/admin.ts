@@ -146,3 +146,64 @@ export async function sendTestMail(): Promise<TestMail> {
     return { ok: false, message: 'Could not reach Squish just now.' };
   }
 }
+
+export interface EmailWording {
+  subject: string;
+  body: string;
+  buttonLabel: string | null;
+}
+
+export interface EmailTemplate {
+  key: string;
+  label: string;
+  when: string;
+  button: { placeholder: string; label: string; fallback: boolean } | null;
+  placeholders: { name: string; about: string; sample: string; url?: boolean }[];
+  required: string[];
+  original: EmailWording;
+  current: EmailWording;
+  customised: boolean;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface EmailPreview {
+  problems: string[];
+  subject: string;
+  text: string;
+  html: string;
+}
+
+export type EmailDone = { ok: true; to?: string } | { ok: false; message: string; problems?: string[] };
+
+async function send(path: string, method: string, body?: unknown): Promise<EmailDone> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl(path), {
+      method,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as { to?: string; message?: string; problems?: string[] };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.', problems: payload.problems };
+    return { ok: true, to: payload.to };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}
+
+const emailPath = (key: string) => `/api/admin/emails/${encodeURIComponent(key)}`;
+
+export const fetchEmails = (): Promise<{ emails: EmailTemplate[] } | null> => ask('/api/admin/emails');
+
+/** The wording filled in with sample values, as it would arrive. Saves nothing. */
+export const previewEmail = (key: string, wording: EmailWording): Promise<EmailPreview | null> =>
+  ask(`${emailPath(key)}/preview`, 'POST', wording);
+
+export const saveEmail = (key: string, wording: EmailWording): Promise<EmailDone> => send(emailPath(key), 'PUT', wording);
+
+export const resetEmail = (key: string): Promise<EmailDone> => send(emailPath(key), 'DELETE');
+
+/** Send the admin this wording — unsaved, if that is what is in the editor. */
+export const testEmail = (key: string, wording: EmailWording): Promise<EmailDone> =>
+  send(`${emailPath(key)}/test`, 'POST', wording);

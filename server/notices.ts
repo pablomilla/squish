@@ -16,6 +16,7 @@
  */
 import { query } from './db';
 import { sendQuietly } from './mail';
+import { compose } from './emails';
 
 /**
  * "Safari on iPhone", from a user-agent string.
@@ -71,50 +72,17 @@ async function confirmedAddress(accountId: string): Promise<string | null> {
   return rows[0]?.email ?? null;
 }
 
-const IF_NOT_YOU = [
-  "If this wasn't you, reset your password from the sign-in screen straight away.",
-  'Resetting signs out every device, including whoever did this.',
-];
-
 export async function noticeSignIn(accountId: string, userAgent: string | undefined, origin: string): Promise<void> {
   const to = await confirmedAddress(accountId);
   if (!to) return;
-  sendQuietly(
-    {
-      to,
-      subject: 'New sign-in to Squish',
-      text: [
-        `Your Squish account was signed into on ${describeDevice(userAgent)}, ${when()}.`,
-        '',
-        'If that was you, there is nothing to do.',
-        '',
-        ...IF_NOT_YOU,
-        origin,
-      ].join('\n'),
-    },
-    'sign-in notice',
-  );
+  sendQuietly(await compose('signin', to, { device: describeDevice(userAgent), time: when(), app_link: origin }, origin), 'sign-in notice');
 }
 
 export async function noticePasswordChanged(accountId: string, how: 'changed' | 'reset', origin: string): Promise<void> {
   const to = await confirmedAddress(accountId);
   if (!to) return;
   sendQuietly(
-    {
-      to,
-      subject: how === 'reset' ? 'Your Squish password was reset' : 'Your Squish password was changed',
-      text: [
-        `The password on your Squish account was ${how} ${when()}.`,
-        how === 'reset'
-          ? 'Every device that was signed in has been signed out.'
-          : 'Every other device that was signed in has been signed out.',
-        '',
-        'If that was you, there is nothing to do.',
-        '',
-        ...IF_NOT_YOU,
-        origin,
-      ].join('\n'),
-    },
+    await compose(how === 'reset' ? 'password-reset' : 'password-changed', to, { time: when(), app_link: origin }, origin),
     'password notice',
   );
 }

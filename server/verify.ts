@@ -14,6 +14,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { migrate, query } from './db';
 import { sendMail } from './mail';
+import { compose, originOf } from './emails';
 
 /** A week: long enough to get round to it, short enough to be worth losing. */
 const DAYS = 7;
@@ -52,19 +53,8 @@ export async function sendVerification(accountId: string, link: (token: string) 
     [hashToken(token), accountId],
   );
 
-  await sendMail({
-    to: account.email,
-    subject: 'Confirm your email for Squish',
-    text: [
-      'Somebody — hopefully you — made a Squish account with this address.',
-      '',
-      'To confirm it is yours:',
-      link(token),
-      '',
-      `That link works for ${DAYS} days.`,
-      "If you did not make an account, you can ignore this. Nothing will be sent to you again unless somebody follows the link.",
-    ].join('\n'),
-  });
+  const url = link(token);
+  await sendMail(await compose('verify', account.email, { link: url, days: String(DAYS) }, originOf(url)));
   return 'sent';
 }
 

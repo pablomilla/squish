@@ -72,8 +72,8 @@ a password change. Asking to reset an unknown address reports success.
 
 Squish sends three kinds of email — a link to confirm an address, a
 password-reset link, and security notices — so there is no SMTP dependency and
-no provider baked in. It posts `{ from, to, subject, text }` as JSON with a
-bearer token, which is exactly what Resend's `POST /emails` takes:
+no provider baked in. It posts `{ from, to, subject, text, html }` as JSON with
+a bearer token, which is exactly what Resend's `POST /emails` takes:
 
 | Variable | Value |
 |---|---|
@@ -101,6 +101,41 @@ scanners follow links before people do.
 the device coarsely ("Edge on Windows") and never hold up the request that
 triggered them — a mail provider having a bad minute must not turn a
 successful sign-in into an error.
+
+### Changing what the emails say
+
+Open **You → Dashboard → Email wording** and press **Edit** on any email. The
+subject, the button and the message can all be changed; the preview underneath
+redraws as you type, filled in with made-up details. **Send me this version**
+sends the unsaved draft to you, marked `[Test]`, so it can be seen in a real
+inbox before anybody else gets it. **Put back the original** is always there,
+because the original wording lives in `server/emails.ts` and never goes away.
+
+The parts that differ per person are placeholders — `{link}`, `{device}`,
+`{time}` and so on. Each email lists the ones it can use, and tapping one puts
+it where the cursor is. Two rules keep an edit from breaking an email:
+
+- A placeholder the email does not have is refused, so a typo like `{lnk}`
+  never reaches anybody as literal text.
+- Some are required. A reset email without `{link}` is a reset nobody can use,
+  so it will not save.
+
+Those rules are checked on the server when saving, and again when sending, so
+wording that somehow became invalid falls back to the original rather than
+going out broken.
+
+### What they look like
+
+Every email goes out twice over: a designed HTML version and a plain-text copy
+beside it, for mail apps that do not show designs. The HTML is built the way
+email has to be — tables, inline styles, no scripts, no web fonts — with the
+Squish icon and name at the top (the name is real text, so it still reads with
+images turned off). When the button's placeholder sits on a line of its own it
+is drawn as a button, with the plain address underneath for when a button
+will not click.
+
+The footer — the company name and address and the privacy link — is not
+editable. It is what the law asks every email to carry.
 
 ## Environment
 
@@ -137,6 +172,12 @@ on the first request that needs them.
 
 1. `accounts`, `devices`, `diaries`, `usage`
 2. `resets`
+3. `accounts.plus_until`
+4. `invite_uses`
+5. `usage.cost_usd`, `admin_actions`
+6. `invites`
+7. `accounts.email_verified_at`, `verifications`
+8. `email_templates` — wording changed from the dashboard; no row means the original
 
 A device survives its account being deleted, detached rather than removed, so
 deleting an account never leaves somebody unable to log lunch.
