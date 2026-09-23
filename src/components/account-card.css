@@ -23,6 +23,13 @@
 
 .account-trouble { color: var(--bad); margin: 0; }
 
+/* A sheet's main action gets the whole row, so nothing else can sit close
+   enough to be tapped by mistake; the quieter link goes underneath it. */
+.account-form > .btn { width: 100%; }
+.account-form-footer { display: flex; justify-content: center; margin-top: 4px; }
+/* Padding rather than margin, so the tap target is finger-sized. */
+.account-form-footer .linkish { align-self: auto; padding: 12px 16px; }
+
 .linkish {
   background: none;
   border: 0;

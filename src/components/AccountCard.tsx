@@ -260,7 +260,7 @@ export function Credentials({
 
   return (
     <form
-      className="stack"
+      className="stack account-form"
       onSubmit={(event) => {
         event.preventDefault();
         void go();
@@ -292,7 +292,7 @@ export function Credentials({
       <button type="submit" className="btn" disabled={busy || !email || !password}>
         {busy ? 'One moment…' : submit}
       </button>
-      {footer}
+      {footer && <div className="account-form-footer">{footer}</div>}
     </form>
   );
 }
@@ -303,7 +303,7 @@ export function Forgot({ onDone }: { onDone: () => void }) {
 
   return (
     <form
-      className="stack"
+      className="stack account-form"
       onSubmit={(event) => {
         event.preventDefault();
         void go();
@@ -341,7 +341,7 @@ function NewPassword({ onDone }: { onDone: () => void }) {
 
   return (
     <form
-      className="stack"
+      className="stack account-form"
       onSubmit={(event) => {
         event.preventDefault();
         void go();
@@ -383,7 +383,7 @@ function DeleteAccount({ email, onDone }: { email: string; onDone: () => void })
 
   return (
     <form
-      className="stack"
+      className="stack account-form"
       onSubmit={(event) => {
         event.preventDefault();
         void go();
@@ -425,7 +425,7 @@ function ForgetDevices({ count, onDone }: { count: number; onDone: () => void })
 
   return (
     <form
-      className="stack"
+      className="stack account-form"
       onSubmit={(event) => {
         event.preventDefault();
         void go();
