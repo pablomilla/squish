@@ -360,7 +360,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
           <SparkIcon size={16} /> Something not right?
         </label>
         <p className="tiny muted">
-          Tell Squish in your own words — "it was a full pint", "half the rice", "grilled not fried".
+          Tell Squish in your own words — "two eggs, not one", "no cheese", "grilled not fried".
         </p>
         <div className="fix-row">
           <input
@@ -368,7 +368,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
             className="input"
             value={fix}
             disabled={fixing}
-            placeholder="It was a full pint"
+            placeholder="There were two eggs, not one"
             onChange={(e) => setFix(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
