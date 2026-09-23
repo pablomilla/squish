@@ -1,9 +1,9 @@
 .onboarding { background: linear-gradient(180deg, var(--brand-soft) 0%, var(--bg) 42%); }
 .onboarding .screen { padding-bottom: 28px; display: flex; flex-direction: column; }
 
-.onboard-progress { display: flex; gap: 6px; margin-bottom: 20px; }
-.onboard-progress span { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-sunk); transition: background 0.3s ease; }
-.onboard-progress span.is-on { background: var(--brand); }
+/* One bar that fills as you go, rather than a row of dashes to count. */
+.onboard-progress { height: 6px; border-radius: 3px; background: var(--surface-sunk); margin-bottom: 20px; overflow: hidden; }
+.onboard-progress span { display: block; height: 100%; border-radius: 3px; background: var(--brand); transition: width 0.45s var(--ease); }
 
 .onboard-hero { text-align: center; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
 .onboard-logo { display: flex; justify-content: center; margin-top: var(--s2); }
@@ -34,3 +34,70 @@
 
 input[type='range'] { width: 100%; accent-color: var(--brand); height: 28px; -webkit-appearance: auto; appearance: auto; }
 .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+
+/* ---------- Moving between steps ---------- */
+.onboard-step { position: relative; }
+.onboard-step--fwd { animation: onboard-in-fwd 0.36s var(--ease) both; }
+.onboard-step--back { animation: onboard-in-back 0.36s var(--ease) both; }
+@keyframes onboard-in-fwd { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes onboard-in-back { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Squish, talking ---------- */
+.buddy { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+.buddy-squish { flex: none; animation: buddy-pop 0.45s var(--ease) both; }
+@keyframes buddy-pop { from { transform: scale(0.82) translateY(6px); } to { transform: none; } }
+.buddy-words { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.buddy-words h1 { font-size: var(--text-display); line-height: 1.15; }
+
+.bubble {
+  position: relative; align-self: flex-start; margin: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  padding: 8px 12px; font-size: var(--text-label); font-weight: 500; color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  animation: bubble-pop 0.4s var(--ease) both;
+}
+/* The tail, pointing back at Squish. */
+.bubble::before {
+  content: ''; position: absolute; left: -7px; top: 12px; width: 12px; height: 12px;
+  background: inherit; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  transform: rotate(45deg); border-radius: 0 0 0 3px;
+}
+@keyframes bubble-pop { from { opacity: 0; transform: scale(0.85); transform-origin: left center; } to { opacity: 1; transform: none; } }
+
+/* The welcome: Squish says hello from above the wordmark. */
+.onboard-hello { position: relative; display: flex; flex-direction: column; align-items: center; }
+.bubble--below { margin-top: -6px; align-self: center; animation-delay: 0.35s; }
+.bubble--below::before { left: calc(50% - 6px); top: -7px; transform: rotate(135deg); }
+
+.onboard-feature { animation: feature-rise 0.45s var(--ease) both; }
+@keyframes feature-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.onboard-name { font-size: 22px; font-weight: 600; padding: 16px 18px; }
+
+/* Where the goal leads, or a check that it points the right way. */
+.onboard-when {
+  margin: 0; background: var(--brand-soft); border-radius: var(--r-md); padding: 12px 14px;
+  animation: bubble-pop 0.35s var(--ease) both;
+}
+.onboard-when--check { background: var(--warn-soft); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+
+/* ---------- The finish ---------- */
+.onboard-plan { animation: feature-rise 0.5s var(--ease) 0.15s both; }
+.confetti { position: absolute; inset: -20px 0 auto; height: 0; pointer-events: none; z-index: 2; }
+.confetti i {
+  position: absolute; top: 0; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+  animation: confetti-fall 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) both;
+}
+.confetti i.confetti-round { width: 9px; height: 9px; border-radius: 50%; }
+@keyframes confetti-fall {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--drift), 420px) rotate(var(--spin)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboard-step--fwd, .onboard-step--back, .buddy-squish, .bubble, .onboard-feature, .onboard-when, .onboard-plan { animation: none; }
+  .onboard-progress span { transition: none; }
+  .confetti { display: none; }
+}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, useToast } from '../components/ui';
@@ -11,18 +11,36 @@ import { HeightField, NumberField, WeightField } from '../components/fields';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
-import type { Activity, Goal, Profile, Sex } from '../types';
-import { PACE_CHOICES, formatPace, paceIn, paceToKg, retuneForUnits } from '../lib/units';
+import type { Activity, Goal, Mood, Profile, Sex } from '../types';
+import { PACE_CHOICES, formatPace, formatWeight, paceIn, paceToKg, retuneForUnits } from '../lib/units';
+import { aroundWhen, goalProjection, type GoalProjection } from '../lib/goalDate';
 import type { Units } from '../lib/units';
 import './onboarding.css';
 
-const STEPS = ['welcome', 'about', 'goal', 'activity', 'plan'] as const;
+const STEPS = ['welcome', 'name', 'about', 'goal', 'activity', 'plan'] as const;
 type Step = (typeof STEPS)[number];
 
-const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string }> = {
-  lose: { title: 'Lose weight', blurb: 'A gentle deficit, plenty of protein', emoji: '🌱' },
-  maintain: { title: 'Stay as I am', blurb: 'Keep things steady and balanced', emoji: '⚖️' },
-  gain: { title: 'Build up', blurb: 'A little surplus to grow on', emoji: '💪' },
+const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string; mood: Mood; say: string }> = {
+  lose: { title: 'Lose weight', blurb: 'A gentle deficit, plenty of protein', emoji: '🌱', mood: 'proud', say: 'Slow and steady — I’ll cheer every step.' },
+  maintain: { title: 'Stay as I am', blurb: 'Keep things steady and balanced', emoji: '⚖️', mood: 'calm', say: 'Steady and balanced. Love that.' },
+  gain: { title: 'Build up', blurb: 'A little surplus to grow on', emoji: '💪', mood: 'cheering', say: 'Let’s build you up!' },
+};
+
+/** What each level looks like in a real week, because "moderately active" means something different to everybody. */
+const ACTIVITY_COPY: Record<Activity, { emoji: string; example: string; mood: Mood; say: string }> = {
+  sedentary: { emoji: '🛋️', example: 'Desk job, not much walking', mood: 'calm', say: 'No judgement — we start where you are.' },
+  light: { emoji: '🚶', example: 'On your feet a bit, or a short walk most days', mood: 'excited', say: 'A bit of bustle. Nice.' },
+  moderate: { emoji: '🚴', example: 'Exercise 3–5 times a week, or an active job', mood: 'proud', say: 'Look at you go!' },
+  active: { emoji: '🏃', example: 'Hard exercise most days, or a physical job', mood: 'cheering', say: 'Busy bean!' },
+  athlete: { emoji: '🏅', example: 'Training hard, often twice a day', mood: 'cheering', say: 'Champion energy!' },
+};
+
+const prefersLessMotion = () => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -34,6 +52,8 @@ const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string }> =
 export default function Onboarding({ accounts = false }: { accounts?: boolean }) {
   const completeOnboarding = useSquish((s) => s.completeOnboarding);
   const [step, setStep] = useState<Step>('welcome');
+  // Which way the steps slide: forward from the right, back from the left.
+  const [dir, setDir] = useState<'fwd' | 'back'>('fwd');
   const [draft, setDraft] = useState<Profile>(DEFAULT_PROFILE);
   const [signing, setSigning] = useState<'in' | 'forgot' | null>(null);
   // Somebody who has said they are under 18. Held here only, never saved.
@@ -56,14 +76,22 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
       return;
     }
     toast(`Signed in as ${who.email ?? 'you'}. There is no diary saved yet, so let's set one up.`, '🫧');
-    setStep('about');
+    setStep('name');
   };
 
   const index = STEPS.indexOf(step);
   const targets = useMemo(() => computeTargets(draft), [draft]);
   const set = (patch: Partial<Profile>) => setDraft((d) => ({ ...d, ...patch }));
-  const next = () => setStep(STEPS[Math.min(STEPS.length - 1, index + 1)]);
-  const back = () => setStep(STEPS[Math.max(0, index - 1)]);
+  const next = () => {
+    setDir('fwd');
+    setStep(STEPS[Math.min(STEPS.length - 1, index + 1)]);
+  };
+  const back = () => {
+    setDir('back');
+    setStep(STEPS[Math.max(0, index - 1)]);
+  };
+  const projection = goalProjection(draft);
+  const name = draft.name.trim();
 
   if (tooYoung)
     return (
@@ -78,191 +106,224 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
     <div className="app onboarding">
       <div className="screen">
         <div className="onboard-progress" aria-hidden="true">
-          {STEPS.map((s, i) => (
-            <span key={s} className={i <= index ? 'is-on' : ''} />
-          ))}
+          <span style={{ width: `${((index + 1) / STEPS.length) * 100}%` }} />
         </div>
 
-        {step === 'welcome' && (
-          <div className="onboard-hero">
-            <Squish mood="excited" size={190} heart />
-            <h1 className="onboard-logo">
-              <Wordmark width={230} />
-            </h1>
-            <p className="onboard-tag">Your little health buddy.</p>
-            <p className="muted center" style={{ maxWidth: 300, margin: '10px auto 0' }}>
-              Snap your meal, get instant nutrition insights, and build habits that feel kind. Small steps, big progress.
-            </p>
-            <div className="onboard-features">
-              {[
-                { emoji: '📸', label: 'Snap your meal' },
-                { emoji: '📊', label: 'Get instant insights' },
-                { emoji: '💖', label: 'Build healthier habits' },
-                { emoji: '⭐', label: 'Cheer together' },
-              ].map((f) => (
-                <div key={f.label} className="onboard-feature">
-                  <span aria-hidden="true">{f.emoji}</span>
-                  {f.label}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {step === 'about' && (
-          <div className="stack">
-            <div className="onboard-head">
-              <Squish mood="calm" size={96} bob={false} />
-              <div>
-                <h1>A bit about you</h1>
-                <p className="muted small">This is only used to work out your daily targets, and it stays on your device.</p>
-              </div>
-            </div>
-
-            <div className="field">
-              <label htmlFor="name">What shall I call you?</label>
-              <input id="name" className="input" value={draft.name} placeholder="Your name" onChange={(e) => set({ name: e.target.value })} />
-            </div>
-
-            <div className="field">
-              <label>Sex assigned at birth (for the energy formula)</label>
-              <Segmented<Sex>
-                value={draft.sex}
-                onChange={(sex) => set({ sex })}
-                options={[
-                  { value: 'female', label: 'Female' },
-                  { value: 'male', label: 'Male' },
-                  { value: 'other', label: 'Rather not' },
-                ]}
-              />
-            </div>
-
-            <div className="field">
-              <label>Units</label>
-              <Segmented<Units>
-                value={draft.units}
-                onChange={(units) => setDraft((d) => retuneForUnits(d, units))}
-                options={[
-                  { value: 'metric', label: 'cm / kg' },
-                  { value: 'imperial', label: 'ft / st' },
-                ]}
-              />
-            </div>
-
-            <NumberField
-              label="Age"
-              value={draft.age}
-              suffix="yrs"
-              min={MIN_AGE}
-              max={100}
-              onChange={(age) => set({ age })}
-              onBelowMin={() => setTooYoung(true)}
-            />
-            <HeightField cm={draft.heightCm} units={draft.units} onChange={(heightCm) => set({ heightCm })} />
-            <WeightField label="Weight" kg={draft.weightKg} units={draft.units} onChange={(weightKg) => set({ weightKg })} />
-            <WeightField
-              label="Goal weight"
-              kg={draft.targetWeightKg}
-              units={draft.units}
-              onChange={(targetWeightKg) => set({ targetWeightKg })}
-            />
-          </div>
-        )}
-
-        {step === 'goal' && (
-          <div className="stack">
-            <div className="onboard-head">
-              <Squish mood="proud" size={96} bob={false} />
-              <div>
-                <h1>What are we aiming for?</h1>
-                <p className="muted small">You can change this whenever you like.</p>
-              </div>
-            </div>
-
-            {(Object.keys(GOAL_COPY) as Goal[]).map((goal) => (
-              <button
-                key={goal}
-                type="button"
-                className={`choice ${draft.goal === goal ? 'is-on' : ''}`}
-                onClick={() => set({ goal })}
-                aria-pressed={draft.goal === goal}
-              >
-                <span className="choice-emoji" aria-hidden="true">{GOAL_COPY[goal].emoji}</span>
-                <span>
-                  <b>{GOAL_COPY[goal].title}</b>
-                  <span className="muted small"> {GOAL_COPY[goal].blurb}</span>
-                </span>
-              </button>
-            ))}
-
-            {draft.goal !== 'maintain' && (
-              <div className="field">
-                <label htmlFor="pace">Pace — {formatPace(draft.pace, draft.units)} per week</label>
-                <input
-                  id="pace"
-                  type="range"
-                  min={PACE_CHOICES[draft.units].min}
-                  max={PACE_CHOICES[draft.units].max}
-                  step={PACE_CHOICES[draft.units].step}
-                  value={paceIn(draft.pace, draft.units)}
-                  onChange={(e) => set({ pace: paceToKg(Number(e.target.value), draft.units) })}
-                />
-                <p className="tiny muted">
-                  Steady beats speedy — {draft.units === 'metric' ? '0.5 kg' : '1 lb'} a week is the sweet spot for most
-                  people.
+        <div key={step} className={`onboard-step onboard-step--${dir}`}>
+          {step === 'welcome' && (
+            <div className="onboard-hero">
+              <div className="onboard-hello">
+                <Squish mood="excited" size={190} heart />
+                <p className="bubble bubble--below" aria-hidden="true">
+                  Hi! I’m Squish.
                 </p>
               </div>
-            )}
-          </div>
-        )}
+              <h1 className="onboard-logo">
+                <Wordmark width={230} />
+              </h1>
+              <p className="onboard-tag">Your little health buddy.</p>
+              <p className="muted center" style={{ maxWidth: 300, margin: '10px auto 0' }}>
+                Snap your meal, get instant nutrition insights, and build habits that feel kind. Small steps, big progress.
+              </p>
+              <div className="onboard-features">
+                {[
+                  { emoji: '📸', label: 'Snap your meal' },
+                  { emoji: '📊', label: 'Get instant insights' },
+                  { emoji: '💖', label: 'Build healthier habits' },
+                  { emoji: '⭐', label: 'Cheer together' },
+                ].map((f, i) => (
+                  <div key={f.label} className="onboard-feature" style={{ animationDelay: `${0.15 + i * 0.08}s` }}>
+                    <span aria-hidden="true">{f.emoji}</span>
+                    {f.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {step === 'activity' && (
-          <div className="stack">
-            <div className="onboard-head">
-              <Squish mood="cheering" size={96} bob={false} />
-              <div>
+          {step === 'name' && (
+            <div className="stack">
+              <Buddy mood={name ? 'cheering' : 'excited'} say={name ? `Lovely to meet you, ${name}!` : 'Let’s be friends.'}>
+                <h1>First things first — what shall I call you?</h1>
+              </Buddy>
+              <div className="field">
+                <label htmlFor="name" className="visually-hidden">
+                  Your name
+                </label>
+                <input
+                  id="name"
+                  className="input onboard-name"
+                  value={draft.name}
+                  placeholder="Your name"
+                  autoComplete="given-name"
+                  autoFocus
+                  maxLength={40}
+                  onChange={(e) => set({ name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') next();
+                  }}
+                />
+                <p className="tiny muted">Just a first name, or whatever you like being called. You can skip this.</p>
+              </div>
+            </div>
+          )}
+
+          {step === 'about' && (
+            <div className="stack">
+              <Buddy mood="thinking" say="Only used to work out your targets — nothing else.">
+                <h1>A bit about you{name ? `, ${name}` : ''}</h1>
+              </Buddy>
+
+              <div className="field">
+                <label>Sex assigned at birth (for the energy formula)</label>
+                <Segmented<Sex>
+                  value={draft.sex}
+                  onChange={(sex) => set({ sex })}
+                  options={[
+                    { value: 'female', label: 'Female' },
+                    { value: 'male', label: 'Male' },
+                    { value: 'other', label: 'Rather not' },
+                  ]}
+                />
+              </div>
+
+              <div className="field">
+                <label>Units</label>
+                <Segmented<Units>
+                  value={draft.units}
+                  onChange={(units) => setDraft((d) => retuneForUnits(d, units))}
+                  options={[
+                    { value: 'metric', label: 'cm / kg' },
+                    { value: 'imperial', label: 'ft / st' },
+                  ]}
+                />
+              </div>
+
+              <NumberField
+                label="Age"
+                value={draft.age}
+                suffix="yrs"
+                min={MIN_AGE}
+                max={100}
+                onChange={(age) => set({ age })}
+                onBelowMin={() => setTooYoung(true)}
+              />
+              <HeightField cm={draft.heightCm} units={draft.units} onChange={(heightCm) => set({ heightCm })} />
+              <WeightField label="Weight" kg={draft.weightKg} units={draft.units} onChange={(weightKg) => set({ weightKg })} />
+            </div>
+          )}
+
+          {step === 'goal' && (
+            <div className="stack">
+              <Buddy mood={GOAL_COPY[draft.goal].mood} say={GOAL_COPY[draft.goal].say}>
+                <h1>What are we aiming for?</h1>
+              </Buddy>
+
+              {(Object.keys(GOAL_COPY) as Goal[]).map((goal) => (
+                <button
+                  key={goal}
+                  type="button"
+                  className={`choice ${draft.goal === goal ? 'is-on' : ''}`}
+                  onClick={() => set({ goal })}
+                  aria-pressed={draft.goal === goal}
+                >
+                  <span className="choice-emoji" aria-hidden="true">
+                    {GOAL_COPY[goal].emoji}
+                  </span>
+                  <span>
+                    <b>{GOAL_COPY[goal].title}</b>
+                    <span className="muted small"> {GOAL_COPY[goal].blurb}</span>
+                  </span>
+                </button>
+              ))}
+
+              {draft.goal !== 'maintain' && (
+                <>
+                  <WeightField
+                    label="Goal weight"
+                    kg={draft.targetWeightKg}
+                    units={draft.units}
+                    onChange={(targetWeightKg) => set({ targetWeightKg })}
+                  />
+                  <div className="field">
+                    <label htmlFor="pace">Pace — {formatPace(draft.pace, draft.units)} per week</label>
+                    <input
+                      id="pace"
+                      type="range"
+                      min={PACE_CHOICES[draft.units].min}
+                      max={PACE_CHOICES[draft.units].max}
+                      step={PACE_CHOICES[draft.units].step}
+                      value={paceIn(draft.pace, draft.units)}
+                      onChange={(e) => set({ pace: paceToKg(Number(e.target.value), draft.units) })}
+                    />
+                    <p className="tiny muted">
+                      Steady beats speedy — {draft.units === 'metric' ? '0.5 kg' : '1 lb'} a week is the sweet spot for most
+                      people.
+                    </p>
+                  </div>
+                  <GoalNote projection={projection} target={formatWeight(draft.targetWeightKg, draft.units)} onSwitch={(goal) => set({ goal })} />
+                </>
+              )}
+            </div>
+          )}
+
+          {step === 'activity' && (
+            <div className="stack">
+              <Buddy mood={ACTIVITY_COPY[draft.activity].mood} say={ACTIVITY_COPY[draft.activity].say}>
                 <h1>How active is a normal day?</h1>
-                <p className="muted small">Everything counts — walking, chasing kids, the lot.</p>
-              </div>
+              </Buddy>
+              {(Object.keys(ACTIVITY_LABEL) as Activity[]).map((activity) => (
+                <button
+                  key={activity}
+                  type="button"
+                  className={`choice ${draft.activity === activity ? 'is-on' : ''}`}
+                  onClick={() => set({ activity })}
+                  aria-pressed={draft.activity === activity}
+                >
+                  <span className="choice-emoji" aria-hidden="true">
+                    {ACTIVITY_COPY[activity].emoji}
+                  </span>
+                  <span>
+                    <b>{ACTIVITY_LABEL[activity]}</b>
+                    <span className="muted small"> {ACTIVITY_COPY[activity].example}</span>
+                  </span>
+                </button>
+              ))}
             </div>
-            {(Object.keys(ACTIVITY_LABEL) as Activity[]).map((activity) => (
-              <button
-                key={activity}
-                type="button"
-                className={`choice ${draft.activity === activity ? 'is-on' : ''}`}
-                onClick={() => set({ activity })}
-                aria-pressed={draft.activity === activity}
-              >
-                <span>
-                  <b>{ACTIVITY_LABEL[activity]}</b>
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
+          )}
 
-        {step === 'plan' && (
-          <div className="stack">
-            <div className="center">
-              <Squish mood="cheering" size={140} />
-              <h1 style={{ marginTop: 6 }}>Here's your plan{draft.name ? `, ${draft.name}` : ''}</h1>
-              <p className="muted small">Built from your height, weight, age and activity. Tweak it any time in You → Targets.</p>
-            </div>
+          {step === 'plan' && (
+            <div className="stack">
+              <Confetti />
+              <div className="center">
+                <Squish mood="cheering" size={140} />
+                <h1 style={{ marginTop: 6 }}>Here’s your plan{name ? `, ${name}` : ''}!</h1>
+                <p className="muted small">Built from your height, weight, age and activity. Tweak it any time in You → Targets.</p>
+              </div>
 
-            <div className="card">
-              <div className="row-between" style={{ marginBottom: 10 }}>
-                <span className="muted small">Daily energy</span>
-                <b style={{ fontSize: 28 }}>{targets.calories} kcal</b>
+              <div className="card onboard-plan">
+                <div className="row-between" style={{ marginBottom: 10 }}>
+                  <span className="muted small">Daily energy</span>
+                  <b style={{ fontSize: 28 }}>
+                    <CountUp value={targets.calories} /> kcal
+                  </b>
+                </div>
+                <MacroBars totals={{ calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }} targets={targets} compact />
+                <div className="divider" />
+                <div className="row" style={{ gap: 16 }}>
+                  <span className="small muted">💧 {targets.water} glasses ({waterVolume(targets.water)})</span>
+                  <span className="small muted">👟 {targets.steps.toLocaleString()} steps</span>
+                </div>
               </div>
-              <MacroBars totals={{ calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }} targets={targets} compact />
-              <div className="divider" />
-              <div className="row" style={{ gap: 16 }}>
-                <span className="small muted">💧 {targets.water} glasses ({waterVolume(targets.water)})</span>
-                <span className="small muted">👟 {targets.steps.toLocaleString()} steps</span>
-              </div>
+              {projection?.kind === 'date' && (
+                <p className="onboard-when small center">
+                  🎯 At this pace, around <b>{aroundWhen(projection.date)}</b> you could be at{' '}
+                  <b>{formatWeight(draft.targetWeightKg, draft.units)}</b>.
+                </p>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="onboard-actions">
           {index > 0 && (
@@ -276,7 +337,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
             </button>
           ) : (
             <button type="button" className="btn grow" onClick={next}>
-              {step === 'welcome' ? 'Get started' : 'Continue'}
+              {step === 'welcome' ? 'Get started' : step === 'name' && !name ? 'Skip' : 'Continue'}
             </button>
           )}
         </div>
@@ -313,6 +374,101 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
           )}
         </Sheet>
       </div>
+    </div>
+  );
+}
+
+/** Squish, saying something — the step's question, with a reaction that changes as they answer. */
+function Buddy({ mood, say, children }: { mood: Mood; say: string; children: React.ReactNode }) {
+  return (
+    <div className="buddy">
+      <Squish mood={mood} size={92} bob={false} className="buddy-squish" key={mood} />
+      <div className="buddy-words">
+        {children}
+        {/* Keyed on the words, so each new reaction pops in rather than silently swapping. */}
+        <p className="bubble" key={say} aria-live="polite">
+          {say}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Where the goal weight and pace lead — or a kind word if they point opposite ways. */
+function GoalNote({
+  projection,
+  target,
+  onSwitch,
+}: {
+  projection: GoalProjection;
+  target: string;
+  onSwitch: (goal: Goal) => void;
+}) {
+  if (!projection) return null;
+  if (projection.kind === 'there') return <p className="onboard-when small">🎉 You’re there already — maybe “Stay as I am”?</p>;
+  if (projection.kind === 'mismatch')
+    return (
+      <div className="onboard-when onboard-when--check small">
+        <span>
+          {projection.suggest === 'gain' ? 'That goal is above your weight now.' : 'That goal is below your weight now.'} Did you
+          mean to {projection.suggest === 'gain' ? 'build up' : 'lose weight'}?
+        </span>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => onSwitch(projection.suggest)}>
+          {projection.suggest === 'gain' ? 'Build up instead' : 'Lose weight instead'}
+        </button>
+      </div>
+    );
+  return (
+    <p className="onboard-when small" aria-live="polite">
+      🎯 You’d reach <b>{target}</b> around <b>{aroundWhen(projection.date)}</b>.
+    </p>
+  );
+}
+
+/** The day's calories counting up to their number, once. Straight to it for anybody who has asked for less motion. */
+function CountUp({ value }: { value: number }) {
+  const still = useMemo(() => prefersLessMotion(), []);
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (still) return;
+    let frame = 0;
+    const started = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - started) / 900);
+      setShown(Math.round(value * (1 - (1 - t) ** 3)));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, still]);
+  return <>{(still ? value : shown).toLocaleString()}</>;
+}
+
+const CONFETTI_COLOURS = ['var(--brand)', 'var(--pink)', 'var(--peach)', 'var(--mint)', 'var(--yellow)'];
+
+/** A little burst for finishing setup. Decoration only: hidden from screen readers, and absent with reduced motion. */
+function Confetti() {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, i) => ({
+        left: `${(i * 37) % 100}%`,
+        colour: CONFETTI_COLOURS[i % CONFETTI_COLOURS.length],
+        delay: `${(i % 7) * 0.06}s`,
+        drift: `${((i * 53) % 120) - 60}px`,
+        spin: `${((i * 71) % 540) - 270}deg`,
+        round: i % 3 === 0,
+      })),
+    [],
+  );
+  return (
+    <div className="confetti" aria-hidden="true">
+      {pieces.map((p, i) => (
+        <i
+          key={i}
+          className={p.round ? 'confetti-round' : undefined}
+          style={{ left: p.left, background: p.colour, animationDelay: p.delay, ['--drift' as string]: p.drift, ['--spin' as string]: p.spin }}
+        />
+      ))}
     </div>
   );
 }
