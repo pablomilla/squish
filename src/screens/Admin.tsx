@@ -702,6 +702,7 @@ function EmailEditor({
   return (
     <Sheet
       open
+      wide
       onClose={close}
       title={email.label}
       footer={

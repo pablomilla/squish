@@ -11,12 +11,15 @@ export function Sheet({
   title,
   children,
   footer,
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** Wider on a desk-sized screen; the same as any other sheet on a phone. */
+  wide?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -35,7 +38,7 @@ export function Sheet({
 
   return createPortal(
     <div className="sheet-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
+      <div className={wide ? 'sheet sheet--wide' : 'sheet'} role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-grip" />
         {title && (
           <div className="row-between" style={{ marginBottom: 12 }}>

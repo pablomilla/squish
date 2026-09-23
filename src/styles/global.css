@@ -190,6 +190,11 @@ a { color: var(--brand-ink); }
   padding: 10px 16px calc(22px + env(safe-area-inset-bottom));
   animation: sheet-up 0.3s var(--ease) both;
 }
+.app--wide { max-width: none; box-shadow: none; }
+/* For sheets whose content needs the room — the email editor's preview. */
+@media (min-width: 720px) {
+  .sheet--wide { max-width: 760px; }
+}
 .sheet-grip { width: 42px; height: 5px; border-radius: 3px; background: var(--line-strong); margin: 4px auto 12px; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sheet-up { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }

@@ -182,7 +182,9 @@ function Shell() {
     );
 
   return (
-    <div className="app">
+    // The dashboard is the one screen used sitting down at a desk, so it alone
+    // is let out of the phone-width frame.
+    <div className={route.name === 'admin' ? 'app app--wide' : 'app'}>
       {/*
         Around the screens and not the whole app, so the tab bar stays put
         while a screen's file arrives instead of the page going blank.
