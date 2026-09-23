@@ -41,3 +41,12 @@
 
 .plan-invite-open { margin-top: 10px; }
 .plan-invite { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+.backup-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.backup-choices dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.backup-choices dl > div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; }
+.backup-choices dt { margin-bottom: 2px; }
+.backup-choices dd { margin: 0; }
+.backup-choices p { margin: 0; }
+.backup-actions--choose { display: flex; flex-direction: column; }
+.backup-actions--choose .btn { width: 100%; }

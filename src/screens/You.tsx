@@ -10,6 +10,7 @@ import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
+import { summariseDiary, type DiarySummary } from '../lib/diarySummary';
 import { PLUS, planNow, redeemInvite, watchStanding, type Standing } from '../lib/plan';
 import { useSquish, MIN_AGE } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
@@ -751,6 +752,8 @@ function BackupCard() {
   const [remote, setRemote] = useState<RemoteDiary | null>(null);
   const [busy, setBusy] = useState(false);
   const toast = useToast();
+  const meals = useSquish((s) => s.meals);
+  const here = useMemo(() => summariseDiary({ meals }), [meals]);
 
   // Signing in or out points this device at a different diary, and the state
   // is `idle` either side of that — so the look-up has to be told separately.
@@ -799,11 +802,14 @@ function BackupCard() {
           Deleting some older meals, particularly photographed ones, will let it start again.
         </p>
       ) : state.kind === 'conflict' ? (
-        <p className="tiny muted">
-          Another device has backed up something this one has not seen. Squish will not merge two diaries — that means
-          guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say
-          which to keep.
-        </p>
+        <>
+          <p className="tiny muted">
+            Another device has backed up something this one has not seen. Squish will not merge two diaries — that means
+            guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say
+            which to keep.
+          </p>
+          {remote && <Choices here={here} backup={summariseDiary(remote.state)} savedAt={remote.updatedAt} />}
+        </>
       ) : (
         <p className="tiny muted">
           A copy of your diary is kept so a cleared browser or a lost phone is an inconvenience rather than the end of
@@ -811,23 +817,64 @@ function BackupCard() {
         </p>
       )}
 
-      {remote?.updatedAt && (
+      {remote?.updatedAt && state.kind !== 'conflict' && (
         <p className="tiny muted" style={{ marginTop: 8 }}>
           Last kept {friendlyDate(remote.updatedAt.slice(0, 10)).toLowerCase()}.
         </p>
       )}
 
-      <div className="row" style={{ gap: 10, marginTop: 12 }}>
+      {/* Two equal buttons for a choice between two diaries: neither is the one Squish would pick. */}
+      <div className={state.kind === 'conflict' ? 'backup-actions backup-actions--choose' : 'row'} style={{ gap: 10, marginTop: 12 }}>
         <button type="button" className="btn btn--sm btn--ghost grow" disabled={busy || !remote} onClick={() => void restore()}>
-          {state.kind === 'conflict' ? 'Use the other one' : 'Restore from backup'}
+          {state.kind === 'conflict' ? `Use the backup${remote ? ` (${mealCount(summariseDiary(remote.state).meals)})` : ''}` : 'Restore from backup'}
         </button>
         {state.kind === 'conflict' && (
-          <button type="button" className="btn btn--sm" onClick={() => { resumeBackup(remote?.version ?? null); toast('Keeping this one.', '📦'); }}>
-            Keep this one
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => { resumeBackup(remote?.version ?? null); toast('Keeping this one.', '📦'); }}>
+            Keep this device's ({mealCount(here.meals)})
           </button>
         )}
       </div>
     </section>
+  );
+}
+
+const mealCount = (n: number) => `${n.toLocaleString('en-GB')} meal${n === 1 ? '' : 's'}`;
+
+const lastLogged = (summary: DiarySummary) =>
+  summary.latest ? `, the latest ${friendlyDate(summary.latest).toLowerCase()}` : '';
+
+/**
+ * The two diaries side by side, so choosing between them is a matter of
+ * looking rather than going to find the other device. Where one of them is
+ * empty, it says which to keep.
+ */
+function Choices({ here, backup, savedAt }: { here: DiarySummary; backup: DiarySummary; savedAt: string | null }) {
+  const hint =
+    here.meals === 0 && backup.meals > 0
+      ? 'This device has no meals in it, so the backup is almost certainly the one to keep.'
+      : backup.meals === 0 && here.meals > 0
+        ? 'The backup has no meals in it, so this device’s diary is almost certainly the one to keep.'
+        : 'Keep the one with your meals in it. The other is replaced, so anything only in that one is lost.';
+  return (
+    <div className="backup-choices">
+      <dl>
+        <div>
+          <dt className="tiny muted">The backup{savedAt ? `, saved ${friendlyDate(savedAt.slice(0, 10)).toLowerCase()}` : ''}</dt>
+          <dd className="small">
+            <b>{mealCount(backup.meals)}</b>
+            {lastLogged(backup)}
+          </dd>
+        </div>
+        <div>
+          <dt className="tiny muted">This device</dt>
+          <dd className="small">
+            <b>{mealCount(here.meals)}</b>
+            {lastLogged(here)}
+          </dd>
+        </div>
+      </dl>
+      <p className="tiny muted">{hint}</p>
+    </div>
   );
 }
 
