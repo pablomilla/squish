@@ -8,7 +8,8 @@ import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
 import { HeightField, NumberField, WeightField } from '../components/fields';
-import { useSquish, DEFAULT_PROFILE } from '../store/useSquish';
+import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
+import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
 import type { Activity, Goal, Profile, Sex } from '../types';
 import { PACE_CHOICES, formatPace, paceIn, paceToKg, retuneForUnits } from '../lib/units';
@@ -35,6 +36,8 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   const [step, setStep] = useState<Step>('welcome');
   const [draft, setDraft] = useState<Profile>(DEFAULT_PROFILE);
   const [signing, setSigning] = useState<'in' | 'forgot' | null>(null);
+  // Somebody who has said they are under 18. Held here only, never saved.
+  const [tooYoung, setTooYoung] = useState(false);
   const toast = useToast();
 
   /**
@@ -61,6 +64,15 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   const set = (patch: Partial<Profile>) => setDraft((d) => ({ ...d, ...patch }));
   const next = () => setStep(STEPS[Math.min(STEPS.length - 1, index + 1)]);
   const back = () => setStep(STEPS[Math.max(0, index - 1)]);
+
+  if (tooYoung)
+    return (
+      <div className="app onboarding">
+        <div className="screen">
+          <TooYoung onBack={() => setTooYoung(false)} />
+        </div>
+      </div>
+    );
 
   return (
     <div className="app onboarding">
@@ -137,7 +149,15 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
               />
             </div>
 
-            <NumberField label="Age" value={draft.age} suffix="yrs" min={14} max={100} onChange={(age) => set({ age })} />
+            <NumberField
+              label="Age"
+              value={draft.age}
+              suffix="yrs"
+              min={MIN_AGE}
+              max={100}
+              onChange={(age) => set({ age })}
+              onBelowMin={() => setTooYoung(true)}
+            />
             <HeightField cm={draft.heightCm} units={draft.units} onChange={(heightCm) => set({ heightCm })} />
             <WeightField label="Weight" kg={draft.weightKg} units={draft.units} onChange={(weightKg) => set({ weightKg })} />
             <WeightField

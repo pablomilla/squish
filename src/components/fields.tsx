@@ -38,6 +38,7 @@ export function NumberField({
   max,
   decimals = 0,
   hideLabel = false,
+  onBelowMin,
 }: {
   label: string;
   value: number;
@@ -47,6 +48,12 @@ export function NumberField({
   max: number;
   decimals?: number;
   hideLabel?: boolean;
+  /**
+   * Called instead of quietly rounding up to `min`, for a field where a
+   * number below it means something — an age under 18. The field goes back
+   * to what it held before.
+   */
+  onBelowMin?: (typed: number) => void;
 }) {
   const id = useId();
   const [draft, setDraft] = useState(() => atPrecision(value, decimals));
@@ -60,6 +67,11 @@ export function NumberField({
     const parsed = Number(draft);
     if (draft.trim() === '' || Number.isNaN(parsed)) {
       setDraft(String(value)); // Nothing usable typed — put back what was there.
+      return;
+    }
+    if (parsed < min && onBelowMin) {
+      setDraft(atPrecision(value, decimals));
+      onBelowMin(parsed);
       return;
     }
     const clamped = Math.min(max, Math.max(min, parsed));

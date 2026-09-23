@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { AnalysisResult, MealEntry, MealSlot, Route } from './types';
-import { useSquish } from './store/useSquish';
+import { useSquish, MIN_AGE } from './store/useSquish';
+import TooYoung from './components/TooYoung';
 import { ToastProvider, useAppliedLook, useAppliedTheme, useToast } from './components/ui';
 import AddSheet from './components/AddSheet';
 import { DiaryIcon, HomeIcon, InsightsIcon, PlusIcon, YouIcon } from './components/icons';
@@ -72,6 +73,8 @@ function useServer(): { awake: boolean; keepsData: boolean } {
 
 function Shell() {
   const onboarded = useSquish((s) => s.profile.onboarded);
+  const tooYoung = useSquish((s) => s.profile.age < MIN_AGE);
+  const setProfile = useSquish((s) => s.setProfile);
   const theme = useSquish((s) => s.theme);
   const look = useSquish((s) => s.look);
   useAppliedLook(look, useAppliedTheme(theme) === 'dark');
@@ -173,6 +176,16 @@ function Shell() {
   }, [awake, onboarded]);
 
   if (!awake) return <Waking />;
+  // Set up before the app asked for 18 or over: the same kind stop as a new
+  // setup gets, with a way to put a mistyped age right.
+  if (onboarded && tooYoung)
+    return (
+      <div className="app">
+        <div className="screen">
+          <TooYoung onCorrected={(age) => setProfile({ age })} />
+        </div>
+      </div>
+    );
   if (!onboarded)
     return (
       <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>

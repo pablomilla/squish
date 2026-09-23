@@ -11,7 +11,7 @@ import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { PLUS, planNow, redeemInvite, watchStanding, type Standing } from '../lib/plan';
-import { useSquish } from '../store/useSquish';
+import { useSquish, MIN_AGE } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
 import { apiUrl } from '../lib/origin';
@@ -582,7 +582,15 @@ export default function You({ go }: { go: (route: Route) => void }) {
             onChange={(targetWeightKg) => setProfile({ targetWeightKg })}
           />
           <HeightField cm={profile.heightCm} units={profile.units} onChange={(heightCm) => setProfile({ heightCm })} />
-          <NumberField label="Age" value={profile.age} suffix="yrs" min={14} max={100} onChange={(age) => setProfile({ age })} />
+          <NumberField
+            label="Age"
+            value={profile.age}
+            suffix="yrs"
+            min={MIN_AGE}
+            max={100}
+            onChange={(age) => setProfile({ age })}
+            onBelowMin={() => toast(`Squish is for people aged ${MIN_AGE} and over, so your age has not been changed.`, '🫧')}
+          />
           <div className="field">
             <label>Sex (for the energy formula)</label>
             <Segmented<Sex>

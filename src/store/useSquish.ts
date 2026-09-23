@@ -16,6 +16,13 @@ import { DEFAULT_LOOK } from '../lib/looks';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow } from '../lib/date';
 
+/**
+ * Squish is for adults. It sets calorie targets and gives diet feedback, and
+ * its energy formula is one for grown bodies — none of which is right for
+ * somebody still growing. See docs/privacy.md, "Age".
+ */
+export const MIN_AGE = 18;
+
 export const DEFAULT_PROFILE: Profile = {
   name: '',
   sex: 'female',

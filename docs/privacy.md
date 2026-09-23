@@ -293,6 +293,11 @@ Squish is not intended for under-18s. It shows calorie figures and diet
 feedback, and that is not something to put in front of children without more
 care than a food diary can take. Please do not use it if you are under 18.
 
+Setting Squish up asks your age, and an age under 18 stops there: Squish
+explains why and points to people who can help. The age typed is not saved or
+sent anywhere. A diary already set up with an age under 18 is paused the same
+way until the age is corrected.
+
 ---
 
 ## Changes
