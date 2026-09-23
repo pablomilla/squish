@@ -60,8 +60,8 @@ test('economics turn cost per photo into a monthly margin', () => {
   const result = economics(0.03, 3, 4.99);
 
   assert.ok(Math.abs(result.monthlyApiCost - 2.7) < 1e-9, 'three meals a day for 30 days');
-  // £4.99 less Apple's 15%, less the API bill.
-  assert.ok(Math.abs(result.netAtSmallBusiness - (4.99 * 0.85 - 2.7)) < 1e-9);
+  // £4.99 less VAT, less Apple's 15% of what is left, less the API bill.
+  assert.ok(Math.abs(result.netAtSmallBusiness - ((4.99 / 1.2) * 0.85 - 2.7)) < 1e-9);
   assert.ok(result.netAtStandard < result.netAtSmallBusiness, 'the 30% tier nets less');
 });
 

@@ -29,15 +29,58 @@ than from this table.
 
 Plus about $7 a month, flat, for a host that does not fall asleep.
 
-A £1.99 colourway pack nets about £1.70 after the store's cut. That is roughly
-three weeks of one moderate user. From month two you are paying for them.
+A £1.99 colourway pack nets about £1.41 once VAT and the store's cut are
+off. That is under three weeks of one moderate user. From month two you are
+paying for them.
 
 ## What to charge
 
-**£4.99 a month, or £39.99 a year**, with a usage allowance **even on the paid
+**£6.99 a month, or £49.99 a year**, with a usage allowance **even on the paid
 tier**. The allowance is not meanness: a heavy user costs £5.65, so without one
 the best customers are the ones losing the most money. Every app in this
 category caps AI usage on paid plans for exactly this reason.
+
+It was £4.99 and £39.99 until 23 September 2026, before anything was sold.
+What changed was doing the sum properly. UK store prices include 20% VAT, and
+the store's cut comes off what is left:
+
+| Price | Squish receives (15% tier) | A month |
+|---|---|---|
+| £4.99 a month | £3.53 | £3.53 |
+| £39.99 a year | £28.33 | **£2.36** |
+| £6.99 a month | £4.95 | £4.95 |
+| £49.99 a year | £35.41 | £2.95 |
+
+Somebody who uses all of Plus's allowance costs about £2.65 a month before
+recipe imports. On the old yearly price, the people most likely to buy a year
+— the heavy users — would each have lost money. At £49.99 they do not, and
+the year is still about 40% cheaper than twelve months, which is the reason
+to choose it.
+
+**The 15% is not automatic.** Apple's Small Business Program and Google
+Play's equivalent both have to be applied for. At the standard 30%, even
+£6.99 is thin for a heavy user.
+
+### Offers
+
+Discounts come from the stores' own offers, off a price people genuinely pay:
+
+- **At launch:** a 7-day free trial, or an introductory "first year £34.99"
+  (£24.78 to Squish, about £2.07 a month — roughly break-even on a heavy user,
+  which is a fair price for a subscriber).
+- **Offer codes** for partners and promotions; **win-back offers** for people
+  who cancelled.
+
+Not a list price set high so that a "discount" looks bigger: UK law (the
+Digital Markets, Competition and Consumers Act 2024) treats a misleading
+reference price as unfair, and a "was" price has to be one that was really
+charged. New UK subscription rules — clear notice before a trial or offer
+rolls onto the full price, and easy cancellation — are also on the way; check
+where they stand before launch.
+
+Once there are paying users, the dashboard's real cost per person replaces
+every estimate here. If typical subscribers cost far less than the ceiling,
+the price can come down; the margin can also simply stay.
 
 The free/paid line falls out of the costs rather than being chosen:
 

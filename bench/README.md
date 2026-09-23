@@ -79,7 +79,7 @@ Your photos and results stay out of git — they are meals from your kitchen, an
 | --- | --- | --- |
 | `--models a,b` | opus-5, sonnet-5, haiku-4-5 | Which models to compare |
 | `--runs 3` | 1 | Repeat each photo, to see run-to-run spread |
-| `--sub 4.99` | 4.99 | Subscription price for the margin table |
+| `--sub 6.99` | 6.99 | Subscription price for the margin table, VAT included as on the stores |
 | `--yes` | off | Skip the "this spends money" prompt |
 | `--plate 27` | off | Tell the model your dinner plate's width, in cm |
 | `--bowl 400` | off | And your usual bowl's volume, in ml |

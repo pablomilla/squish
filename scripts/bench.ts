@@ -4,7 +4,7 @@
  *   npm run bench                    every model in the default list, one run each
  *   npm run bench -- --models claude-sonnet-5,claude-haiku-4-5
  *   npm run bench -- --runs 3        repeat each photo, to see run-to-run spread
- *   npm run bench -- --sub 4.99      margin maths against your subscription price
+ *   npm run bench -- --sub 6.99      margin maths against your subscription price
  *
  * Reads bench/manifest.json — your photos and what is actually in them — and
  * answers two questions: how close does each model get, and what does it cost
@@ -24,6 +24,11 @@ const DEFAULT_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
 
 /** Store cut on subscriptions: 15% on the small-business rate, 30% standard. */
 const STORE_CUT = { small: 0.15, standard: 0.3 };
+/**
+ * UK prices on the stores include VAT, and the store takes its cut of what is
+ * left — so £6.99 is £5.83 before anybody's share, not £6.99.
+ */
+const UK_VAT = 0.2;
 
 const ESC = String.fromCharCode(27);
 const paint = (code: string) => (text: string) => `${ESC}[${code}m${text}${ESC}[0m`;
@@ -238,8 +243,8 @@ export function economics(costPerAnalysis: number, mealsPerDay: number, subscrip
   const monthlyApiCost = costPerAnalysis * mealsPerDay * 30;
   return {
     monthlyApiCost,
-    netAtSmallBusiness: subscription * (1 - STORE_CUT.small) - monthlyApiCost,
-    netAtStandard: subscription * (1 - STORE_CUT.standard) - monthlyApiCost,
+    netAtSmallBusiness: (subscription / (1 + UK_VAT)) * (1 - STORE_CUT.small) - monthlyApiCost,
+    netAtStandard: (subscription / (1 + UK_VAT)) * (1 - STORE_CUT.standard) - monthlyApiCost,
   };
 }
 
@@ -414,7 +419,7 @@ async function main(): Promise<void> {
 
   const models = (arg('models') ?? DEFAULT_MODELS.join(',')).split(',').map((m) => m.trim()).filter(Boolean);
   const runs = Math.max(1, Number(arg('runs') ?? 1));
-  const subscription = Number(arg('sub') ?? 4.99);
+  const subscription = Number(arg('sub') ?? 6.99);
 
   const plateCm = Number(arg('plate') ?? 0) || undefined;
   const bowlMl = Number(arg('bowl') ?? 0) || undefined;

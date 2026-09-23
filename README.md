@@ -319,7 +319,7 @@ and what it costs, because both decide whether this can be a product:
 ```bash
 cp bench/manifest.example.json bench/manifest.json   # your photos and their real figures
 npm run bench                                        # opus-5 vs sonnet-5 vs haiku-4-5
-npm run bench -- --runs 3 --sub 4.99                 # spread across repeats, margin at £4.99
+npm run bench -- --runs 3 --sub 6.99                 # spread across repeats, margin at £6.99
 ```
 
 It writes `bench/report.md` with accuracy per model, a per-meal breakdown of what each one saw, and

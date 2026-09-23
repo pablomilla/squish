@@ -81,7 +81,7 @@ export default function Paywall({ standing, onClose }: { standing: OutOfAllowanc
               </ul>
 
               <p className="paywall-price">
-                <b>£4.99</b> a month, or <b>£39.99</b> a year
+                <b>£6.99</b> a month, or <b>£49.99</b> a year
               </p>
 
               {/*

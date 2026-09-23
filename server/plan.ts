@@ -46,9 +46,10 @@ const count = (name: string, fallback: number): number => {
  * costs most. Ten photos is enough to find out whether the analysis is any
  * good, which is the only question somebody deciding whether to pay is asking.
  *
- * Plus at 60 photos and 30 questions is roughly $3.40 of usage against £4.99
- * of revenue, which survives the stores' cut. Raising it is a decision about
- * margin, not a kindness — see the table in docs/monetisation.md.
+ * Plus at 60 photos and 30 questions is at most about $3.40 (£2.65) of usage.
+ * Against £6.99 a month that leaves room after VAT and the stores' cut, and
+ * the £49.99 year still covers somebody who uses every last one. Raising it is
+ * a decision about margin, not a kindness — see docs/monetisation.md.
  */
 export const ALLOWANCE: Record<Plan, Record<Billable, number>> = {
   free: {
