@@ -57,9 +57,79 @@ export function forgetDevice(): void {
  * The promise is cached rather than the result, so ten calls made at once
  * during a cold start register one device rather than ten.
  */
-export function deviceToken(origin: (path: string) => string): Promise<string | null> {
+/* ---------------- Arriving from the old address ---------------- */
+
+/**
+ * `#handoff=…`: this browser has just been sent here from squish.online, the
+ * app's old address, carrying a code for the device it was there.
+ */
+function handoffInUrl(): string | null {
+  try {
+    return /(?:^#|&)handoff=([A-Za-z0-9_-]{16,100})/.exec(location.hash)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether this address already has a diary of its own, which a handoff must not replace. */
+function hasOwnDiary(): boolean {
+  try {
+    const stored = JSON.parse(localStorage.getItem('squish-v1') ?? 'null') as {
+      state?: { profile?: { onboarded?: boolean } };
+    } | null;
+    return stored?.state?.profile?.onboarded === true;
+  } catch {
+    return false;
+  }
+}
+
+export type Handoff = 'none' | 'arrived' | 'kept' | 'expired';
+
+let handoff: Promise<Handoff> | null = null;
+
+/**
+ * Claim the code, before anything else asks who this browser is.
+ *
+ * Started from main.tsx before the first render, and awaited by
+ * deviceToken(), so nothing registers a brand-new device while the old one
+ * is on its way. The code is taken out of the address bar straight away so a
+ * reload or a shared link cannot try it twice.
+ *
+ * Where this address already holds a diary, nothing is claimed: two diaries
+ * are not merged by machine anywhere in Squish, and this is no exception.
+ */
+export function arriveFromOldAddress(origin: (path: string) => string): Promise<Handoff> {
+  handoff ??= (async (): Promise<Handoff> => {
+    const code = handoffInUrl();
+    if (!code) return 'none';
+    try {
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch {
+      /* nothing to do */
+    }
+    if (hasOwnDiary()) return 'kept';
+    try {
+      const response = await fetch(origin('/api/device/claim'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (!response.ok) return 'expired';
+      const made = (await response.json()) as Registration;
+      if (!made?.token) return 'expired';
+      remember(made);
+      return 'arrived';
+    } catch {
+      return 'expired';
+    }
+  })();
+  return handoff;
+}
+
+export async function deviceToken(origin: (path: string) => string): Promise<string | null> {
+  if (handoff) await handoff;
   const saved = remembered();
-  if (saved) return Promise.resolve(saved.token);
+  if (saved) return saved.token;
 
   pending ??= (async () => {
     try {

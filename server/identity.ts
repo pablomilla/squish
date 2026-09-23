@@ -135,3 +135,49 @@ export async function recordCost(deviceId: string, kind: Spend, usd: number | nu
     [deviceId, kind, usd.toFixed(6)],
   );
 }
+
+/* ---------------- Moving to another address ---------------- */
+
+const HANDOFF_MINUTES = 10;
+
+/**
+ * A code the browser at the old address can hand to the new one.
+ *
+ * The device token itself never travels: it is stored hashed, so the server
+ * could not give it back even if that were a good idea. The code goes in the
+ * new address's URL fragment — never sent to any server, the website's
+ * included — and is worth one claim, for ten minutes.
+ */
+export async function startHandoff(deviceId: string): Promise<string> {
+  await migrate();
+  const code = mint();
+  await query('delete from device_handoffs where device_id = $1 or expires_at < now()', [deviceId]);
+  await query(
+    `insert into device_handoffs (code_hash, device_id, expires_at)
+     values ($1, $2, now() + make_interval(mins => $3))`,
+    [hash(code), deviceId, HANDOFF_MINUTES],
+  );
+  return code;
+}
+
+/**
+ * Trade a handoff code for this device's new token.
+ *
+ * The device keeps its id — so its diary, its account and its allowance all
+ * come along — and gets a new token, which retires the old one. Whatever is
+ * left at the old address can no longer act as this device, which is the
+ * right outcome: it is the same person, now somewhere else.
+ */
+export async function claimHandoff(code: string): Promise<NewDevice | null> {
+  if (!code) return null;
+  await migrate();
+  const rows = await query<{ device_id: string }>(
+    'delete from device_handoffs where code_hash = $1 and expires_at > now() returning device_id',
+    [hash(code)],
+  );
+  const id = rows[0]?.device_id;
+  if (!id) return null;
+  const token = mint();
+  await query('update devices set token_hash = $1, last_seen_at = now() where id = $2', [hash(token), id]);
+  return { id, token };
+}

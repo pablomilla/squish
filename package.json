@@ -23,6 +23,7 @@
     "typecheck": "tsc -b",
     "test": "tsx --test test/*.test.ts",
     "build:mascot": "tsx scripts/build-mascot.ts",
+    "build:site-art": "tsx scripts/build-site-art.ts",
     "grant": "tsx scripts/grant.ts",
     "reset-2fa": "tsx scripts/reset-2fa.ts"
   },

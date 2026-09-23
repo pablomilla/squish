@@ -1,7 +1,7 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { AnalysisResult, MealEntry, MealSlot, Route } from './types';
 import { useSquish } from './store/useSquish';
-import { ToastProvider, useAppliedLook, useAppliedTheme } from './components/ui';
+import { ToastProvider, useAppliedLook, useAppliedTheme, useToast } from './components/ui';
 import AddSheet from './components/AddSheet';
 import { DiaryIcon, HomeIcon, InsightsIcon, PlusIcon, YouIcon } from './components/icons';
 import Waking from './screens/Waking';
@@ -9,10 +9,13 @@ import Home from './screens/Home';
 import { lazyScreen } from './lib/lazyScreen';
 import { isoDate, slotForNow } from './lib/date';
 import { THUMB, aiStatus, reshrink, type AiStatus, type OutOfAllowance } from './lib/api';
-import { startBackup } from './lib/autobackup';
+import { adoptBackup, startBackup } from './lib/autobackup';
+import { pullDiary } from './lib/backup';
+import { arriveFromOldAddress } from './lib/identity';
+import { apiUrl } from './lib/origin';
 import { savePhoto, watchPhotos } from './lib/photos';
 import { isOversized, rehomePhotos } from './lib/rehome';
-import { watchPlan } from './lib/plan';
+import { refreshPlan, watchPlan } from './lib/plan';
 import { onPaywall } from './lib/paywall';
 import { resetTokenInUrl } from './lib/account';
 
@@ -76,6 +79,34 @@ function Shell() {
   const [route, setRoute] = useState<Route>({ name: 'home' });
 
   useEffect(() => startBackup(keepsData), [keepsData]);
+
+  // Somebody sent here from squish.online, the app's old address, with their
+  // device on the way. Their diary is on the server under that device, so it
+  // is fetched and, where this browser has nothing yet, becomes theirs.
+  const toast = useToast();
+  const arrived = useRef(false);
+  useEffect(() => {
+    if (!awake || arrived.current) return;
+    arrived.current = true;
+    void arriveFromOldAddress(apiUrl).then(async (result) => {
+      if (result === 'none') return;
+      if (result === 'kept') {
+        toast('This browser already has a diary here, so the one from the old address was left where it was.', '📦');
+        return;
+      }
+      if (result === 'expired') {
+        toast('That link has been used or is too old. Go back to squish.online and press the button again.', '⏳');
+        return;
+      }
+      await refreshPlan();
+      const found = await pullDiary();
+      const profile = (found?.state as { profile?: { onboarded?: boolean; name?: string } } | null)?.profile;
+      if (found && profile?.onboarded) {
+        adoptBackup(found);
+        toast(`Welcome back${profile.name ? `, ${profile.name}` : ''}. Your diary moved with you.`, '🫧');
+      }
+    });
+  }, [awake, toast]);
 
   // Which tier this person is on. Asked of the server, never of the browser.
   useEffect(() => watchPlan(keepsData), [keepsData]);

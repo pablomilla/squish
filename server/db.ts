@@ -310,6 +310,23 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 10,
+    sql: `
+      -- Moving a browser's identity from one address to another: squish.online
+      -- to app.squish.online. A browser keeps what it saves per address, so the
+      -- old one asks for a short-lived code here, and the new one trades the
+      -- code for a fresh token on the same device. Hashed like every other
+      -- credential; good once, for ten minutes.
+      create table device_handoffs (
+        code_hash  text primary key,
+        device_id  text not null references devices(id) on delete cascade,
+        expires_at timestamptz not null
+      );
+
+      create index device_handoffs_device on device_handoffs(device_id);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

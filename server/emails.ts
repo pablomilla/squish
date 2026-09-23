@@ -53,7 +53,7 @@ const LINK = (about: string, sample: string): Placeholder => ({ name: 'link', ab
 const APP: Placeholder = {
   name: 'app_link',
   about: 'The address of Squish itself',
-  sample: 'https://squish.online',
+  sample: 'https://app.squish.online',
   url: true,
 };
 const TIME: Placeholder = {
@@ -84,7 +84,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     ].join('\n'),
     button: { placeholder: 'link', label: 'Confirm my email', fallback: true },
     placeholders: [
-      LINK('The confirmation link', 'https://squish.online/verify?token=example'),
+      LINK('The confirmation link', 'https://app.squish.online/verify?token=example'),
       { name: 'days', about: 'How many days the link works for', sample: '7' },
     ],
     required: ['link'],
@@ -106,7 +106,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     ].join('\n'),
     button: { placeholder: 'link', label: 'Choose a new password', fallback: true },
     placeholders: [
-      LINK('The reset link', 'https://squish.online/reset?token=example'),
+      LINK('The reset link', 'https://app.squish.online/reset?token=example'),
       { name: 'hours', about: 'How many hours the link works for', sample: '2' },
     ],
     required: ['link'],
@@ -358,7 +358,7 @@ export function originOf(link?: string): string {
       /* not a URL — fall through */
     }
   }
-  return (process.env.SQUISH_PUBLIC_ORIGIN?.trim() || 'https://squish.online').replace(/\/$/, '');
+  return (process.env.SQUISH_PUBLIC_ORIGIN?.trim() || 'https://app.squish.online').replace(/\/$/, '');
 }
 
 /** An email ready to hand to sendMail: the wording in force, filled in, both versions. */

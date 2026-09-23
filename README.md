@@ -144,11 +144,41 @@ If the dashboard's **Blueprints** list is empty, it was by hand.
 | `SQUISH_PLUS_CHATS` | Nutritionist questions a month on Plus. Default 30. |
 | `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
 | `DATABASE_URL` | Filled in by the blueprint from the Postgres it creates. Turns on backup and accounts. Delete both and Squish stays local. |
+| `SQUISH_PUBLIC_ORIGIN` | Where the app lives — `https://app.squish.online`. Links in emails point here. |
+| `SQUISH_SITE_ORIGIN` | Where the website lives — `https://squish.online`. Unset, every address serves the app. |
 
 What stops a stranger spending your Anthropic credit is the free plan's monthly allowance, counted
 per person against the database. There is no shared passcode: it was a stopgap from before there
 were accounts, and it made the app impossible to hand to a tester. Render's free tier sleeps after
 inactivity, so the first visit takes ~50s to wake — which is what the waking screen is for.
+
+### The website, and the app at app.squish.online
+
+One service answers two addresses. **squish.online** is the website — plain HTML in `site/`, no
+cookies, no analytics, not even a font from anybody else — and **app.squish.online** is the app.
+`server/site.ts` tells them apart by the address asked for, and only once `SQUISH_SITE_ORIGIN` is
+set; until then every address gets the app, so the code can go out before the switch.
+
+Moving there, in order:
+
+1. **Render → the web service → Settings → Custom Domains → Add** `app.squish.online`. Render
+   shows a DNS record (a CNAME); add it where the domain is registered, and wait for Render to say
+   it is verified and the certificate is issued.
+2. Open **https://app.squish.online** and check the app works there.
+3. **Environment**: set `SQUISH_PUBLIC_ORIGIN` to `https://app.squish.online` and add
+   `SQUISH_SITE_ORIGIN` = `https://squish.online`. Save; Render redeploys.
+4. **squish.online** now shows the website. `www.squish.online` (if added as a domain) redirects to
+   it; reset links in emails sent before the move are forwarded to the app with their token.
+
+Anybody who used the app at squish.online without an account still has their diary in that
+browser, at that address. The website sees it there and offers **Take my diary with me**: it saves
+the diary to the server, asks for a one-time code for that browser's device, and sends them to the
+app with the code after a `#`. The app trades it for the same device with a new token, so the diary
+— and the account, if they had one — arrives with them. Codes last ten minutes and work once
+(`server/identity.ts`, `site/move.js`).
+
+The screenshots on the website are the real app with made-up meals in it: `scripts/site-shots.mjs`
+retakes them, and `npm run build:site-art` re-exports the mascot and wordmark from the app's artwork.
 
 ### Free and Plus
 
@@ -364,6 +394,7 @@ server/           Express API — Claude calls, offline fallback
   invites.ts      Codes that turn Plus on, made and retired in the dashboard
   admin.ts        The dashboard's numbers — counts and totals, never a diary
   twofactor.ts    The dashboard's second step: authenticator codes and recovery codes
+  site.ts         The website at squish.online, beside the app at app.squish.online
   billing.ts      Attributing what each model call cost to whoever made it
   privacy.ts      The policy, rendered from docs/privacy.md and served at /privacy
 src/
@@ -378,6 +409,7 @@ src/
   styles/         Design tokens (light + dark) and global styles
 ios/ android/     Capacitor shells — see docs/phone-app.md
 scripts/          Credential setup, the benchmark, granting Plus, and resetting an admin's 2FA
+site/             The website at squish.online — plain HTML, CSS and one small script
 eval/             Model comparison for the nutritionist — cases, judge, runner
 bench/            Your benchmark photos and their real figures (gitignored)
 test/             Node test-runner suite for the maths and parsing

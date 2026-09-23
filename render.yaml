@@ -59,6 +59,11 @@ services:
       # came somewhere else — and a reset link pointing at the wrong host is a
       # reset that does not work.
       - key: SQUISH_PUBLIC_ORIGIN
+        value: https://app.squish.online
+      # Where the website lives. With this set, requests for this address get
+      # the website in site/ and every other address gets the app; unset,
+      # every address gets the app. See server/site.ts and the README.
+      - key: SQUISH_SITE_ORIGIN
         value: https://squish.online
       # Email: confirmation links, password resets and security notices.
       # Optional — with no webhook nothing is emailed, reset links go to the

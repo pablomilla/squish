@@ -19,7 +19,7 @@ import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
 import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
-import { deviceFor, registerDevice, spend, type Device, type Spend } from './identity';
+import { claimHandoff, deviceFor, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
@@ -39,6 +39,7 @@ import {
   suggestCode,
 } from './invites';
 import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
+import { siteRouter } from './site';
 import { beginSetup, checkCode, endSession, finishSetup, hasPassed, replaceRecoveryCodes, stateFor } from './twofactor';
 import { billedTo } from './billing';
 import { PLUS } from '../src/lib/subscription';
@@ -322,6 +323,38 @@ function requireDevice(req: Request, res: Response, next: NextFunction): void {
   }
   next();
 }
+
+/**
+ * Moving this browser to the app's new address. The old address asks for a
+ * code; the new one claims it. See startHandoff in server/identity.ts.
+ */
+app.post('/api/device/handoff', requireDevice, meter('signin'), async (req, res) => {
+  try {
+    res.json({ code: await startHandoff(req.device!.id) });
+  } catch (error) {
+    logFailure('handoff', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+  }
+});
+
+app.post('/api/device/claim', rateLimit, async (req, res) => {
+  const { code } = req.body ?? {};
+  if (typeof code !== 'string' || code.length > 100) {
+    res.status(400).json({ error: 'missing' });
+    return;
+  }
+  try {
+    const claimed = await claimHandoff(code);
+    if (!claimed) {
+      res.status(404).json({ error: 'expired', message: 'That link has already been used, or is too old.' });
+      return;
+    }
+    res.json(claimed);
+  } catch (error) {
+    logFailure('claim', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+  }
+});
 
 app.get('/api/diary', requireDevice, async (req, res) => {
   try {
@@ -1204,10 +1237,10 @@ app.post('/api/account/reset/confirm', requireDevice, meter('reset'), async (req
  * SQUISH_PUBLIC_ORIGIN says otherwise, which it should where a proxy makes the
  * request look like it arrived somewhere else.
  */
-function publicOrigin(req: Request): string {
+function publicOrigin(req?: Request): string {
   const configured = process.env.SQUISH_PUBLIC_ORIGIN?.trim();
   if (configured) return configured.replace(/\/$/, '');
-  return `${req.protocol}://${req.get('host') ?? 'localhost'}`;
+  return req ? `${req.protocol}://${req.get('host') ?? 'localhost'}` : 'https://app.squish.online';
 }
 
 app.get('/api/health', (_req, res) => {
@@ -1431,6 +1464,12 @@ app.post('/api/coach', async (req, res) => {
     res.json({ message: null, offline: true });
   }
 });
+
+/* ------------------------------------------------------------------ *
+ * The website, where SQUISH_SITE_ORIGIN says there is one — see server/site.ts
+ * ------------------------------------------------------------------ */
+
+app.use(siteRouter(() => publicOrigin(), DIST));
 
 /**
  * The privacy policy.

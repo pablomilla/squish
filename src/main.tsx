@@ -2,7 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { startNative } from './lib/native';
+import { arriveFromOldAddress } from './lib/identity';
+import { apiUrl } from './lib/origin';
 import './styles/global.css';
+
+// Before anything renders, so the first question about who this browser is
+// waits for the answer. Does nothing unless the address carries a handoff.
+void arriveFromOldAddress(apiUrl);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

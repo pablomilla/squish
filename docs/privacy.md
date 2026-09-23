@@ -72,6 +72,19 @@ microphone recordings — voice logging happens in your browser and only the
 resulting text reaches us. We do not log your requests; the server writes to
 its log only when something fails, and those entries do not contain your diary.
 
+### Our website
+
+The website at squish.online sets no cookies, runs no analytics and loads
+nothing from anybody else — not even its font. The app itself lives at
+app.squish.online.
+
+Squish used to live at squish.online, and a browser keeps what a site saves
+under the address it was saved at. So if you used Squish there before it
+moved, your diary is still in that browser, and the website can see it — in
+your browser, not on our server. It offers a button to take it with you.
+Only if you press it is the diary saved to our server, exactly as the app's
+backup would have done, and handed to the app at its new address.
+
 ---
 
 ## Health data, and why it needs your consent
