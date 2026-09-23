@@ -412,6 +412,40 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index accounts_referred_by on accounts(referred_by);
     `,
   },
+  {
+    id: 12,
+    sql: `
+      -- Visits to each affiliate's link, a day at a time, for the chart on
+      -- their own page. A count per day and nothing about who.
+      create table affiliate_clicks (
+        affiliate_id text not null references affiliates(id) on delete cascade,
+        day          date not null,
+        clicks       integer not null default 0,
+        primary key (affiliate_id, day)
+      );
+
+      -- Signing in to the partner page: an emailed link, spent once, and the
+      -- session it starts. Both stored hashed, like every other token.
+      create table affiliate_links (
+        token_hash   text primary key,
+        affiliate_id text not null references affiliates(id) on delete cascade,
+        created_at   timestamptz not null default now(),
+        expires_at   timestamptz not null,
+        used_at      timestamptz
+      );
+      create index affiliate_links_affiliate on affiliate_links(affiliate_id, created_at);
+      create table affiliate_sessions (
+        token_hash   text primary key,
+        affiliate_id text not null references affiliates(id) on delete cascade,
+        created_at   timestamptz not null default now(),
+        last_seen_at timestamptz not null default now(),
+        expires_at   timestamptz not null
+      );
+      create index affiliate_sessions_affiliate on affiliate_sessions(affiliate_id);
+      -- When they last opened their page, kept after they sign out.
+      alter table affiliates add column portal_seen_at timestamptz;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

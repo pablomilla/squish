@@ -271,7 +271,16 @@ Following it counts a visit and opens the app with the code, which the browser k
 account made in that time is credited to that affiliate for good (the first one only). When the
 account pays, the affiliate earns their share — 30% for 12 months unless you set other terms — of
 what reaches Industry Logic after VAT and the store's fee. Pay them by bank transfer, then **Record a
-payment**, and what they are owed comes down. They get no login; send them their numbers when you pay.
+payment**, and what they are owed comes down.
+
+**Partners have a page of their own** at `app.squish.online/partners` (the website's footer links to
+it). They sign in with the email address you gave them: the page emails a link that works once, for
+30 minutes, and the session lasts 30 days. From the dashboard you can also **Email them a sign-in
+link** or **Copy a sign-in link** (works once, for 3 days) to send however you talk to them. Their
+page shows their link, visits and sign-ups a day, subscribers, earnings by month, the payments you
+have recorded — and the rules for sharing it (say it is an ad, no health claims, adults only). Never
+who signed up, and never your private note about them; payout notes they do see. One email address
+per partner, and changing it signs them out.
 
 There is also a script, for one-off fixes and for seeing the state of things:
 
@@ -431,6 +440,7 @@ server/           Express API — Claude calls, offline fallback
   admin.ts        The dashboard's numbers — counts and totals, never a diary
   finance.ts      Profit and loss, fixed costs, the dashboard's trends and funnel
   affiliates.ts   Referral codes, commission and the payouts made
+  partners.ts     Partners' own page: emailed sign-in links, sessions and their figures
   twofactor.ts    The dashboard's second step: authenticator codes and recovery codes
   site.ts         The website at squish.online, beside the app at app.squish.online
   billing.ts      Attributing what each model call cost to whoever made it

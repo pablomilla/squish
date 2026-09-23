@@ -21,7 +21,7 @@
  */
 import { hasDatabase, migrate, query } from './db';
 
-export type EmailKey = 'verify' | 'reset' | 'signin' | 'password-changed' | 'password-reset' | 'test';
+export type EmailKey = 'verify' | 'reset' | 'signin' | 'password-changed' | 'password-reset' | 'partner-signin' | 'test';
 
 export interface Placeholder {
   name: string;
@@ -173,6 +173,31 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     button: { placeholder: 'app_link', label: 'Open Squish', fallback: false },
     placeholders: [TIME, APP],
     required: [],
+  },
+
+  'partner-signin': {
+    key: 'partner-signin',
+    label: 'Partner sign-in',
+    when: 'When a partner asks to sign in to their page, or you send them a link from the dashboard',
+    subject: 'Your Squish partner page',
+    body: [
+      'Hello {name},',
+      '',
+      'Here is your way in to your Squish partner page — the visits to your link, the sign-ups and subscribers it has brought, and what you have earned:',
+      '',
+      '{link}',
+      '',
+      'The link works once, for {expiry}. After that, ask for another on the page itself.',
+      '',
+      "If you didn't ask for this, you can ignore it.",
+    ].join('\n'),
+    button: { placeholder: 'link', label: 'Open my partner page', fallback: true },
+    placeholders: [
+      { name: 'name', about: "The partner's name, as it is in the dashboard", sample: 'Sam Green' },
+      LINK('The sign-in link', 'https://app.squish.online/partners#token=example'),
+      { name: 'expiry', about: 'How long the link works for', sample: '30 minutes' },
+    ],
+    required: ['link'],
   },
 
   test: {

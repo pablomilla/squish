@@ -41,6 +41,16 @@ import {
 import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
 import { siteRouter } from './site';
 import {
+  claimPartnerLink,
+  emailTaken,
+  endPartnerSession,
+  endPartnerSessions,
+  handPartnerLink,
+  partnerFor,
+  partnerView,
+  requestPartnerLink,
+} from './partners';
+import {
   addCost,
   checkCost,
   finance,
@@ -1325,6 +1335,10 @@ app.post('/api/admin/affiliates', requireAdmin, async (req, res) => {
     return;
   }
   try {
+    if (await emailTaken(input.email)) {
+      res.status(409).json({ error: 'taken', message: 'Another partner already has that email address — each one signs in to one page.' });
+      return;
+    }
     const made = await createAffiliate(input);
     if (!made.ok) {
       res.status(409).json({ error: 'taken', message: made.message });
@@ -1352,7 +1366,18 @@ app.patch('/api/admin/affiliates/:id', requireAdmin, async (req, res) => {
     Object.assign(changes, { name: input.name, rate: input.rate, months: input.months, email: input.email, note: input.note });
   }
   try {
-    const found = await updateAffiliate(String(req.params.id), changes);
+    const id = String(req.params.id);
+    if ('email' in changes && (await emailTaken(changes.email ?? null, id))) {
+      res.status(409).json({ error: 'taken', message: 'Another partner already has that email address — each one signs in to one page.' });
+      return;
+    }
+    const before = (await listAffiliates(id))[0];
+    const found = await updateAffiliate(id, changes);
+    // A new address is a new person as far as their page is concerned:
+    // whoever was signed in with the old one is signed out.
+    if (found && before && 'email' in changes && (before.email ?? '').toLowerCase() !== (changes.email ?? '').toLowerCase()) {
+      await endPartnerSessions(id);
+    }
     if (found) {
       await recordAdminAction(
         await adminEmail(req.device!),
@@ -1384,6 +1409,116 @@ app.post('/api/admin/affiliates/:id/payouts', requireAdmin, async (req, res) => 
     logFailure('admin payout', error);
     res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
   }
+});
+
+/** Where a partner's sign-in link points: their page, with the token in the fragment so it never reaches a log. */
+const partnerLink = (req: Request) => (token: string) => `${publicOrigin(req)}/partners#token=${token}`;
+
+app.post('/api/admin/affiliates/:id/portal-link', requireAdmin, async (req, res) => {
+  const send = req.body?.send === true;
+  try {
+    const done = await handPartnerLink(String(req.params.id), partnerLink(req), send);
+    if (!done.ok) {
+      const WHY = {
+        not_found: 'No such partner.',
+        no_email: 'They have no email address yet — add one with Edit, or copy the link instead.',
+        no_mail: 'Email is not set up, so copy the link and send it yourself.',
+      };
+      res.status(done.reason === 'not_found' ? 404 : 409).json({ error: done.reason, message: WHY[done.reason] });
+      return;
+    }
+    await recordAdminAction(await adminEmail(req.device!), send ? 'email a partner sign-in link' : 'copy a partner sign-in link', String(req.params.id), null);
+    res.json(done);
+  } catch (error) {
+    logFailure('partner link', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not make a link just now.' });
+  }
+});
+
+/* ------------------------------------------------------------------ *
+ * The partner page — affiliates' own sign-in and figures. See server/partners.ts
+ * ------------------------------------------------------------------ */
+
+/** A few tries an hour per address: enough for a typo, too few to guess a link or flood an inbox. */
+const partnerTries = new Map<string, { count: number; resetAt: number }>();
+function partnerLimit(req: Request, res: Response, next: NextFunction): void {
+  const now = Date.now();
+  const key = req.ip ?? 'unknown';
+  const entry = partnerTries.get(key);
+  if (!entry || entry.resetAt < now) {
+    partnerTries.set(key, { count: 1, resetAt: now + HOUR_MS });
+    if (partnerTries.size > 5000) for (const [ip, seen] of partnerTries) if (seen.resetAt < now) partnerTries.delete(ip);
+    next();
+    return;
+  }
+  entry.count += 1;
+  if (entry.count > 20) {
+    res.status(429).json({ error: 'rate_limited', message: 'That is a lot of tries. Give it an hour.' });
+    return;
+  }
+  next();
+}
+
+const partnerSession = (req: Request): string | undefined => {
+  const header = req.get('authorization');
+  return header?.startsWith('Bearer ') ? header.slice(7).trim() : undefined;
+};
+
+app.post('/api/partner/link', partnerLimit, async (req, res) => {
+  const { email } = req.body ?? {};
+  if (typeof email !== 'string' || !email.includes('@')) {
+    res.status(400).json({ error: 'missing', message: 'Your email address, please.' });
+    return;
+  }
+  if (!hasDatabase()) {
+    res.status(503).json({ error: 'unavailable', message: 'Partner pages are not available here.' });
+    return;
+  }
+  try {
+    await requestPartnerLink(email, partnerLink(req));
+  } catch (error) {
+    // Said the same way as success: whether it failed is not a clue to whether the address is a partner's.
+    logFailure('partner link request', error);
+  }
+  res.json({ sent: true, mail: canSendMail() });
+});
+
+app.post('/api/partner/claim', partnerLimit, async (req, res) => {
+  try {
+    const session = await claimPartnerLink(req.body?.token);
+    if (!session) {
+      res.status(401).json({ error: 'bad_link', message: 'That link has been used or has run out. Ask for a new one below.' });
+      return;
+    }
+    res.json({ session });
+  } catch (error) {
+    logFailure('partner claim', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not sign you in just now.' });
+  }
+});
+
+app.get('/api/partner/me', async (req, res) => {
+  try {
+    const id = await partnerFor(partnerSession(req));
+    const view = id ? await partnerView(id) : null;
+    if (!view) {
+      res.status(401).json({ error: 'signed_out' });
+      return;
+    }
+    res.set('Cache-Control', 'no-store').json({ ...view, link: `${referralBase(req)}${view.code}` });
+  } catch (error) {
+    logFailure('partner page', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not load your figures just now.' });
+  }
+});
+
+app.post('/api/partner/signout', async (req, res) => {
+  try {
+    await endPartnerSession(partnerSession(req));
+  } catch (error) {
+    logFailure('partner sign-out', error);
+  }
+  res.json({ signedOut: true });
 });
 
 /**

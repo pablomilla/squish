@@ -210,7 +210,7 @@ function Dashboard({
           {section === 'money' && <Money key={finance ? 'ready' : 'waiting'} initial={finance} onChanged={() => void load()} />}
           {section === 'people' && <People metrics={metrics} usdToGbp={finance?.settings.usdToGbp ?? 0.78} />}
           {section === 'usage' && <Usage metrics={metrics} finance={finance} overview={overview} />}
-          {section === 'affiliates' && <Affiliates onChanged={() => void load()} />}
+          {section === 'affiliates' && <Affiliates mailReady={overview?.mailReady ?? false} onChanged={() => void load()} />}
           {section === 'settings' && <Settings mailReady={overview?.mailReady ?? false} twoFactor={twoFactor} onRecheck={onRecheck} />}
 
           <p className="tiny muted admin-foot">

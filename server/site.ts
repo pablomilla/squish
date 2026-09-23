@@ -54,11 +54,12 @@ export function isSiteRequest(host: string | undefined): boolean {
 }
 
 /**
- * Paths that belong to the app, reached through the website's address: links
- * in emails sent before the move. Sent on with their query intact, because
- * the query is the reset token.
+ * Paths that belong to the app, reached through the website's address: reset
+ * links in emails sent before the move, and the partner page, which the
+ * website's footer links to. Sent on with their query intact, because the
+ * query is the reset token.
  */
-const APP_PATHS = ['/reset'];
+const APP_PATHS = ['/reset', '/partners'];
 
 const pages = new Map<string, string>();
 

@@ -73,6 +73,15 @@ Backup is on by default where this copy of Squish has a database.
   once it has been used. Following a link adds one to a count of visits and
   records nothing about you.
 
+### If you are one of our partners
+
+Partners — people paid a share of the subscriptions their link brings — have
+a page of their own. For that we hold your name, the email address you sign in
+with, your link's code and terms, a count of visits to your link each day, and
+the payments we have made you. Signing in uses a link emailed to you, spent
+once and stored hashed, and starts a session in your browser that lasts 30
+days. Your page shows totals only: never who signed up through your link.
+
 ### What we do not hold
 
 No analytics. No advertising identifiers. No third-party trackers. No

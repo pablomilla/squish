@@ -32,6 +32,8 @@ export interface Affiliate {
   clicks: number;
   signups: number;
   paying: number;
+  /** When they last opened their partner page, if ever. */
+  portalSeenAt: string | null;
   revenuePence: number;
   earnedPence: number;
   paidPence: number;
@@ -126,7 +128,8 @@ export async function updateAffiliate(
   return rows.length > 0;
 }
 
-export async function listAffiliates(): Promise<Affiliate[]> {
+/** Every affiliate, or just the one asked for. */
+export async function listAffiliates(onlyId?: string): Promise<Affiliate[]> {
   await migrate();
   const rows = await query<{
     id: string;
@@ -140,6 +143,7 @@ export async function listAffiliates(): Promise<Affiliate[]> {
     created_at: Date;
     clicks: number;
     signups: string;
+    portal_seen: Date | null;
     paying: string;
     revenue: string;
     paid: string;
@@ -151,9 +155,12 @@ export async function listAffiliates(): Promise<Affiliate[]> {
            and p.occurred_at + (case when p.product = 'yearly' then interval '12 months' else interval '1 month' end) > now())::text as paying,
        (select coalesce(sum(p.net_pence), 0) from payments p join accounts a on a.id = p.account_id
          where a.referred_by = f.id)::text as revenue,
-       (select coalesce(sum(amount_pence), 0) from affiliate_payouts o where o.affiliate_id = f.id)::text as paid
+       (select coalesce(sum(amount_pence), 0) from affiliate_payouts o where o.affiliate_id = f.id)::text as paid,
+       f.portal_seen_at as portal_seen
      from affiliates f
+     where ($1::text is null or f.id = $1)
      order by f.active desc, f.created_at desc`,
+    [onlyId ?? null],
   );
   return Promise.all(
     rows.map(async (row) => {
@@ -171,6 +178,7 @@ export async function listAffiliates(): Promise<Affiliate[]> {
         createdAt: row.created_at.toISOString(),
         clicks: row.clicks,
         signups: Number(row.signups),
+        portalSeenAt: row.portal_seen?.toISOString() ?? null,
         paying: Number(row.paying),
         revenuePence: Number(row.revenue),
         earnedPence: earned,
@@ -240,6 +248,13 @@ export async function noteClick(code: string): Promise<boolean> {
   const tidy = tidyCode(code);
   if (!CODE.test(tidy)) return false;
   await migrate();
-  const rows = await query('update affiliates set clicks = clicks + 1 where code = $1 and active returning id', [tidy]);
-  return rows.length > 0;
+  const rows = await query<{ id: string }>('update affiliates set clicks = clicks + 1 where code = $1 and active returning id', [tidy]);
+  const id = rows[0]?.id;
+  if (!id) return false;
+  await query(
+    `insert into affiliate_clicks (affiliate_id, day, clicks) values ($1, current_date, 1)
+     on conflict (affiliate_id, day) do update set clicks = affiliate_clicks.clicks + 1`,
+    [id],
+  );
+  return true;
 }

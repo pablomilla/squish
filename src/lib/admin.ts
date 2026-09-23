@@ -341,6 +341,7 @@ export interface Affiliate {
   clicks: number;
   signups: number;
   paying: number;
+  portalSeenAt: string | null;
   revenuePence: number;
   earnedPence: number;
   paidPence: number;
@@ -403,3 +404,7 @@ export const updateAffiliate = (id: string, changes: Partial<AffiliateInput> & {
 
 export const recordPayout = (id: string, pounds: number, note: string): Promise<Answer<object>> =>
   change(`/api/admin/affiliates/${encodeURIComponent(id)}/payouts`, 'POST', { pounds, note });
+
+/** A sign-in link to their partner page: emailed to them, or handed back to copy into a message. */
+export const partnerLink = (id: string, send: boolean): Promise<Answer<{ url: string; sent: boolean }>> =>
+  change(`/api/admin/affiliates/${encodeURIComponent(id)}/portal-link`, 'POST', { send });

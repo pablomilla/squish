@@ -11,12 +11,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '../../components/ui';
 import { PLUS } from '../../lib/plan';
-import { createAffiliate, fetchAffiliates, recordPayout, updateAffiliate, type Affiliate, type Payout } from '../../lib/admin';
+import { createAffiliate, fetchAffiliates, partnerLink, recordPayout, updateAffiliate, type Affiliate, type Payout } from '../../lib/admin';
 import { friendlyDate } from '../../lib/date';
 import { count, percent, pounds } from './format';
 import { Tile } from './Tiles';
 
-export default function Affiliates({ onChanged }: { onChanged: () => void }) {
+export default function Affiliates({ onChanged, mailReady }: { onChanged: () => void; mailReady: boolean }) {
   const [data, setData] = useState<{ affiliates: Affiliate[]; payouts: Payout[]; linkBase: string } | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -76,7 +76,7 @@ export default function Affiliates({ onChanged }: { onChanged: () => void }) {
         ) : (
           <div className="affiliates">
             {all.map((affiliate) => (
-              <AffiliateCard key={affiliate.id} affiliate={affiliate} link={`${data.linkBase}${affiliate.code}`} onChanged={changed} />
+              <AffiliateCard key={affiliate.id} affiliate={affiliate} link={`${data.linkBase}${affiliate.code}`} mailReady={mailReady} onChanged={changed} />
             ))}
           </div>
         )}
@@ -96,11 +96,16 @@ export default function Affiliates({ onChanged }: { onChanged: () => void }) {
               and the store's fee, for as many months as their terms say.
             </li>
             <li>Pay them by bank transfer, then record it here. What they are owed comes down by itself.</li>
+            <li>
+              They follow their own figures at their partner page — <b>/partners</b> — signing in with a link sent to the
+              email address you have for them.
+            </li>
           </ol>
           <p className="tiny muted admin-note">
-            Affiliates see nothing from here and get no login: send them their numbers when you pay them. A code cannot be
-            changed once made, because it is already printed in their links; switching somebody off stops new sign-ups
-            counting, and keeps what they have earned.
+            Their page shows their link, visits, sign-ups, subscribers, earnings and the payments you record — never who
+            signed up, and never your notes. A code cannot be changed once made, because it is already printed in their
+            links; switching somebody off stops new sign-ups counting and keeps what they have earned. Changing their
+            email address signs them out of their page.
           </p>
         </section>
 
@@ -130,7 +135,17 @@ export default function Affiliates({ onChanged }: { onChanged: () => void }) {
   );
 }
 
-function AffiliateCard({ affiliate: a, link, onChanged }: { affiliate: Affiliate; link: string; onChanged: () => void }) {
+function AffiliateCard({
+  affiliate: a,
+  link,
+  mailReady,
+  onChanged,
+}: {
+  affiliate: Affiliate;
+  link: string;
+  mailReady: boolean;
+  onChanged: () => void;
+}) {
   const [mode, setMode] = useState<'view' | 'pay' | 'edit'>('view');
   const toast = useToast();
 
@@ -194,6 +209,46 @@ function AffiliateCard({ affiliate: a, link, onChanged }: { affiliate: Affiliate
         </div>
       </dl>
       {a.note && <p className="tiny muted">{a.note}</p>}
+
+      <div className="affiliate-portal">
+        <p className="tiny muted">
+          Their page: {a.portalSeenAt ? `last opened ${friendlyDate(a.portalSeenAt.slice(0, 10))}` : 'not opened yet'}
+        </p>
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+          {mailReady && a.email && (
+            <button
+              type="button"
+              className="btn btn--sm btn--ghost"
+              onClick={async () => {
+                const done = await partnerLink(a.id, true);
+                toast(done.ok ? `Sign-in link sent to ${a.email}.` : done.message, done.ok ? '✉️' : '⚠️');
+                if (done.ok) onChanged();
+              }}
+            >
+              Email them a sign-in link
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn--sm btn--ghost"
+            onClick={async () => {
+              const done = await partnerLink(a.id, false);
+              if (!done.ok) {
+                toast(done.message, '⚠️');
+                return;
+              }
+              try {
+                await navigator.clipboard.writeText(done.url);
+                toast('Sign-in link copied. It works once, for 3 days.', '🔗');
+              } catch {
+                window.prompt('Their sign-in link — works once, for 3 days:', done.url);
+              }
+            }}
+          >
+            Copy a sign-in link
+          </button>
+        </div>
+      </div>
 
       {mode === 'pay' && (
         <PayoutForm
@@ -270,7 +325,7 @@ function PayoutForm({ affiliate, onSaved, onCancel }: { affiliate: Affiliate; on
           <input className="input" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} />
         </label>
         <label className="tiny muted grow">
-          Note
+          Note — they see this too
           <input className="input" value={note} placeholder="Bank transfer, 30 Sep" onChange={(event) => setNote(event.target.value)} />
         </label>
       </div>
@@ -343,7 +398,7 @@ function AffiliateForm({ existing, onSaved, onCancel }: { existing?: Affiliate; 
         </label>
       </div>
       <label className="tiny muted">
-        Email, for your records
+        Email — they sign in to their partner page with it
         <input className="input" type="email" value={draft.email} onChange={(event) => set({ email: event.target.value })} />
       </label>
       <div className="row" style={{ gap: 8 }}>
@@ -357,7 +412,7 @@ function AffiliateForm({ existing, onSaved, onCancel }: { existing?: Affiliate; 
         </label>
       </div>
       <label className="tiny muted">
-        Note — only you see this
+        Note — only you see this, never them
         <input className="input" value={draft.note} onChange={(event) => set({ note: event.target.value })} />
       </label>
       <p className="tiny muted">

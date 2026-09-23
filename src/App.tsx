@@ -35,6 +35,7 @@ const Admin = lazyScreen(() => import('./screens/Admin'));
 const AddFood = lazyScreen(() => import('./screens/AddFood'));
 const Paywall = lazyScreen(() => import('./components/Paywall'));
 const ResetPassword = lazyScreen(() => import('./screens/ResetPassword'));
+const Partners = lazyScreen(() => import('./screens/Partners'));
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'home', label: 'Home', Icon: HomeIcon },
@@ -281,6 +282,17 @@ export default function App() {
   // followed it may be on a phone with no diary on it yet, and has one thing
   // to do. Read once, at startup: nothing in the app changes the address bar.
   const resetToken = useMemo(() => resetTokenInUrl(), []);
+  // The partner page is its own site in all but address: affiliates have no
+  // diary and no reason to see the app's setup.
+  const partnerPage = useMemo(() => location.pathname === '/partners' || location.pathname.startsWith('/partners/'), []);
+  if (partnerPage)
+    return (
+      <ToastProvider>
+        <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
+          <Partners />
+        </Suspense>
+      </ToastProvider>
+    );
   if (resetToken)
     return (
       <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
