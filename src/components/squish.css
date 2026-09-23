@@ -123,3 +123,6 @@
   --squish-word-1: #e4ddf6;
   --squish-word-sheen: transparent;
 }
+
+/* The sleep marks are drawn in ink, which disappears on a dark screen. */
+:root[data-theme='dark'] .squish--sleepy .sq-accents path { fill: #d9d2f5; }

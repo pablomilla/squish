@@ -1,7 +1,77 @@
-.waking { background: linear-gradient(180deg, var(--brand-soft) 0%, var(--bg) 50%); }
-.waking-body {
-  min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 8px; padding: 24px; animation: fade-in 0.4s ease both;
+/*
+ * The waking screen. The stack's measurements match the splash in index.html
+ * exactly — 176px Squish, the shadow tucked under, the dots 18px below — so
+ * the handover from one to the other does not jump.
+ */
+.waking { background: radial-gradient(120% 70% at 50% 42%, var(--brand-soft) 0%, var(--bg) 62%); }
+.waking-body { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.waking-stack { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.waking-stage { position: relative; width: 176px; height: 176px; }
+
+/* Hopping: squash on landing, stretch on take-off. The shadow shrinks as Squish rises. */
+.waking-hop { animation: waking-hop 1.5s cubic-bezier(0.45, 0, 0.55, 1) infinite; transform-origin: 50% 92%; }
+@keyframes waking-hop {
+  0%, 100% { transform: translateY(0) scale(1.06, 0.94); }
+  18% { transform: translateY(0) scale(0.96, 1.05); }
+  50% { transform: translateY(-16%) scale(0.98, 1.02); }
+  82% { transform: translateY(0) scale(1.05, 0.95); }
 }
-.waking-body h1 { font-size: 24px; color: var(--ink-2); }
-.waking-note { max-width: 280px; font-size: 14px; animation: fade-in 0.5s ease both; }
+.waking-shadow {
+  width: 104px; height: 14px; margin-top: -26px; border-radius: 50%;
+  background: rgba(70, 52, 40, 0.14);
+  animation: waking-shadow 1.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+:root[data-theme='dark'] .waking-shadow { background: rgba(0, 0, 0, 0.35); }
+@keyframes waking-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 1; }
+  50% { transform: scaleX(0.7); opacity: 0.55; }
+}
+
+/* Napping: slow breaths, settling in rather than popping in. */
+.waking-nap { animation: waking-settle 0.6s ease both, waking-breathe 3.4s ease-in-out 0.6s infinite; transform-origin: 50% 92%; }
+.waking-shadow--still { animation: waking-breathe-shadow 3.4s ease-in-out infinite; width: 128px; }
+@keyframes waking-settle { from { opacity: 0; transform: translateY(6%) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes waking-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.025, 0.975); }
+}
+@keyframes waking-breathe-shadow {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(1.04); }
+}
+
+/* Bubbles drifting up behind a sleeping Squish. */
+.waking-bubbles { position: absolute; inset: -40px -70px 0; pointer-events: none; }
+.waking-bubbles span {
+  position: absolute; bottom: 10%; border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 50%, transparent);
+  opacity: 0;
+  animation-name: waking-bubble; animation-timing-function: ease-out; animation-iteration-count: infinite;
+}
+@keyframes waking-bubble {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(-190px) scale(1.1); opacity: 0; }
+}
+
+.waking-dots { display: flex; gap: 8px; margin-top: 6px; }
+.waking-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); opacity: 0.35; animation: waking-dot 1.2s ease-in-out infinite; }
+.waking-dots i:nth-child(2) { animation-delay: 0.15s; }
+.waking-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes waking-dot {
+  0%, 100% { transform: translateY(0); opacity: 0.35; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+.waking-words {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  width: min(300px, 86vw); padding-top: 18px; text-align: center;
+}
+.waking-words h1 { font-size: 22px; color: var(--ink-2); margin: 0; animation: fade-in 0.4s ease both; }
+.waking-note { font-size: 14px; margin: 8px 0 0; animation: fade-in 0.5s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .waking-hop, .waking-nap, .waking-shadow, .waking-dots i, .waking-bubbles span { animation: none; }
+  .waking-bubbles { display: none; }
+}

@@ -39,3 +39,19 @@ const dark = wordmark
   .replace(/var\(--squish-word-sheen, #[0-9a-fA-F]+\)/g, 'transparent');
 writeFileSync(resolve(OUT, 'wordmark-dark.svg'), svg(WORDMARK_VIEWBOX, dark, 'Squish'));
 console.log(`Wrote the mascot and wordmark to ${OUT}`);
+
+// The app's first frame: shown by index.html before any JavaScript has
+// arrived, so it carries its own blink and sparkle — an <img> cannot reach the
+// page's stylesheet. See the splash in index.html and screens/Waking.tsx.
+const HELLO_STYLE =
+  '<style>' +
+  '.sq-blink{animation:b 6.2s infinite;transform-origin:center;transform-box:fill-box}' +
+  '@keyframes b{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.06)}}' +
+  '.sq-accents{animation:s 2.2s ease-in-out infinite;transform-origin:center;transform-box:fill-box}' +
+  '@keyframes s{0%,100%{opacity:.75;transform:scale(.96)}50%{opacity:1;transform:scale(1.06)}}' +
+  '@media (prefers-reduced-motion:reduce){*{animation:none!important}}' +
+  '</style>';
+writeFileSync(
+  resolve(process.cwd(), 'public/squish-hello.svg'),
+  svg(MASCOT_VIEWBOX, HELLO_STYLE + MASCOT_ART.excited.replaceAll('__ID__', 'hello-'), 'Squish'),
+);

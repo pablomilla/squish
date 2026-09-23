@@ -11,9 +11,51 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Squish — Your little health buddy</title>
+    <link rel="preload" href="/squish-hello.svg" as="image" />
+    <!--
+      The first thing anybody sees, before the app's code has arrived: Squish,
+      hopping. Inside #root, so React replaces it the moment it renders, and
+      the same shape as the waking screen that follows, so the handover does
+      not jump. Everything it needs is here — the app's stylesheet has not
+      loaded yet.
+    -->
+    <style>
+      /* Only until the app sets its own theme on <html>, which it does as it starts. */
+      body { margin: 0; }
+      html:not([data-theme]) { background: #fdf6ec; }
+      @media (prefers-color-scheme: dark) { html:not([data-theme]) { background: #17151f; } }
+      .splash { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+      .splash-hop { width: 176px; height: 176px; display: block; animation: splash-hop 1.5s cubic-bezier(.45, 0, .55, 1) infinite; transform-origin: 50% 92%; }
+      .splash-shadow { width: 104px; height: 14px; margin-top: -26px; border-radius: 50%; background: rgba(70, 52, 40, .14); animation: splash-shadow 1.5s cubic-bezier(.45, 0, .55, 1) infinite; }
+      .splash-dots { display: flex; gap: 8px; margin-top: 6px; }
+      .splash-dots i { width: 9px; height: 9px; border-radius: 50%; background: #6b5fe0; opacity: .35; animation: splash-dot 1.2s ease-in-out infinite; }
+      .splash-dots i:nth-child(2) { animation-delay: .15s; }
+      .splash-dots i:nth-child(3) { animation-delay: .3s; }
+      @keyframes splash-hop {
+        0%, 100% { transform: translateY(0) scale(1.06, .94); }
+        18% { transform: translateY(0) scale(.96, 1.05); }
+        50% { transform: translateY(-16%) scale(.98, 1.02); }
+        82% { transform: translateY(0) scale(1.05, .95); }
+      }
+      @keyframes splash-shadow {
+        0%, 100% { transform: scaleX(1); opacity: 1; }
+        50% { transform: scaleX(.7); opacity: .55; }
+      }
+      @keyframes splash-dot {
+        0%, 100% { transform: translateY(0); opacity: .35; }
+        40% { transform: translateY(-6px); opacity: 1; }
+      }
+      @media (prefers-reduced-motion: reduce) { .splash * { animation: none !important; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="splash" role="status" aria-label="Squish is loading">
+        <img class="splash-hop" src="/squish-hello.svg" alt="" width="176" height="176" />
+        <div class="splash-shadow"></div>
+        <div class="splash-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
