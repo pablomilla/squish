@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 22 September 2026**
+**Last updated: 23 September 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -141,11 +141,6 @@ somebody else's service is down.
 
 ### Our email provider — the emails we send you
 
-<!--
-  Name the provider here once one is chosen (e.g. "Resend, Inc."), and link
-  to their privacy policy. The ICO expects processors to be identifiable.
--->
-
 Squish sends exactly three kinds of email, and only these:
 
 - **A link to confirm your address**, when you make an account.
@@ -156,8 +151,10 @@ Squish sends exactly three kinds of email, and only these:
 Security notices only go to an address you have confirmed, so nobody can use
 Squish to send mail to someone else. There is no marketing, no newsletter, and
 nothing else. To send these, your address and the message pass through our
-email provider, who delivers them on our behalf and does not use them for
-anything else.
+email provider, [Resend](https://resend.com), who deliver them on our behalf
+and do not use them for anything else. Their handling is governed by their own
+privacy policy, at
+[resend.com/legal/privacy-policy](https://resend.com/legal/privacy-policy).
 
 ### Our host
 
@@ -258,10 +255,9 @@ Squish is run by **Industry Logic Limited**, a company registered in England
 and Wales, which is the data controller for everything described here.
 
 <!--
-  Still outstanding, and not for this page: as a controller processing health
-  data, Industry Logic Limited almost certainly has to pay the ICO's annual
-  data protection fee. Check the tier at
-  ico.org.uk/for-organisations/data-protection-fee.
+  The ICO data protection fee is paid (September 2026); it renews yearly. Once
+  the ICO registration number arrives (it starts ZA or ZB), it can go under the
+  company number below as "ICO registration: ZB…". Optional, but reassuring.
 -->
 
 **Company number:** 08236014
