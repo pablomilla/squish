@@ -255,3 +255,151 @@ export const newRecoveryCodes = (password: string): Promise<Answer<{ recoveryCod
   call('/api/admin/2fa/recovery', { password });
 
 export const lockDashboard = (): Promise<Answer<object>> => call('/api/admin/2fa/lock');
+
+/* ---------------- Trends, money and affiliates ---------------- */
+
+export interface DayPoint {
+  day: string;
+  active: number;
+  signups: number;
+  analyses: number;
+  aiPence: { photo: number; chat: number; recipe: number };
+}
+
+export interface PeriodTotals {
+  active: number;
+  signups: number;
+  aiPence: number;
+  analyses: number;
+}
+
+export interface Metrics {
+  days: number;
+  series: DayPoint[];
+  totals: PeriodTotals;
+  previous: PeriodTotals;
+  plans: { accounts: number; free: number; compedPlus: number; payingPlus: number; signedOutActive: number };
+  funnel: { accounts: number; triedAi: number; usedTaste: number; plus: number; paying: number };
+  recordedSince: string | null;
+}
+
+export interface MonthPnl {
+  month: string;
+  current: boolean;
+  payments: number;
+  grossPence: number;
+  vatPence: number;
+  storeFeePence: number;
+  refundsPence: number;
+  netPence: number;
+  commissionPence: number;
+  aiPence: number;
+  aiByKind: { kind: string; calls: number; pence: number }[];
+  fixedPence: number;
+  profitPence: number;
+}
+
+export interface FinanceSettings {
+  usdToGbp: number;
+  priceMonthly: number;
+  priceYearly: number;
+  storeCut: number;
+  vat: number;
+}
+
+export interface FixedCost {
+  id: number;
+  label: string;
+  amount: number;
+  currency: 'GBP' | 'USD';
+  period: 'month' | 'year';
+  active: boolean;
+  monthlyPence: number;
+}
+
+export interface Finance {
+  month: MonthPnl;
+  history: MonthPnl[];
+  settings: FinanceSettings;
+  fixed: FixedCost[];
+  paying: { accounts: number; monthly: number; yearly: number; mrrPence: number };
+  compedPlus: number;
+  projection: { plusAccounts: number; perMonthPence: number };
+  onSale: boolean;
+}
+
+export interface Affiliate {
+  id: string;
+  name: string;
+  code: string;
+  email: string | null;
+  rate: number;
+  months: number;
+  note: string | null;
+  active: boolean;
+  createdAt: string;
+  clicks: number;
+  signups: number;
+  paying: number;
+  revenuePence: number;
+  earnedPence: number;
+  paidPence: number;
+  owedPence: number;
+}
+
+export interface Payout {
+  id: number;
+  affiliateId: string;
+  amountPence: number;
+  note: string | null;
+  paidAt: string;
+  recordedBy: string | null;
+}
+
+/** Any change, answered with the server's own explanation when it says no. */
+async function change<T = object>(path: string, method: string, body?: unknown): Promise<Answer<T>> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl(path), {
+      method,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as T & { message?: string };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.' };
+    return { ok: true, ...payload };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}
+
+export const fetchMetrics = (days: number): Promise<Metrics | null> => ask(`/api/admin/metrics?days=${days}`);
+
+export const fetchFinance = (month?: string): Promise<Finance | null> =>
+  ask(`/api/admin/finance${month ? `?month=${encodeURIComponent(month)}` : ''}`);
+
+export const saveSettings = (settings: Partial<FinanceSettings>): Promise<Answer<FinanceSettings>> =>
+  change('/api/admin/settings', 'PUT', settings);
+
+export type CostInput = Pick<FixedCost, 'label' | 'amount' | 'currency' | 'period' | 'active'>;
+
+export const addCost = (cost: CostInput): Promise<Answer<object>> => change('/api/admin/fixed-costs', 'POST', cost);
+
+export const updateCost = (id: number, cost: CostInput): Promise<Answer<object>> =>
+  change(`/api/admin/fixed-costs/${id}`, 'PATCH', cost);
+
+export const removeCost = (id: number): Promise<Answer<object>> => change(`/api/admin/fixed-costs/${id}`, 'DELETE');
+
+export const fetchAffiliates = (): Promise<{ affiliates: Affiliate[]; payouts: Payout[]; linkBase: string } | null> =>
+  ask('/api/admin/affiliates');
+
+export type AffiliateInput = { name: string; code: string; email: string; rate: number; months: number; note: string };
+
+export const createAffiliate = (input: AffiliateInput): Promise<Answer<{ id: string }>> =>
+  change('/api/admin/affiliates', 'POST', input);
+
+export const updateAffiliate = (id: string, changes: Partial<AffiliateInput> & { active?: boolean }): Promise<Answer<object>> =>
+  change(`/api/admin/affiliates/${encodeURIComponent(id)}`, 'PATCH', changes);
+
+export const recordPayout = (id: string, pounds: number, note: string): Promise<Answer<object>> =>
+  change(`/api/admin/affiliates/${encodeURIComponent(id)}/payouts`, 'POST', { pounds, note });

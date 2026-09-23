@@ -40,6 +40,29 @@ import {
 } from './invites';
 import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
 import { siteRouter } from './site';
+import {
+  addCost,
+  checkCost,
+  finance,
+  isMonth,
+  metrics,
+  readSettings,
+  removeCost,
+  saveSettings,
+  thisMonth,
+  updateCost,
+} from './finance';
+import {
+  attribute,
+  checkAffiliate,
+  createAffiliate,
+  listAffiliates,
+  noteClick,
+  payouts,
+  recordPayout,
+  tidyCode,
+  updateAffiliate,
+} from './affiliates';
 import { beginSetup, checkCode, endSession, finishSetup, hasPassed, replaceRecoveryCodes, stateFor } from './twofactor';
 import { billedTo } from './billing';
 import { PLUS } from '../src/lib/subscription';
@@ -543,7 +566,7 @@ app.get('/api/account', requireDevice, async (req, res) => {
 });
 
 app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
-  const { email, password } = req.body ?? {};
+  const { email, password, ref } = req.body ?? {};
   if (typeof email !== 'string' || typeof password !== 'string') {
     res.status(400).json({ error: 'missing', message: 'An address and a password, please.' });
     return;
@@ -552,6 +575,11 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
   try {
     const made = await signUp(req.device!.id, email, password);
     if (made.ok) {
+      // Whoever's link they arrived by, if anyone's. Never allowed to fail the
+      // sign-up: a stale link is not the new account's problem.
+      if (ref !== undefined) {
+        await attribute(made.account.id, ref).catch((error: unknown) => logFailure('referral', error));
+      }
       // Not awaited into the response, and never allowed to fail it: the
       // account exists either way, and there is a button to send it again.
       if (canSendMail()) {
@@ -1169,6 +1197,195 @@ app.delete('/api/admin/invites/:code', requireAdmin, async (req, res) => {
   }
 });
 
+/* ---------------- Trends, money and affiliates ---------------- */
+
+app.get('/api/admin/metrics', requireAdmin, async (req, res) => {
+  try {
+    const days = Number(req.query.days ?? 30);
+    res.json(await metrics(Number.isFinite(days) ? days : 30));
+  } catch (error) {
+    logFailure('admin metrics', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+  }
+});
+
+app.get('/api/admin/finance', requireAdmin, async (req, res) => {
+  const month = req.query.month === undefined ? thisMonth() : req.query.month;
+  if (!isMonth(month)) {
+    res.status(400).json({ error: 'bad_month', message: 'A month, as 2026-09.' });
+    return;
+  }
+  try {
+    res.json(await finance(month));
+  } catch (error) {
+    logFailure('admin finance', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+  }
+});
+
+app.get('/api/admin/settings', requireAdmin, async (_req, res) => {
+  try {
+    res.json(await readSettings());
+  } catch (error) {
+    logFailure('admin settings', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+app.put('/api/admin/settings', requireAdmin, async (req, res) => {
+  try {
+    const saved = await saveSettings(req.body ?? {});
+    if (!saved.ok) {
+      res.status(400).json({ error: 'bad_setting', message: saved.message });
+      return;
+    }
+    await recordAdminAction(await adminEmail(req.device!), 'change money settings', null, JSON.stringify(req.body ?? {}).slice(0, 200));
+    res.json(saved.settings);
+  } catch (error) {
+    logFailure('admin settings save', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+  }
+});
+
+const costId = (raw: unknown): number | null => {
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+};
+
+app.post('/api/admin/fixed-costs', requireAdmin, async (req, res) => {
+  const cost = checkCost(req.body ?? {});
+  if (typeof cost === 'string') {
+    res.status(400).json({ error: 'bad_cost', message: cost });
+    return;
+  }
+  try {
+    await addCost(cost);
+    await recordAdminAction(await adminEmail(req.device!), 'add a cost', cost.label, `${cost.amount} ${cost.currency} a ${cost.period}`);
+    res.json({ saved: true });
+  } catch (error) {
+    logFailure('admin cost add', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+  }
+});
+
+app.patch('/api/admin/fixed-costs/:id', requireAdmin, async (req, res) => {
+  const id = costId(req.params.id);
+  const cost = checkCost(req.body ?? {});
+  if (id === null || typeof cost === 'string') {
+    res.status(400).json({ error: 'bad_cost', message: typeof cost === 'string' ? cost : 'Which cost?' });
+    return;
+  }
+  try {
+    const found = await updateCost(id, cost);
+    if (found) {
+      await recordAdminAction(await adminEmail(req.device!), 'change a cost', cost.label, `${cost.amount} ${cost.currency} a ${cost.period}${cost.active === false ? ', off' : ''}`);
+    }
+    res.status(found ? 200 : 404).json(found ? { saved: true } : { error: 'not_found' });
+  } catch (error) {
+    logFailure('admin cost update', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+  }
+});
+
+app.delete('/api/admin/fixed-costs/:id', requireAdmin, async (req, res) => {
+  const id = costId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: 'bad_cost' });
+    return;
+  }
+  try {
+    await removeCost(id);
+    await recordAdminAction(await adminEmail(req.device!), 'remove a cost', String(id), null);
+    res.json({ deleted: true });
+  } catch (error) {
+    logFailure('admin cost delete', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+/** The link an affiliate hands out: on the website's address where there is one. */
+const referralBase = (req: Request): string => {
+  const site = process.env.SQUISH_SITE_ORIGIN?.trim();
+  return `${(site || publicOrigin(req)).replace(/\/$/, '')}/r/`;
+};
+
+app.get('/api/admin/affiliates', requireAdmin, async (req, res) => {
+  try {
+    res.json({ affiliates: await listAffiliates(), payouts: await payouts(), linkBase: referralBase(req) });
+  } catch (error) {
+    logFailure('admin affiliates', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not read those just now.' });
+  }
+});
+
+app.post('/api/admin/affiliates', requireAdmin, async (req, res) => {
+  const input = checkAffiliate(req.body ?? {});
+  if (typeof input === 'string') {
+    res.status(400).json({ error: 'bad_affiliate', message: input });
+    return;
+  }
+  try {
+    const made = await createAffiliate(input);
+    if (!made.ok) {
+      res.status(409).json({ error: 'taken', message: made.message });
+      return;
+    }
+    await recordAdminAction(await adminEmail(req.device!), 'add an affiliate', input.code, `${Math.round(input.rate * 100)}% for ${input.months} months`);
+    res.json({ id: made.id });
+  } catch (error) {
+    logFailure('admin affiliate create', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+  }
+});
+
+app.patch('/api/admin/affiliates/:id', requireAdmin, async (req, res) => {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const changes: Parameters<typeof updateAffiliate>[1] = {};
+  if (typeof body.active === 'boolean') changes.active = body.active;
+  if (body.name !== undefined || body.rate !== undefined || body.months !== undefined) {
+    // Checked as a whole, with a stand-in code: the code itself never changes.
+    const input = checkAffiliate({ ...body, code: 'KEEP' });
+    if (typeof input === 'string') {
+      res.status(400).json({ error: 'bad_affiliate', message: input });
+      return;
+    }
+    Object.assign(changes, { name: input.name, rate: input.rate, months: input.months, email: input.email, note: input.note });
+  }
+  try {
+    const found = await updateAffiliate(String(req.params.id), changes);
+    if (found) {
+      await recordAdminAction(
+        await adminEmail(req.device!),
+        changes.active === false ? 'switch off an affiliate' : changes.active === true ? 'switch on an affiliate' : 'change an affiliate',
+        String(req.params.id),
+        null,
+      );
+    }
+    res.status(found ? 200 : 404).json(found ? { saved: true } : { error: 'not_found' });
+  } catch (error) {
+    logFailure('admin affiliate update', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+  }
+});
+
+app.post('/api/admin/affiliates/:id/payouts', requireAdmin, async (req, res) => {
+  const { pounds, note } = req.body ?? {};
+  const pence = Math.round(Number(pounds) * 100);
+  if (!Number.isFinite(pence) || pence <= 0 || pence > 10_000_000) {
+    res.status(400).json({ error: 'bad_amount', message: 'How much was paid, in pounds?' });
+    return;
+  }
+  try {
+    const admin = await adminEmail(req.device!);
+    const done = await recordPayout(String(req.params.id), pence, typeof note === 'string' && note.trim() ? note.trim().slice(0, 200) : null, admin);
+    if (done) await recordAdminAction(admin, 'record a payout', String(req.params.id), `£${(pence / 100).toFixed(2)}`);
+    res.status(done ? 200 : 404).json(done ? { saved: true } : { error: 'not_found' });
+  } catch (error) {
+    logFailure('admin payout', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+  }
+});
+
 /**
  * Redeem an invite code.
  *
@@ -1496,6 +1713,19 @@ app.post('/api/coach', async (req, res) => {
 /* ------------------------------------------------------------------ *
  * The website, where SQUISH_SITE_ORIGIN says there is one — see server/site.ts
  * ------------------------------------------------------------------ */
+
+/**
+ * An affiliate's link: squish.online/r/CODE, on either address. Counts the
+ * visit and sends them to the app with the code, which the app keeps for 30
+ * days and hands over if they make an account. Answered the same way whether
+ * or not the code is real, so the link cannot be used to find out which are.
+ */
+app.get('/r/:code', (req, res) => {
+  const code = tidyCode(String(req.params.code));
+  void noteClick(code).catch(() => {});
+  const ok = /^[A-Z0-9-]{3,24}$/.test(code);
+  res.set('Cache-Control', 'no-store').redirect(302, `${publicOrigin(req)}/${ok ? `?ref=${encodeURIComponent(code)}` : ''}`);
+});
 
 app.use(siteRouter(() => publicOrigin(), DIST));
 

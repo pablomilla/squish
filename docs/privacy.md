@@ -54,8 +54,10 @@ Backup is on by default where this copy of Squish has a database.
   thumbnails, but not the full pictures: those were never sent. If that
   matters to you, export before you change phones.
 - **A device identifier** — a random token your browser is given on first use,
-  stored in a form we cannot reverse, plus when it was created and last seen.
-  It is how a daily limit can be counted per phone rather than per network.
+  stored in a form we cannot reverse, plus when it was created and last seen,
+  and which days it was used — a date, not what was done. It is how a limit
+  can be counted per phone rather than per network, and how we know how many
+  people use Squish each day.
 - **How many photos, chats and recipes you have used today.** Counts only.
 - **If you make an account:** your email address, and your password stored as
   a scrypt hash. We never store the password itself and cannot read it.
@@ -63,6 +65,13 @@ Backup is on by default where this copy of Squish has a database.
   after two hours.
 - **Whether you have confirmed your email address**, and, until you do, a
   hashed confirmation link that expires after a week.
+- **If you arrived by somebody's referral link** (squish.online/r/…) and
+  then made an account: which referrer's code you came with, and when. That
+  is so we can pay them their share of a subscription; they are told how many
+  people signed up and subscribed through their link, never who. The code is
+  kept in your browser for 30 days after you follow the link and deleted
+  once it has been used. Following a link adds one to a count of visits and
+  records nothing about you.
 
 ### What we do not hold
 

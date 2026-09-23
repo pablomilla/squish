@@ -13,6 +13,7 @@ import { apiUrl } from './origin';
 import { deviceToken } from './identity';
 import { switchedIdentity } from './autobackup';
 import { refreshPlan } from './plan';
+import { forgetReferral, referral } from './referral';
 
 export interface Who {
   signedIn: boolean;
@@ -93,9 +94,10 @@ export interface Arrived {
  * anything. Forgetting it means the next backup either starts cleanly or is
  * told there is already a diary there — and being told is the whole point.
  */
-async function enter(path: string, email: string, password: string): Promise<Done<Arrived>> {
-  const answer = await ask<Arrived>('POST', path, { email, password });
+async function enter(path: string, email: string, password: string, ref?: string): Promise<Done<Arrived>> {
+  const answer = await ask<Arrived>('POST', path, ref ? { email, password, ref } : { email, password });
   if (answer.ok) {
+    if (ref) forgetReferral();
     switchedIdentity();
     // The tier hangs off the account, so signing in or up can change it —
     // and anything on screen that asks whether there is an account at all is
@@ -106,7 +108,8 @@ async function enter(path: string, email: string, password: string): Promise<Don
   return answer;
 }
 
-export const signUp = (email: string, password: string): Promise<Done<Arrived>> => enter('/api/account', email, password);
+export const signUp = (email: string, password: string): Promise<Done<Arrived>> =>
+  enter('/api/account', email, password, referral());
 export const signIn = (email: string, password: string): Promise<Done<Arrived>> => enter('/api/session', email, password);
 
 export async function signOut(): Promise<Done<Record<string, never>>> {

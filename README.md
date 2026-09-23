@@ -200,10 +200,28 @@ the best customers would be the ones losing the most money.
 
 ### The dashboard
 
-Set `SQUISH_ADMIN_EMAILS` to your own address, sign in normally, and **You → Dashboard** shows what
-the service is doing: how many accounts, how many on Plus, what this month actually cost, the invite
-codes with how many people used each, and a list of people with buttons to grant or revoke Plus.
-Codes are made and retired here too. Every grant is recorded with who made it.
+Set `SQUISH_ADMIN_EMAILS` to your own address, sign in normally, and **You → Dashboard** opens the
+back office — a menu down the side on a laptop, tabs along the top on a phone:
+
+- **Overview** — active people, new accounts, Plus, monthly recurring revenue, AI cost and this
+  month's profit, each against the period before; charts of active people and AI cost a day; and
+  alerts for anything that wants doing (email not set up, recovery codes running low, a spike in AI
+  spend, money owed to affiliates). It refreshes itself every minute.
+- **Money** — a profit and loss statement for any month (sales, VAT, store fees, refunds, affiliate
+  commission, AI by feature, fixed costs), six months of profit or loss, paying subscribers and
+  break-even, the list of fixed costs (edit it as prices change) and the numbers the sums use:
+  prices, VAT, the store's cut and the exchange rate.
+- **People** — sign-ups a day, the plan split, the funnel from account to free taste to paying, the
+  list of people with buttons to grant or revoke Plus, and invite codes.
+- **AI usage** — cost a day by feature, analyses a day, and the cost of each call.
+- **Affiliates** — see below.
+- **Settings** — email, the wording of every email, two-step sign-in, and a record of everything
+  done from the dashboard and by whom.
+
+Every chart can be hovered for exact values or switched to a table. Revenue comes only from the
+`payments` table, which the App Store and Google Play integration will write to when Plus goes on
+sale; until then the dashboard shows nought and says why, and the one guess it makes is labelled a
+projection. "Active" is counted from the day this version is deployed — there is no earlier record.
 
 There is no admin password. An admin signs in exactly as everybody else does — same hashing, same
 rate limit — and the list decides whether they also see this, so removing an address is the whole of
@@ -243,6 +261,17 @@ recorded and counted, wrong guesses are rate limited, and a use limit holds even
 at the same moment. Turning one off takes effect at once. Deleting one does **not** take back what it
 bought — deleting a coupon is not a way to un-sell something — and a code extends whatever somebody
 has rather than replacing it, so giving one to a paying subscriber never costs them time.
+
+### Affiliates
+
+Built in rather than bought: affiliate services track card payments through Stripe, and Squish is
+paid through the App Store and Google Play, which tell nobody where a customer came from. So each
+affiliate, added under **Dashboard → Affiliates**, gets a code and a link — `squish.online/r/CODE`.
+Following it counts a visit and opens the app with the code, which the browser keeps for 30 days; an
+account made in that time is credited to that affiliate for good (the first one only). When the
+account pays, the affiliate earns their share — 30% for 12 months unless you set other terms — of
+what reaches Industry Logic after VAT and the store's fee. Pay them by bank transfer, then **Record a
+payment**, and what they are owed comes down. They get no login; send them their numbers when you pay.
 
 There is also a script, for one-off fixes and for seeing the state of things:
 
@@ -400,6 +429,8 @@ server/           Express API — Claude calls, offline fallback
   plan.ts         Free and Plus: who is on what, and what that allows
   invites.ts      Codes that turn Plus on, made and retired in the dashboard
   admin.ts        The dashboard's numbers — counts and totals, never a diary
+  finance.ts      Profit and loss, fixed costs, the dashboard's trends and funnel
+  affiliates.ts   Referral codes, commission and the payouts made
   twofactor.ts    The dashboard's second step: authenticator codes and recovery codes
   site.ts         The website at squish.online, beside the app at app.squish.online
   billing.ts      Attributing what each model call cost to whoever made it

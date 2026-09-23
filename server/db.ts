@@ -327,6 +327,91 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index device_handoffs_device on device_handoffs(device_id);
     `,
   },
+  {
+    id: 11,
+    sql: `
+      -- One row per device per day it was used, so "active users" has a
+      -- history rather than only a last-seen time. Nothing about what was done.
+      create table device_days (
+        device_id text not null references devices(id) on delete cascade,
+        day       date not null,
+        primary key (device_id, day)
+      );
+      create index device_days_day on device_days(day);
+
+      -- Money in: one row per store transaction, in pence, as the store
+      -- reported it. Written by the App Store and Google Play integration when
+      -- Plus goes on sale; empty until then, which the dashboard says. The id
+      -- is the store's own, so a notification delivered twice is one row. A
+      -- refund is a row of its own, with every amount negative.
+      create table payments (
+        id              text primary key,
+        account_id      text references accounts(id) on delete set null,
+        store           text not null check (store in ('apple', 'google', 'manual')),
+        product         text not null check (product in ('monthly', 'yearly')),
+        kind            text not null default 'purchase' check (kind in ('purchase', 'renewal', 'refund')),
+        gross_pence     integer not null,
+        vat_pence       integer not null,
+        store_fee_pence integer not null,
+        net_pence       integer not null,
+        occurred_at     timestamptz not null default now()
+      );
+      create index payments_account on payments(account_id);
+      create index payments_time on payments(occurred_at);
+
+      -- What it costs to exist, whatever anybody does: hosting, fees, the domain.
+      create table fixed_costs (
+        id         serial primary key,
+        label      text not null,
+        amount     numeric(12, 2) not null check (amount >= 0),
+        currency   text not null check (currency in ('GBP', 'USD')),
+        period     text not null check (period in ('month', 'year')),
+        active     boolean not null default true,
+        created_at timestamptz not null default now()
+      );
+      insert into fixed_costs (label, amount, currency, period) values
+        ('Render web service', 7.00, 'USD', 'month'),
+        ('Render Postgres and storage', 10.50, 'USD', 'month'),
+        ('Apple Developer Program', 79.00, 'GBP', 'year'),
+        ('Domain (squish.online)', 30.00, 'GBP', 'year'),
+        ('ICO data protection fee', 52.00, 'GBP', 'year');
+
+      -- The dashboard's own numbers: the exchange rate, list prices, the store's cut.
+      create table admin_settings (
+        key        text primary key,
+        value      text not null,
+        updated_at timestamptz not null default now()
+      );
+
+      -- People paid to bring people. A code is how a sign-up says who sent it.
+      create table affiliates (
+        id         text primary key,
+        name       text not null,
+        code       text not null unique,
+        email      text,
+        rate       numeric(5, 4) not null default 0.3 check (rate >= 0 and rate <= 1),
+        months     integer not null default 12 check (months > 0),
+        note       text,
+        active     boolean not null default true,
+        -- Visits to their link. A count and nothing else: not who, not when.
+        clicks     integer not null default 0,
+        created_at timestamptz not null default now()
+      );
+      create table affiliate_payouts (
+        id           serial primary key,
+        affiliate_id text not null references affiliates(id) on delete cascade,
+        amount_pence integer not null check (amount_pence > 0),
+        note         text,
+        paid_at      timestamptz not null default now(),
+        recorded_by  text
+      );
+      create index affiliate_payouts_affiliate on affiliate_payouts(affiliate_id);
+
+      alter table accounts add column referred_by text references affiliates(id) on delete set null;
+      alter table accounts add column referred_at timestamptz;
+      create index accounts_referred_by on accounts(referred_by);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

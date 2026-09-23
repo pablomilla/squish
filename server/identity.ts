@@ -65,7 +65,29 @@ export async function deviceFor(token: string | undefined): Promise<Device | nul
   // Not awaited: the timestamp is for working out how many people still use
   // Squish, and nobody's request should wait on it.
   void query('update devices set last_seen_at = now() where id = $1', [found.id]).catch(() => {});
+  noteActiveToday(found.id);
   return { id: found.id, accountId: found.account_id };
+}
+
+/**
+ * Mark this device as used today, once a day, for the dashboard's history of
+ * active users. Remembered in memory so it is one write per device per day
+ * rather than one per request; the set is cleared when the day turns.
+ */
+const seenToday = new Set<string>();
+let seenDay = '';
+
+function noteActiveToday(deviceId: string): void {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today !== seenDay) {
+    seenToday.clear();
+    seenDay = today;
+  }
+  if (seenToday.has(deviceId)) return;
+  seenToday.add(deviceId);
+  void query('insert into device_days (device_id, day) values ($1, current_date) on conflict do nothing', [deviceId]).catch(
+    () => seenToday.delete(deviceId),
+  );
 }
 
 /** Constant-time comparison, for anywhere a secret is checked against input. */
