@@ -301,7 +301,8 @@ export function MacroSplitBar({ totals }: { totals: Nutrients }) {
  * Weekly bars — magnitude over time, one axis, hover tooltip, table view.
  * ------------------------------------------------------------------ */
 interface WeeklyProps {
-  points: DaySeriesPoint[];
+  /** Days, or averaged weeks or months: `label` goes under the bar, `title` says in full what it is. */
+  points: (DaySeriesPoint & { label?: string; title?: string })[];
   target: number;
   metric?: 'calories' | 'protein' | 'fibre' | 'sugar' | 'salt' | 'score';
   unit?: string;
@@ -339,7 +340,8 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
             <span>{ceiling ? 'limit' : 'target'} {round1(target)}</span>
           </div>
         )}
-        <div className="chart-bars">
+        {/* Thirty bars on a phone need the gaps down to the 2px that still separates them. */}
+        <div className={`chart-bars ${points.length > 14 ? 'chart-bars--dense' : ''}`}>
           {points.map((point, index) => {
             const value = point[metric];
             const isActive = active === index;
@@ -352,7 +354,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
                 onFocus={() => setActive(index)}
                 onBlur={() => setActive(null)}
                 onClick={() => setActive(isActive ? null : index)}
-                aria-label={`${shortDate(point.date)}: ${value} ${unit}`}
+                aria-label={`${point.title ?? shortDate(point.date)}: ${value} ${unit}`}
               >
                 <span className="chart-bar-hit" />
                 <span
@@ -362,8 +364,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
                     backgroundColor: value > 0 ? color : 'var(--surface-sunk)',
                   }}
                 />
-                {isActive && value > 0 && <span className="chart-bar-label">{value}</span>}
-                <span className="chart-bar-day">{weekdayLetter(point.date)}</span>
+                <span className="chart-bar-day">{point.label ?? weekdayLetter(point.date)}</span>
               </button>
             );
           })}
@@ -371,6 +372,18 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
       </div>
 
       <figcaption className="chart-caption">
+        {/* The figure for the bar being touched, in a line of its own under the chart: floating it
+            above the bar put it over the card's heading whenever the bar was tall. */}
+        <span className="chart-readout" aria-live="polite">
+          {active !== null && points[active] ? (
+            <>
+              {points[active].title ?? shortDate(points[active].date)} ·{' '}
+              <b>{points[active][metric] > 0 ? `${points[active][metric].toLocaleString('en-GB')} ${unit}` : 'nothing logged'}</b>
+            </>
+          ) : (
+            <span className="muted">Tap a bar for its figure</span>
+          )}
+        </span>
         <button type="button" className="btn--quiet tiny" aria-expanded={showTable} aria-controls={tableId} onClick={() => setShowTable((v) => !v)}>
           {showTable ? 'Hide table' : 'View as table'}
         </button>
@@ -380,7 +393,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
         <table className="chart-table" id={tableId}>
           <thead>
             <tr>
-              <th scope="col">Day</th>
+              <th scope="col">{points[0]?.title?.startsWith('Week') ? 'Week' : 'Day'}</th>
               <th scope="col">{unit}</th>
               <th scope="col">Score</th>
             </tr>
@@ -388,7 +401,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
           <tbody>
             {points.map((p) => (
               <tr key={p.date}>
-                <th scope="row">{shortDate(p.date)}</th>
+                <th scope="row">{p.title ?? shortDate(p.date)}</th>
                 <td>{p[metric] || '—'}</td>
                 <td>{p.score || '—'}</td>
               </tr>
@@ -461,7 +474,7 @@ export function WeightTrend({
           />
         ))}
       </svg>
-      <figcaption className="chart-readout">
+      <figcaption className="trend-readout">
         <b>{formatWeight(points[current].weightKg, units)}</b>
         <span className="muted"> · {shortDate(points[current].date)}</span>
         {goalKg && <span className="muted"> · goal {formatWeight(goalKg, units)}</span>}

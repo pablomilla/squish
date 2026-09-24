@@ -67,7 +67,11 @@
 .chart-bar-hit { position: absolute; inset: -6px -3px; }
 .chart-bar-fill { width: 100%; max-width: 26px; border-radius: 4px 4px 2px 2px; transition: height 0.55s var(--ease), filter 0.16s ease; }
 .chart-bar.is-active .chart-bar-fill { filter: brightness(1.06); box-shadow: 0 0 0 2px var(--surface); }
-.chart-bar-day { position: absolute; bottom: 0; font-size: var(--text-caption); color: var(--ink-3); }
+.chart-bar-day { position: absolute; bottom: 0; font-size: var(--text-caption); color: var(--ink-3); white-space: nowrap; }
+.chart-bars--dense { gap: 2px; }
+.chart-bars--dense .chart-bar-fill { border-radius: 3px 3px 1px 1px; }
+.chart-bars--dense .chart-bar-day { font-size: 11px; }
+
 .chart-bar-label {
   position: absolute; top: -4px; transform: translateY(-100%);
   background: var(--ink); color: var(--bg); font-size: var(--text-caption); font-weight: 600;
@@ -81,8 +85,9 @@
   z-index: 1;
 }
 .chart-target span { font-size: 11px; color: var(--ink-3); background: var(--surface); padding: 0 4px; transform: translateY(-50%); }
-.chart-caption { margin-top: 4px; text-align: right; }
-.chart-readout { margin-top: 2px; font-size: var(--text-label); }
+.chart-caption { margin-top: 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.chart-readout { font-size: var(--text-caption); min-width: 0; }
+.trend-readout { margin-top: 2px; font-size: var(--text-label); }
 .chart-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: var(--text-label); }
 .chart-table th, .chart-table td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); font-weight: 500; }
 .chart-table thead th { color: var(--ink-2); font-size: var(--text-caption); }

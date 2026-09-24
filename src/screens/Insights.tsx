@@ -11,9 +11,9 @@ import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, s
 import { MACRO_LABEL, OVER, addOptional, ceilingLimit, isCeiling, round1 } from '../lib/nutrition';
 import { formatWeight, formatWeightDelta, saltGrams } from '../lib/units';
 import type { MacroKey } from '../types';
+import { progressBars, type Range } from '../lib/progressBars';
 import './insights.css';
 
-type Range = '7' | '30' | 'all';
 type Metric = 'calories' | 'protein' | 'fibre' | 'sugar' | 'salt' | 'score';
 
 const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', fibre: 'g', sugar: 'g', salt: 'g', score: 'pts' };
@@ -33,13 +33,15 @@ export default function Insights() {
   const dates = useMemo(() => {
     if (range === '7') return lastDays(7, today);
     if (range === '30') return lastDays(30, today);
+    // All of it, from the first meal ever logged — not a quiet four months.
     const first = meals.map((m) => m.date).sort()[0];
-    const span = first ? Math.max(7, Math.min(120, daysBetween(first, today) + 1)) : 7;
+    const span = first ? Math.max(7, daysBetween(first, today) + 1) : 7;
     return lastDays(span, today);
   }, [range, meals, today]);
 
   const points = useMemo(() => series(meals, dates, targets), [meals, dates, targets]);
   const summary = useMemo(() => summarise(points, targets), [points, targets]);
+  const chart = useMemo(() => progressBars(points, range), [points, range]);
   const week = weekOf(today);
   const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);
   const streak = streakOf(meals, today);
@@ -218,11 +220,15 @@ export default function Insights() {
 
       <section className="card">
         <div className="card-title">
-          <h3>Daily {METRIC_LABEL[metric].toLowerCase()}</h3>
+          <h3>
+            {chart.grain === 'day' ? 'Daily' : chart.grain === 'week' ? 'Weekly average' : 'Monthly average'}{' '}
+            {METRIC_LABEL[metric].toLowerCase()}
+          </h3>
           <span className="tiny muted">avg {metricAverage} {METRIC_UNIT[metric]}</span>
         </div>
         <WeeklyBars
-          points={points.slice(-14)}
+          key={range}
+          points={chart.bars}
           target={metricTarget}
           metric={metric}
           unit={METRIC_UNIT[metric]}
