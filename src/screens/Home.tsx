@@ -9,6 +9,8 @@ import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
 import { formatWeight } from '../lib/units';
 import { useSquish } from '../store/useSquish';
+import Comparison from '../components/Comparison';
+import { equivalentFor, progressWords, seedFrom, type GoodNutrient } from '../lib/equivalents';
 import { friendlyDate, greeting, isoDate, partOfDay, timeOfDayWords, weekOf } from '../lib/date';
 import { habitCount, habitsOn, habitTally, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
 import { GLASS_ML, overTargets, pct, remaining, waterVolume } from '../lib/nutrition';
@@ -61,6 +63,17 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   // about. Log a meal and it is stale, so a fresh one is asked for and the live
   // fallback below covers the gap.
   const mealsLogged = todaysMeals.length;
+  // One good thing about the day in food terms. Protein one day, fibre the
+  // next, and a different food each day, so it stays worth reading.
+  const dayComparison = useMemo(() => {
+    const seed = seedFrom(today);
+    const order: GoodNutrient[] = seed % 2 ? ['fibre', 'protein'] : ['protein', 'fibre'];
+    for (const nutrient of order) {
+      const equivalent = equivalentFor(nutrient, totals[nutrient], seed >> 1);
+      if (equivalent) return { equivalent };
+    }
+    return null;
+  }, [today, totals]);
   const part = partOfDay();
   const nudge =
     lastCoachNote?.date === today && lastCoachNote.mealsLogged === mealsLogged && lastCoachNote.part === part
@@ -168,6 +181,13 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         {/* The macro bars already carry protein and fibre with their numbers —
             the stat pills that used to sit beside the ring said it twice. */}
         <MacroBars totals={totals} targets={targets} compact />
+        {dayComparison && (
+          <Comparison
+            equivalent={dayComparison.equivalent}
+            lead="The"
+            tail={` so far${progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}`}
+          />
+        )}
         <MinorNutrients totals={totals} targets={targets} />
         <OverTargetNote over={overTargets(totals, targets)} />
         {totals.calories > 0 && (

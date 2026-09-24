@@ -1,0 +1,8 @@
+.comparison {
+  display: flex; align-items: center; gap: 10px; margin: 10px 0 0;
+  background: var(--mint-soft); border-radius: var(--r-md); padding: 9px 12px; color: var(--ink);
+  animation: comparison-in 0.4s var(--ease) both;
+}
+.comparison-emoji { font-size: 20px; line-height: 1; flex: none; }
+@keyframes comparison-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .comparison { animation: none; } }

@@ -1,0 +1,119 @@
+/**
+ * "The protein of 3 eggs": what an amount of a good thing looks like, in food
+ * people know.
+ *
+ * Only ever for the things worth having more of — protein and fibre — and
+ * never calories. Comparing a meal's energy to doughnuts turns food into a
+ * scale of sins, which Squish does not do; showing that a lentil soup has the
+ * fibre of three apples teaches something and cheers somebody on.
+ *
+ * The amounts come from the app's own food table, so the comparison agrees
+ * with what logging that food would say. Which food is used rotates, so the
+ * line does not repeat itself every time.
+ */
+import { foodById } from './foods';
+
+export type GoodNutrient = 'protein' | 'fibre';
+
+interface Reference {
+  id: string;
+  emoji: string;
+  one: string;
+  many: string;
+}
+
+const REFERENCES: Record<GoodNutrient, Reference[]> = {
+  protein: [
+    { id: 'egg', emoji: '🥚', one: 'egg', many: 'eggs' },
+    { id: 'milk', emoji: '🥛', one: 'glass of milk', many: 'glasses of milk' },
+    { id: 'tuna', emoji: '🐟', one: 'tin of tuna', many: 'tins of tuna' },
+    { id: 'chicken', emoji: '🍗', one: 'chicken breast', many: 'chicken breasts' },
+  ],
+  fibre: [
+    { id: 'apple', emoji: '🍎', one: 'apple', many: 'apples' },
+    { id: 'banana', emoji: '🍌', one: 'banana', many: 'bananas' },
+    { id: 'orange', emoji: '🍊', one: 'orange', many: 'oranges' },
+    { id: 'bread', emoji: '🍞', one: 'slice of wholemeal bread', many: 'slices of wholemeal bread' },
+    { id: 'broccoli', emoji: '🥦', one: 'portion of broccoli', many: 'portions of broccoli' },
+  ],
+};
+
+/** Grams of the nutrient in one of the reference food, as the food table has it. */
+function gramsIn(ref: Reference, nutrient: GoodNutrient): number {
+  const food = foodById(ref.id);
+  if (!food) return 0;
+  return (food.per100[nutrient] * food.servingG) / 100;
+}
+
+/** 1, 1½, 2, 2½ … then whole numbers: halves matter when counting eggs, not when counting twelve of them. */
+function friendlyCount(count: number): { text: string; plural: boolean } {
+  if (count < 3) {
+    const halves = Math.round(count * 2) / 2;
+    const whole = Math.floor(halves);
+    const text = halves % 1 ? `${whole}½` : String(whole);
+    return { text, plural: halves !== 1 };
+  }
+  const n = Math.round(count);
+  return { text: String(n), plural: true };
+}
+
+export interface Equivalent {
+  nutrient: GoodNutrient;
+  emoji: string;
+  /** "3 eggs", "1½ slices of wholemeal bread" */
+  amount: string;
+}
+
+/**
+ * The comparison for this many grams, or null when there is too little for
+ * one to mean anything. `seed` picks among the foods that give a sensible
+ * count — between one and eight — so a day or a meal gets its own.
+ */
+export function equivalentFor(nutrient: GoodNutrient, grams: number, seed = 0): Equivalent | null {
+  if (!(grams > 0)) return null;
+  const options = REFERENCES[nutrient]
+    .map((ref) => ({ ref, count: grams / (gramsIn(ref, nutrient) || Infinity) }))
+    .filter((o) => o.count >= 0.8);
+  if (!options.length) return null;
+  const sensible = options.filter((o) => o.count <= 8);
+  // Past eight of everything, the biggest food keeps the number readable.
+  const pool = sensible.length ? sensible : [options.reduce((a, b) => (a.count < b.count ? a : b))];
+  const pick = pool[Math.abs(Math.floor(seed)) % pool.length];
+  const { text, plural } = friendlyCount(Math.max(1, pick.count));
+  return { nutrient, emoji: pick.ref.emoji, amount: `${text} ${plural ? pick.ref.many : pick.ref.one}` };
+}
+
+/** A stable number from some text — a date, a meal's title — so the same thing gets the same food. */
+export function seedFrom(text: string): number {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+/**
+ * The one worth saying about a meal: whichever of protein and fibre makes up
+ * more of the day's target, as long as there is enough of it to compare.
+ */
+export function mealEquivalent(
+  totals: { protein: number; fibre: number },
+  targets: { protein: number; fibre: number },
+  seed: number,
+): Equivalent | null {
+  const shareProtein = targets.protein ? totals.protein / targets.protein : 0;
+  const shareFibre = targets.fibre ? totals.fibre / targets.fibre : 0;
+  const order: GoodNutrient[] = shareFibre > shareProtein ? ['fibre', 'protein'] : ['protein', 'fibre'];
+  for (const nutrient of order) {
+    const found = equivalentFor(nutrient, totals[nutrient], seed);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** How far through the day's target, in a few kind words — or nothing, early on. */
+export function progressWords(have: number, target: number): string {
+  if (!(target > 0)) return '';
+  const share = have / target;
+  if (share >= 1) return ' — that’s your target!';
+  if (share >= 0.75) return ' — nearly there';
+  return '';
+}

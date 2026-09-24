@@ -58,6 +58,8 @@ interface SquishState {
   favourites: FoodItem[];
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
+  /** "The protein of 3 eggs" on meals and the day. On unless turned off in You → Appearance. */
+  comparisons: boolean;
   /** Which colourway Squish is wearing. Earned, never bought. */
   look: string;
   /**
@@ -117,6 +119,7 @@ interface SquishState {
   unlock: (id: string) => void;
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setComparisons: (on: boolean) => void;
   setLook: (look: string) => void;
   setReminders: (patch: Partial<SquishState['reminders']>) => void;
   setPendingMeal: (draft: Draft | null) => void;
@@ -253,6 +256,7 @@ export const useSquish = create<SquishState>()(
       favourites: [],
       unlocked: {},
       theme: 'system',
+      comparisons: true,
       look: DEFAULT_LOOK,
       // Off until asked for. A notification permission prompt nobody invited
       // is the fastest way to be told no for ever.
@@ -350,6 +354,7 @@ export const useSquish = create<SquishState>()(
       },
 
       setTheme: (theme) => set({ theme }),
+      setComparisons: (comparisons) => set({ comparisons }),
       setLook: (look) => set({ look }),
       setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
@@ -383,6 +388,7 @@ export const useSquish = create<SquishState>()(
           nutritionistNotes: [],
           pendingMeal: null,
           look: DEFAULT_LOOK,
+          comparisons: true,
         }),
     }),
     {

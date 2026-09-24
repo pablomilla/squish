@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Draft, FoodItem, MealSlot, Nutrients } from '../types';
 import Squish from '../components/Squish';
 import { MacroBars, MacroSplitBar, MinorNutrients, ScoreMeter } from '../components/charts';
+import Comparison from '../components/Comparison';
+import { mealEquivalent, seedFrom } from '../lib/equivalents';
 import DictateButton from '../components/DictateButton';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
@@ -60,6 +62,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   const upfShare = useMemo(() => ultraProcessedShare(items), [items]);
   const score = useMemo(() => (items.length ? qualityScore(totals, upfShare) : 0), [items, totals, upfShare]);
   const verdict = scoreLabel(score);
+  // Fixed when the screen opens, so the food does not change with every keystroke in the title.
+  const [comparisonSeed] = useState(() => seedFrom(`${analysis.title}|${draft.date}`));
   const results = useMemo(() => searchFoods(query, 10), [query]);
 
   /*
@@ -243,6 +247,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
           <span className="muted small">kcal · {Math.round((totals.calories / targets.calories) * 100)}% of today</span>
         </div>
         <MacroBars totals={totals} targets={targets} compact />
+        <Comparison equivalent={mealEquivalent(totals, targets, comparisonSeed)} />
         <MinorNutrients totals={totals} targets={targets} />
         <div className="divider" />
         <MacroSplitBar totals={totals} />

@@ -23,7 +23,7 @@ import './you.css';
 
 export default function You({ go }: { go: (route: Route) => void }) {
   const toast = useToast();
-  const { profile, targets, meals, days, theme, look, setLook, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked, nutritionistNotes, forgetNote } =
+  const { profile, targets, meals, days, theme, comparisons, look, setLook, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked, nutritionistNotes, forgetNote } =
     useSquish();
   const [ignoredLearning, setIgnoredLearning] = useState(false);
   const prefersDark = usePrefersDark();
@@ -244,6 +244,24 @@ export default function You({ go }: { go: (route: Route) => void }) {
             are two separate switches.
           </p>
         )}
+
+        <div className="divider" style={{ margin: '16px 0 12px' }} />
+
+        <h4 className="small" style={{ marginBottom: 8 }}>
+          Food comparisons
+        </h4>
+        <Segmented
+          label="Food comparisons"
+          value={comparisons === false ? 'off' : 'on'}
+          onChange={(value) => useSquish.getState().setComparisons(value === 'on')}
+          options={[
+            { value: 'on' as const, label: 'On' },
+            { value: 'off' as const, label: 'Off' },
+          ]}
+        />
+        <p className="tiny muted" style={{ marginTop: 8 }}>
+          Lines like “the protein of 3 eggs” on your meals and your day — for the good stuff, never calories.
+        </p>
 
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
