@@ -172,6 +172,17 @@ What is worn is re-checked every time Squish is drawn, so a lapsed
 subscription or an ended season takes the item off without anything having to
 tidy up, and it comes back if they do.
 
+### Home scenes
+
+Twelve places for the Home card to show behind Squish, each light and dark
+(`src/lib/scenes.ts`; copied into `src/assets/scenes` by
+`npm run build:scenes`). Morning kitchen is earned at two weeks of logging and
+the park picnic at thirty days; beach, starry night and space come with Plus;
+the rainy window is in the Cosy pack; and each season has one (snowy village,
+fireworks, sweet shop, blossom garden, ice-lolly stand, pumpkin patch), on the
+same terms as seasonal accessories. The same every-render check applies: a
+scene somebody may no longer use falls back to the plain card.
+
 ## What has to exist first
 
 **Accounts.** Not for their own sake — for three things that cannot be done

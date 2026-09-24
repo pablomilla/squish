@@ -8,7 +8,9 @@ import { disableReminders, enableReminders, explainBlocker, reminderSupport, typ
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
-import { ACCESSORIES, PACKS, SLOTS, canWear, onShow, toggle, type Accessory } from '../lib/outfit';
+import { ACCESSORIES, SLOTS, canWear, onShow, toggle, whyLocked } from '../lib/outfit';
+import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
+import { sceneUrl } from '../components/sceneArt';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { summariseDiary, type DiarySummary } from '../lib/diarySummary';
@@ -333,6 +335,10 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
         <Wardrobe subscribed={subscribed} />
+
+        <div className="divider" style={{ margin: '16px 0 12px' }} />
+
+        <ScenePicker subscribed={subscribed} dark={(prefersDark && theme === 'system') || theme === 'dark'} />
       </section>
 
       <section className="card card--quiet">
@@ -1048,17 +1054,6 @@ function Wardrobe({ subscribed }: { subscribed: boolean }) {
   const today = new Date();
   const entitlement = { unlocked, subscribed, today };
 
-  const why = (item: Accessory): string => {
-    switch (item.unlock.kind) {
-      case 'achievement':
-        return item.how;
-      case 'pack':
-        return `${item.name} is in the ${PACKS[item.unlock.pack]}, which is not on sale yet.`;
-      default:
-        return `${item.name} comes with ${PLUS}, which is not on sale yet.`;
-    }
-  };
-
   return (
     <>
       <h4 className="small">What Squish wears</h4>
@@ -1079,7 +1074,7 @@ function Wardrobe({ subscribed }: { subscribed: boolean }) {
                     type="button"
                     aria-pressed={on}
                     className={`look look--wear${plus ? ' look--plus' : ''}${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
-                    onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(why(item), item.unlock.kind === 'achievement' ? '🔒' : '✨'))}
+                    onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(whyLocked(item, PLUS), item.unlock.kind === 'achievement' ? '🔒' : '✨'))}
                     aria-label={mine ? item.name : `${item.name}, locked — ${item.how}`}
                   >
                     <Squish mood="excited" size={58} bob={false} outfit={{ [item.slot]: item.id }} className="look-preview" label={`Squish wearing the ${item.name.toLowerCase()}`} />
@@ -1091,6 +1086,54 @@ function Wardrobe({ subscribed }: { subscribed: boolean }) {
           </div>
         );
       })}
+    </>
+  );
+}
+
+/**
+ * The place behind Squish on Home. A thumbnail of each, cropped the way the
+ * card crops it, in the theme the app is in — a night scene is half the
+ * point of the dark one.
+ */
+function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean }) {
+  const chosen = useSquish((s) => s.scene);
+  const unlocked = useSquish((s) => s.unlocked);
+  const setScene = useSquish((s) => s.setScene);
+  const toast = useToast();
+  const today = new Date();
+  const entitlement = { unlocked, subscribed, today };
+  const shown = SCENES.filter((scene) => sceneOnShow(scene, today));
+  const current = shown.find((scene) => scene.id === chosen && canUseScene(scene, entitlement))?.id ?? '';
+
+  return (
+    <>
+      <h4 className="small">Home scene</h4>
+      <p className="tiny muted">The place behind Squish on Home.</p>
+      <div className="scenes" role="radiogroup" aria-label="Home scene">
+        <button type="button" role="radio" aria-checked={current === ''} className={`scene-tile${current === '' ? ' look--on' : ''}`} onClick={() => setScene('')}>
+          <span className="scene-thumb scene-thumb--plain" aria-hidden="true" />
+          <span className="tiny">Plain</span>
+        </button>
+        {shown.map((scene) => {
+          const mine = canUseScene(scene, entitlement);
+          const on = current === scene.id;
+          const plus = scene.unlock.kind === 'subscriber' || scene.unlock.kind === 'season';
+          return (
+            <button
+              key={scene.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              className={`scene-tile${plus ? ' look--plus' : ''}${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
+              onClick={() => (mine ? setScene(scene.id) : toast(whyLocked(scene, PLUS), scene.unlock.kind === 'achievement' ? '🔒' : '✨'))}
+              aria-label={mine ? scene.name : `${scene.name}, locked — ${scene.how}`}
+            >
+              <img className="scene-thumb" src={sceneUrl(scene.id, dark ? 'dark' : 'light')} alt="" loading="lazy" />
+              <span className="tiny">{mine ? scene.name : scene.how}</span>
+            </button>
+          );
+        })}
+      </div>
     </>
   );
 }

@@ -61,3 +61,19 @@
 .wardrobe-slot-name { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
 .wardrobe-slot .looks { margin-top: 8px; }
 .look--wear.look--locked .look-preview { opacity: 0.72; }
+
+/* Home scenes: two across, each a little window cropped as the card crops it. */
+.scenes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+.scene-tile {
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 6px 6px 8px;
+  border-radius: var(--r-lg); border: 1px solid transparent; background: var(--surface-sunk);
+  color: var(--ink-2); text-align: center; transition: transform 0.12s var(--ease);
+}
+.scene-tile:active { transform: scale(0.97); }
+.scene-thumb {
+  display: block; width: 100%; aspect-ratio: 448 / 230; border-radius: calc(var(--r-lg) - 4px);
+  object-fit: cover; object-position: right bottom;
+}
+.scene-thumb--plain { background: var(--brand-soft); }
+.scene-tile.look--locked .scene-thumb { opacity: 0.6; }
+.scene-tile.look--locked { color: var(--ink-3); }

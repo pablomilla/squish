@@ -133,24 +133,39 @@ export interface Entitlement {
   today: Date;
 }
 
-/** Can this person wear this item today? */
-export function canWear(item: Accessory, { unlocked, subscribed, today }: Entitlement): boolean {
-  switch (item.unlock.kind) {
+/** Whether somebody has what an unlock asks for, today. Shared with Home scenes. */
+export function entitled(unlock: ItemUnlock, { unlocked, subscribed, today }: Entitlement): boolean {
+  switch (unlock.kind) {
     case 'achievement':
-      return Boolean(unlocked[item.unlock.id]);
+      return Boolean(unlocked[unlock.id]);
     case 'subscriber':
       return subscribed;
     case 'pack':
       // Nothing is on sale yet, so nobody owns a pack.
       return false;
     case 'season':
-      return subscribed && inSeason(item.unlock.season, today);
+      return subscribed && inSeason(unlock.season, today);
   }
 }
 
-/** Whether the picker should list it at all: a season's items only in season. */
-export function onShow(item: Accessory, today: Date): boolean {
+/** Can this person wear this item today? */
+export const canWear = (item: Accessory, entitlement: Entitlement): boolean => entitled(item.unlock, entitlement);
+
+/** Whether a picker should list it at all: a season's things only in season. */
+export function onShow(item: { unlock: ItemUnlock }, today: Date): boolean {
   return item.unlock.kind !== 'season' || inSeason(item.unlock.season, today);
+}
+
+/** The words for a locked tile's toast. */
+export function whyLocked(item: { name: string; how: string; unlock: ItemUnlock }, plus: string): string {
+  switch (item.unlock.kind) {
+    case 'achievement':
+      return item.how;
+    case 'pack':
+      return `${item.name} is in the ${PACKS[item.unlock.pack]}, which is not on sale yet.`;
+    default:
+      return `${item.name} comes with ${plus}, which is not on sale yet.`;
+  }
 }
 
 /**

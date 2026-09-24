@@ -1,11 +1,11 @@
-import { useId, useMemo, useSyncExternalStore, type CSSProperties, type Ref } from 'react';
+import { useId, useMemo, type CSSProperties, type Ref } from 'react';
 import type { Mood } from '../types';
 import { MASCOT_ART, MASCOT_VIEWBOX } from './squish-art';
 import { finishGradient, lookById } from '../lib/looks';
 import { SLOTS, dress, riseOf, wearable, type AccessoryArt, type Outfit, type Slot } from '../lib/outfit';
-import { planNow, watchStanding } from '../lib/plan';
 import { useSquish } from '../store/useSquish';
 import { useAccessoryArt } from './accessories';
+import { useSubscribed } from './useSubscribed';
 import './squish.css';
 
 interface Props {
@@ -27,8 +27,6 @@ interface Props {
    */
   outfit?: Outfit;
 }
-
-const subscribeStanding = (listener: () => void) => watchStanding(() => listener());
 
 const lessMotion = () => {
   try {
@@ -75,7 +73,7 @@ export function Squish({ mood = 'excited', size = 140, heart = false, bob = true
   // having to go and tidy the choice away.
   const chosenOutfit = useSquish((s) => s.outfit);
   const unlocked = useSquish((s) => s.unlocked);
-  const subscribed = useSyncExternalStore(subscribeStanding, planNow).plan === 'plus';
+  const subscribed = useSubscribed();
   const worn = outfit ?? wearable(chosenOutfit, { unlocked, subscribed, today: new Date() });
   const ids = SLOTS.map(({ id }) => worn[id]).filter((id): id is string => Boolean(id));
   const art = useAccessoryArt(ids);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Route } from '../types';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
@@ -15,6 +15,9 @@ import { friendlyDate, greeting, isoDate, partOfDay, timeOfDayWords, weekOf } fr
 import { habitCount, habitsOn, habitTally, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
 import { GLASS_ML, overTargets, pct, remaining, waterVolume } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
+import { sceneInUse } from '../lib/scenes';
+import { sceneUrl } from '../components/sceneArt';
+import { useSubscribed } from '../components/useSubscribed';
 import './home.css';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
@@ -22,6 +25,10 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const { profile, targets, meals, days, unlock, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
     useSquish();
   const [weighing, setWeighing] = useState(false);
+  const chosenScene = useSquish((s) => s.scene);
+  const unlocked = useSquish((s) => s.unlocked);
+  const subscribed = useSubscribed();
+  const scene = sceneInUse(chosenScene, { unlocked, subscribed, today: new Date() });
   const day = days[today];
 
   const totals = useMemo(() => totalsOn(meals, today), [meals, today]);
@@ -56,6 +63,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
     if (totals.fibre >= targets.fibre) unlock('fibre-hit');
     if (streak >= 3) unlock('streak-3');
     if (streak >= 7) unlock('streak-7');
+    if (streak >= 14) unlock('streak-14');
     if (streak >= 30) unlock('streak-30');
   }, [totals.protein, totals.fibre, targets.protein, targets.fibre, streak, unlock]);
 
@@ -131,7 +139,14 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </header>
 
-      <section className="home-hero card card--brand">
+      <section
+        className={`home-hero card card--brand${scene ? ' home-hero--scene' : ''}`}
+        style={
+          scene
+            ? ({ '--scene-light': `url("${sceneUrl(scene.id, 'light')}")`, '--scene-dark': `url("${sceneUrl(scene.id, 'dark')}")` } as CSSProperties)
+            : undefined
+        }
+      >
         <div className="home-hero-text">
           <p className="speech speech--right">{nudge ?? fallbackNudge}</p>
           <p className="script home-mood">{statusLine(situation)}</p>

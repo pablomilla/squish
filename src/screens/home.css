@@ -79,3 +79,25 @@
 /* The unfinished meal. Warm rather than alarming — it is a prompt, not an
    error, and it sits above Today because it belongs in today. */
 .home-pending { border: 1px solid var(--warn-soft); }
+
+/* A Home scene: the place fills the card like `cover`, pinned to the bottom
+   right, so a narrower or shorter card loses sky and quiet zone rather than
+   scenery. Squish stands on the scene's ground, which sits 72/690 of the
+   picture's height above the bottom edge. The handwritten line sits directly
+   on the scene, in the ink the designer measured against each quiet zone. */
+.home-hero.home-hero--scene {
+  background-color: var(--brand-soft);
+  background-image: var(--scene-light);
+  background-size: cover;
+  background-position: right bottom;
+  background-repeat: no-repeat;
+  align-items: stretch;
+  /* Taller than the plain card: at its usual height Squish filled it and
+     stood in front of nearly everything the scene is for. */
+  min-height: 204px;
+}
+:root[data-theme='dark'] .home-hero.home-hero--scene { background-image: var(--scene-dark); }
+.home-hero--scene .home-mood { color: #2b2340; }
+:root[data-theme='dark'] .home-hero--scene .home-mood { color: #b3aaff; }
+.home-hero--scene .home-hero-text { align-self: center; }
+.home-hero--scene .squish { align-self: flex-end; margin-bottom: calc(var(--s4) * -1 + 4px); }

@@ -43,6 +43,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first-meal', title: 'First bite', description: 'Log your very first meal', emoji: '🍽️' },
   { id: 'streak-3', title: 'Three in a row', description: 'Log meals three days running', emoji: '🔥' },
   { id: 'streak-7', title: 'Full week', description: 'Seven days of logging', emoji: '🗓️' },
+  { id: 'streak-14', title: 'Fortnight', description: 'Two weeks of logging', emoji: '🌿' },
   { id: 'streak-30', title: 'Squish regular', description: 'Thirty days of logging', emoji: '🏆' },
   { id: 'protein-hit', title: 'Protein pro', description: 'Hit your protein target in a day', emoji: '💪' },
   { id: 'fibre-hit', title: 'Fibre friend', description: 'Hit your fibre target in a day', emoji: '🥦' },
@@ -65,6 +66,8 @@ interface SquishState {
   look: string;
   /** What Squish has on, one item per slot. Checked against what they may wear at every render. */
   outfit: Outfit;
+  /** Which Home scene is behind Squish; empty for the plain card. Checked at every render. */
+  scene: string;
   /**
    * When to nudge, and whether to at all. The times live here rather than only
    * on the server so the screen can show them without a round trip, and so
@@ -125,6 +128,7 @@ interface SquishState {
   setComparisons: (on: boolean) => void;
   setLook: (look: string) => void;
   setOutfit: (outfit: Outfit) => void;
+  setScene: (scene: string) => void;
   setReminders: (patch: Partial<SquishState['reminders']>) => void;
   setPendingMeal: (draft: Draft | null) => void;
   rememberNote: (note: string) => NutritionistNote;
@@ -263,6 +267,7 @@ export const useSquish = create<SquishState>()(
       comparisons: true,
       look: DEFAULT_LOOK,
       outfit: {},
+      scene: '',
       // Off until asked for. A notification permission prompt nobody invited
       // is the fastest way to be told no for ever.
       reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
@@ -362,6 +367,7 @@ export const useSquish = create<SquishState>()(
       setComparisons: (comparisons) => set({ comparisons }),
       setLook: (look) => set({ look }),
       setOutfit: (outfit) => set({ outfit }),
+      setScene: (scene) => set({ scene }),
       setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
       setPendingMeal: (pendingMeal) => set({ pendingMeal }),
@@ -395,6 +401,7 @@ export const useSquish = create<SquishState>()(
           pendingMeal: null,
           look: DEFAULT_LOOK,
           outfit: {},
+          scene: '',
           comparisons: true,
         }),
     }),
