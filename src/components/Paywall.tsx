@@ -109,7 +109,7 @@ export default function Paywall({
                   <b>10 recipe imports a month</b> — paste a link, get a portion's nutrition
                 </li>
                 <li>
-                  <b>Six more colourways</b> for Squish
+                  <b>Wild finishes</b> for Squish — rainbow, gold, holographic and more
                 </li>
               </ul>
 

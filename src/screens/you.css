@@ -50,3 +50,5 @@
 .backup-choices p { margin: 0; }
 .backup-actions--choose { display: flex; flex-direction: column; }
 .backup-actions--choose .btn { width: 100%; }
+.look-preview { margin: -4px auto 0; }
+.look--plus.look--locked .look-preview { opacity: 0.92; }

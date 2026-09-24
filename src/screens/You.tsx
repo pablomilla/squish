@@ -305,7 +305,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <p className="tiny muted">
           {subscribed
             ? 'Yours while your subscription is running.'
-            : 'Six more, coming when Squish Plus does. Nothing to buy yet.'}
+            : 'Rainbow, holographic, gold, chrome and more — coming when Squish Plus does. Nothing to buy yet.'}
         </p>
         <div className="looks" role="radiogroup" aria-label={PLUS}>
           {PLUS_LOOKS.map((entry) => {
@@ -321,15 +321,8 @@ export default function You({ go }: { go: (route: Route) => void }) {
                 onClick={() => (earned ? setLook(entry.id) : toast(`${entry.name} comes with ${PLUS}, which is not on sale yet.`, '✨'))}
                 aria-label={earned ? entry.name : `${entry.name}, part of ${PLUS}`}
               >
-                <span
-                  className="look-swatch"
-                  aria-hidden="true"
-                  style={{
-                    background: `radial-gradient(circle at 34% 30%, ${
-                      (prefersDark && theme === 'system') || theme === 'dark' ? entry.dark : entry.light
-                    })`,
-                  }}
-                />
+                {/* Squish wearing it, rather than a dot: a finish is the point, and a dot cannot show one. */}
+                <Squish mood="excited" size={58} bob={false} look={entry.id} className="look-preview" label={`Squish in ${entry.name}`} />
                 <span className="tiny">{entry.name}</span>
               </button>
             );

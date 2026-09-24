@@ -1,6 +1,8 @@
 import { useId, useMemo, type CSSProperties, type Ref } from 'react';
 import type { Mood } from '../types';
 import { MASCOT_ART, MASCOT_VIEWBOX } from './squish-art';
+import { finishGradient, lookById } from '../lib/looks';
+import { useSquish } from '../store/useSquish';
 import './squish.css';
 
 interface Props {
@@ -14,7 +16,21 @@ interface Props {
   label?: string;
   /** Needed so a share card can rasterise the artwork already on the page. */
   ref?: Ref<SVGSVGElement>;
+  /** Wear this look rather than the chosen one — for showing off a colourway in the picker. */
+  look?: string;
 }
+
+const lessMotion = () => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+};
+
+/** The two gradients a finish replaces: the body's, and the arms'. */
+const SKIN = /<linearGradient id="__ID__skin"[\s\S]*?<\/linearGradient>/;
+const ARM = /<linearGradient id="__ID__arm"[\s\S]*?<\/linearGradient>/;
 
 /**
  * Wrapped in a bare group rather than transformed directly: a CSS animation
@@ -38,14 +54,22 @@ const HEART =
  * The markup comes from `squish-art.ts`, generated at build time from our own
  * artwork files — it is a fixed asset, not anything a person can supply.
  */
-export function Squish({ mood = 'excited', size = 140, heart = false, bob = true, className = '', style, label, ref }: Props) {
+export function Squish({ mood = 'excited', size = 140, heart = false, bob = true, className = '', style, label, ref, look }: Props) {
   // Two mascots on one page would otherwise fight over `url(#skin)`.
   const instance = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const chosen = useSquish((s) => s.look);
+  const finish = lookById(look ?? chosen).finish;
 
-  const markup = useMemo(
-    () => MASCOT_ART[mood].replaceAll('__ID__', `${instance}-`) + (heart ? HEART : ''),
-    [mood, heart, instance],
-  );
+  const markup = useMemo(() => {
+    let art = MASCOT_ART[mood];
+    // A finish repaints the body and arms and nothing else; the colours of a
+    // plain look arrive through the skin custom properties instead.
+    if (finish) {
+      const still = lessMotion();
+      art = art.replace(SKIN, finishGradient('__ID__skin', finish, still)).replace(ARM, finishGradient('__ID__arm', finish, still));
+    }
+    return art.replaceAll('__ID__', `${instance}-`) + (heart ? HEART : '');
+  }, [mood, heart, instance, finish]);
 
   return (
     <svg
