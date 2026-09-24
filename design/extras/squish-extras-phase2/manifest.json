@@ -1,0 +1,56 @@
+{
+  "phase": "2 \u2014 launch share assets and first seasonal kit",
+  "frames": [
+    "scallop",
+    "confetti",
+    "botanical",
+    "gold-foil"
+  ],
+  "stickers": {
+    "strawberry": "earned",
+    "avocado": "earned",
+    "carrot": "earned",
+    "water-glass": "earned",
+    "star": "earned",
+    "heart": "earned",
+    "sparkles": "plus",
+    "sun": "earned",
+    "rainbow": "plus",
+    "thumbs-up": "earned",
+    "go-me": "plus",
+    "squished-it": "plus"
+  },
+  "badges": {
+    "days": [
+      7,
+      30,
+      100,
+      365
+    ],
+    "access": "earned, free"
+  },
+  "winter": {
+    "window": "1\u201331 December, recurring annually",
+    "accessories": [
+      "santa-hat",
+      "reindeer-antlers"
+    ],
+    "scene": "snowy-village",
+    "frame": "snowflake",
+    "freeStickers": [
+      "mug",
+      "gingerbread",
+      "snowflake"
+    ],
+    "otherItems": "Plus or seasonal pack; users retain acquired items",
+    "headSlot": "Choose one head accessory at a time"
+  },
+  "laterScheduledKits": [
+    "New Year",
+    "Valentine\u2019s",
+    "Spring",
+    "Summer",
+    "Halloween"
+  ],
+  "monthlyDrops": "Not included in this Phase 2 delivery"
+}

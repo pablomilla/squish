@@ -1,0 +1,17 @@
+{
+  "title": "New Year",
+  "window": "26 December\u20137 January",
+  "accessory": "glitter-glasses",
+  "slot": "face",
+  "scene": "fireworks-city",
+  "frame": "starburst",
+  "stickers": [
+    "party-popper",
+    "midnight-clock",
+    "new-me-same-me"
+  ],
+  "recursAnnually": true,
+  "retainedAfterWindow": true,
+  "stickersAccess": "free",
+  "otherItemsAccess": "Plus or seasonal pack"
+}

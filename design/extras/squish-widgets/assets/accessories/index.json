@@ -1,0 +1,306 @@
+[
+  {
+    "id": "heart-shades",
+    "slot": "face",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/heart-shades/colour",
+    "templateLayers": "assets/accessories/heart-shades/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "round-specs",
+    "slot": "face",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/round-specs/colour",
+    "templateLayers": "assets/accessories/round-specs/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "party-hat",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/party-hat/colour",
+    "templateLayers": "assets/accessories/party-hat/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "crown",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/crown/colour",
+    "templateLayers": "assets/accessories/crown/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "chef-hat",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/chef-hat/colour",
+    "templateLayers": "assets/accessories/chef-hat/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "sweatband",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/sweatband/colour",
+    "templateLayers": "assets/accessories/sweatband/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "headphones",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/headphones/colour",
+    "templateLayers": "assets/accessories/headphones/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "beanie",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/beanie/colour",
+    "templateLayers": "assets/accessories/beanie/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "earmuffs",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/earmuffs/colour",
+    "templateLayers": "assets/accessories/earmuffs/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "knit-scarf",
+    "slot": "neck",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/knit-scarf/colour",
+    "templateLayers": "assets/accessories/knit-scarf/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "neckerchief",
+    "slot": "neck",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/neckerchief/colour",
+    "templateLayers": "assets/accessories/neckerchief/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "medal",
+    "slot": "neck",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/medal/colour",
+    "templateLayers": "assets/accessories/medal/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "straw-sun-hat",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/straw-sun-hat/colour",
+    "templateLayers": "assets/accessories/straw-sun-hat/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "bunny-ears",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/bunny-ears/colour",
+    "templateLayers": "assets/accessories/bunny-ears/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "glitter-glasses",
+    "slot": "face",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/glitter-glasses/colour",
+    "templateLayers": "assets/accessories/glitter-glasses/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "pumpkin-hat",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/pumpkin-hat/colour",
+    "templateLayers": "assets/accessories/pumpkin-hat/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "santa-hat",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/santa-hat/colour",
+    "templateLayers": "assets/accessories/santa-hat/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "reindeer-antlers",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/reindeer-antlers/colour",
+    "templateLayers": "assets/accessories/reindeer-antlers/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  },
+  {
+    "id": "heart-antennae",
+    "slot": "head",
+    "poses": [
+      "excited",
+      "nomnom",
+      "calm",
+      "sleepy",
+      "proud",
+      "cheering",
+      "thinking"
+    ],
+    "colourLayers": "assets/accessories/heart-antennae/colour",
+    "templateLayers": "assets/accessories/heart-antennae/template",
+    "placement": "512-square aligned canvas, already fitted; do not apply anchors again"
+  }
+]

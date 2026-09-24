@@ -1,0 +1,17 @@
+{
+  "title": "Summer",
+  "window": "21 June\u201331 August",
+  "accessory": "straw-sun-hat",
+  "slot": "head",
+  "scene": "ice-lolly-stand",
+  "frame": "citrus",
+  "stickers": [
+    "ice-lolly",
+    "watermelon-slice",
+    "sunglasses"
+  ],
+  "recursAnnually": true,
+  "retainedAfterWindow": true,
+  "stickersAccess": "free",
+  "otherItemsAccess": "Plus or seasonal pack"
+}

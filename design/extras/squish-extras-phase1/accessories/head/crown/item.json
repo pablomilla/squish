@@ -1,0 +1,12 @@
+{
+  "id": "crown",
+  "slot": "head",
+  "tier": "plus",
+  "unlock": "Plus",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "head",
+  "motion": "Twinkle opacity .55\u20131 over 6s; do not hide base crown.",
+  "variants": [],
+  "notes": "Fitted files already include anchor transforms; do not transform them again. Canonical files can be moved using anchors.json. Neck front is composited before props so watermelon occludes scarf as required by the brief."
+}

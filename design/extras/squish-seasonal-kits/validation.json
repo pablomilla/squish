@@ -1,0 +1,20 @@
+{
+  "svgFiles": 212,
+  "errors": [],
+  "largestBytes": {
+    "scene": 8224,
+    "item": 14404
+  },
+  "checks": [
+    "SVG parses",
+    "No live text, embedded images, filters, masks or CSS",
+    "Unique IDs and resolved gradient references",
+    "ViewBoxes present",
+    "Standalone size budgets"
+  ],
+  "pending": [
+    "In-app rendering and actual colourway checks",
+    "Native device acceptance",
+    "Optional motion implementation"
+  ]
+}

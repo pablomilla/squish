@@ -1,0 +1,19 @@
+{
+  "svgFilesChecked": 297,
+  "errors": [],
+  "largestCanonicalLayerBytes": 3492,
+  "largestSceneBytes": 1881,
+  "checks": [
+    "XML parses",
+    "viewBox present",
+    "no embedded raster, live text, CSS, filters or masks",
+    "unique IDs within files",
+    "gradient references resolve",
+    "canonical accessory layers <15KB",
+    "scenes <60KB"
+  ],
+  "integrationPending": [
+    "Actual app renderer and all twelve production colourways",
+    "Animation implementation and device testing"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "svgFiles": 183,
+  "layouts": 48,
+  "responsiveProofs": 16,
+  "accessories": 19,
+  "errors": [],
+  "textContrast": {
+    "light": {
+      "text": 13.36,
+      "muted": 4.8,
+      "buttonText": 5.52
+    },
+    "dark": {
+      "text": 14.57,
+      "muted": 8.31,
+      "buttonText": 8.54
+    },
+    "ios-tinted": {
+      "text": 7.88,
+      "muted": 4.97,
+      "buttonText": 5.39
+    },
+    "android-neutral": {
+      "text": 10.54,
+      "muted": 4.82,
+      "buttonText": 6.54
+    }
+  },
+  "checks": [
+    "SVG XML",
+    "no embedded bitmap/live text/CSS/filter/mask",
+    "gradient references and unique IDs",
+    "complete 48 layout matrix",
+    "complete 19 accessory layer pairs per pose",
+    "Apple asset catalog references",
+    "status phrases max 3 words",
+    "text contrast >=4.5"
+  ],
+  "nativeDeviceTested": false
+}

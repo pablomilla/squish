@@ -1,0 +1,17 @@
+{
+  "title": "Valentine\u2019s",
+  "window": "1\u201314 February",
+  "accessory": "heart-antennae",
+  "slot": "head",
+  "scene": "sweet-shop",
+  "frame": "hearts",
+  "stickers": [
+    "love-letter",
+    "strawberry-heart",
+    "youre-a-treat"
+  ],
+  "recursAnnually": true,
+  "retainedAfterWindow": true,
+  "stickersAccess": "free",
+  "otherItemsAccess": "Plus or seasonal pack"
+}

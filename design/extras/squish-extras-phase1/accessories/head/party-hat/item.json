@@ -1,0 +1,12 @@
+{
+  "id": "party-hat",
+  "slot": "head",
+  "tier": "earned",
+  "unlock": "First meal logged",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "head",
+  "motion": "Pom-pom: rotate \u00b14 degrees around local (0,-82), 2.4s ease-in-out. Still is complete.",
+  "variants": [],
+  "notes": "Fitted files already include anchor transforms; do not transform them again. Canonical files can be moved using anchors.json. Neck front is composited before props so watermelon occludes scarf as required by the brief."
+}

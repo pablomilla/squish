@@ -1,0 +1,13 @@
+{
+  "id": "beanie",
+  "slot": "head",
+  "tier": "pack",
+  "unlock": "Cosy pack",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "head",
+  "motion": "Bobble: \u00b13 units vertically, 3s loop. Resting frame as supplied.",
+  "variants": [],
+  "notes": "Fitted files already include anchor transforms; do not transform them again. Canonical files can be moved using anchors.json. Neck front is composited before props so watermelon occludes scarf as required by the brief.",
+  "fitting": "Head width and tilt retained; lower edge seated above eye line. Use fitted files for each pose; generic head-anchor translation alone does not reproduce this fitting."
+}

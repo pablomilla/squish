@@ -1,0 +1,71 @@
+{
+  "kits": {
+    "new-year-2026": {
+      "title": "New Year",
+      "window": "26 December\u20137 January",
+      "accessory": "glitter-glasses",
+      "slot": "face",
+      "scene": "fireworks-city",
+      "frame": "starburst",
+      "stickers": [
+        "party-popper",
+        "midnight-clock",
+        "new-me-same-me"
+      ]
+    },
+    "valentines-2027": {
+      "title": "Valentine\u2019s",
+      "window": "1\u201314 February",
+      "accessory": "heart-antennae",
+      "slot": "head",
+      "scene": "sweet-shop",
+      "frame": "hearts",
+      "stickers": [
+        "love-letter",
+        "strawberry-heart",
+        "youre-a-treat"
+      ]
+    },
+    "spring-2027": {
+      "title": "Spring",
+      "window": "20 March\u201330 April",
+      "accessory": "bunny-ears",
+      "slot": "head",
+      "scene": "blossom-garden",
+      "frame": "blossom",
+      "stickers": [
+        "chick",
+        "tulip",
+        "egg"
+      ]
+    },
+    "summer-2027": {
+      "title": "Summer",
+      "window": "21 June\u201331 August",
+      "accessory": "straw-sun-hat",
+      "slot": "head",
+      "scene": "ice-lolly-stand",
+      "frame": "citrus",
+      "stickers": [
+        "ice-lolly",
+        "watermelon-slice",
+        "sunglasses"
+      ]
+    },
+    "halloween-2027": {
+      "title": "Halloween",
+      "window": "15\u201331 October",
+      "accessory": "pumpkin-hat",
+      "slot": "head",
+      "scene": "pumpkin-patch",
+      "frame": "bats",
+      "stickers": [
+        "friendly-ghost",
+        "pumpkin",
+        "sweets"
+      ]
+    }
+  },
+  "winter": "Existing Winter 2026 kit included unchanged",
+  "allWindows": "Recurring annually; acquired items remain owned"
+}

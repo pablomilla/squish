@@ -1,0 +1,12 @@
+{
+  "id": "reindeer-antlers",
+  "slot": "head",
+  "tier": "seasonal",
+  "unlock": "Winter Plus / seasonal pack",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "head",
+  "motion": null,
+  "variants": [],
+  "notes": "Use fitted files directly on the shared 512 canvas; do not transform twice. Santa hat uses eye-relative vertical placement, with head-width scaling and head tilt. Reindeer antlers use the head anchor. Use one head accessory at a time."
+}

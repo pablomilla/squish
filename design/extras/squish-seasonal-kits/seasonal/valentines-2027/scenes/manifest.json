@@ -1,0 +1,40 @@
+[
+  {
+    "mode": "light",
+    "quietBackground": "#F8EBEF",
+    "text": "#2B2340",
+    "contrast": 12.79,
+    "viewBox": [
+      0,
+      0,
+      1344,
+      690
+    ],
+    "smallCrop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618
+  },
+  {
+    "mode": "dark",
+    "quietBackground": "#30263B",
+    "text": "#B3AAFF",
+    "contrast": 6.9,
+    "viewBox": [
+      0,
+      0,
+      1344,
+      690
+    ],
+    "smallCrop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618
+  }
+]

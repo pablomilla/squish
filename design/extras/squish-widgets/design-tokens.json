@@ -1,0 +1,185 @@
+{
+  "modes": {
+    "light": {
+      "bg": "#F7F1FB",
+      "text": "#2B2340",
+      "muted": "#71677E",
+      "track": "#E3D9F0",
+      "accent": "#7561BE",
+      "button": "#6B5BB7",
+      "buttonText": "#FFFFFF",
+      "chip": "#EAE0F5",
+      "macro": [
+        "#86B79E",
+        "#B3A0D9",
+        "#DCB578"
+      ]
+    },
+    "dark": {
+      "bg": "#221F2E",
+      "text": "#F9F1FA",
+      "muted": "#C0B6CF",
+      "track": "#40384F",
+      "accent": "#C3B2EE",
+      "button": "#C9B9EE",
+      "buttonText": "#292136",
+      "chip": "#3A324A",
+      "macro": [
+        "#9BC8AE",
+        "#BEABE8",
+        "#E2C18D"
+      ]
+    },
+    "ios-tinted": {
+      "bg": "#E1EEE8",
+      "text": "#194F40",
+      "muted": "#3D6D5D",
+      "track": "#B6D0C2",
+      "accent": "#2C7156",
+      "button": "#2C7156",
+      "buttonText": "#F0F8F3",
+      "chip": "#CCE0D4",
+      "macro": [
+        "#2C7156",
+        "#2C7156",
+        "#2C7156"
+      ]
+    },
+    "android-neutral": {
+      "bg": "#F1F1EE",
+      "text": "#303934",
+      "muted": "#626C65",
+      "track": "#DADFD9",
+      "accent": "#6F8275",
+      "button": "#4F6255",
+      "buttonText": "#FFFFFF",
+      "chip": "#E1E6DF",
+      "macro": [
+        "#8A9F8E",
+        "#87978E",
+        "#A5AD98"
+      ]
+    }
+  },
+  "states": {
+    "nothing-morning": {
+      "pose": "excited",
+      "headline": "Good morning!",
+      "status": "A fresh start",
+      "progress": 0,
+      "kcal": 0,
+      "macros": [
+        0,
+        0,
+        0
+      ],
+      "macroText": [
+        "0g",
+        "0g",
+        "0g"
+      ],
+      "cta": "Log a meal"
+    },
+    "nothing-evening": {
+      "pose": "sleepy",
+      "headline": "Good evening!",
+      "status": "Whenever you\u2019re ready",
+      "progress": 0,
+      "kcal": 0,
+      "macros": [
+        0,
+        0,
+        0
+      ],
+      "macroText": [
+        "0g",
+        "0g",
+        "0g"
+      ],
+      "cta": "Log a meal"
+    },
+    "on-track": {
+      "pose": "excited",
+      "headline": "780 kcal left",
+      "status": "Feeling brighter",
+      "progress": 0.61,
+      "kcal": 1220,
+      "macros": [
+        0.65,
+        0.56,
+        0.557
+      ],
+      "macroText": [
+        "78g",
+        "140g",
+        "39g"
+      ],
+      "cta": "Log a meal"
+    },
+    "reached": {
+      "pose": "proud",
+      "headline": "Nice one!",
+      "status": "Target reached",
+      "progress": 1,
+      "kcal": 2000,
+      "macros": [
+        1,
+        1,
+        1
+      ],
+      "macroText": [
+        "120g",
+        "250g",
+        "70g"
+      ],
+      "cta": "Log a meal"
+    },
+    "over": {
+      "pose": "calm",
+      "headline": "Day by day",
+      "status": "120 kcal above",
+      "progress": 1,
+      "kcal": 2120,
+      "macros": [
+        1,
+        1,
+        1
+      ],
+      "macroText": [
+        "126g",
+        "260g",
+        "72g"
+      ],
+      "cta": "Log a meal"
+    },
+    "signed-out": {
+      "pose": "thinking",
+      "headline": "Welcome back",
+      "status": "Your little buddy",
+      "progress": null,
+      "kcal": null,
+      "macros": null,
+      "macroText": null,
+      "cta": "Sign in"
+    }
+  },
+  "referenceSizes": {
+    "small": [
+      158,
+      158
+    ],
+    "medium": [
+      338,
+      158
+    ]
+  },
+  "mediumCtaHeight": {
+    "applePt": 44,
+    "androidDp": 48
+  },
+  "outerInset": 16,
+  "cornerRadiusPreview": 26,
+  "smallAccess": "free",
+  "mediumAccess": "Plus",
+  "notes": "Illustrative data; target and macro goals must come from user settings. Small taps open app, medium CTA opens logging. Signed-out taps open sign-in."
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Spring",
+  "window": "20 March\u201330 April",
+  "accessory": "bunny-ears",
+  "slot": "head",
+  "scene": "blossom-garden",
+  "frame": "blossom",
+  "stickers": [
+    "chick",
+    "tulip",
+    "egg"
+  ],
+  "recursAnnually": true,
+  "retainedAfterWindow": true,
+  "stickersAccess": "free",
+  "otherItemsAccess": "Plus or seasonal pack"
+}

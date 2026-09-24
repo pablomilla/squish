@@ -1,0 +1,242 @@
+[
+  {
+    "scene": "kitchen",
+    "mode": "light",
+    "quietBackground": "#F5ECDD",
+    "text": "#2B2340",
+    "quietContrast": 12.65,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "kitchen",
+    "mode": "dark",
+    "quietBackground": "#242437",
+    "text": "#B3AAFF",
+    "quietContrast": 7.31,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "picnic",
+    "mode": "light",
+    "quietBackground": "#ECF0DE",
+    "text": "#2B2340",
+    "quietContrast": 12.76,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "picnic",
+    "mode": "dark",
+    "quietBackground": "#242B38",
+    "text": "#B3AAFF",
+    "quietContrast": 6.84,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "beach",
+    "mode": "light",
+    "quietBackground": "#EEF0E4",
+    "text": "#2B2340",
+    "quietContrast": 12.86,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "beach",
+    "mode": "dark",
+    "quietBackground": "#262B40",
+    "text": "#B3AAFF",
+    "quietContrast": 6.73,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "stars",
+    "mode": "light",
+    "quietBackground": "#EDE9F4",
+    "text": "#2B2340",
+    "quietContrast": 12.39,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "stars",
+    "mode": "dark",
+    "quietBackground": "#24223B",
+    "text": "#B3AAFF",
+    "quietContrast": 7.4,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "space",
+    "mode": "light",
+    "quietBackground": "#EFEAF6",
+    "text": "#2B2340",
+    "quietContrast": 12.54,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "space",
+    "mode": "dark",
+    "quietBackground": "#28233E",
+    "text": "#B3AAFF",
+    "quietContrast": 7.22,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "rainy-window",
+    "mode": "light",
+    "quietBackground": "#F0EAE4",
+    "text": "#2B2340",
+    "quietContrast": 12.42,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  },
+  {
+    "scene": "rainy-window",
+    "mode": "dark",
+    "quietBackground": "#252536",
+    "text": "#B3AAFF",
+    "quietContrast": 7.24,
+    "artboard": [
+      1344,
+      690
+    ],
+    "crop": [
+      360,
+      240,
+      984,
+      450
+    ],
+    "groundY": 618,
+    "detailMinX": 910,
+    "animation": "Optional anim group, 8\u201312s gentle translation or opacity loop; respect reduced motion."
+  }
+]

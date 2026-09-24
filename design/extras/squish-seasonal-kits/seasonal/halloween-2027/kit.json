@@ -1,0 +1,17 @@
+{
+  "title": "Halloween",
+  "window": "15\u201331 October",
+  "accessory": "pumpkin-hat",
+  "slot": "head",
+  "scene": "pumpkin-patch",
+  "frame": "bats",
+  "stickers": [
+    "friendly-ghost",
+    "pumpkin",
+    "sweets"
+  ],
+  "recursAnnually": true,
+  "retainedAfterWindow": true,
+  "stickersAccess": "free",
+  "otherItemsAccess": "Plus or seasonal pack"
+}

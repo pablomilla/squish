@@ -1,0 +1,15 @@
+{
+  "id": "knit-scarf",
+  "slot": "neck",
+  "tier": "earned",
+  "unlock": "7-day streak",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "neck",
+  "motion": null,
+  "variants": [
+    "sleepy",
+    "thinking"
+  ],
+  "notes": "Fitted files already include anchor transforms; do not transform them again. Canonical files can be moved using anchors.json. Neck front is composited before props so watermelon occludes scarf as required by the brief."
+}

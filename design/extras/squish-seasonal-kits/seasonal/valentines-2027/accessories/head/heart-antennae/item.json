@@ -1,0 +1,12 @@
+{
+  "id": "heart-antennae",
+  "slot": "head",
+  "tier": "seasonal",
+  "unlock": "Valentine\u2019s Plus / seasonal pack",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "head",
+  "motion": null,
+  "variants": [],
+  "notes": "Use fitted files directly, without applying anchors again. Glasses use measured eye centres. Head accessories follow head width and tilt. Sun hat and pumpkin hat use an eye-relative seat above the eyes. One accessory per slot."
+}

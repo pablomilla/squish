@@ -1,0 +1,115 @@
+{
+  "units": "logical points/dp; raster previews at 2\u00d7 and 3\u00d7",
+  "small": {
+    "reference": [
+      158,
+      158
+    ],
+    "testedSizes": [
+      [
+        148,
+        148
+      ],
+      [
+        158,
+        158
+      ],
+      [
+        180,
+        180
+      ]
+    ],
+    "padding": 16,
+    "logo": [
+      16,
+      10,
+      44,
+      15
+    ],
+    "streakChip": [
+      "width-48",
+      10,
+      33,
+      18
+    ],
+    "ring": {
+      "cx": "width/2",
+      "cy": "height*0.46+3",
+      "radius": "min(width*0.212,height*0.212)",
+      "stroke": 4
+    },
+    "headline": {
+      "baseline": "height-32",
+      "font": 15,
+      "maxWidth": "width-24"
+    },
+    "status": {
+      "baseline": "height-15",
+      "font": 10.5,
+      "maxWidth": "width-24"
+    },
+    "tapRegion": "entire widget"
+  },
+  "medium": {
+    "reference": [
+      338,
+      158
+    ],
+    "testedSizes": [
+      [
+        300,
+        148
+      ],
+      [
+        338,
+        158
+      ],
+      [
+        380,
+        180
+      ]
+    ],
+    "ring": {
+      "cx": 62,
+      "cy": "height*0.53+7",
+      "radius": "min(40,height*0.255)",
+      "stroke": 4
+    },
+    "contentLeft": "118 if width >=320 else 110",
+    "contentRight": "width-16",
+    "headline": {
+      "baseline": 31,
+      "font": 19
+    },
+    "status": {
+      "baseline": 49,
+      "font": 11
+    },
+    "macroLabels": {
+      "baseline": "height-89",
+      "font": 9
+    },
+    "macroValues": {
+      "baseline": "height-77",
+      "font": 10
+    },
+    "macroBars": {
+      "y": "height-72",
+      "height": 3,
+      "gap": 8
+    },
+    "cta": {
+      "bottomInset": 14,
+      "heightApple": 44,
+      "heightAndroid": 48,
+      "radius": 14
+    },
+    "compactCaptionRule": "Below height 154, omit secondary caption for on-track, morning/evening and reached states. Preserve over-target numeric caption and signed-out information."
+  },
+  "nativeBehaviour": [
+    "Keep typography and hit targets at native sizes; recalculate the layout rather than scaling the entire SVG.",
+    "Use system-supplied available bounds/content margins. Preview corners are illustrative.",
+    "At larger accessibility text sizes, prioritize headline and CTA; simplify macro values rather than shrinking text.",
+    "Use native live text for real values and accessibility; outlined SVGs are design references."
+  ]
+}

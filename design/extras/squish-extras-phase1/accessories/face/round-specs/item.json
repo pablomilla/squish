@@ -1,0 +1,12 @@
+{
+  "id": "round-specs",
+  "slot": "face",
+  "tier": "earned",
+  "unlock": "3-day streak",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "eyes",
+  "motion": null,
+  "variants": [],
+  "notes": "Fitted files already include anchor transforms; do not transform them again. Canonical files can be moved using anchors.json. Neck front is composited before props so watermelon occludes scarf as required by the brief."
+}
