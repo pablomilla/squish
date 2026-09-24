@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Squish from '../components/Squish';
 import AccountCard from '../components/AccountCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
@@ -8,7 +8,7 @@ import { disableReminders, enableReminders, explainBlocker, reminderSupport, typ
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
-import { ACCESSORIES, SLOTS, canWear, onShow, toggle, whyLocked } from '../lib/outfit';
+import { ACCESSORIES, SLOTS, accessoryById, lockedNote, onShow, shelves, toggle, wearable, whyLocked, type ShelfKind } from '../lib/outfit';
 import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
@@ -1042,9 +1042,10 @@ function InviteBox({ signedIn }: { signedIn: boolean }) {
 /**
  * What Squish wears: one thing on the head, the face and the neck.
  *
- * Every tile shows Squish already wearing it, locked or not, because "what
- * would that look like on mine" is the question that makes somebody want
- * one. A locked tile is not disabled; pressing it says how to get it.
+ * Sorted by how you get them, not by slot: yours first, then what you can
+ * earn, then Plus, then each pack. Every tile says what the item is; how to
+ * get it is said once, in the heading, except where each item differs (what
+ * to earn it with, which season). At the top, Squish in what is on now.
  */
 function Wardrobe({ subscribed }: { subscribed: boolean }) {
   const outfit = useSquish((s) => s.outfit);
@@ -1053,47 +1054,53 @@ function Wardrobe({ subscribed }: { subscribed: boolean }) {
   const toast = useToast();
   const today = new Date();
   const entitlement = { unlocked, subscribed, today };
+  const worn = wearable(outfit, entitlement);
+  const wearing = SLOTS.map(({ id }) => accessoryById(worn[id])?.name).filter(Boolean);
+  const items = ACCESSORIES.filter((item) => onShow(item, today));
 
   return (
     <>
       <h4 className="small">What Squish wears</h4>
-      <p className="tiny muted">One thing each for the head, face and neck. Tap again to take it off.</p>
-      {SLOTS.map((slot) => {
-        const items = ACCESSORIES.filter((item) => item.slot === slot.id && onShow(item, today));
-        return (
-          <div key={slot.id} className="wardrobe-slot">
-            <p className="tiny wardrobe-slot-name">{slot.name}</p>
-            <div className="looks" role="group" aria-label={`${slot.name} accessories`}>
-              {items.map((item) => {
-                const mine = canWear(item, entitlement);
-                const on = mine && outfit?.[item.slot] === item.id;
-                const plus = item.unlock.kind === 'subscriber' || item.unlock.kind === 'season';
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={on}
-                    className={`look look--wear${plus ? ' look--plus' : ''}${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
-                    onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(whyLocked(item, PLUS), item.unlock.kind === 'achievement' ? '🔒' : '✨'))}
-                    aria-label={mine ? item.name : `${item.name}, locked — ${item.how}`}
-                  >
-                    <Squish mood="excited" size={58} bob={false} outfit={{ [item.slot]: item.id }} className="look-preview" label={`Squish wearing the ${item.name.toLowerCase()}`} />
-                    <span className="tiny">{mine ? item.name : item.how}</span>
-                  </button>
-                );
-              })}
-            </div>
+      <div className="wardrobe-now">
+        <Squish mood="excited" size={84} bob={false} label="Squish in what it is wearing now" />
+        <div>
+          <p className="small">{wearing.length ? wearing.join(', ') : 'Nothing on yet'}</p>
+          <p className="tiny muted">One thing each on the head, face and neck. Tap something you have to put it on; tap it again to take it off.</p>
+        </div>
+      </div>
+      {shelves(items, entitlement).map((shelf) => (
+        <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
+          <div className="looks">
+            {shelf.items.map((item) => {
+              const mine = shelf.kind === 'yours';
+              const on = mine && worn[item.slot] === item.id;
+              const note = on ? 'Wearing' : shelf.kind === 'earn' ? item.how : lockedNote(item.unlock);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={mine ? on : undefined}
+                  className={`look look--wear${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
+                  onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(whyLocked(item, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
+                  aria-label={mine ? item.name : `${item.name}, locked — ${item.how}`}
+                >
+                  <Squish mood="excited" size={58} bob={false} outfit={{ [item.slot]: item.id }} className="look-preview" label="" />
+                  <span className="tile-name">{item.name}</span>
+                  {note && <span className="tile-note">{note}</span>}
+                </button>
+              );
+            })}
           </div>
-        );
-      })}
+        </Shelf>
+      ))}
     </>
   );
 }
 
 /**
- * The place behind Squish on Home. A thumbnail of each, cropped the way the
- * card crops it, in the theme the app is in — a night scene is half the
- * point of the dark one.
+ * The place behind Squish on Home, sorted the same way as the wardrobe. A
+ * thumbnail of each, cropped the way the card crops it, in the theme the app
+ * is in — a night scene is half the point of the dark one.
  */
 function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean }) {
   const chosen = useSquish((s) => s.scene);
@@ -1104,36 +1111,62 @@ function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean 
   const entitlement = { unlocked, subscribed, today };
   const shown = SCENES.filter((scene) => sceneOnShow(scene, today));
   const current = shown.find((scene) => scene.id === chosen && canUseScene(scene, entitlement))?.id ?? '';
+  // The plain card is always theirs, so there is always a Yours shelf to put it on.
+  const groups = shelves(shown, entitlement);
+  if (groups[0]?.kind !== 'yours') groups.unshift({ key: 'yours', kind: 'yours', title: 'Yours', items: [] });
+
+  const plain = (
+    <button key="plain" type="button" aria-pressed={current === ''} className={`scene-tile${current === '' ? ' look--on' : ''}`} onClick={() => setScene('')}>
+      <span className="scene-thumb scene-thumb--plain" aria-hidden="true" />
+      <span className="tile-name">Plain</span>
+      {current === '' && <span className="tile-note">Showing</span>}
+    </button>
+  );
 
   return (
     <>
       <h4 className="small">Home scene</h4>
       <p className="tiny muted">The place behind Squish on Home.</p>
-      <div className="scenes" role="radiogroup" aria-label="Home scene">
-        <button type="button" role="radio" aria-checked={current === ''} className={`scene-tile${current === '' ? ' look--on' : ''}`} onClick={() => setScene('')}>
-          <span className="scene-thumb scene-thumb--plain" aria-hidden="true" />
-          <span className="tiny">Plain</span>
-        </button>
-        {shown.map((scene) => {
-          const mine = canUseScene(scene, entitlement);
-          const on = current === scene.id;
-          const plus = scene.unlock.kind === 'subscriber' || scene.unlock.kind === 'season';
-          return (
-            <button
-              key={scene.id}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              className={`scene-tile${plus ? ' look--plus' : ''}${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
-              onClick={() => (mine ? setScene(scene.id) : toast(whyLocked(scene, PLUS), scene.unlock.kind === 'achievement' ? '🔒' : '✨'))}
-              aria-label={mine ? scene.name : `${scene.name}, locked — ${scene.how}`}
-            >
-              <img className="scene-thumb" src={sceneUrl(scene.id, dark ? 'dark' : 'light')} alt="" loading="lazy" />
-              <span className="tiny">{mine ? scene.name : scene.how}</span>
-            </button>
-          );
-        })}
-      </div>
+      {groups.map((shelf) => (
+        <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
+          <div className="scenes">
+            {shelf.kind === 'yours' && plain}
+            {shelf.items.map((scene) => {
+              const mine = shelf.kind === 'yours';
+              const on = current === scene.id;
+              const note = on ? 'Showing' : shelf.kind === 'earn' ? scene.how : lockedNote(scene.unlock);
+              return (
+                <button
+                  key={scene.id}
+                  type="button"
+                  aria-pressed={mine ? on : undefined}
+                  className={`scene-tile${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
+                  onClick={() => (mine ? setScene(scene.id) : toast(whyLocked(scene, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
+                  aria-label={mine ? scene.name : `${scene.name}, locked — ${scene.how}`}
+                >
+                  <img className="scene-thumb" src={sceneUrl(scene.id, dark ? 'dark' : 'light')} alt="" />
+                  <span className="tile-name">{scene.name}</span>
+                  {note && <span className="tile-note">{note}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </Shelf>
+      ))}
     </>
+  );
+}
+
+/** One group in a picker, headed by how everything in it is got. */
+function Shelf({ title, kind, subscribed, children }: { title: string; kind: ShelfKind; subscribed: boolean; children: ReactNode }) {
+  const soon = kind === 'pack' || (kind === 'plus' && !subscribed);
+  return (
+    <div className="shelf">
+      <div className="shelf-head">
+        <p className="tiny shelf-title">{title}</p>
+        {soon && <span className="badge">Not on sale yet</span>}
+      </div>
+      {children}
+    </div>
   );
 }

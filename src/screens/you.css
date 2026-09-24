@@ -53,14 +53,24 @@
 .look-preview { margin: -4px auto 0; }
 .look--plus.look--locked .look-preview { opacity: 0.92; }
 
-/* The wardrobe. Every tile shows Squish in the item, locked or not: the item
-   is what is on offer, and a greyed hat is just a grey hat. The Squish under
-   it steps back a little instead, so a locked tile still reads as not-yours. */
-.wardrobe-slot { margin-top: 12px; }
-.wardrobe-slot + .wardrobe-slot { margin-top: 16px; }
-.wardrobe-slot-name { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-.wardrobe-slot .looks { margin-top: 8px; }
+/* The wardrobe and scene picker. Grouped by how things are got — yours,
+   earn, Plus, each pack — with that said once in the group's heading, so a
+   tile only has to say what it is. Every tile shows Squish in the item,
+   locked or not: the item is what is on offer, and a greyed hat is just a
+   grey hat. The Squish under it steps back a little instead. */
+.wardrobe-now { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 8px 12px 8px 4px; border-radius: var(--r-lg); background: var(--surface-sunk); }
+.wardrobe-now .squish { flex: none; }
+.wardrobe-now p { margin: 0; }
+.wardrobe-now .small { font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+.shelf { margin-top: 16px; }
+.shelf-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.shelf-title { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.shelf .looks, .shelf .scenes { margin-top: 8px; }
 .look--wear.look--locked .look-preview { opacity: 0.72; }
+.tile-name { font-size: var(--text-label, 13px); line-height: 1.2; color: var(--ink); font-weight: 600; }
+.tile-note { font-size: 12px; line-height: 1.25; color: var(--ink-3); margin-top: -2px; }
+.look--on .tile-note, .scene-tile.look--on .tile-note { color: var(--brand-ink); font-weight: 600; }
+.look--locked .tile-name { color: var(--ink-2); }
 
 /* Home scenes: two across, each a little window cropped as the card crops it. */
 .scenes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }

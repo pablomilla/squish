@@ -229,3 +229,54 @@ export function dress(markup: string, mood: Mood, layers: Partial<Record<Slot, A
   out = before(out, 'arms', front('head'));
   return out;
 }
+
+/**
+ * A picker's items, sorted by how somebody gets them rather than mixed
+ * together: what is already theirs first, then what they can earn, then
+ * Plus, then each pack under its own name. Every tile can then say what it
+ * is, with how to get it said once in the heading above.
+ */
+export type ShelfKind = 'yours' | 'earn' | 'plus' | 'pack';
+
+export interface Shelf<T> {
+  key: string;
+  kind: ShelfKind;
+  title: string;
+  items: T[];
+}
+
+export function shelves<T extends { unlock: ItemUnlock }>(items: T[], entitlement: Entitlement): Shelf<T>[] {
+  const yours: T[] = [];
+  const earn: T[] = [];
+  const plus: T[] = [];
+  const packs: T[] = [];
+  for (const item of items) {
+    if (entitled(item.unlock, entitlement)) yours.push(item);
+    else if (item.unlock.kind === 'achievement') earn.push(item);
+    else if (item.unlock.kind === 'pack') packs.push(item);
+    else plus.push(item);
+  }
+  // Packs together, each pack's items side by side.
+  const packOrder = Object.keys(PACKS);
+  const packOf = (item: T) => (item.unlock.kind === 'pack' ? packOrder.indexOf(item.unlock.pack) : 0);
+  packs.sort((a, b) => packOf(a) - packOf(b));
+
+  const all: Shelf<T>[] = [
+    { key: 'yours', kind: 'yours', title: 'Yours', items: yours },
+    { key: 'earn', kind: 'earn', title: 'Earn these', items: earn },
+    { key: 'plus', kind: 'plus', title: 'With Squish Plus', items: plus },
+    { key: 'packs', kind: 'pack', title: 'Packs', items: packs },
+  ];
+  return all.filter((shelf) => shelf.items.length > 0);
+}
+
+/**
+ * The second line under an item's name — only where the heading does not
+ * already say it: which season, or which pack. Plus items need nothing more
+ * than their heading, and earned ones say what to do (their `how`).
+ */
+export function lockedNote(unlock: ItemUnlock): string {
+  if (unlock.kind === 'season') return `${SEASONS[unlock.season].name} only`;
+  if (unlock.kind === 'pack') return PACKS[unlock.pack];
+  return '';
+}

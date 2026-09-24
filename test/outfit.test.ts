@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
 import { test } from 'node:test';
-import { ACCESSORIES, SLOTS, canWear, dress, inSeason, onShow, toggle, wearable, type AccessoryArt } from '../src/lib/outfit';
+import { ACCESSORIES, SLOTS, canWear, dress, inSeason, lockedNote, onShow, shelves, toggle, wearable, type AccessoryArt } from '../src/lib/outfit';
 import { MASCOT_ART } from '../src/components/squish-art';
 import type { Mood } from '../src/types';
 
@@ -107,4 +107,22 @@ test('layers go in the right places, drawn back in the space they were measured 
   }
   assert.equal(dress(MASCOT_ART.calm, 'calm', {}), MASCOT_ART.calm, 'nothing worn changes nothing');
   assert.equal(SLOTS.length, 3);
+});
+
+test('pickers group by how things are got: yours, earn, Plus, then each pack', () => {
+  const listed = ACCESSORIES.filter((a) => onShow(a, nobody.today));
+  const groups = shelves(listed, { ...nobody, unlocked: { 'first-meal': 'x' } });
+  assert.deepEqual(groups.map((g) => g.title), ['Yours', 'Earn these', 'With Squish Plus', 'Packs']);
+  assert.deepEqual(groups[0].items.map((a) => a.id), ['party-hat']);
+  assert.deepEqual(groups[3].items.map((a) => a.id), ['chef-hat', 'neckerchief', 'sweatband', 'medal', 'beanie', 'earmuffs'], 'each pack together');
+  assert.equal(lockedNote(item('medal').unlock), 'Sporty pack');
+  // Everything listed lands on exactly one shelf.
+  assert.equal(groups.reduce((n, g) => n + g.items.length, 0), listed.length);
+
+  // With Plus, the Plus shelf empties into Yours and disappears; empty shelves are never shown.
+  const plus = shelves(listed, { ...nobody, subscribed: true });
+  assert.deepEqual(plus.map((g) => g.title), ['Yours', 'Earn these', 'Packs']);
+
+  assert.equal(lockedNote(item('santa-hat').unlock), 'Winter only');
+  assert.equal(lockedNote(item('crown').unlock), '', 'the heading already says Plus');
 });
