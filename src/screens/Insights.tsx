@@ -14,11 +14,11 @@ import type { MacroKey } from '../types';
 import { progressBars, type Range } from '../lib/progressBars';
 import './insights.css';
 
-type Metric = 'calories' | 'protein' | 'fibre' | 'sugar' | 'salt' | 'score';
+type Metric = 'calories' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'salt' | 'score';
 
-const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', fibre: 'g', sugar: 'g', salt: 'g', score: 'pts' };
+const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', carbs: 'g', fat: 'g', fibre: 'g', sugar: 'g', salt: 'g', score: 'pts' };
 const METRIC_LABEL: Record<Metric, string> = {
-  calories: 'Calories', protein: 'Protein', fibre: 'Fibre', sugar: 'Sugar', salt: 'Salt', score: 'Quality',
+  calories: 'Calories', protein: 'Protein', carbs: 'Carbs', fat: 'Fat', fibre: 'Fibre', sugar: 'Sugar', salt: 'Salt', score: 'Quality',
 };
 /** The ones you are trying to stay under rather than reach. */
 const METRIC_CEILING: Metric[] = ['sugar', 'salt'];
@@ -125,6 +125,8 @@ export default function Insights() {
   const metricAverage: number = {
     calories: summary.avgCalories,
     protein: summary.avgProtein,
+    carbs: summary.avgCarbs,
+    fat: summary.avgFat,
     fibre: summary.avgFibre,
     sugar: summary.avgSugar,
     salt: summary.avgSalt,
@@ -134,6 +136,8 @@ export default function Insights() {
   const metricTarget: number = {
     calories: targets.calories,
     protein: targets.protein,
+    carbs: targets.carbs,
+    fat: targets.fat,
     fibre: targets.fibre,
     sugar: targets.sugar ?? 0,
     salt: saltGrams(targets.sodium ?? 0),
@@ -235,7 +239,7 @@ export default function Insights() {
           ceiling={METRIC_CEILING.includes(metric)}
         />
         <div className="metric-row">
-          {(['calories', 'protein', 'fibre', 'sugar', 'salt', 'score'] as Metric[]).map((m) => (
+          {(['calories', 'protein', 'carbs', 'fat', 'fibre', 'sugar', 'salt', 'score'] as Metric[]).map((m) => (
             <button key={m} type="button" className="chip" aria-pressed={metric === m} onClick={() => setMetric(m)}>
               {METRIC_LABEL[m]}
             </button>

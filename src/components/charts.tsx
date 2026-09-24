@@ -304,7 +304,7 @@ interface WeeklyProps {
   /** Days, or averaged weeks or months: `label` goes under the bar, `title` says in full what it is. */
   points: (DaySeriesPoint & { label?: string; title?: string })[];
   target: number;
-  metric?: 'calories' | 'protein' | 'fibre' | 'sugar' | 'salt' | 'score';
+  metric?: 'calories' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'salt' | 'score';
   unit?: string;
   /** Ceilings read the other way round: the target line is one to stay below. */
   ceiling?: boolean;
@@ -313,6 +313,8 @@ interface WeeklyProps {
 const METRIC_COLOR: Record<NonNullable<WeeklyProps['metric']>, string> = {
   calories: 'var(--dv-cal)',
   protein: 'var(--dv-protein)',
+  carbs: 'var(--dv-carbs)',
+  fat: 'var(--dv-fat)',
   fibre: 'var(--dv-fibre)',
   sugar: 'var(--dv-sugar)',
   salt: 'var(--dv-salt)',

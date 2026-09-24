@@ -182,6 +182,8 @@ export interface RangeSummary {
   loggedDays: number;
   avgCalories: number;
   avgProtein: number;
+  avgCarbs: number;
+  avgFat: number;
   avgFibre: number;
   avgSugar: number;
   /** Grams of salt, to one decimal — 4 g and 4.4 g are not the same advice. */
@@ -201,6 +203,8 @@ export function summarise(points: DaySeriesPoint[], targets: Targets): RangeSumm
     loggedDays: logged.length,
     avgCalories: avg((p) => p.calories),
     avgProtein: avg((p) => p.protein),
+    avgCarbs: avg((p) => p.carbs),
+    avgFat: avg((p) => p.fat),
     avgFibre: avg((p) => p.fibre),
     avgSugar: avg((p) => p.sugar),
     avgSalt: logged.length ? Math.round((logged.reduce((s, p) => s + p.salt, 0) / logged.length) * 10) / 10 : 0,

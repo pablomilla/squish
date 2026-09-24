@@ -1,6 +1,7 @@
 .insights { display: flex; flex-direction: column; gap: var(--s3); }
 /* Six of them now, so three across and two down rather than a squeezed row. */
-.metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s1); margin-top: var(--s3); }
+/* Four across: the three macros sit with calories on the first row, fibre and the limits and quality on the second. */
+.metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); margin-top: var(--s3); }
 .metric-row > * { min-width: 0; padding-left: 0; padding-right: 0; justify-content: center; }
 .insights-streak { display: flex; align-items: center; gap: 10px; }
 .share-trigger { margin-top: var(--s3); }
