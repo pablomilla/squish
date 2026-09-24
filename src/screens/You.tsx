@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import AccountCard from '../components/AccountCard';
+import Shelf from '../components/Shelf';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
@@ -8,7 +9,7 @@ import { disableReminders, enableReminders, explainBlocker, reminderSupport, typ
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
-import { ACCESSORIES, SLOTS, accessoryById, lockedNote, onShow, shelves, toggle, wearable, whyLocked, type ShelfKind } from '../lib/outfit';
+import { ACCESSORIES, SLOTS, accessoryById, lockedNote, onShow, shelves, toggle, wearable, whyLocked } from '../lib/outfit';
 import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
@@ -1154,19 +1155,5 @@ function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean 
         </Shelf>
       ))}
     </>
-  );
-}
-
-/** One group in a picker, headed by how everything in it is got. */
-function Shelf({ title, kind, subscribed, children }: { title: string; kind: ShelfKind; subscribed: boolean; children: ReactNode }) {
-  const soon = kind === 'pack' || (kind === 'plus' && !subscribed);
-  return (
-    <div className="shelf">
-      <div className="shelf-head">
-        <p className="tiny shelf-title">{title}</p>
-        {soon && <span className="badge">Not on sale yet</span>}
-      </div>
-      {children}
-    </div>
   );
 }

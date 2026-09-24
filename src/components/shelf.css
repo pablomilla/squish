@@ -1,0 +1,11 @@
+/* Pickers grouped by how things are got — Yours, Earn these, With Squish
+   Plus, Packs — with that said once in the group's heading, so each tile only
+   has to say what it is. Shared by the wardrobe, the scene picker and the
+   share sheet. */
+.shelf { margin-top: 16px; }
+.shelf-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.shelf-title { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.tile-name { font-size: var(--text-label, 13px); line-height: 1.2; color: var(--ink); font-weight: 600; }
+.tile-note { font-size: 12px; line-height: 1.25; color: var(--ink-3); margin-top: -2px; }
+.look--on .tile-note, .decor--on .tile-note { color: var(--brand-ink); font-weight: 600; }
+.look--locked .tile-name, .decor--locked .tile-name { color: var(--ink-2); }

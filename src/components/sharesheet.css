@@ -6,26 +6,24 @@
   border-radius: var(--r-lg); box-shadow: var(--shadow-md); background: var(--surface-2);
 }
 
-/* Dressing the card up. Frames scroll sideways as little cards; stickers sit
-   in a grid, because there are a lot of them and they are all small. */
-.share-body h4 { margin-bottom: 4px; }
-.decor-row { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; margin-top: 6px; scrollbar-width: none; }
-.decor-row::-webkit-scrollbar { display: none; }
+/* Dressing the card up, grouped like the wardrobe (see shelf.css). Every
+   tile says what it is; how to get it is in the group heading. */
+.share-body h4 { margin-bottom: 0; }
+.decor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .decor {
-  display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none;
-  border: 2px solid transparent; border-radius: var(--r-md); background: var(--surface-sunk);
-  color: var(--ink-2); transition: transform 0.12s var(--ease);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
+  padding: 8px 4px; border: 2px solid transparent; border-radius: var(--r-md);
+  background: var(--surface-sunk); color: var(--ink-2); text-align: center;
+  transition: transform 0.12s var(--ease);
 }
 .decor:active { transform: scale(0.96); }
-.decor--frame { padding: 6px 6px 4px; width: 72px; }
+.decor .tile-name { font-size: 12px; overflow-wrap: anywhere; }
+.decor .tile-note { font-size: 11px; }
 .decor-card {
-  position: relative; display: block; width: 56px; aspect-ratio: 1080 / 1350;
+  position: relative; display: block; width: 48px; aspect-ratio: 1080 / 1350;
   border-radius: 6px; background: #fdf6ec; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06);
 }
 .decor-card img { position: absolute; inset: 0; width: 100%; height: 100%; }
-.decor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; margin-top: 8px; }
-.decor--sticker { padding: 6px; aspect-ratio: 1; justify-content: center; }
-.decor--sticker img { width: 100%; height: 100%; }
-.decor--on { border-color: var(--brand); color: var(--ink); font-weight: 600; }
-.decor--locked img { opacity: 0.45; filter: grayscale(0.5); }
-.decor--locked { color: var(--ink-3); }
+.decor--sticker img { width: 48px; height: 48px; }
+.decor--on { border-color: var(--brand); }
+.decor--locked img { opacity: 0.55; }

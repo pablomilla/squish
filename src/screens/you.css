@@ -62,15 +62,8 @@
 .wardrobe-now .squish { flex: none; }
 .wardrobe-now p { margin: 0; }
 .wardrobe-now .small { font-weight: 600; color: var(--ink); margin-bottom: 2px; }
-.shelf { margin-top: 16px; }
-.shelf-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.shelf-title { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
 .shelf .looks, .shelf .scenes { margin-top: 8px; }
 .look--wear.look--locked .look-preview { opacity: 0.72; }
-.tile-name { font-size: var(--text-label, 13px); line-height: 1.2; color: var(--ink); font-weight: 600; }
-.tile-note { font-size: 12px; line-height: 1.25; color: var(--ink-3); margin-top: -2px; }
-.look--on .tile-note, .scene-tile.look--on .tile-note { color: var(--brand-ink); font-weight: 600; }
-.look--locked .tile-name { color: var(--ink-2); }
 
 /* Home scenes: two across, each a little window cropped as the card crops it. */
 .scenes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }

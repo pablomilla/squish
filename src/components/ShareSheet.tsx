@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import Squish from './Squish';
 import { Sheet, useToast } from './ui';
 import { renderShareCard, shareCard, type ShareCardData } from '../lib/share';
-import { FRAMES, STICKERS, canUse, decorOnShow, toggleSticker, usableDecor, type Decoration } from '../lib/shareDecor';
-import { whyLocked } from '../lib/outfit';
+import { FRAMES, STICKERS, decorOnShow, toggleSticker, usableDecor, type Decoration } from '../lib/shareDecor';
+import { lockedNote, shelves, whyLocked, type ShelfKind } from '../lib/outfit';
+import Shelf from './Shelf';
 import { PLUS } from '../lib/plan';
 import { useSquish } from '../store/useSquish';
 import { useSubscribed } from './useSubscribed';
@@ -74,8 +75,12 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
   };
 
   const locked = (item: Decoration) => toast(whyLocked(item, PLUS), item.unlock.kind === 'achievement' ? '🔒' : '✨');
-  const frames = FRAMES.filter((f) => decorOnShow(f, today));
-  const stickers = STICKERS.filter((s) => decorOnShow(s, today));
+  // Grouped like the wardrobe: yours, earn these, Plus. "None" is always
+  // theirs, so there is always a Yours shelf of frames to put it on.
+  const frameShelves = shelves(FRAMES.filter((f) => decorOnShow(f, today)), entitlement);
+  if (frameShelves[0]?.kind !== 'yours') frameShelves.unshift({ key: 'yours', kind: 'yours', title: 'Yours', items: [] });
+  const stickerShelves = shelves(STICKERS.filter((s) => decorOnShow(s, today)), entitlement);
+  const noteFor = (kind: ShelfKind, item: Decoration) => (kind === 'earn' ? item.how : lockedNote(item.unlock));
 
   return (
     <Sheet open={open} onClose={onClose} title="Share your progress">
@@ -98,56 +103,70 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
 
         <div>
           <h4 className="small">Frame</h4>
-          <div className="decor-row" role="radiogroup" aria-label="Frame">
-            <button type="button" role="radio" aria-checked={decor.frame === ''} className={`decor decor--frame${decor.frame === '' ? ' decor--on' : ''}`} onClick={() => setShareDecor({ ...chosen, frame: '' })}>
-              <span className="decor-card" aria-hidden="true" />
-              <span className="tiny">None</span>
-            </button>
-            {frames.map((frame) => {
-              const mine = canUse(frame, entitlement);
-              const on = decor.frame === frame.id;
-              return (
-                <button
-                  key={frame.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  className={`decor decor--frame${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
-                  onClick={() => (mine ? setShareDecor({ ...chosen, frame: frame.id }) : locked(frame))}
-                  aria-label={mine ? `${frame.name} frame` : `${frame.name} frame, locked — ${frame.how}`}
-                >
-                  <span className="decor-card" aria-hidden="true">
-                    <img src={frameUrl(frame.id)} alt="" loading="lazy" />
-                  </span>
-                  <span className="tiny">{frame.name}</span>
-                </button>
-              );
-            })}
-          </div>
+          {frameShelves.map((shelf) => (
+            <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
+              <div className="decor-grid decor-grid--frames" role="group" aria-label={`Frames: ${shelf.title}`}>
+                {shelf.kind === 'yours' && (
+                  <button type="button" aria-pressed={decor.frame === ''} className={`decor decor--frame${decor.frame === '' ? ' decor--on' : ''}`} onClick={() => setShareDecor({ ...chosen, frame: '' })}>
+                    <span className="decor-card" aria-hidden="true" />
+                    <span className="tile-name">None</span>
+                    {decor.frame === '' && <span className="tile-note">On</span>}
+                  </button>
+                )}
+                {shelf.items.map((frame) => {
+                  const mine = shelf.kind === 'yours';
+                  const on = decor.frame === frame.id;
+                  const note = on ? 'On' : noteFor(shelf.kind, frame);
+                  return (
+                    <button
+                      key={frame.id}
+                      type="button"
+                      aria-pressed={mine ? on : undefined}
+                      className={`decor decor--frame${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
+                      onClick={() => (mine ? setShareDecor({ ...chosen, frame: frame.id }) : locked(frame))}
+                      aria-label={mine ? `${frame.name} frame` : `${frame.name} frame, locked — ${frame.how}`}
+                    >
+                      <span className="decor-card" aria-hidden="true">
+                        <img src={frameUrl(frame.id)} alt="" />
+                      </span>
+                      <span className="tile-name">{frame.name}</span>
+                      {note && <span className="tile-note">{note}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </Shelf>
+          ))}
         </div>
 
         <div>
           <h4 className="small">Stickers</h4>
           <p className="tiny muted">Up to two, either side of Squish.</p>
-          <div className="decor-grid" role="group" aria-label="Stickers">
-            {stickers.map((sticker) => {
-              const mine = canUse(sticker, entitlement);
-              const on = decor.stickers.includes(sticker.id);
-              return (
-                <button
-                  key={sticker.id}
-                  type="button"
-                  aria-pressed={on}
-                  className={`decor decor--sticker${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
-                  onClick={() => (mine ? setShareDecor({ ...chosen, stickers: toggleSticker(decor.stickers, sticker.id) }) : locked(sticker))}
-                  aria-label={mine ? sticker.name : `${sticker.name}, locked — ${sticker.how}`}
-                  title={mine ? sticker.name : sticker.how}
-                >
-                  <img src={stickerUrl(sticker.id)} alt="" loading="lazy" />
-                </button>
-              );
-            })}
-          </div>
+          {stickerShelves.map((shelf) => (
+            <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
+              <div className="decor-grid" role="group" aria-label={`Stickers: ${shelf.title}`}>
+                {shelf.items.map((sticker) => {
+                  const mine = shelf.kind === 'yours';
+                  const on = decor.stickers.includes(sticker.id);
+                  const note = on ? 'On' : noteFor(shelf.kind, sticker);
+                  return (
+                    <button
+                      key={sticker.id}
+                      type="button"
+                      aria-pressed={mine ? on : undefined}
+                      className={`decor decor--sticker${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
+                      onClick={() => (mine ? setShareDecor({ ...chosen, stickers: toggleSticker(decor.stickers, sticker.id) }) : locked(sticker))}
+                      aria-label={mine ? sticker.name : `${sticker.name}, locked — ${sticker.how}`}
+                    >
+                      <img src={stickerUrl(sticker.id)} alt="" />
+                      <span className="tile-name">{sticker.name}</span>
+                      {note && <span className="tile-note">{note}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </Shelf>
+          ))}
         </div>
       </div>
     </Sheet>
