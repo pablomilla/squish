@@ -432,10 +432,15 @@ function CountUp({ value }: { value: number }) {
   useEffect(() => {
     if (still) return;
     let frame = 0;
-    const started = performance.now();
+    // A beat first, while the card settles and the confetti starts, then a
+    // count slow enough to watch, easing into the final number.
+    const WAIT_MS = 800;
+    const COUNT_MS = 2400;
+    const started = performance.now() + WAIT_MS;
     const tick = (now: number) => {
-      const t = Math.min(1, (now - started) / 900);
-      setShown(Math.round(value * (1 - (1 - t) ** 3)));
+      const t = Math.min(1, Math.max(0, (now - started) / COUNT_MS));
+      // Eased in and out, so the digits turn at a pace you can watch all the way, not all at once and then a crawl.
+      setShown(Math.round(value * (0.5 - Math.cos(Math.PI * t) / 2)));
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -453,7 +458,7 @@ function Confetti() {
       Array.from({ length: 28 }, (_, i) => ({
         left: `${(i * 37) % 100}%`,
         colour: CONFETTI_COLOURS[i % CONFETTI_COLOURS.length],
-        delay: `${(i % 7) * 0.06}s`,
+        delay: `${(i % 7) * 0.1}s`,
         drift: `${((i * 53) % 120) - 60}px`,
         spin: `${((i * 71) % 540) - 270}deg`,
         round: i % 3 === 0,

@@ -87,7 +87,7 @@ input[type='range'] { width: 100%; accent-color: var(--brand); height: 28px; -we
 .confetti { position: absolute; inset: -20px 0 auto; height: 0; pointer-events: none; z-index: 2; }
 .confetti i {
   position: absolute; top: 0; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
-  animation: confetti-fall 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) both;
+  animation: confetti-fall 2.8s cubic-bezier(0.2, 0.6, 0.4, 1) both;
 }
 .confetti i.confetti-round { width: 9px; height: 9px; border-radius: 50%; }
 @keyframes confetti-fall {
