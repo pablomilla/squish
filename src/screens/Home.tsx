@@ -65,6 +65,8 @@ export default function Home({ go }: { go: (route: Route) => void }) {
     if (streak >= 7) unlock('streak-7');
     if (streak >= 14) unlock('streak-14');
     if (streak >= 30) unlock('streak-30');
+    if (streak >= 100) unlock('streak-100');
+    if (streak >= 365) unlock('streak-365');
   }, [totals.protein, totals.fibre, targets.protein, targets.fibre, streak, unlock]);
 
   // The stored note counts only while it still describes the day it was written

@@ -42,7 +42,7 @@ export type ItemUnlock =
   | { kind: 'achievement'; id: string }
   | { kind: 'subscriber' }
   | { kind: 'pack'; pack: Pack }
-  | { kind: 'season'; season: Season };
+  | { kind: 'season'; season: Season; free?: boolean };
 
 export interface Accessory {
   id: string;
@@ -144,7 +144,8 @@ export function entitled(unlock: ItemUnlock, { unlocked, subscribed, today }: En
       // Nothing is on sale yet, so nobody owns a pack.
       return false;
     case 'season':
-      return subscribed && inSeason(unlock.season, today);
+      // Seasonal stickers are a treat for everybody; the rest come with Plus.
+      return (unlock.free || subscribed) && inSeason(unlock.season, today);
   }
 }
 

@@ -14,6 +14,7 @@ import {
 import { STARTING_WEIGHTS } from '../lib/units';
 import { DEFAULT_LOOK } from '../lib/looks';
 import type { Outfit } from '../lib/outfit';
+import type { ShareDecor } from '../lib/shareDecor';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow, type PartOfDay } from '../lib/date';
 
@@ -45,6 +46,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'streak-7', title: 'Full week', description: 'Seven days of logging', emoji: '🗓️' },
   { id: 'streak-14', title: 'Fortnight', description: 'Two weeks of logging', emoji: '🌿' },
   { id: 'streak-30', title: 'Squish regular', description: 'Thirty days of logging', emoji: '🏆' },
+  { id: 'streak-100', title: 'Century', description: 'A hundred days of logging', emoji: '💯' },
+  { id: 'streak-365', title: 'A whole year', description: 'A year of logging', emoji: '🎂' },
+  { id: 'first-share', title: 'Show and tell', description: 'Share a progress card', emoji: '📣' },
   { id: 'protein-hit', title: 'Protein pro', description: 'Hit your protein target in a day', emoji: '💪' },
   { id: 'fibre-hit', title: 'Fibre friend', description: 'Hit your fibre target in a day', emoji: '🥦' },
   { id: 'hydrated', title: 'Well watered', description: 'Reach your water goal', emoji: '💧' },
@@ -68,6 +72,8 @@ interface SquishState {
   outfit: Outfit;
   /** Which Home scene is behind Squish; empty for the plain card. Checked at every render. */
   scene: string;
+  /** The frame and up to two stickers on a share card. Checked when the card is drawn. */
+  shareDecor: ShareDecor;
   /**
    * When to nudge, and whether to at all. The times live here rather than only
    * on the server so the screen can show them without a round trip, and so
@@ -129,6 +135,7 @@ interface SquishState {
   setLook: (look: string) => void;
   setOutfit: (outfit: Outfit) => void;
   setScene: (scene: string) => void;
+  setShareDecor: (decor: ShareDecor) => void;
   setReminders: (patch: Partial<SquishState['reminders']>) => void;
   setPendingMeal: (draft: Draft | null) => void;
   rememberNote: (note: string) => NutritionistNote;
@@ -268,6 +275,7 @@ export const useSquish = create<SquishState>()(
       look: DEFAULT_LOOK,
       outfit: {},
       scene: '',
+      shareDecor: { frame: '', stickers: [] },
       // Off until asked for. A notification permission prompt nobody invited
       // is the fastest way to be told no for ever.
       reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
@@ -368,6 +376,7 @@ export const useSquish = create<SquishState>()(
       setLook: (look) => set({ look }),
       setOutfit: (outfit) => set({ outfit }),
       setScene: (scene) => set({ scene }),
+      setShareDecor: (shareDecor) => set({ shareDecor }),
       setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
       setPendingMeal: (pendingMeal) => set({ pendingMeal }),
@@ -402,6 +411,7 @@ export const useSquish = create<SquishState>()(
           look: DEFAULT_LOOK,
           outfit: {},
           scene: '',
+          shareDecor: { frame: '', stickers: [] },
           comparisons: true,
         }),
     }),

@@ -2,10 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import Squish from './Squish';
 import { Sheet, useToast } from './ui';
 import { renderShareCard, shareCard, type ShareCardData } from '../lib/share';
+import { FRAMES, STICKERS, canUse, decorOnShow, toggleSticker, usableDecor, type Decoration } from '../lib/shareDecor';
+import { whyLocked } from '../lib/outfit';
+import { PLUS } from '../lib/plan';
+import { useSquish } from '../store/useSquish';
+import { useSubscribed } from './useSubscribed';
+import { frameMarkup, frameUrl, stickerMarkup, stickerUrl } from './shareArt';
 import './sharesheet.css';
 
 /**
- * Shows the card before it goes anywhere.
+ * Shows the card before it goes anywhere, and lets it be dressed up: a frame
+ * round the edge and up to two stickers beside Squish.
  *
  * The mascot is rendered here, off to the side, purely so the card has real
  * artwork to rasterise — drawing it a second time on canvas would be a copy of
@@ -17,6 +24,16 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
   const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
   const [failed, setFailed] = useState(false);
 
+  const chosen = useSquish((s) => s.shareDecor);
+  const setShareDecor = useSquish((s) => s.setShareDecor);
+  const unlocked = useSquish((s) => s.unlocked);
+  const unlock = useSquish((s) => s.unlock);
+  const subscribed = useSubscribed();
+  const today = new Date();
+  const entitlement = { unlocked, subscribed, today };
+  const decor = usableDecor(chosen, entitlement);
+  const decorKey = `${decor.frame}|${decor.stickers.join(',')}`;
+
   // `data` is the dependency, so the caller must hand over a stable object —
   // a fresh literal on every parent render would redraw the card each time.
   useEffect(() => {
@@ -27,8 +44,12 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
 
     let live = true;
     let url: string | null = null;
+    const [frameId, stickerList] = decorKey.split('|');
 
-    renderShareCard(data, mascot)
+    Promise.all([frameId ? frameMarkup(frameId) : undefined, Promise.all(stickerList.split(',').filter(Boolean).map(stickerMarkup))])
+      .then(([frame, stickers]) =>
+        renderShareCard(data, mascot, { frame, stickers: stickers.filter((s): s is string => Boolean(s)) }),
+      )
       .then((blob) => {
         if (!live) return;
         url = URL.createObjectURL(blob);
@@ -42,14 +63,19 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
       setCard(null);
       setFailed(false);
     };
-  }, [open, data]);
+  }, [open, data, decorKey]);
 
   const send = async () => {
     if (!card) return;
     const outcome = await shareCard(card.blob, `${data.headline} — tracked with Squish`);
+    if (outcome !== 'cancelled') unlock('first-share');
     if (outcome === 'downloaded') toast('Saved to your downloads', '📥');
     if (outcome === 'shared') onClose();
   };
+
+  const locked = (item: Decoration) => toast(whyLocked(item, PLUS), item.unlock.kind === 'achievement' ? '🔒' : '✨');
+  const frames = FRAMES.filter((f) => decorOnShow(f, today));
+  const stickers = STICKERS.filter((s) => decorOnShow(s, today));
 
   return (
     <Sheet open={open} onClose={onClose} title="Share your progress">
@@ -69,6 +95,60 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
           Share
         </button>
         <p className="tiny muted center">Made on your phone. Nothing is uploaded.</p>
+
+        <div>
+          <h4 className="small">Frame</h4>
+          <div className="decor-row" role="radiogroup" aria-label="Frame">
+            <button type="button" role="radio" aria-checked={decor.frame === ''} className={`decor decor--frame${decor.frame === '' ? ' decor--on' : ''}`} onClick={() => setShareDecor({ ...chosen, frame: '' })}>
+              <span className="decor-card" aria-hidden="true" />
+              <span className="tiny">None</span>
+            </button>
+            {frames.map((frame) => {
+              const mine = canUse(frame, entitlement);
+              const on = decor.frame === frame.id;
+              return (
+                <button
+                  key={frame.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  className={`decor decor--frame${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
+                  onClick={() => (mine ? setShareDecor({ ...chosen, frame: frame.id }) : locked(frame))}
+                  aria-label={mine ? `${frame.name} frame` : `${frame.name} frame, locked — ${frame.how}`}
+                >
+                  <span className="decor-card" aria-hidden="true">
+                    <img src={frameUrl(frame.id)} alt="" loading="lazy" />
+                  </span>
+                  <span className="tiny">{frame.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <h4 className="small">Stickers</h4>
+          <p className="tiny muted">Up to two, either side of Squish.</p>
+          <div className="decor-grid" role="group" aria-label="Stickers">
+            {stickers.map((sticker) => {
+              const mine = canUse(sticker, entitlement);
+              const on = decor.stickers.includes(sticker.id);
+              return (
+                <button
+                  key={sticker.id}
+                  type="button"
+                  aria-pressed={on}
+                  className={`decor decor--sticker${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
+                  onClick={() => (mine ? setShareDecor({ ...chosen, stickers: toggleSticker(decor.stickers, sticker.id) }) : locked(sticker))}
+                  aria-label={mine ? sticker.name : `${sticker.name}, locked — ${sticker.how}`}
+                  title={mine ? sticker.name : sticker.how}
+                >
+                  <img src={stickerUrl(sticker.id)} alt="" loading="lazy" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </Sheet>
   );

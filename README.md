@@ -186,9 +186,9 @@ retakes them, and `npm run build:site-art` re-exports the mascot and wordmark fr
 The line between them falls out of what each action costs to serve, not out of preference, and the
 arithmetic is in [`docs/monetisation.md`](docs/monetisation.md). Free is everything that is nearly
 free to run — logging by hand, food search, the diary, charts, streaks, the earned colourways,
-accessories and Home scenes, export — plus a one-off taste of the AI: 5 analyses, with a free account, that never reset. Plus
+accessories, Home scenes and share stickers, export — plus a one-off taste of the AI: 5 analyses, with a free account, that never reset. Plus
 is the part with a bill attached: AI meal analyses, the nutritionist, recipe imports and the Plus
-colourways, accessories and scenes.
+colourways, accessories, scenes and share frames.
 
 The taste is once rather than monthly on purpose. A monthly free allowance is a bill that grows
 with every free user who never pays, and with a few per cent converting it cost more than the

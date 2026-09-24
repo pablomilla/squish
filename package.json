@@ -27,7 +27,8 @@
     "grant": "tsx scripts/grant.ts",
     "reset-2fa": "tsx scripts/reset-2fa.ts",
     "build:accessories": "tsx scripts/build-accessories.ts",
-    "build:scenes": "tsx scripts/build-scenes.ts"
+    "build:scenes": "tsx scripts/build-scenes.ts",
+    "build:share-art": "tsx scripts/build-share-art.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

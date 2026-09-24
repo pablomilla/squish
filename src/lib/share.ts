@@ -178,7 +178,34 @@ async function readyFonts(): Promise<void> {
   }
 }
 
-export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement): Promise<Blob> {
+/**
+ * Decoration for a card, as SVG markup already fetched: a frame for the edges
+ * and up to two stickers beside Squish. What may be used is decided before it
+ * gets here (`lib/shareDecor.ts`); this only draws.
+ */
+export interface CardDecor {
+  frame?: string;
+  stickers?: string[];
+}
+
+/**
+ * The two sticker slots the designer was given, either side of Squish: x
+ * 60–300 and 780–1020, y 260–660. Each sticker is drawn a little smaller than
+ * its slot and tipped, like a real one stuck on, and stays inside the slot at
+ * that angle.
+ */
+const STICKER_SIZE = 200;
+const STICKER_SLOTS = [
+  { x: 180, y: 470, turn: -8 },
+  { x: 900, y: 470, turn: 8 },
+];
+
+/** An SVG document at a given pixel size, ready to draw. */
+function sized(markup: string, width: number, height: number, what: string): Promise<HTMLImageElement> {
+  return rasterise(markup.replace(/<svg\b/, `<svg width="${width}" height="${height}"`), what);
+}
+
+export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement, decor: CardDecor = {}): Promise<Blob> {
   await readyFonts();
 
   const canvas = document.createElement('canvas');
@@ -216,6 +243,16 @@ export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement
   // Taller than it is wide when wearing a tall hat: the extra goes above.
   const tall = squish.height || MASCOT_SIZE;
   ctx.drawImage(squish, centre - MASCOT_SIZE / 2, MASCOT_TOP - (tall - MASCOT_SIZE), MASCOT_SIZE, tall);
+
+  const stickers = await Promise.all((decor.stickers ?? []).slice(0, STICKER_SLOTS.length).map((svg) => sized(svg, STICKER_SIZE, STICKER_SIZE, 'sticker')));
+  stickers.forEach((sticker, i) => {
+    const slot = STICKER_SLOTS[i];
+    ctx.save();
+    ctx.translate(slot.x, slot.y);
+    ctx.rotate((slot.turn * Math.PI) / 180);
+    ctx.drawImage(sticker, -STICKER_SIZE / 2, -STICKER_SIZE / 2, STICKER_SIZE, STICKER_SIZE);
+    ctx.restore();
+  });
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -255,15 +292,23 @@ export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement
   // The bit that does the work once this leaves the app: the drawn logotype,
   // so a card carries the same mark as the app and the store listing rather
   // than the name typed in whatever font the phone managed to load.
+  //
+  // A frame owns the bottom 64px, which the tagline normally dips into, so a
+  // framed card sets the mark a little smaller and higher to finish above it.
+  const framed = Boolean(decor.frame);
   const [, , wordW, wordH] = WORDMARK_VIEWBOX.split(' ').map(Number);
-  const markWidth = 268;
+  const markWidth = framed ? 232 : 268;
+  const markTop = framed ? 1160 : 1194;
   const markHeight = (markWidth * wordH) / wordW;
   const wordmark = await wordmarkImage(markWidth);
-  ctx.drawImage(wordmark, centre - markWidth / 2, 1194, markWidth, markHeight);
+  ctx.drawImage(wordmark, centre - markWidth / 2, markTop, markWidth, markHeight);
 
   ctx.fillStyle = BRAND.ink2;
-  ctx.font = '700 38px Caveat, cursive';
-  ctx.fillText('your little health buddy', centre, 1194 + markHeight + 6);
+  ctx.font = `700 ${framed ? 34 : 38}px Caveat, cursive`;
+  ctx.fillText('your little health buddy', centre, markTop + markHeight + 6);
+
+  // Last, over everything: it only ever draws in the outer band and corners.
+  if (decor.frame) ctx.drawImage(await sized(decor.frame, CARD_WIDTH, CARD_HEIGHT, 'frame'), 0, 0, CARD_WIDTH, CARD_HEIGHT);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('The card would not save'))), 'image/png');

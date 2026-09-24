@@ -183,6 +183,17 @@ fireworks, sweet shop, blossom garden, ice-lolly stand, pumpkin patch), on the
 same terms as seasonal accessories. The same every-render check applies: a
 scene somebody may no longer use falls back to the plain card.
 
+### Share frames and stickers
+
+For the progress card (`src/lib/shareDecor.ts`; copied into
+`src/assets/share` by `npm run build:share-art`): one frame and up to two
+stickers, picked on the share sheet. Frames: scallop (earned by sharing once),
+confetti (a full week), botanical and gold foil (Plus), and a frame per
+season with Plus. Stickers: eight earned against existing achievements (first
+meal, three days, water goal, fibre target, a 75+ day, a full week), four with
+Plus, streak badges at 7, 30, 100 and 365 days, and three per season that are
+free for everybody while it lasts, as the brief asked.
+
 ## What has to exist first
 
 **Accounts.** Not for their own sake — for three things that cannot be done
