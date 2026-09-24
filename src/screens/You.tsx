@@ -565,7 +565,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
               onChange={(goal) => setProfile({ goal })}
               options={[
                 { value: 'lose', label: 'Lose' },
-                { value: 'maintain', label: 'Maintain' },
+                { value: 'maintain', label: 'Eat healthy' },
                 { value: 'gain', label: 'Gain' },
               ]}
             />

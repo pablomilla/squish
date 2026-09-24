@@ -22,7 +22,7 @@ type Step = (typeof STEPS)[number];
 
 const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string; mood: Mood; say: string }> = {
   lose: { title: 'Lose weight', blurb: 'A gentle deficit, plenty of protein', emoji: '🌱', mood: 'proud', say: 'Slow and steady — I’ll cheer every step.' },
-  maintain: { title: 'Stay as I am', blurb: 'Keep things steady and balanced', emoji: '⚖️', mood: 'calm', say: 'Steady and balanced. Love that.' },
+  maintain: { title: 'Eat healthy', blurb: 'Balanced meals, weight stays steady', emoji: '🥗', mood: 'calm', say: 'Good food, feeling good. Love that.' },
   gain: { title: 'Build up', blurb: 'A little surplus to grow on', emoji: '💪', mood: 'cheering', say: 'Let’s build you up!' },
 };
 
@@ -405,7 +405,7 @@ function GoalNote({
   onSwitch: (goal: Goal) => void;
 }) {
   if (!projection) return null;
-  if (projection.kind === 'there') return <p className="onboard-when small">🎉 You’re there already — maybe “Stay as I am”?</p>;
+  if (projection.kind === 'there') return <p className="onboard-when small">🎉 You’re there already — maybe “Eat healthy”?</p>;
   if (projection.kind === 'mismatch')
     return (
       <div className="onboard-when onboard-when--check small">
