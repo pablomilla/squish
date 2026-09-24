@@ -11,6 +11,7 @@
  * sheet closes.
  */
 import { useEffect, useRef, useState } from 'react';
+import { friendOffer, periodWords, type FriendOffer } from '../lib/friends';
 import { Sheet, useToast } from './ui';
 import PasswordField from './PasswordField';
 import {
@@ -44,9 +45,20 @@ const TITLES: Record<Exclude<Form, null>, string> = {
 export default function AccountCard({ enabled }: { enabled: boolean }) {
   const [who, setWho] = useState<Who>({ signedIn: false });
   const [form, setForm] = useState<Form>(null);
+  const [offer, setOffer] = useState<FriendOffer | null>(null);
   /** The last answer from the server, to notice the moment an address becomes confirmed. */
   const seen = useRef<Who | null>(null);
   const toast = useToast();
+
+  // Came by a friend's invite: say what making an account gets them.
+  useEffect(() => {
+    if (!enabled || who.signedIn) return;
+    let live = true;
+    void friendOffer().then((found) => live && setOffer(found));
+    return () => {
+      live = false;
+    };
+  }, [enabled, who.signedIn]);
 
   // Sent here by the paywall to make an account: open the form and bring it into view.
   useEffect(() => {
@@ -143,6 +155,12 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             You do not need one. It is for two things: moving to a new phone without starting again, and getting your
             diary back if this one is lost.
           </p>
+          {offer && (
+            <p className="small account-offer">
+              🎁 A friend invited you: make an account, use Squish on {offer.qualifyDays} different days, and you both get{' '}
+              {periodWords(offer.rewardDays)} of Squish Plus.
+            </p>
+          )}
           <div className="account-actions">
             <button type="button" className="btn btn--sm" onClick={() => setForm('up')}>
               Create an account

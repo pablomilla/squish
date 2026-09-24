@@ -446,6 +446,31 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table affiliates add column portal_seen_at timestamptz;
     `,
   },
+  {
+    id: 13,
+    sql: `
+      -- Invite a friend. Every account can have a code of its own, made the
+      -- first time it is asked for, sharing the /r/ links affiliates use.
+      alter table accounts add column friend_code text unique;
+
+      -- Who invited whom. One row per invited account at most; the reward is
+      -- given once, when the friend has verified their address and used
+      -- Squish on enough different days, and both sides are stamped then.
+      create table friend_referrals (
+        friend_id        text primary key references accounts(id) on delete cascade,
+        referrer_id      text references accounts(id) on delete set null,
+        created_at       timestamptz not null default now(),
+        rewarded_at      timestamptz,
+        -- Days of Plus actually given to the one who invited, which is 0 once
+        -- they are at the yearly cap: the friend is still rewarded.
+        referrer_days    integer,
+        friend_days      integer,
+        -- Told the one who invited, in the app, so it is only said once.
+        referrer_seen_at timestamptz
+      );
+      create index friend_referrals_referrer on friend_referrals(referrer_id, rewarded_at);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

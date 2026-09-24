@@ -52,3 +52,4 @@
   align-items: flex-start;
 }
 .account-unconfirmed p { margin: 0; color: var(--ink); }
+.account-offer { margin: 10px 0 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--brand-soft); color: var(--ink); }

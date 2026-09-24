@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import AccountCard from '../components/AccountCard';
 import Shelf from '../components/Shelf';
+import InviteCard from '../components/InviteCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
@@ -526,6 +527,8 @@ export default function You({ go }: { go: (route: Route) => void }) {
       )}
 
       <PlanCard standing={standing} />
+
+      <InviteCard />
 
       <AccountCard enabled={backup.kind !== 'off'} />
 

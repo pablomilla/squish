@@ -21,7 +21,7 @@
  */
 import { hasDatabase, migrate, query } from './db';
 
-export type EmailKey = 'verify' | 'reset' | 'signin' | 'password-changed' | 'password-reset' | 'partner-signin' | 'test';
+export type EmailKey = 'verify' | 'reset' | 'signin' | 'password-changed' | 'password-reset' | 'partner-signin' | 'friend-reward' | 'test';
 
 export interface Placeholder {
   name: string;
@@ -172,6 +172,25 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     ].join('\n'),
     button: { placeholder: 'app_link', label: 'Open Squish', fallback: false },
     placeholders: [TIME, APP],
+    required: [],
+  },
+
+  'friend-reward': {
+    key: 'friend-reward',
+    label: 'Friend reward',
+    when: 'When somebody you invited has used Squish on enough days, and a month of Plus is yours',
+    subject: 'Your friend is on Squish — here is your Plus',
+    body: [
+      'Good news: a friend you invited to Squish has got going, so you both get Squish Plus.',
+      '',
+      'We have added {days} days of Plus to your account. There is nothing to do — it is already switched on.',
+      '',
+      'Thank you for sharing Squish.',
+      '',
+      '{app_link}',
+    ].join('\n'),
+    button: { placeholder: 'app_link', label: 'Open Squish', fallback: false },
+    placeholders: [{ name: 'days', about: 'How many days of Plus were added', sample: '30' }, APP],
     required: [],
   },
 

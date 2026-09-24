@@ -62,6 +62,7 @@ import {
   thisMonth,
   updateCost,
 } from './finance';
+import { attributeFriend, friendsView, isFriendCode, qualifyDays, rewardDays, settleFriend } from './friends';
 import {
   attribute,
   checkAffiliate,
@@ -519,6 +520,11 @@ app.get('/api/allowance', async (req, res) => {
     return;
   }
   try {
+    // An invited friend's reward lands the first time they are asked about
+    // after earning it, so the plan below already includes it.
+    if (req.device.accountId) {
+      await settleFriend(req.device.accountId, publicOrigin(req)).catch((error: unknown) => logFailure('friend reward', error));
+    }
     res.json({
       known: true,
       account: Boolean(req.device.accountId),
@@ -583,12 +589,22 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
   }
 
   try {
+    // Whose this device was a moment ago: making a second account and
+    // inviting yourself with your own code does not count as a friend.
+    const signedInBefore = req.device!.accountId ?? null;
     const made = await signUp(req.device!.id, email, password);
     if (made.ok) {
-      // Whoever's link they arrived by, if anyone's. Never allowed to fail the
-      // sign-up: a stale link is not the new account's problem.
+      // Whoever's link they arrived by, if anyone's: an affiliate's, or a
+      // friend's invite. Never allowed to fail the sign-up: a stale link is not
+      // the new account's problem.
       if (ref !== undefined) {
-        await attribute(made.account.id, ref).catch((error: unknown) => logFailure('referral', error));
+        const affiliate = await attribute(made.account.id, ref).catch((error: unknown) => {
+          logFailure('referral', error);
+          return null;
+        });
+        if (!affiliate) {
+          await attributeFriend(made.account.id, ref, signedInBefore).catch((error: unknown) => logFailure('friend invite', error));
+        }
       }
       // Not awaited into the response, and never allowed to fail it: the
       // account exists either way, and there is a button to send it again.
@@ -1316,6 +1332,39 @@ app.delete('/api/admin/fixed-costs/:id', requireAdmin, async (req, res) => {
   } catch (error) {
     logFailure('admin cost delete', error);
     res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+/* ---------------- Inviting friends ---------------- *
+ *
+ * A month of Plus each, once the friend has verified their address and used
+ * Squish on a few different days — see server/friends.ts for why it is not
+ * simply "signed up".
+ */
+
+app.get('/api/friends', requireAccount, async (req, res) => {
+  try {
+    await settleFriend(req.device!.accountId!, publicOrigin(req)).catch((error: unknown) => logFailure('friend reward', error));
+    const view = await friendsView(req.device!.accountId!);
+    res.set('Cache-Control', 'no-store').json({ ...view, link: `${referralBase(req)}${view.code}` });
+  } catch (error) {
+    logFailure('friends', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not fetch your invites just now.' });
+  }
+});
+
+/**
+ * Whether a code someone arrived with is a friend's invite, so sign-up can say
+ * what they will get. Metered like sign-in, so it is no quicker a way to guess
+ * codes than trying them.
+ */
+app.get('/api/friend-code/:code', requireDevice, meter('signin'), async (req, res) => {
+  try {
+    const friend = await isFriendCode(String(req.params.code));
+    res.set('Cache-Control', 'no-store').json({ friend, rewardDays: rewardDays(), qualifyDays: qualifyDays() });
+  } catch (error) {
+    logFailure('friend code', error);
+    res.json({ friend: false });
   }
 });
 

@@ -194,6 +194,31 @@ meal, three days, water goal, fibre target, a 75+ day, a full week), four with
 Plus, streak badges at 7, 30, 100 and 365 days, and three per season that are
 free for everybody while it lasts, as the brief asked.
 
+## Inviting friends
+
+Every account has an invite link (squish.online/r/SQ…, on You and sent with
+any shared card). A friend who joins by it and then **confirms their email and
+uses Squish on three different days** gets a month of Plus, and so does the
+person who invited them — up to twelve months a year for the inviter
+(`server/friends.ts`). The three days are counted from the server's own record
+of the days a device was seen since sign-up, so they cannot be faked from the
+phone or squeezed into one afternoon.
+
+The numbers are environment variables: `SQUISH_FRIEND_DAYS` (30),
+`SQUISH_FRIEND_QUALIFY_DAYS` (3) and `SQUISH_FRIEND_CAP` (12).
+
+What it costs: a month of Plus is at most about £2.92 of AI for somebody who
+uses every allowance, and nearer £1 for a typical user — per side, so up to
+about £6 for a friend who has already shown they will use Squish.
+
+**Before the iPhone and Android apps take payments,** this needs another
+look. The reward extends `plus_until` on our server, which is fine while Plus
+is granted rather than bought. For somebody paying through the App Store or
+Google Play it does nothing to their store subscription, so a subscriber's
+reward should become a store promotional offer (Apple offer codes, Google
+promo codes) or something that is not Plus time. Apple also reviews incentives
+for inviting people, so check the guidelines at submission.
+
 ## What has to exist first
 
 **Accounts.** Not for their own sake — for three things that cannot be done

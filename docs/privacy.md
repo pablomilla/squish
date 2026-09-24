@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 23 September 2026**
+**Last updated: 24 September 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -72,6 +72,15 @@ Backup is on by default where this copy of Squish has a database.
   kept in your browser for 30 days after you follow the link and deleted
   once it has been used. Following a link adds one to a count of visits and
   records nothing about you.
+
+- **If you invite friends:** your invite code, and for each person who made
+  an account with it, that they did, and whether and when they earned the
+  reward. You see how many joined and how many got going, never who. **If a
+  friend invited you:** that they did, and when you earned the reward. To
+  decide that, we check that your email address is confirmed and count the
+  different days your devices used Squish after you joined — the same daily
+  record as above, nothing about what you logged. All of it is deleted with
+  the account.
 
 ### If you are one of our partners
 

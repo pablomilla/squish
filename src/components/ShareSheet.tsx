@@ -7,7 +7,8 @@ import { lockedNote, shelves, whyLocked, type ShelfKind } from '../lib/outfit';
 import Shelf from './Shelf';
 import { PLUS } from '../lib/plan';
 import { useSquish } from '../store/useSquish';
-import { useSubscribed } from './useSubscribed';
+import { useStanding, useSubscribed } from './useSubscribed';
+import { friendsThisVisit, inviteText, periodWords, type Friends } from '../lib/friends';
 import { frameMarkup, frameUrl, stickerMarkup, stickerUrl } from './shareArt';
 import './sharesheet.css';
 
@@ -66,9 +67,23 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
     };
   }, [open, data, decorKey]);
 
+  // Signed in, the card carries an invite: a friend who joins by it gets
+  // Plus, and so does whoever shared it.
+  const standing = useStanding();
+  const [friends, setFriends] = useState<Friends | null>(null);
+  useEffect(() => {
+    if (!open || !standing.account) return;
+    let live = true;
+    void friendsThisVisit().then((found) => live && setFriends(found));
+    return () => {
+      live = false;
+    };
+  }, [open, standing.account]);
+
   const send = async () => {
     if (!card) return;
-    const outcome = await shareCard(card.blob, `${data.headline} — tracked with Squish`);
+    const words = `${data.headline} — tracked with Squish.`;
+    const outcome = await shareCard(card.blob, friends ? `${words} ${inviteText(friends)} ${friends.link}` : words);
     if (outcome !== 'cancelled') unlock('first-share');
     if (outcome === 'downloaded') toast('Saved to your downloads', '📥');
     if (outcome === 'shared') onClose();
@@ -99,7 +114,11 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
         <button type="button" className="btn btn--block" disabled={!card} onClick={() => void send()}>
           Share
         </button>
-        <p className="tiny muted center">Made on your phone. Nothing is uploaded.</p>
+        <p className="tiny muted center">
+          {friends
+            ? `Your invite link goes with it: a friend who joins gets ${periodWords(friends.rewardDays)} of Squish Plus, and so do you.`
+            : 'Made on your phone. Nothing is uploaded.'}
+        </p>
 
         <div>
           <h4 className="small">Frame</h4>

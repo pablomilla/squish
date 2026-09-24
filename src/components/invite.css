@@ -1,0 +1,16 @@
+.invite-card .card-title { align-items: center; }
+.invite-card > p { margin: 0 0 8px; }
+.invite-card .btn { margin-top: 6px; }
+.invite-progress {
+  margin: 4px 0 8px; padding: 10px 12px; border-radius: var(--r-md);
+  background: var(--brand-soft); color: var(--ink); font-size: var(--text-label); line-height: 1.4;
+}
+.invite-score { margin: 8px 0 0; text-align: center; }
+
+/* On Home, for an invited friend. */
+.card.invite-nudge { display: flex; flex-direction: column; gap: 10px; background: var(--brand-soft); border-color: transparent; }
+.invite-nudge p { margin: 0; }
+.invite-nudge .btn { align-self: flex-start; }
+.invite-dots { display: flex; gap: 6px; }
+.invite-dots span { width: 28px; height: 8px; border-radius: 4px; background: var(--surface); }
+.invite-dots span.on { background: var(--brand); }
