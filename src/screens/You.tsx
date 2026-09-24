@@ -7,7 +7,7 @@ import { HeightField, NumberField, WeightField } from '../components/fields';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
 import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
-import { SparkIcon, TrashIcon } from '../components/icons';
+import { ShareIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
 import { ACCESSORIES, SLOTS, accessoryById, lockedNote, onShow, shelves, toggle, wearable, whyLocked } from '../lib/outfit';
 import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
@@ -20,8 +20,10 @@ import { useSquish, MIN_AGE } from '../store/useSquish';
 import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
 import { apiUrl } from '../lib/origin';
-import { friendlyDate, isoDate } from '../lib/date';
-import { streakOf } from '../lib/selectors';
+import { friendlyDate, isoDate, lastDays } from '../lib/date';
+import { bestStreak, series, streakOf, summarise } from '../lib/selectors';
+import { shareStory } from '../lib/shareStory';
+import ShareSheet from '../components/ShareSheet';
 import type { Activity, Goal, Route, Sex } from '../types';
 import './you.css';
 
@@ -340,6 +342,10 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
         <ScenePicker subscribed={subscribed} dark={(prefersDark && theme === 'system') || theme === 'dark'} />
+
+        <div className="divider" style={{ margin: '16px 0 12px' }} />
+
+        <ShareCardLink />
       </section>
 
       <section className="card card--quiet">
@@ -1154,6 +1160,44 @@ function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean 
           </div>
         </Shelf>
       ))}
+    </>
+  );
+}
+
+/**
+ * The way in to the share card from here, where the rest of the dressing-up
+ * lives: frames and stickers are chosen on the card itself, and until now the
+ * only door to it was on Insights, and only with a streak running.
+ */
+function ShareCardLink() {
+  const meals = useSquish((s) => s.meals);
+  const targets = useSquish((s) => s.targets);
+  const [open, setOpen] = useState(false);
+  const today = isoDate();
+  // The same card Insights makes on its weekly view.
+  const data = useMemo(
+    () =>
+      shareStory({
+        streak: streakOf(meals, today),
+        best: bestStreak(meals),
+        mealCount: meals.length,
+        summary: summarise(series(meals, lastDays(7, today), targets), targets),
+      }),
+    [meals, targets, today],
+  );
+
+  return (
+    <>
+      <div className="row-between share-link">
+        <div>
+          <h4 className="small">Frames and stickers</h4>
+          <p className="tiny muted">They go on the card you share — pick them there.</p>
+        </div>
+        <button type="button" className="btn btn--soft" onClick={() => setOpen(true)}>
+          <ShareIcon size={18} /> Share a card
+        </button>
+      </div>
+      <ShareSheet open={open} onClose={() => setOpen(false)} data={data} />
     </>
   );
 }

@@ -11,7 +11,6 @@
  */
 import { limit, wrap, type Measure } from './cardtext';
 import { WORDMARK_ART, WORDMARK_VIEWBOX } from '../components/squish-art';
-import type { Mood } from '../types';
 
 export const CARD_WIDTH = 1080;
 export const CARD_HEIGHT = 1350;
@@ -55,14 +54,8 @@ const BRAND = {
   peach: '#fde4cf',
 };
 
-export interface ShareCardData {
-  /** The one thing the card is about: "9 day streak". */
-  headline: string;
-  subline: string;
-  /** Up to three supporting figures. */
-  stats: { label: string; value: string }[];
-  mood: Mood;
-}
+import type { ShareCardData } from './shareStory';
+export type { ShareCardData };
 
 /**
  * Rasterise the mascot that is already on the page, rather than redrawing it.
@@ -134,7 +127,10 @@ function layOutWords(
   ctx: CanvasRenderingContext2D,
   data: ShareCardData,
 ): { headline: string[]; headlineSize: number; leading: number; subline: string[]; top: number } {
-  const room = TEXT_BOTTOM - TEXT_TOP;
+  // With no figures to show, the words may use their band too, rather than
+  // leaving a hole where the pills would have been.
+  const bottom = data.stats.length ? TEXT_BOTTOM : PILL_TOP + PILL_HEIGHT - 24;
+  const room = bottom - TEXT_TOP;
   const gap = 24;
   const measure: Measure = (text) => ctx.measureText(text).width;
 

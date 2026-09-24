@@ -3,6 +3,7 @@ import Squish from '../components/Squish';
 import { MacroSplitBar, StreakDots, WeeklyBars, WeightTrend } from '../components/charts';
 import { Segmented } from '../components/ui';
 import ShareSheet from '../components/ShareSheet';
+import { shareStory } from '../lib/shareStory';
 import type { ShareCardData } from '../lib/share';
 import { FlameIcon, ShareIcon } from '../components/icons';
 import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
@@ -51,19 +52,7 @@ export default function Insights() {
 
   // Held steady, because the share sheet redraws the card whenever this changes.
   const shareData = useMemo<ShareCardData>(
-    () => ({
-      headline: `${streak} day streak`,
-      subline:
-        summary.loggedDays > 0
-          ? `${summary.loggedDays} of the last ${summary.days} days logged, averaging ${summary.avgCalories} kcal.`
-          : 'Every day counts.',
-      stats: [
-        { label: 'best streak', value: `${best}` },
-        { label: 'avg quality', value: `${summary.avgScore}` },
-        { label: 'meals logged', value: `${meals.length}` },
-      ],
-      mood: 'cheering',
-    }),
+    () => shareStory({ streak, best, mealCount: meals.length, summary }),
     [streak, best, summary, meals.length],
   );
   const weekTotals = useMemo(
@@ -213,11 +202,11 @@ export default function Insights() {
             )}
           </div>
         </div>
-        {streak >= 2 && (
-          <button type="button" className="btn btn--soft btn--block share-trigger" onClick={() => setSharing(true)}>
-            <ShareIcon size={18} /> Share my streak
-          </button>
-        )}
+        {/* Always here, so the share card — and its frames and stickers — can
+            be found before there is a streak to put on it. */}
+        <button type="button" className="btn btn--soft btn--block share-trigger" onClick={() => setSharing(true)}>
+          <ShareIcon size={18} /> {streak >= 2 ? 'Share my streak' : 'Share a card'}
+        </button>
         <div className="divider" />
         <StreakDots dates={week} done={loggedThisWeek} />
       </section>

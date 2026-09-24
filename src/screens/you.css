@@ -80,3 +80,7 @@
 .scene-thumb--plain { background: var(--brand-soft); }
 .scene-tile.look--locked .scene-thumb { opacity: 0.6; }
 .scene-tile.look--locked { color: var(--ink-3); }
+.share-link { gap: 12px; align-items: center; }
+.share-link h4 { margin: 0 0 2px; }
+.share-link p { margin: 0; }
+.share-link .btn { flex: none; display: inline-flex; align-items: center; gap: 6px; }
