@@ -81,8 +81,14 @@ function rasterise(markup: string, what: string): Promise<HTMLImageElement> {
 
 async function mascotImage(source: SVGSVGElement, size: number): Promise<HTMLImageElement> {
   const clone = source.cloneNode(true) as SVGSVGElement;
+  // A tall hat reaches above the mascot's box. On screen it simply draws past
+  // it; here the box is the picture, so it grows upwards to fit the hat and
+  // the feet stay where they were.
+  const rise = Number(source.dataset.rise) || 0;
+  const [x, y, w, h] = (source.getAttribute('viewBox') ?? '0 0 1 1').split(/\s+/).map(Number);
+  clone.setAttribute('viewBox', `${x} ${y - rise} ${w} ${h + rise}`);
   clone.setAttribute('width', String(size));
-  clone.setAttribute('height', String(size));
+  clone.setAttribute('height', String(Math.round((size * (h + rise)) / h)));
   clone.removeAttribute('class'); // drop the animations; a still frame is wanted
   clone.querySelectorAll('[class]').forEach((el) => el.removeAttribute('class'));
   clone.setAttribute(
@@ -207,7 +213,9 @@ export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement
   ctx.fill();
 
   const squish = await mascotImage(mascot, MASCOT_SIZE);
-  ctx.drawImage(squish, centre - MASCOT_SIZE / 2, MASCOT_TOP, MASCOT_SIZE, MASCOT_SIZE);
+  // Taller than it is wide when wearing a tall hat: the extra goes above.
+  const tall = squish.height || MASCOT_SIZE;
+  ctx.drawImage(squish, centre - MASCOT_SIZE / 2, MASCOT_TOP - (tall - MASCOT_SIZE), MASCOT_SIZE, tall);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';

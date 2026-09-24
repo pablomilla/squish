@@ -13,6 +13,7 @@ import {
 } from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
 import { DEFAULT_LOOK } from '../lib/looks';
+import type { Outfit } from '../lib/outfit';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow, type PartOfDay } from '../lib/date';
 
@@ -62,6 +63,8 @@ interface SquishState {
   comparisons: boolean;
   /** Which colourway Squish is wearing. Earned, never bought. */
   look: string;
+  /** What Squish has on, one item per slot. Checked against what they may wear at every render. */
+  outfit: Outfit;
   /**
    * When to nudge, and whether to at all. The times live here rather than only
    * on the server so the screen can show them without a round trip, and so
@@ -121,6 +124,7 @@ interface SquishState {
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setComparisons: (on: boolean) => void;
   setLook: (look: string) => void;
+  setOutfit: (outfit: Outfit) => void;
   setReminders: (patch: Partial<SquishState['reminders']>) => void;
   setPendingMeal: (draft: Draft | null) => void;
   rememberNote: (note: string) => NutritionistNote;
@@ -258,6 +262,7 @@ export const useSquish = create<SquishState>()(
       theme: 'system',
       comparisons: true,
       look: DEFAULT_LOOK,
+      outfit: {},
       // Off until asked for. A notification permission prompt nobody invited
       // is the fastest way to be told no for ever.
       reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
@@ -356,6 +361,7 @@ export const useSquish = create<SquishState>()(
       setTheme: (theme) => set({ theme }),
       setComparisons: (comparisons) => set({ comparisons }),
       setLook: (look) => set({ look }),
+      setOutfit: (outfit) => set({ outfit }),
       setReminders: (patch) => set({ reminders: { ...get().reminders, ...patch } }),
 
       setPendingMeal: (pendingMeal) => set({ pendingMeal }),
@@ -388,6 +394,7 @@ export const useSquish = create<SquishState>()(
           nutritionistNotes: [],
           pendingMeal: null,
           look: DEFAULT_LOOK,
+          outfit: {},
           comparisons: true,
         }),
     }),

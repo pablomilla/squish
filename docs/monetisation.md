@@ -150,6 +150,28 @@ rules, which are cheap to hold now and expensive to reintroduce later:
 A new character is not a colourway: it is seven commissioned poses plus a
 `build:mascot` run. Price it like the commission it is, or do not do it.
 
+### Accessories
+
+Nineteen things Squish can wear, one each on the head, face and neck
+(`src/lib/outfit.ts`; artwork in `design/extras`, turned into app code by
+`npm run build:accessories`). They follow the same three rules:
+
+- **Earned:** party hat (first meal), round glasses (three days running),
+  knitted scarf (a full week).
+- **Plus:** crown, heart sunglasses, headphones.
+- **Packs, bought once:** Chef (hat, neckerchief), Sporty (sweatband, medal),
+  Cosy (beanie, earmuffs). Shown in the app but not on sale — there is nowhere
+  for a purchase to live yet (below).
+- **Seasonal:** one or two per season (Santa hat and antlers in December,
+  glitter glasses at New Year, then Valentine's, Spring, Summer, Halloween).
+  Listed only in season, and worn with Plus while it lasts. The brief promises
+  that anyone who gets a seasonal item keeps it; that needs the purchase record
+  too, so for now it goes back in the box when the season ends.
+
+What is worn is re-checked every time Squish is drawn, so a lapsed
+subscription or an ended season takes the item off without anything having to
+tidy up, and it comes back if they do.
+
 ## What has to exist first
 
 **Accounts.** Not for their own sake — for three things that cannot be done

@@ -25,7 +25,8 @@
     "build:mascot": "tsx scripts/build-mascot.ts",
     "build:site-art": "tsx scripts/build-site-art.ts",
     "grant": "tsx scripts/grant.ts",
-    "reset-2fa": "tsx scripts/reset-2fa.ts"
+    "reset-2fa": "tsx scripts/reset-2fa.ts",
+    "build:accessories": "tsx scripts/build-accessories.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -62,5 +63,5 @@
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   },
-  "description": "Squish \u2014 your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
+  "description": "Squish — your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
 }

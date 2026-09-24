@@ -52,3 +52,12 @@
 .backup-actions--choose .btn { width: 100%; }
 .look-preview { margin: -4px auto 0; }
 .look--plus.look--locked .look-preview { opacity: 0.92; }
+
+/* The wardrobe. Every tile shows Squish in the item, locked or not: the item
+   is what is on offer, and a greyed hat is just a grey hat. The Squish under
+   it steps back a little instead, so a locked tile still reads as not-yours. */
+.wardrobe-slot { margin-top: 12px; }
+.wardrobe-slot + .wardrobe-slot { margin-top: 16px; }
+.wardrobe-slot-name { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.wardrobe-slot .looks { margin-top: 8px; }
+.look--wear.look--locked .look-preview { opacity: 0.72; }

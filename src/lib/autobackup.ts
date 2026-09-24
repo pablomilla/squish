@@ -37,8 +37,8 @@ export function watchBackup(listener: (state: BackupState) => void): () => void 
 
 /** Everything worth keeping, which is the persisted store minus nothing. */
 function snapshot(): unknown {
-  const { profile, targets, meals, days, favourites, unlocked, nutritionistNotes, look, theme, comparisons } = useSquish.getState();
-  return { profile, targets, meals, days, favourites, unlocked, nutritionistNotes, look, theme, comparisons };
+  const { profile, targets, meals, days, favourites, unlocked, nutritionistNotes, look, outfit, theme, comparisons } = useSquish.getState();
+  return { profile, targets, meals, days, favourites, unlocked, nutritionistNotes, look, outfit, theme, comparisons };
 }
 
 async function push(): Promise<void> {

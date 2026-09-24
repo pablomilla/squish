@@ -8,6 +8,7 @@ import { disableReminders, enableReminders, explainBlocker, reminderSupport, typ
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { SparkIcon, TrashIcon } from '../components/icons';
 import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
+import { ACCESSORIES, PACKS, SLOTS, canWear, onShow, toggle, type Accessory } from '../lib/outfit';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { summariseDiary, type DiarySummary } from '../lib/diarySummary';
@@ -328,6 +329,10 @@ export default function You({ go }: { go: (route: Route) => void }) {
             );
           })}
         </div>
+
+        <div className="divider" style={{ margin: '16px 0 12px' }} />
+
+        <Wardrobe subscribed={subscribed} />
       </section>
 
       <section className="card card--quiet">
@@ -1025,5 +1030,67 @@ function InviteBox({ signedIn }: { signedIn: boolean }) {
         </p>
       )}
     </form>
+  );
+}
+
+/**
+ * What Squish wears: one thing on the head, the face and the neck.
+ *
+ * Every tile shows Squish already wearing it, locked or not, because "what
+ * would that look like on mine" is the question that makes somebody want
+ * one. A locked tile is not disabled; pressing it says how to get it.
+ */
+function Wardrobe({ subscribed }: { subscribed: boolean }) {
+  const outfit = useSquish((s) => s.outfit);
+  const unlocked = useSquish((s) => s.unlocked);
+  const setOutfit = useSquish((s) => s.setOutfit);
+  const toast = useToast();
+  const today = new Date();
+  const entitlement = { unlocked, subscribed, today };
+
+  const why = (item: Accessory): string => {
+    switch (item.unlock.kind) {
+      case 'achievement':
+        return item.how;
+      case 'pack':
+        return `${item.name} is in the ${PACKS[item.unlock.pack]}, which is not on sale yet.`;
+      default:
+        return `${item.name} comes with ${PLUS}, which is not on sale yet.`;
+    }
+  };
+
+  return (
+    <>
+      <h4 className="small">What Squish wears</h4>
+      <p className="tiny muted">One thing each for the head, face and neck. Tap again to take it off.</p>
+      {SLOTS.map((slot) => {
+        const items = ACCESSORIES.filter((item) => item.slot === slot.id && onShow(item, today));
+        return (
+          <div key={slot.id} className="wardrobe-slot">
+            <p className="tiny wardrobe-slot-name">{slot.name}</p>
+            <div className="looks" role="group" aria-label={`${slot.name} accessories`}>
+              {items.map((item) => {
+                const mine = canWear(item, entitlement);
+                const on = mine && outfit?.[item.slot] === item.id;
+                const plus = item.unlock.kind === 'subscriber' || item.unlock.kind === 'season';
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={on}
+                    className={`look look--wear${plus ? ' look--plus' : ''}${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
+                    onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(why(item), item.unlock.kind === 'achievement' ? '🔒' : '✨'))}
+                    aria-label={mine ? item.name : `${item.name}, locked — ${item.how}`}
+                  >
+                    <Squish mood="excited" size={58} bob={false} outfit={{ [item.slot]: item.id }} className="look-preview" label={`Squish wearing the ${item.name.toLowerCase()}`} />
+                    <span className="tiny">{mine ? item.name : item.how}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </>
   );
 }
