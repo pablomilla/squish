@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test, afterEach } from 'node:test';
-import { isSiteRequest, pageFor, SITE_DIR } from '../server/site';
+import { isSiteRequest, pageFor, privacyRedirect, SITE_DIR } from '../server/site';
 
 /**
  * Which address gets the website and which gets the app. Getting this wrong
@@ -42,4 +42,14 @@ test('pages come from site/ and nowhere else', () => {
   assert.equal(pageFor('/..%2fserver%2findex'), null);
   assert.equal(pageFor('/site.css'), null, 'files with extensions are served as files, not pages');
   assert.equal(pageFor('/%E0%A4%A'), null, 'a malformed address is a 404, not a crash');
+});
+
+test('the privacy policy is always read at the website address, never the host’s', () => {
+  assert.equal(privacyRedirect('squish-abc1.onrender.com'), null, 'no website configured: served where asked');
+  process.env.SQUISH_SITE_ORIGIN = 'https://squish.online';
+  assert.equal(privacyRedirect('squish-abc1.onrender.com'), 'https://squish.online/privacy');
+  assert.equal(privacyRedirect('app.squish.online'), 'https://squish.online/privacy');
+  assert.equal(privacyRedirect('www.squish.online'), 'https://squish.online/privacy');
+  assert.equal(privacyRedirect('squish.online'), null, 'already there: no redirect loop');
+  assert.equal(privacyRedirect('Squish.Online'), null);
 });

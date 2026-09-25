@@ -39,7 +39,7 @@ import {
   suggestCode,
 } from './invites';
 import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
-import { siteRouter } from './site';
+import { privacyRedirect, siteRouter } from './site';
 import {
   claimPartnerLink,
   emailTaken,
@@ -1987,7 +1987,12 @@ app.use(siteRouter(() => publicOrigin(), DIST));
  *
  * Registered before the static handler so it wins over the app's catch-all.
  */
-app.get('/privacy', async (_req, res) => {
+app.get('/privacy', async (req, res) => {
+  const elsewhere = privacyRedirect(req.hostname);
+  if (elsewhere) {
+    res.redirect(301, elsewhere);
+    return;
+  }
   const html = await privacyPage();
   if (!html) {
     logFailure('privacy policy', new Error(`could not read docs/privacy.md from ${process.cwd()}`));

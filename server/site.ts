@@ -45,6 +45,23 @@ function siteOrigin(): URL | null {
  */
 export const siteHost = (): string | null => siteOrigin()?.hostname.toLowerCase() ?? null;
 
+/**
+ * Where the privacy policy should be read, if not at the address it was
+ * asked for: the website's own address, whenever there is a website.
+ *
+ * The server answers on its host's own address (squish-….onrender.com) as
+ * well as on squish.online, and the app links to /privacy on whichever
+ * address it was opened from — so somebody who installed it from the host's
+ * address, or the phone app pointed there, read the policy under a hosting
+ * company's name. The policy is one page with no state, so it can always be
+ * sent to the one address people should see it at.
+ */
+export function privacyRedirect(host: string | undefined): string | null {
+  const site = siteOrigin();
+  if (!site) return null;
+  return host?.toLowerCase() === site.hostname.toLowerCase() ? null : `${site.origin}/privacy`;
+}
+
 /** Whether this request is for the website rather than the app. */
 export function isSiteRequest(host: string | undefined): boolean {
   const site = siteHost();
