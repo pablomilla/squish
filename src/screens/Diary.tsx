@@ -8,6 +8,8 @@ import { Sheet, Stepper, useToast } from '../components/ui';
 import { CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, TrashIcon } from '../components/icons';
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
+import DayScoreSheet from '../components/diary/DayScoreSheet';
+import { explainDay } from '../lib/dayExplained';
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
@@ -44,6 +46,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   const day = days[date];
   const score = dayScore(meals, date, targets);
   const verdict = dayVerdict(score, totals, targets);
+  const explained = useMemo(() => explainDay(meals, date, targets, isoDate()), [meals, date, targets]);
+  const [explaining, setExplaining] = useState(false);
 
   return (
     <div className="screen diary">
@@ -103,9 +107,14 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             <div className="row-between diary-verdict">
               <span className="small muted">Day score</span>
               {score > 0 ? (
-                <span className={`badge badge--${verdict.tone}`}>
-                  {verdict.tone === 'none' ? verdict.label : `${score} ${verdict.label}`}
-                </span>
+                // Tappable: what the score is and what moved it. Today, until
+                // there is enough logged, it says so rather than judging.
+                <button type="button" className="diary-score-btn" onClick={() => setExplaining(true)} aria-label="What is the day score?">
+                  <span className={`badge badge--${explained.early ? 'none' : verdict.tone}`}>
+                    {explained.early ? 'Early days' : verdict.tone === 'none' ? verdict.label : `${score} ${verdict.label}`}
+                  </span>
+                  <span className="why" aria-hidden="true">ⓘ</span>
+                </button>
               ) : (
                 <span className="badge">Nothing logged</span>
               )}
@@ -118,6 +127,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         <MinorNutrients totals={totals} targets={targets} />
         <OverTargetNote over={verdict.over} />
       </section>
+
+      <DayScoreSheet open={explaining} onClose={() => setExplaining(false)} explained={explained} />
 
       <Micronutrients totals={totals} targets={targets} />
 

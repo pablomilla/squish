@@ -327,9 +327,34 @@ export function ultraProcessedShare(items: { nutrients: Nutrients; ultraProcesse
 /** The most an all-ultra-processed meal loses: a full grade, and no more. */
 export const UPF_PENALTY = 14;
 
+/**
+ * What moved a score, and by how many points. `qualityScore` is built from
+ * these and nothing else, so an explanation shown to somebody can never
+ * disagree with the number beside it.
+ */
+export type ScoreFactorKey = 'protein' | 'fibre' | 'salt' | 'sugar' | 'freeSugar' | 'satFat' | 'fat' | 'processed';
+
+export interface ScoreBreakdown {
+  /** Where every meal starts. */
+  base: number;
+  /** Points each factor added or took away, unrounded; zeros left out. */
+  factors: Partial<Record<ScoreFactorKey, number>>;
+  score: number;
+}
+
+export const SCORE_BASE = 52;
+
 export function qualityScore(n: Nutrients, ultraProcessed = 0): number {
-  if (n.calories <= 0) return UNSCORED;
+  return scoreBreakdown(n, ultraProcessed).score;
+}
+
+export function scoreBreakdown(n: Nutrients, ultraProcessed = 0): ScoreBreakdown {
+  if (n.calories <= 0) return { base: SCORE_BASE, factors: {}, score: UNSCORED };
   const per1000 = (v: number) => (v / n.calories) * 1000;
+  const factors: Partial<Record<ScoreFactorKey, number>> = {};
+  const add = (key: ScoreFactorKey, points: number) => {
+    if (points !== 0) factors[key] = (factors[key] ?? 0) + points;
+  };
 
   /*
    * Below about a hundred calories there is not enough on the plate for "per
@@ -343,10 +368,9 @@ export function qualityScore(n: Nutrients, ultraProcessed = 0): number {
    */
   const solid = Math.min(1, n.calories / 100);
 
-  let score = 52;
-  score += Math.min(22, per1000(n.protein) * 0.42);
-  score += Math.min(18, per1000(n.fibre) * 1.5);
-  score -= Math.min(10, Math.max(0, per1000(n.sodium ?? 0) - 900) / 90) * solid;
+  add('protein', Math.min(22, per1000(n.protein) * 0.42));
+  add('fibre', Math.min(18, per1000(n.fibre) * 1.5));
+  add('salt', -Math.min(10, Math.max(0, per1000(n.sodium ?? 0) - 900) / 90) * solid);
 
   /*
    * Sugar.
@@ -364,9 +388,9 @@ export function qualityScore(n: Nutrients, ultraProcessed = 0): number {
    * same reason it does for saturates: the wrong question beats no question.
    */
   if (n.freeSugar === undefined) {
-    score -= Math.min(20, Math.max(0, per1000(n.sugar ?? 0) - 12) * 0.6) * solid;
+    add('sugar', -Math.min(20, Math.max(0, per1000(n.sugar ?? 0) - 12) * 0.6) * solid);
   } else {
-    score -= Math.min(24, Math.max(0, per1000(n.freeSugar) - 25) * 0.8) * solid;
+    add('freeSugar', -Math.min(24, Math.max(0, per1000(n.freeSugar) - 25) * 0.8) * solid);
   }
 
   /*
@@ -389,10 +413,10 @@ export function qualityScore(n: Nutrients, ultraProcessed = 0): number {
    * better than scoring blind.
    */
   if (n.satFat === undefined) {
-    score -= Math.min(14, Math.max(0, per1000(n.fat) - 42) * 0.5) * solid;
+    add('fat', -Math.min(14, Math.max(0, per1000(n.fat) - 42) * 0.5) * solid);
   } else {
-    score -= Math.min(24, Math.max(0, per1000(n.satFat) - 11) * 0.9) * solid;
-    score -= Math.min(6, Math.max(0, per1000(n.fat) - 55) * 0.2) * solid;
+    add('satFat', -Math.min(24, Math.max(0, per1000(n.satFat) - 11) * 0.9) * solid);
+    add('fat', -Math.min(6, Math.max(0, per1000(n.fat) - 55) * 0.2) * solid);
   }
 
   /*
@@ -409,9 +433,10 @@ export function qualityScore(n: Nutrients, ultraProcessed = 0): number {
    * Deliberately not more: the classification catches supermarket wholemeal
    * bread too, and a tracker that calls bread bad has lost the plot.
    */
-  score -= UPF_PENALTY * Math.max(0, Math.min(1, ultraProcessed)) * solid;
+  add('processed', -UPF_PENALTY * Math.max(0, Math.min(1, ultraProcessed)) * solid);
 
-  return Math.max(1, Math.min(100, Math.round(score)));
+  const total = Object.values(factors).reduce((sum, points) => sum + points, SCORE_BASE);
+  return { base: SCORE_BASE, factors, score: Math.max(1, Math.min(100, Math.round(total))) };
 }
 
 export type Tone = 'good' | 'warn' | 'bad' | 'none';
@@ -421,8 +446,16 @@ export function scoreLabel(score: number): { label: string; tone: Tone } {
   if (score >= 75) return { label: 'Brilliant', tone: 'good' };
   if (score >= 55) return { label: 'Balanced', tone: 'good' };
   if (score >= 38) return { label: 'So-so', tone: 'warn' };
-  return { label: 'Heavy', tone: 'bad' };
+  // Not "Heavy": that read as the amount, or the person, when the score is
+  // only ever about what the food was made of. A 90 kcal bar is not heavy.
+  return { label: 'Room to improve', tone: 'bad' };
 }
+
+/** The label as it reads about one meal: "Balanced meal", but plain "Room to improve". */
+export const mealLabel = (score: number): string => {
+  const { label, tone } = scoreLabel(score);
+  return tone === 'none' || tone === 'bad' ? label : `${label} meal`;
+};
 
 /* ------------------------------------------------------------------ *
  * Going over.

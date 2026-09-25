@@ -65,3 +65,25 @@
   padding: 10px 70px 10px 12px; border-radius: var(--r-md); background: var(--surface-sunk); border: 0; color: var(--ink);
 }
 .meal-search-kcal { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
+
+/* The day score, explained. */
+.diary-score-btn { background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.diary-score-btn .why { font-size: 12px; color: var(--ink-3); }
+.day-score { display: flex; flex-direction: column; gap: 12px; }
+.day-score p, .day-score h4 { margin: 0; }
+.day-score-head { display: flex; align-items: center; gap: 14px; }
+.day-score-number { flex: none; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; font-size: 26px; font-weight: 700; background: var(--surface-sunk); color: var(--ink); }
+.day-score-number--good { background: var(--good-soft); color: var(--good); }
+.day-score-number--warn { background: var(--warn-soft, var(--peach-soft)); color: var(--warn); }
+.day-score-number--bad { background: var(--peach-soft); color: var(--warn); }
+.day-reasons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.day-reasons li { display: grid; grid-template-columns: 1fr 90px 34px; align-items: center; gap: 10px; }
+.day-reason-words { font-size: var(--text-label); }
+.day-reason-bar { height: 8px; border-radius: 4px; background: var(--surface-sunk); overflow: hidden; }
+.day-reason-bar span { display: block; height: 100%; border-radius: 4px; }
+.day-reasons .up .day-reason-bar span { background: var(--good); }
+.day-reasons .down .day-reason-bar span { background: var(--warn); }
+.day-reason-points { text-align: right; }
+.day-tip { padding: 10px 12px; border-radius: var(--r-md); background: var(--brand-soft); }
+.day-how summary { cursor: pointer; color: var(--ink-2); }
+.day-how p { margin-top: 6px; }

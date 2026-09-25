@@ -31,8 +31,8 @@ test('the labels still work for food that does have calories', () => {
   assert.equal(scoreLabel(90).label, 'Brilliant');
   assert.equal(scoreLabel(60).label, 'Balanced');
   assert.equal(scoreLabel(45).label, 'So-so');
-  assert.equal(scoreLabel(20).label, 'Heavy');
-  assert.equal(scoreLabel(1).label, 'Heavy', 'one out of a hundred is a real score, and a poor one');
+  assert.equal(scoreLabel(20).label, 'Room to improve');
+  assert.equal(scoreLabel(1).label, 'Room to improve', 'one out of a hundred is a real score, and a poor one');
 });
 
 test('logging a glass of water does not cost you points on a good day', () => {

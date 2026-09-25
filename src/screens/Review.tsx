@@ -12,7 +12,7 @@ import { useSquish } from '../store/useSquish';
 import { isPaywalled, refineAnalysis } from '../lib/api';
 import { savePhoto } from '../lib/photos';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
-import { EMPTY, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
+import { EMPTY, mealLabel, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
 import { friendlyDate } from '../lib/date';
 import './review.css';
 import { describePortion } from '../lib/units';
@@ -215,7 +215,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       </div>
 
       <div className="row wrap" style={{ gap: 8 }}>
-        <span className={`badge badge--${verdict.tone}`}>{verdict.tone === 'none' ? verdict.label : `${verdict.label} meal`}</span>
+        <span className={`badge badge--${verdict.tone}`}>{mealLabel(score)}</span>
         {/* Stated, not scolded. It is the one thing the numbers below cannot
             show, and without it a lower score has no visible reason. */}
         {upfShare >= 0.5 && (
