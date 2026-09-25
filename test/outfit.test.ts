@@ -126,3 +126,22 @@ test('pickers group by how things are got: yours, earn, Plus, then each pack', (
   assert.equal(lockedNote(item('santa-hat').unlock), 'Winter only');
   assert.equal(lockedNote(item('crown').unlock), '', 'the heading already says Plus');
 });
+
+test('a pack is offered as one thing, saying what is in it', async () => {
+  const { ALL_PACKS, listWords, packLocked, packsAmong } = await import('../src/lib/packs');
+  const [chef, sporty, cosy] = ALL_PACKS;
+  assert.deepEqual(chef.look, { head: 'chef-hat', neck: 'neckerchief' });
+  assert.equal(chef.words, 'Chef’s hat and neckerchief');
+  assert.equal(sporty.words, 'Sweatband and medal');
+  // Two head items can't both be worn, so the picture wears the first; the words list them all.
+  assert.deepEqual(cosy.look, { head: 'beanie' });
+  assert.equal(cosy.words, 'Bobble beanie, earmuffs and the Rainy window scene');
+  assert.equal(cosy.count, 3);
+  assert.match(packLocked(chef), /^The Chef pack — chef’s hat and neckerchief — is not on sale yet\.$/);
+  assert.equal(listWords(['a', 'b', 'c']), 'a, b and c');
+
+  // The scene picker shows only packs with a scene in them.
+  const { SCENES } = await import('../src/lib/scenes');
+  assert.deepEqual(packsAmong(SCENES).map((p) => p.pack), ['cosy']);
+  assert.deepEqual(packsAmong(ACCESSORIES).map((p) => p.pack), ['chef', 'sporty', 'cosy']);
+});

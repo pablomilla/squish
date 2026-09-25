@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import AccountCard from '../components/AccountCard';
 import Shelf from '../components/Shelf';
+import PackTile from '../components/PackTile';
 import InviteCard from '../components/InviteCard';
 import SquadCard from '../components/squad/SquadCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
@@ -14,6 +15,7 @@ import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
 import { ACCESSORIES, SLOTS, accessoryById, lockedNote, onShow, shelves, toggle, wearable, whyLocked } from '../lib/outfit';
 import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
+import { packLocked, packsAmong } from '../lib/packs';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { summariseDiary, type DiarySummary } from '../lib/diarySummary';
@@ -339,7 +341,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
 
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
-        <Wardrobe subscribed={subscribed} />
+        <Wardrobe subscribed={subscribed} dark={(prefersDark && theme === 'system') || theme === 'dark'} />
 
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
@@ -1060,7 +1062,7 @@ function InviteBox({ signedIn }: { signedIn: boolean }) {
  * get it is said once, in the heading, except where each item differs (what
  * to earn it with, which season). At the top, Squish in what is on now.
  */
-function Wardrobe({ subscribed }: { subscribed: boolean }) {
+function Wardrobe({ subscribed, dark }: { subscribed: boolean; dark: boolean }) {
   const outfit = useSquish((s) => s.outfit);
   const unlocked = useSquish((s) => s.unlocked);
   const setOutfit = useSquish((s) => s.setOutfit);
@@ -1083,27 +1085,35 @@ function Wardrobe({ subscribed }: { subscribed: boolean }) {
       </div>
       {shelves(items, entitlement).map((shelf) => (
         <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
-          <div className="looks">
-            {shelf.items.map((item) => {
-              const mine = shelf.kind === 'yours';
-              const on = mine && worn[item.slot] === item.id;
-              const note = on ? 'Wearing' : shelf.kind === 'earn' ? item.how : lockedNote(item.unlock);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={mine ? on : undefined}
-                  className={`look look--wear${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
-                  onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(whyLocked(item, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
-                  aria-label={mine ? item.name : `${item.name}, locked — ${item.how}`}
-                >
-                  <Squish mood="excited" size={58} bob={false} outfit={{ [item.slot]: item.id }} className="look-preview" label="" />
-                  <span className="tile-name">{item.name}</span>
-                  {note && <span className="tile-note">{note}</span>}
-                </button>
-              );
-            })}
-          </div>
+          {shelf.kind === 'pack' ? (
+            <div className="packs">
+              {packsAmong(shelf.items).map((contents) => (
+                <PackTile key={contents.pack} contents={contents} dark={dark} onTap={() => toast(packLocked(contents), '✨')} />
+              ))}
+            </div>
+          ) : (
+            <div className="looks">
+              {shelf.items.map((item) => {
+                const mine = shelf.kind === 'yours';
+                const on = mine && worn[item.slot] === item.id;
+                const note = on ? 'Wearing' : shelf.kind === 'earn' ? item.how : lockedNote(item.unlock);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={mine ? on : undefined}
+                    className={`look look--wear${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
+                    onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(whyLocked(item, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
+                    aria-label={mine ? item.name : `${item.name}, locked — ${item.how}`}
+                  >
+                    <Squish mood="excited" size={58} bob={false} outfit={{ [item.slot]: item.id }} className="look-preview" label="" />
+                    <span className="tile-name">{item.name}</span>
+                    {note && <span className="tile-note">{note}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </Shelf>
       ))}
     </>
@@ -1142,28 +1152,36 @@ function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean 
       <p className="tiny muted">The place behind Squish on Home.</p>
       {groups.map((shelf) => (
         <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
-          <div className="scenes">
-            {shelf.kind === 'yours' && plain}
-            {shelf.items.map((scene) => {
-              const mine = shelf.kind === 'yours';
-              const on = current === scene.id;
-              const note = on ? 'Showing' : shelf.kind === 'earn' ? scene.how : lockedNote(scene.unlock);
-              return (
-                <button
-                  key={scene.id}
-                  type="button"
-                  aria-pressed={mine ? on : undefined}
-                  className={`scene-tile${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
-                  onClick={() => (mine ? setScene(scene.id) : toast(whyLocked(scene, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
-                  aria-label={mine ? scene.name : `${scene.name}, locked — ${scene.how}`}
-                >
-                  <img className="scene-thumb" src={sceneUrl(scene.id, dark ? 'dark' : 'light')} alt="" />
-                  <span className="tile-name">{scene.name}</span>
-                  {note && <span className="tile-note">{note}</span>}
-                </button>
-              );
-            })}
-          </div>
+          {shelf.kind === 'pack' ? (
+            <div className="packs">
+              {packsAmong(shelf.items).map((contents) => (
+                <PackTile key={contents.pack} contents={contents} dark={dark} onTap={() => toast(packLocked(contents), '✨')} />
+              ))}
+            </div>
+          ) : (
+            <div className="scenes">
+              {shelf.kind === 'yours' && plain}
+              {shelf.items.map((scene) => {
+                const mine = shelf.kind === 'yours';
+                const on = current === scene.id;
+                const note = on ? 'Showing' : shelf.kind === 'earn' ? scene.how : lockedNote(scene.unlock);
+                return (
+                  <button
+                    key={scene.id}
+                    type="button"
+                    aria-pressed={mine ? on : undefined}
+                    className={`scene-tile${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
+                    onClick={() => (mine ? setScene(scene.id) : toast(whyLocked(scene, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
+                    aria-label={mine ? scene.name : `${scene.name}, locked — ${scene.how}`}
+                  >
+                    <img className="scene-thumb" src={sceneUrl(scene.id, dark ? 'dark' : 'light')} alt="" />
+                    <span className="tile-name">{scene.name}</span>
+                    {note && <span className="tile-note">{note}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </Shelf>
       ))}
     </>
