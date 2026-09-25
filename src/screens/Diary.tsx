@@ -5,7 +5,9 @@ import MealCard from '../components/MealCard';
 import Squish from '../components/Squish';
 import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, Stepper, useToast } from '../components/ui';
-import { CameraIcon, ChevronIcon, PenIcon, PlusIcon, TrashIcon } from '../components/icons';
+import { CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, TrashIcon } from '../components/icons';
+import CalendarSheet from '../components/diary/CalendarSheet';
+import SearchSheet from '../components/diary/SearchSheet';
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
@@ -27,6 +29,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   const { meals, days, targets, removeMeal, setWater, setSteps, setWeight, profile } = useSquish();
   const [date, setDate] = useState(isoDate());
   const [selected, setSelected] = useState<MealEntry | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [searching, setSearching] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
 
   // The strip runs oldest → newest, so bring the chosen day into view.
@@ -46,12 +50,31 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
       <header className="screen-head">
         <div>
           <h1>Your diary</h1>
-          <p>{friendlyDate(date)}</p>
+          {/* The date is the way to any other day: the strip below is only the last fortnight. */}
+          <button type="button" className="diary-date" onClick={() => setPicking(true)} aria-label={`${friendlyDate(date)} — choose another day`}>
+            <CalendarIcon size={16} /> {friendlyDate(date)}
+            {date.slice(0, 4) !== isoDate().slice(0, 4) && ` ${date.slice(0, 4)}`}
+          </button>
         </div>
-        <button type="button" className="btn btn--sm" onClick={() => go({ name: 'capture', date })}>
-          <PlusIcon size={16} /> Log
-        </button>
+        <div className="diary-head-actions">
+          <button type="button" className="icon-btn" onClick={() => setSearching(true)} aria-label="Search your meals">
+            <SearchIcon size={18} />
+          </button>
+          <button type="button" className="btn btn--sm" onClick={() => go({ name: 'capture', date })}>
+            <PlusIcon size={16} /> Log
+          </button>
+        </div>
       </header>
+
+      <CalendarSheet key={`${date}-${picking}`} open={picking} date={date} onClose={() => setPicking(false)} onPick={setDate} />
+      <SearchSheet
+        open={searching}
+        onClose={() => setSearching(false)}
+        onPick={(meal) => {
+          setDate(meal.date);
+          setSelected(meal);
+        }}
+      />
 
       <div className="date-strip" role="tablist" aria-label="Choose a day" ref={stripRef}>
         {strip.map((d) => {

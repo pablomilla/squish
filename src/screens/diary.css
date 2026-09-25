@@ -26,3 +26,42 @@
    breaking mid-phrase. */
 .diary-summary .diary-verdict { flex-wrap: wrap; gap: 3px 8px; }
 .diary-verdict .badge { white-space: nowrap; margin-left: auto; }
+
+/* Getting around a long diary: the date in the header opens a month
+   calendar; the search button finds a meal by name. */
+.diary-date { display: inline-flex; align-items: center; gap: 6px; padding: 2px 0; color: var(--brand-ink); font-size: var(--text-label); font-weight: 600; background: none; border: 0; }
+.diary-date svg { flex: none; }
+.diary-head-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--surface-sunk); color: var(--ink); border: 0; }
+.icon-btn:disabled { opacity: 0.35; }
+.icon-btn .flip, .calendar-head .flip { transform: rotate(180deg); }
+
+.calendar { display: flex; flex-direction: column; gap: 12px; }
+.calendar-head { display: flex; align-items: center; justify-content: space-between; }
+.calendar-years { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.calendar-year { padding: 5px 12px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); font-size: 13px; color: var(--ink-2); }
+.calendar-year[aria-pressed='true'] { border-color: var(--brand); background: var(--brand-soft); color: var(--ink); font-weight: 600; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.calendar-weekday { padding-bottom: 2px; }
+.calendar-day {
+  position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  border-radius: 12px; border: 1px solid transparent; background: none; color: var(--ink); font-weight: 500; font-size: 15px;
+}
+.calendar-day:disabled { color: var(--ink-3); opacity: 0.45; }
+.calendar-day.is-today { border-color: var(--brand); }
+.calendar-day.is-on { background: var(--brand); color: #fff; }
+.calendar-mark { height: 9px; font-size: 9px; line-height: 9px; color: var(--warn); }
+.calendar-mark--logged::before { content: ''; display: block; width: 6px; height: 6px; margin-top: 2px; border-radius: 50%; background: var(--brand); }
+.calendar-day.is-on .calendar-mark--logged::before { background: #fff; }
+.calendar-day.is-on .calendar-mark--great { color: #fff; }
+.calendar-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.meal-search { display: flex; flex-direction: column; gap: 10px; }
+.meal-search-box { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); }
+.meal-search-box input { flex: 1; min-width: 0; border: 0; background: none; padding: 12px 0; font-size: 16px; outline: none; }
+.meal-search-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.meal-search-hit {
+  position: relative; width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  padding: 10px 70px 10px 12px; border-radius: var(--r-md); background: var(--surface-sunk); border: 0; color: var(--ink);
+}
+.meal-search-kcal { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }

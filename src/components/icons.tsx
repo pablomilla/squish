@@ -204,3 +204,10 @@ export const EyeOffIcon = ({ size = 20, className }: IconProps) => (
     <path d="m3.5 3.5 17 17" />
   </svg>
 );
+
+export const CalendarIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
+    <path d="M3.5 10h17M8 3v4M16 3v4" />
+  </svg>
+);
