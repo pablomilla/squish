@@ -6,6 +6,8 @@ import { fetchFriends, periodWords, shareInvite, type Friends } from '../lib/fri
 import { useStanding } from './useSubscribed';
 import './invite.css';
 
+const shortDay = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
 /**
  * Invite a friend: they get a month of Squish Plus, and so do you, once they
  * have got going. The rules are the server's (server/friends.ts); this says
@@ -16,6 +18,7 @@ export default function InviteCard() {
   const toast = useToast();
   const [friends, setFriends] = useState<Friends | null>(null);
   const signedIn = standing.account;
+  const onPlus = standing.plan === 'plus';
 
   useEffect(() => {
     if (!signedIn) return;
@@ -25,7 +28,12 @@ export default function InviteCard() {
       setFriends(found);
       // A friend got going since last time: say so once, and pick up the Plus.
       if (found.fresh > 0) {
-        toast(`${found.fresh === 1 ? 'A friend' : `${found.fresh} friends`} got going — you've earned ${periodWords(found.rewardDays * found.fresh)} of Squish Plus`, '🎉');
+        toast(
+          `${found.fresh === 1 ? 'A friend' : `${found.fresh} friends`} got going — ${
+            found.extra ? `your invite bonus is on, and ${periodWords(found.rewardDays * found.fresh)} of Plus is saved` : `you've earned ${periodWords(found.rewardDays * found.fresh)} of Squish Plus`
+          }`,
+          '🎉',
+        );
         void refreshPlan();
       }
     });
@@ -51,15 +59,25 @@ export default function InviteCard() {
     <section className="card invite-card">
       <div className="card-title">
         <h3>Invite a friend</h3>
-        <span className="badge badge--good">🎁 {period} each</span>
+        <span className="badge badge--good">🎁 {onPlus ? 'For you both' : `${period} each`}</span>
       </div>
       <p className="small">
-        Give a friend {period} of Squish Plus — and get {period} yourself.
+        Give a friend {period} of Squish Plus —{' '}
+        {onPlus && friends
+          ? `and get ${friends.boost.photo} extra photo analyses and ${friends.boost.chat} extra questions straight away, with ${period} of Plus saved for after your current Plus.`
+          : `and get ${period} yourself.`}
       </p>
       <p className="tiny muted">
         It arrives for you both once they have made an account, confirmed their email and used Squish on {days} different days.
-        {friends ? ` You can earn up to ${periodWords(friends.cap * friends.rewardDays)} a year this way.` : ''}
+        {friends ? ` You can earn up to ${friends.cap} thank-yous a year this way.` : ''}
       </p>
+
+      {friends?.extra && (
+        <p className="tiny invite-extra">
+          ✨ Invite bonus: +{friends.extra.photo} photo analyses and +{friends.extra.chat} questions, until {shortDay(friends.extra.until)}.
+          {friends.plusUntil ? ` Your Plus runs to ${shortDay(friends.plusUntil)}, saved months included.` : ''}
+        </p>
+      )}
 
       {friends?.mine && !friends.mine.rewarded && (
         <div className="invite-progress" role="status">
@@ -80,7 +98,7 @@ export default function InviteCard() {
             <p className="tiny muted invite-score">
               {friends.joined === 0
                 ? `Your code is ${friends.code}.`
-                : `${friends.joined} joined · ${friends.rewarded} got going · ${periodWords(friends.daysEarned)} of Plus earned`}
+                : `${friends.joined} joined · ${friends.rewarded} got going · ${periodWords(friends.daysEarned)} of Plus ${onPlus ? 'saved' : 'earned'}`}
             </p>
           )}
         </>

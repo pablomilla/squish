@@ -95,6 +95,30 @@ export function allowanceFor(device: Device, plan: Plan): Record<Billable, numbe
   return ALLOWANCE[plan];
 }
 
+/**
+ * Extra AI on top of Plus's allowance, while it lasts — at the moment only
+ * from inviting a friend while already on Plus (server/friends.ts). Only Plus
+ * is topped up: a free taste is a one-off, and topping it up would make it a
+ * monthly allowance by the back door.
+ */
+export async function extrasFor(device: Device, plan: Plan): Promise<Record<Billable, number>> {
+  if (plan !== 'plus' || !device.accountId) return NOTHING;
+  const rows = await query<{ photo: string; chat: string; recipe: string }>(
+    `select coalesce(sum(photo), 0) as photo, coalesce(sum(chat), 0) as chat, coalesce(sum(recipe), 0) as recipe
+       from allowance_boosts where account_id = $1 and granted_at <= now() and expires_at > now()`,
+    [device.accountId],
+  );
+  const row = rows[0];
+  return { photo: Number(row?.photo ?? 0), chat: Number(row?.chat ?? 0), recipe: Number(row?.recipe ?? 0) };
+}
+
+/** The allowance with any extras added: what is actually enforced. */
+export async function allowanceWithExtras(device: Device, plan: Plan): Promise<Record<Billable, number>> {
+  const base = allowanceFor(device, plan);
+  const extra = await extrasFor(device, plan);
+  return Object.fromEntries(BILLABLE.map((kind) => [kind, base[kind] + extra[kind]])) as Record<Billable, number>;
+}
+
 /** Whether signing up would give this device something to try. */
 export const needsAccount = (device: Device, plan: Plan): boolean =>
   plan === 'free' && !device.accountId && BILLABLE.some((kind) => ALLOWANCE.free[kind] > 0);
@@ -174,7 +198,7 @@ export interface Standing {
 /** Everything the app needs to know to show a paywall before somebody hits it. */
 export async function standingOf(device: Device): Promise<Standing> {
   const plan = await planFor(device);
-  const allowance = allowanceFor(device, plan);
+  const allowance = await allowanceWithExtras(device, plan);
   const used = Object.fromEntries(
     await Promise.all(BILLABLE.map(async (kind) => [kind, await usedFor(device, kind, plan)] as const)),
   ) as Record<Billable, number>;

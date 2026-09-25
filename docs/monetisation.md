@@ -204,19 +204,35 @@ person who invited them — up to twelve months a year for the inviter
 of the days a device was seen since sign-up, so they cannot be faked from the
 phone or squeezed into one afternoon.
 
+**For somebody already on Plus** — above all on a yearly plan — a month more
+at the far end of their subscription is a thank-you they would not notice for
+months. So they get extra AI straight away (20 photo analyses and 10
+nutritionist questions on top of their allowance, for 30 days), and the month
+is saved: added to the end of their current Plus. The friend, new, gets Plus
+switched on. Which one happened is recorded on each side
+(`friend_referrals.referrer_kind` / `friend_kind`).
+
 The numbers are environment variables: `SQUISH_FRIEND_DAYS` (30),
-`SQUISH_FRIEND_QUALIFY_DAYS` (3) and `SQUISH_FRIEND_CAP` (12).
+`SQUISH_FRIEND_QUALIFY_DAYS` (3), `SQUISH_FRIEND_CAP` (12), and for the
+subscriber's extra AI `SQUISH_FRIEND_BOOST_PHOTOS` (20),
+`SQUISH_FRIEND_BOOST_CHATS` (10) and `SQUISH_FRIEND_BOOST_DAYS` (30). The
+extra AI costs about £1 at most per reward.
+
+Still to come: a thank-you item only inviters can earn (a "squad" cap, frame
+and sticker), which is in the designer's brief.
 
 What it costs: a month of Plus is at most about £2.92 of AI for somebody who
 uses every allowance, and nearer £1 for a typical user — per side, so up to
 about £6 for a friend who has already shown they will use Squish.
 
 **Before the iPhone and Android apps take payments,** this needs another
-look. The reward extends `plus_until` on our server, which is fine while Plus
-is granted rather than bought. For somebody paying through the App Store or
-Google Play it does nothing to their store subscription, so a subscriber's
-reward should become a store promotional offer (Apple offer codes, Google
-promo codes) or something that is not Plus time. Apple also reviews incentives
+look. The saved month extends `plus_until` on our server, which is fine while
+Plus is granted rather than bought. For somebody paying through a store it
+does nothing to their store subscription, so the saved month should become:
+on Google Play, deferring their next payment by a month (the Play Developer
+API's subscription defer); on the App Store, a promotional offer of a free
+month, which Apple applies at their next renewal. The extra AI needs no change
+— it is ours to give. Apple also reviews incentives
 for inviting people, so check the guidelines at submission.
 
 ## What has to exist first

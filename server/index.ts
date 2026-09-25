@@ -27,7 +27,7 @@ import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
 import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
 import { renderEmail } from './emailRender';
-import { ALLOWANCE, PERIOD, allowanceFor, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, type Billable, type Plan } from './plan';
+import { ALLOWANCE, PERIOD, allowanceWithExtras, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, type Billable, type Plan } from './plan';
 import {
   createInvite,
   deleteInvite,
@@ -249,7 +249,7 @@ function meter(kind: Spend) {
       }
 
       const plan = await planFor(req.device);
-      const allowance = allowanceFor(req.device, plan)[kind];
+      const allowance = (await allowanceWithExtras(req.device, plan))[kind];
 
       // Signed out, on the free plan: nothing is spent and nothing is served,
       // but the answer says an account would change that.

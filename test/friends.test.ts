@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test, before, after } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
-import { attributeFriend, friendCodeFor, friendsView, isFriendCode, settleFriend } from '../server/friends';
+import { attributeFriend, friendCodeFor, friendsView, isFriendCode, rewardWords, settleFriend } from '../server/friends';
+import { allowanceWithExtras, extrasFor } from '../server/plan';
 
 /**
  * Invite a friend: a month of Plus each, but only once the friend has verified
@@ -82,7 +83,10 @@ when('the reward waits for a verified address and three days of use, then comes 
 
   await query('update accounts set email_verified_at = now() where id = $1', [friend.id]);
   const settled = await settleFriend(friend.id);
-  assert.deepEqual(settled, { friendDays: 30, referrerId: inviter.id, referrerDays: 30 });
+  assert.equal(settled?.friendKind, 'started');
+  assert.equal(settled?.referrerKind, 'started');
+  assert.equal(settled?.referrerDays, 30);
+  assert.equal(settled?.referrerId, inviter.id);
   assert.ok(Math.abs((await plusDaysLeft(friend.id)) - 30) < 0.1);
   assert.ok(Math.abs((await plusDaysLeft(inviter.id)) - 30) < 0.1);
 
@@ -99,15 +103,38 @@ when('two days is not three, and days before the invite do not count', async () 
   assert.equal(await settleFriend(friend.id), null);
 });
 
-when('Plus already running is extended, not restarted', async () => {
+when('already on Plus — say a yearly plan: extra AI now, and the month saved on the end', async () => {
   const inviter = await anAccount();
-  await query(`update accounts set plus_until = now() + interval '10 days' where id = $1`, [inviter.id]);
+  await query(`update accounts set plus_until = now() + interval '300 days' where id = $1`, [inviter.id]);
+  const device = { id: inviter.device, accountId: inviter.id };
+  const before = await allowanceWithExtras(device, 'plus');
+
   const friend = await anAccount();
   await attributeFriend(friend.id, await friendCodeFor(inviter.id), null);
   await invitedDaysAgo(friend.id, 2);
   await seen(friend.device, [0, 1, 2]);
-  await settleFriend(friend.id);
-  assert.ok(Math.abs((await plusDaysLeft(inviter.id)) - 40) < 0.1);
+  const settled = await settleFriend(friend.id);
+
+  assert.equal(settled?.referrerKind, 'extended');
+  assert.equal(settled?.friendKind, 'started', 'the friend, new, gets Plus switched on');
+  assert.ok(Math.abs((await plusDaysLeft(inviter.id)) - 330) < 0.1, 'the month goes on the end');
+  const after = await allowanceWithExtras(device, 'plus');
+  assert.equal(after.photo - before.photo, 20);
+  assert.equal(after.chat - before.chat, 10);
+  assert.equal(after.recipe, before.recipe);
+  assert.deepEqual(await extrasFor(device, 'free'), { photo: 0, chat: 0, recipe: 0 }, 'extras never top up the free taste');
+
+  const view = await friendsView(inviter.id);
+  assert.equal(view.extra?.photo, 20);
+  assert.ok(view.plusUntil);
+
+  // The extra runs out.
+  await query(`update allowance_boosts set expires_at = now() - interval '1 second' where account_id = $1`, [inviter.id]);
+  assert.deepEqual(await allowanceWithExtras(device, 'plus'), before);
+
+  const words = rewardWords('extended', 30, new Date('2027-11-03T12:00:00Z'));
+  assert.match(words, /20 extra photo analyses/);
+  assert.match(words, /3 November 2027/);
 });
 
 when('past the yearly cap the friend is still rewarded; the inviter is not', async () => {

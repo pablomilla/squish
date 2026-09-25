@@ -179,19 +179,27 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     key: 'friend-reward',
     label: 'Friend reward',
     when: 'When somebody you invited has used Squish on enough days, and a month of Plus is yours',
-    subject: 'Your friend is on Squish — here is your Plus',
+    subject: 'Your friend is on Squish — here is your thank-you',
     body: [
-      'Good news: a friend you invited to Squish has got going, so you both get Squish Plus.',
+      'Good news: a friend you invited to Squish has got going, so you both get a thank-you.',
       '',
-      'We have added {days} days of Plus to your account. There is nothing to do — it is already switched on.',
+      '{reward}',
       '',
       'Thank you for sharing Squish.',
       '',
       '{app_link}',
     ].join('\n'),
     button: { placeholder: 'app_link', label: 'Open Squish', fallback: false },
-    placeholders: [{ name: 'days', about: 'How many days of Plus were added', sample: '30' }, APP],
-    required: [],
+    placeholders: [
+      {
+        name: 'reward',
+        about: 'What they got: Plus switched on, or — already on Plus — extra AI now and the month saved for later',
+        sample:
+          'As you are already on Plus, you get 20 extra photo analyses and 10 extra questions for the nutritionist, for the next 30 days, starting now. And the 30 days of Plus are saved for you, added to the end of your current Plus — it now runs until 3 November 2027.',
+      },
+      APP,
+    ],
+    required: ['reward'],
   },
 
   'partner-signin': {

@@ -23,6 +23,12 @@ export interface Friends {
   /** Friends who got going since this was last asked, to say well done once. */
   fresh: number;
   mine: { rewarded: boolean; daysUsed: number; verified: boolean } | null;
+  /** What an inviter already on Plus gets straight away. */
+  boost: { photo: number; chat: number; days: number };
+  /** Extra AI from invites still running, and until when (ISO). */
+  extra: { photo: number; chat: number; until: string } | null;
+  /** When their Plus runs to, saved months included (ISO). */
+  plusUntil: string | null;
 }
 
 export interface FriendOffer {

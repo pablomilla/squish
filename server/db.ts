@@ -471,6 +471,29 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index friend_referrals_referrer on friend_referrals(referrer_id, rewarded_at);
     `,
   },
+  {
+    id: 14,
+    sql: `
+      -- Extra AI on top of Plus's monthly allowance, for a while: how an
+      -- invite rewards somebody who is already on Plus, for whom a month more
+      -- at the far end of their subscription is not much of a thank-you.
+      create table allowance_boosts (
+        id          bigserial primary key,
+        account_id  text not null references accounts(id) on delete cascade,
+        photo       integer not null default 0,
+        chat        integer not null default 0,
+        recipe      integer not null default 0,
+        granted_at  timestamptz not null default now(),
+        expires_at  timestamptz not null,
+        reason      text not null
+      );
+      create index allowance_boosts_account on allowance_boosts(account_id, expires_at);
+
+      -- Whether each side's reward started Plus or added to Plus they had.
+      alter table friend_referrals add column referrer_kind text;
+      alter table friend_referrals add column friend_kind text;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;
