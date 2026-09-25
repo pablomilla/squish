@@ -22,3 +22,6 @@ export async function frameMarkup(id: string): Promise<string | undefined> {
 export async function stickerMarkup(id: string): Promise<string | undefined> {
   return markup[path('stickers', id)]?.();
 }
+
+/** A sticker's one-off unlock animation, where it has one. */
+export const unlockUrl = (id: string): string | undefined => urls[`../assets/share/unlock/${id}.svg`];

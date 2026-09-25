@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { askForAccount } from '../lib/account';
 import { friendOffer, friendsThisVisit, periodWords, type FriendOffer, type Friends } from '../lib/friends';
 import { useStanding } from './useSubscribed';
+import { useSquish } from '../store/useSquish';
+import SquadUnlocked from './SquadUnlocked';
 import './invite.css';
 
 const capitalised = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
@@ -11,20 +13,26 @@ const capitalised = (words: string) => words.charAt(0).toUpperCase() + words.sli
  * close they are. It is the reason to come back on day two and day three, so
  * it sits on Home where they will see it, and goes once the reward is theirs.
  */
-export default function FriendNudge({ onMakeAccount }: { onMakeAccount: () => void }) {
+export default function FriendNudge({ onOpenYou }: { onOpenYou: () => void }) {
   const standing = useStanding();
   const [offer, setOffer] = useState<FriendOffer | null>(null);
   const [friends, setFriends] = useState<Friends | null>(null);
+  const unlock = useSquish((s) => s.unlock);
 
   useEffect(() => {
     if (!standing.known || standing.off) return;
     let live = true;
-    if (standing.account) void friendsThisVisit().then((found) => live && setFriends(found));
+    if (standing.account)
+      void friendsThisVisit().then((found) => {
+        if (!live) return;
+        setFriends(found);
+        if (found && found.rewarded > 0) unlock('squad');
+      });
     else void friendOffer().then((found) => live && setOffer(found));
     return () => {
       live = false;
     };
-  }, [standing.known, standing.off, standing.account]);
+  }, [standing.known, standing.off, standing.account, unlock]);
 
   if (!standing.account && offer) {
     return (
@@ -38,10 +46,27 @@ export default function FriendNudge({ onMakeAccount }: { onMakeAccount: () => vo
           className="btn btn--sm"
           onClick={() => {
             askForAccount();
-            onMakeAccount();
+            onOpenYou();
           }}
         >
           Make an account
+        </button>
+      </section>
+    );
+  }
+
+  // An inviter whose friend has just got going: say so here, and send them to
+  // the invite card, which celebrates properly and spends the well-done.
+  if (standing.account && friends && friends.fresh > 0) {
+    return (
+      <section className="card invite-nudge">
+        <p className="small">
+          <b>🎉 {friends.fresh === 1 ? 'A friend you invited has' : `${friends.fresh} friends you invited have`} got going.</b> Your
+          thank-you is ready.
+        </p>
+        <SquadUnlocked compact />
+        <button type="button" className="btn btn--sm" onClick={onOpenYou}>
+          See what you've got
         </button>
       </section>
     );

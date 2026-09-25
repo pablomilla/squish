@@ -157,7 +157,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         <Squish mood={mood} size={132} />
       </section>
 
-      <FriendNudge onMakeAccount={() => go({ name: 'you' })} />
+      <FriendNudge onOpenYou={() => go({ name: 'you' })} />
 
       {/* A meal that was analysed and never saved. It is offered back rather
           than logged: nobody asked for it to go in the diary, and a tracker

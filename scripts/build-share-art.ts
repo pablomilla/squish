@@ -17,7 +17,7 @@ import { basename, join } from 'node:path';
 
 const ROOT = 'design/extras';
 const OUTPUT = 'src/assets/share';
-const KINDS = { frames: '0 0 1080 1350', stickers: '0 0 240 240', badges: '0 0 240 240' } as const;
+const KINDS = { frames: '0 0 1080 1350', stickers: '0 0 240 240', badges: '0 0 240 240', unlock: '0 0 240 240' } as const;
 type Kind = keyof typeof KINDS;
 
 /** Every SVG sitting in a share/{frames,stickers,badges} folder. */
@@ -26,11 +26,14 @@ function findArt(dir: string, found: Record<Kind, Map<string, string>>): void {
     const path = join(dir, name);
     if (!statSync(path).isDirectory()) continue;
     const kind = name as Kind;
-    if (basename(dir) === 'share' && kind in KINDS) {
+    if (basename(dir) === 'share' && kind in KINDS && kind !== 'unlock') {
       for (const file of readdirSync(path).sort()) {
         if (!file.endsWith('.svg')) continue;
         const id = file.replace(/\.svg$/, '');
-        if (!found[kind].has(id)) found[kind].set(id, join(path, file));
+        // A sticker's one-off unlock animation ships beside it, not as a
+        // sticker of its own: squad-badge-unlock.svg goes to unlock/squad-badge.svg.
+        const [into, as] = id.endsWith('-unlock') ? (['unlock', id.replace(/-unlock$/, '')] as const) : ([kind, id] as const);
+        if (!found[into].has(as)) found[into].set(as, join(path, file));
       }
     } else {
       findArt(path, found);
@@ -41,7 +44,7 @@ function findArt(dir: string, found: Record<Kind, Map<string, string>>): void {
 const round = (markup: string) =>
   markup.replace(/-?\d+\.\d{3,}/g, (n) => String(Math.round(Number(n) * 100) / 100));
 
-const found: Record<Kind, Map<string, string>> = { frames: new Map(), stickers: new Map(), badges: new Map() };
+const found: Record<Kind, Map<string, string>> = { frames: new Map(), stickers: new Map(), badges: new Map(), unlock: new Map() };
 findArt(ROOT, found);
 
 rmSync(OUTPUT, { recursive: true, force: true });

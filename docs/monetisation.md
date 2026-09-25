@@ -218,8 +218,11 @@ subscriber's extra AI `SQUISH_FRIEND_BOOST_PHOTOS` (20),
 `SQUISH_FRIEND_BOOST_CHATS` (10) and `SQUISH_FRIEND_BOOST_DAYS` (30). The
 extra AI costs about £1 at most per reward.
 
-Still to come: a thank-you item only inviters can earn (a "squad" cap, frame
-and sticker), which is in the designer's brief.
+And for every inviter, on or off Plus, the **squad set**: a cap for Squish, a
+share frame and a "Squad" badge, earned the first time a friend they invited
+gets going and never sold (the `squad` achievement). Home says so, and the
+invite card plays the badge's one-second unlock once — the still badge for
+anybody who has asked for less motion.
 
 What it costs: a month of Plus is at most about £2.92 of AI for somebody who
 uses every allowance, and nearer £1 for a typical user — per side, so up to

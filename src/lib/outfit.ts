@@ -90,6 +90,8 @@ export const ACCESSORIES: Accessory[] = [
   { id: 'party-hat', name: 'Party hat', slot: 'head', ...earned('first-meal', 'Log your first meal'), rise: 53 },
   { id: 'round-specs', name: 'Round glasses', slot: 'face', ...earned('streak-3', 'Three days running') },
   { id: 'knit-scarf', name: 'Knitted scarf', slot: 'neck', ...earned('streak-7', 'A full week of logging') },
+  // Only ever earned, never sold: the thank-you for inviting a friend who got going.
+  { id: 'squad-cap', name: 'Squad cap', slot: 'head', ...earned('squad', 'Invite a friend who gets going'), rise: 11 },
   { id: 'crown', name: 'Little crown', slot: 'head', ...plus, rise: 29 },
   { id: 'heart-shades', name: 'Heart sunglasses', slot: 'face', ...plus },
   { id: 'headphones', name: 'Headphones', slot: 'head', ...plus },

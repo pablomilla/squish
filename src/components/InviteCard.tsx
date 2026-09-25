@@ -4,6 +4,8 @@ import { askForAccount } from '../lib/account';
 import { refreshPlan } from '../lib/plan';
 import { fetchFriends, periodWords, shareInvite, type Friends } from '../lib/friends';
 import { useStanding } from './useSubscribed';
+import { useSquish } from '../store/useSquish';
+import SquadUnlocked from './SquadUnlocked';
 import './invite.css';
 
 const shortDay = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -17,6 +19,8 @@ export default function InviteCard() {
   const standing = useStanding();
   const toast = useToast();
   const [friends, setFriends] = useState<Friends | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
+  const unlock = useSquish((s) => s.unlock);
   const signedIn = standing.account;
   const onPlus = standing.plan === 'plus';
 
@@ -26,6 +30,9 @@ export default function InviteCard() {
     void fetchFriends().then((found) => {
       if (!live || !found) return;
       setFriends(found);
+      // The squad set is the inviter's for good from the first friend who got going.
+      if (found.rewarded > 0) unlock('squad');
+      if (found.fresh > 0) setCelebrate(true);
       // A friend got going since last time: say so once, and pick up the Plus.
       if (found.fresh > 0) {
         toast(
@@ -40,7 +47,7 @@ export default function InviteCard() {
     return () => {
       live = false;
     };
-  }, [signedIn, toast]);
+  }, [signedIn, toast, unlock]);
 
   // Where invites cannot exist — no server keeping accounts — say nothing.
   if (standing.off || !standing.known) return null;
@@ -71,6 +78,8 @@ export default function InviteCard() {
         It arrives for you both once they have made an account, confirmed their email and used Squish on {days} different days.
         {friends ? ` You can earn up to ${friends.cap} thank-yous a year this way.` : ''}
       </p>
+
+      {celebrate && <SquadUnlocked />}
 
       {friends?.extra && (
         <p className="tiny invite-extra">

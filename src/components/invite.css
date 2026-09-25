@@ -15,3 +15,8 @@
 .invite-dots span { width: 28px; height: 8px; border-radius: 4px; background: var(--surface); }
 .invite-dots span.on { background: var(--brand); }
 .invite-extra { margin: 0 0 8px; padding: 8px 10px; border-radius: var(--r-md); background: var(--good-soft); color: var(--ink); }
+
+.squad-unlocked { display: flex; align-items: center; gap: 12px; margin: 4px 0 10px; padding: 10px 12px; border-radius: var(--r-md); background: var(--brand-soft); }
+.squad-unlocked img { flex: none; }
+.squad-unlocked p { margin: 0; color: var(--ink); }
+.squad-unlocked--compact { margin: 0; padding: 0; background: none; }

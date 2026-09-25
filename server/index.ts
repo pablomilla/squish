@@ -1345,7 +1345,7 @@ app.delete('/api/admin/fixed-costs/:id', requireAdmin, async (req, res) => {
 app.get('/api/friends', requireAccount, async (req, res) => {
   try {
     await settleFriend(req.device!.accountId!, publicOrigin(req)).catch((error: unknown) => logFailure('friend reward', error));
-    const view = await friendsView(req.device!.accountId!);
+    const view = await friendsView(req.device!.accountId!, { peek: req.query.peek === '1' });
     res.set('Cache-Control', 'no-store').json({ ...view, link: `${referralBase(req)}${view.code}` });
   } catch (error) {
     logFailure('friends', error);

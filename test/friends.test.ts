@@ -152,6 +152,7 @@ when('past the yearly cap the friend is still rewarded; the inviter is not', asy
     }
     assert.deepEqual(results.map((r) => [r?.friendDays, r?.referrerDays]), [[30, 30], [30, 0]]);
 
+    assert.equal((await friendsView(inviter.id, { peek: true })).fresh, 1, 'a peek leaves the well-done for the invite card');
     const view = await friendsView(inviter.id);
     assert.equal(view.joined, 2);
     assert.equal(view.rewarded, 2);

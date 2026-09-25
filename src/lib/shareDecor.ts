@@ -39,6 +39,7 @@ const seasonFree = (s: Season) => ({ unlock: { kind: 'season', season: s, free: 
 export const FRAMES: Decoration[] = [
   { id: 'scallop', name: 'Scallop', ...earned('first-share', 'Share a card once') },
   { id: 'confetti', name: 'Confetti', ...earned('streak-7', 'A full week of logging') },
+  { id: 'squad', name: 'Squad', ...earned('squad', 'Invite a friend who gets going') },
   { id: 'botanical', name: 'Botanical', ...plus },
   { id: 'gold-foil', name: 'Gold foil', ...plus },
   { id: 'snowflake', name: 'Snowflakes', ...seasonPlus('winter') },
@@ -71,6 +72,7 @@ export const STICKERS: Decoration[] = [
   { id: 'streak-30', name: '30-day badge', ...earned('streak-30', 'Thirty days of logging') },
   { id: 'streak-100', name: '100-day badge', ...earned('streak-100', 'A hundred days of logging') },
   { id: 'streak-365', name: '365-day badge', ...earned('streak-365', 'A year of logging') },
+  { id: 'squad-badge', name: 'Squad badge', ...earned('squad', 'Invite a friend who gets going') },
   { id: 'mug', name: 'Hot chocolate', ...seasonFree('winter') },
   { id: 'gingerbread', name: 'Gingerbread', ...seasonFree('winter') },
   { id: 'snowflake', name: 'Snowflake', ...seasonFree('winter') },

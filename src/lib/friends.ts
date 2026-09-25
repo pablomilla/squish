@@ -47,7 +47,7 @@ async function get<T>(path: string): Promise<T | null> {
 }
 
 /** This account's invites, or null when signed out or out of reach. */
-export const fetchFriends = (): Promise<Friends | null> => get<Friends>('/api/friends');
+export const fetchFriends = ({ peek = false } = {}): Promise<Friends | null> => get<Friends>(`/api/friends${peek ? '?peek=1' : ''}`);
 
 let once: Promise<Friends | null> | null = null;
 
@@ -56,7 +56,8 @@ let once: Promise<Friends | null> | null = null;
  * whether this person is an invited friend still on their way to the reward.
  */
 export function friendsThisVisit(): Promise<Friends | null> {
-  once ??= fetchFriends();
+  // A peek: the well-done is left for the invite card to say properly.
+  once ??= fetchFriends({ peek: true });
   return once;
 }
 

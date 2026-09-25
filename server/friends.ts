@@ -270,7 +270,11 @@ export interface FriendsView {
   plusUntil: string | null;
 }
 
-export async function friendsView(accountId: string): Promise<FriendsView> {
+/**
+ * `peek` reads without spending the well-done: Home looks on every visit, and
+ * the celebration belongs to the invite card, which says it properly.
+ */
+export async function friendsView(accountId: string, { peek = false } = {}): Promise<FriendsView> {
   const code = await friendCodeFor(accountId);
   const [totals, mine, fresh, extras, plus] = await Promise.all([
     query<{ joined: number; rewarded: number; days: number; recent: number }>(
@@ -287,13 +291,18 @@ export async function friendsView(accountId: string): Promise<FriendsView> {
       [accountId],
     ),
     // Read and marked in one go, so a well-done is said exactly once.
-    query<{ n: number }>(
-      `with seen as (
-         update friend_referrals set referrer_seen_at = now()
-          where referrer_id = $1 and referrer_days > 0 and referrer_seen_at is null returning 1)
-       select count(*)::int as n from seen`,
-      [accountId],
-    ),
+    peek
+      ? query<{ n: number }>(
+          `select count(*)::int as n from friend_referrals where referrer_id = $1 and referrer_days > 0 and referrer_seen_at is null`,
+          [accountId],
+        )
+      : query<{ n: number }>(
+          `with seen as (
+             update friend_referrals set referrer_seen_at = now()
+              where referrer_id = $1 and referrer_days > 0 and referrer_seen_at is null returning 1)
+           select count(*)::int as n from seen`,
+          [accountId],
+        ),
     query<{ photo: string; chat: string; until: Date | null }>(
       `select coalesce(sum(photo), 0) as photo, coalesce(sum(chat), 0) as chat, max(expires_at) as until
          from allowance_boosts where account_id = $1 and granted_at <= now() and expires_at > now()`,
