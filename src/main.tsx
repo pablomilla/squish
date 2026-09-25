@@ -5,6 +5,7 @@ import { startNative } from './lib/native';
 import { arriveFromOldAddress } from './lib/identity';
 import { apiUrl } from './lib/origin';
 import { catchReferral } from './lib/referral';
+import { catchSquadInvite } from './lib/squad';
 import './styles/global.css';
 
 // Before anything renders, so the first question about who this browser is
@@ -12,6 +13,8 @@ import './styles/global.css';
 void arriveFromOldAddress(apiUrl);
 // An affiliate's link: remembered for a sign-up, and taken out of the address.
 catchReferral();
+// A squad's link: remembered until they can join, and taken out of the address.
+catchSquadInvite();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

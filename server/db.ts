@@ -494,6 +494,63 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table friend_referrals add column friend_kind text;
     `,
   },
+  {
+    id: 15,
+    sql: `
+      -- Squads: up to five friends who can see how each other is getting on
+      -- and send cheers from a fixed list. No free text anywhere: the name is
+      -- picked from a list, and a display name is letters only.
+      create table squads (
+        id            text primary key,
+        name          text not null,
+        code          text not null unique,
+        created_at    timestamptz not null default now(),
+        weeks_won     integer not null default 0,
+        last_won_week text
+      );
+
+      -- One squad per account. What a member shows the others is only what
+      -- their app reports here: a streak, whether they logged today, days this
+      -- week, badges, and how their Squish looks. Never food or weight.
+      create table squad_members (
+        id           text primary key,
+        squad_id     text not null references squads(id) on delete cascade,
+        account_id   text not null unique references accounts(id) on delete cascade,
+        display_name text not null,
+        joined_at    timestamptz not null default now(),
+        streak       integer not null default 0,
+        logged_day   text,
+        week_key     text,
+        week_days    integer not null default 0,
+        badges       text[] not null default '{}',
+        look         text,
+        outfit       jsonb not null default '{}',
+        status_at    timestamptz
+      );
+      create index squad_members_squad on squad_members(squad_id);
+
+      create table squad_cheers (
+        id          bigserial primary key,
+        squad_id    text not null references squads(id) on delete cascade,
+        from_member text not null references squad_members(id) on delete cascade,
+        to_member   text not null references squad_members(id) on delete cascade,
+        cheer       text not null,
+        sent_at     timestamptz not null default now(),
+        seen_at     timestamptz
+      );
+      create index squad_cheers_to on squad_cheers(to_member, seen_at);
+      create index squad_cheers_from on squad_cheers(from_member, sent_at);
+
+      -- Blocks are between people, not memberships, so they survive leaving
+      -- and joining again. Either way round, the two never see each other.
+      create table squad_blocks (
+        blocker_id text not null references accounts(id) on delete cascade,
+        blocked_id text not null references accounts(id) on delete cascade,
+        created_at timestamptz not null default now(),
+        primary key (blocker_id, blocked_id)
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

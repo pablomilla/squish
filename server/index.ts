@@ -62,6 +62,7 @@ import {
   thisMonth,
   updateCost,
 } from './finance';
+import { blockMember, createSquad, joinSquad, leaveSquad, markCheersSeen, renameMe, sendCheer, setStatus, squadFor, type SquadProblem } from './squads';
 import { attributeFriend, friendsView, isFriendCode, qualifyDays, rewardDays, settleFriend } from './friends';
 import {
   attribute,
@@ -1334,6 +1335,64 @@ app.delete('/api/admin/fixed-costs/:id', requireAdmin, async (req, res) => {
     res.status(503).json({ error: 'unavailable' });
   }
 });
+
+/* ---------------- Squads ---------------- *
+ *
+ * Up to five friends encouraging each other with a fixed set of cheers — no
+ * free text, no food, no weight. See server/squads.ts.
+ */
+
+const SQUAD_WORDS: Record<SquadProblem, string> = {
+  already_in: 'You are already in a squad. Leave it first to start or join another.',
+  not_found: 'That squad code did not work. Check it with whoever sent it.',
+  full: 'That squad is full — five is the most.',
+  bad_name: 'Names can be letters, spaces, hyphens and apostrophes, up to 20.',
+  bad_status: 'That did not look right.',
+  not_in: 'You are not in a squad.',
+  bad_cheer: 'That is not one of the cheers.',
+  too_many: 'That is plenty of cheering for today — more tomorrow.',
+  sent_already: 'You have already sent them that one today.',
+};
+
+const squadLink = (req: Request, code: string) => `${publicOrigin(req)}/?squad=${code}`;
+
+const answerSquad = async (req: Request, res: Response) => {
+  const squad = await squadFor(req.device!.accountId!);
+  res.set('Cache-Control', 'no-store').json({ squad: squad && { ...squad, link: squadLink(req, squad.code) } });
+};
+
+const squadRoute =
+  (work: (accountId: string, body: Record<string, unknown>) => Promise<{ ok: true } | { ok: false; problem: SquadProblem }>) =>
+  async (req: Request, res: Response) => {
+    try {
+      const done = await work(req.device!.accountId!, (req.body ?? {}) as Record<string, unknown>);
+      if (!done.ok) {
+        res.status(done.problem === 'too_many' ? 429 : 409).json({ error: done.problem, message: SQUAD_WORDS[done.problem] });
+        return;
+      }
+      await answerSquad(req, res);
+    } catch (error) {
+      logFailure('squad', error);
+      res.status(503).json({ error: 'unavailable', message: 'Could not reach your squad just now.' });
+    }
+  };
+
+app.get('/api/squad', requireAccount, async (req, res) => {
+  try {
+    await answerSquad(req, res);
+  } catch (error) {
+    logFailure('squad', error);
+    res.status(503).json({ error: 'unavailable', message: 'Could not reach your squad just now.' });
+  }
+});
+app.post('/api/squad', requireAccount, meter('signin'), squadRoute((id, body) => createSquad(id, body.name, body.displayName)));
+app.post('/api/squad/join', requireAccount, meter('signin'), squadRoute((id, body) => joinSquad(id, body.code, body.displayName)));
+app.post('/api/squad/leave', requireAccount, squadRoute(async (id) => (await leaveSquad(id), { ok: true as const })));
+app.post('/api/squad/name', requireAccount, squadRoute((id, body) => renameMe(id, body.displayName)));
+app.post('/api/squad/status', requireAccount, squadRoute((id, body) => setStatus(id, body)));
+app.post('/api/squad/cheer', requireAccount, squadRoute((id, body) => sendCheer(id, body.to, body.cheer)));
+app.post('/api/squad/seen', requireAccount, squadRoute(async (id, body) => (await markCheersSeen(id, body.ids), { ok: true as const })));
+app.post('/api/squad/block', requireAccount, squadRoute((id, body) => blockMember(id, body.member)));
 
 /* ---------------- Inviting friends ---------------- *
  *

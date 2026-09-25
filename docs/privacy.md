@@ -82,6 +82,14 @@ Backup is on by default where this copy of Squish has a database.
   record as above, nothing about what you logged. All of it is deleted with
   the account.
 
+- **If you join a squad:** the squad, the first name you chose for it, and
+  what your app shares with the other members — your streak, the last day
+  you logged, how many days you logged this week, the badges you have earned,
+  and how your Squish looks. Never your meals, calories, weight or email
+  address. The cheers you send and receive (from a fixed list — there is no
+  free text), and anybody you block. Leaving the squad deletes what you
+  shared with it; deleting your account deletes all of it.
+
 ### If you are one of our partners
 
 Partners — people paid a share of the subscriptions their link brings — have

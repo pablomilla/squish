@@ -1,0 +1,59 @@
+/* Squads: small groups of friends cheering each other on. */
+.squad-sheet { display: flex; flex-direction: column; gap: 14px; }
+.squad-sheet p { margin: 0; }
+.squad-goal { padding: 10px 12px; border-radius: var(--r-md); background: var(--brand-soft); display: flex; flex-direction: column; gap: 2px; }
+
+.squad-members { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.squad-member { padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-sunk); }
+.squad-member-row { display: flex; align-items: center; gap: 10px; }
+.squad-member-row .squish { flex: none; }
+.squad-member-text { flex: 1; min-width: 0; }
+
+.cheer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.cheer {
+  text-align: left; padding: 8px 10px; border-radius: var(--r-md); border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font-size: 13px; line-height: 1.25;
+}
+.cheer:active { transform: scale(0.97); }
+.cheer:disabled { opacity: 0.5; }
+.squad-block-link { grid-column: 1 / -1; justify-self: end; margin-top: 4px; }
+
+.squad-invite { display: flex; flex-direction: column; gap: 8px; }
+.squad-me { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.squad-rename { display: flex; gap: 8px; width: 100%; }
+.squad-rename input { flex: 1; min-width: 0; }
+.squad-confirm { padding: 12px; border-radius: var(--r-md); background: var(--bad-soft); display: flex; flex-direction: column; gap: 10px; }
+.squad-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* The same quiet buttons the account card uses, here in their own right:
+   the sheet opens from Home, before the account card's styles are loaded. */
+.squad-sheet .btn.btn--quiet-danger, .squad-card .btn.btn--quiet-danger {
+  background: transparent; color: var(--bad); border: 1px solid var(--bad-soft); box-shadow: none; font-weight: 500;
+}
+.squad-sheet .linkish, .squad-card .linkish, .squad-form .linkish {
+  background: none; border: 0; padding: 0; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+
+/* On Home: everybody's Squish in a row, at a glance. */
+.squad-strip { display: flex; flex-direction: column; gap: 10px; text-align: left; width: 100%; }
+.squad-strip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.squad-strip-head h3 { margin: 0; }
+.squad-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.squad-row::-webkit-scrollbar { display: none; }
+.squad-face { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 64px; }
+.squad-face .tiny { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.squad-tick { color: var(--good); font-weight: 700; }
+.squad-strip-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.squad-dots { display: flex; gap: 4px; }
+.squad-dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--surface-sunk); border: 1px solid var(--line); }
+.squad-dots span.on { background: var(--brand); border-color: var(--brand); }
+
+/* Starting or joining. */
+.squad-form { display: flex; flex-direction: column; gap: 12px; }
+.squad-form label { font-weight: 600; font-size: var(--text-label); }
+.squad-form input { width: 100%; }
+.squad-names { display: flex; flex-wrap: wrap; gap: 6px; }
+.squad-name-chip { padding: 7px 12px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 13px; }
+.squad-name-chip[aria-pressed='true'] { border-color: var(--brand); background: var(--brand-soft); font-weight: 600; }
+.squad-card .squad-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.squad-card p { margin: 0 0 6px; }

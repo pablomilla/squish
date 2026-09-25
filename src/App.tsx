@@ -17,6 +17,7 @@ import { apiUrl } from './lib/origin';
 import { savePhoto, watchPhotos } from './lib/photos';
 import { isOversized, rehomePhotos } from './lib/rehome';
 import { refreshPlan, watchPlan } from './lib/plan';
+import SquadSync from './components/squad/SquadSync';
 import { onPaywall } from './lib/paywall';
 import { askForAccount, resetTokenInUrl } from './lib/account';
 
@@ -251,6 +252,7 @@ function Shell() {
       </Suspense>
 
       <AddSheet open={adding} onClose={() => setAdding(false)} go={go} />
+      {keepsData && <SquadSync />}
 
       {isTab && (
         <nav className="tabbar" aria-label="Main">

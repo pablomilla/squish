@@ -50,6 +50,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'streak-365', title: 'A whole year', description: 'A year of logging', emoji: '🎂' },
   { id: 'first-share', title: 'Show and tell', description: 'Share a progress card', emoji: '📣' },
   { id: 'squad', title: 'Squad', description: 'A friend you invited got going', emoji: '🤝' },
+  { id: 'squad-week', title: 'Squad goals', description: 'Your whole squad hit its week', emoji: '🏆' },
   { id: 'protein-hit', title: 'Protein pro', description: 'Hit your protein target in a day', emoji: '💪' },
   { id: 'fibre-hit', title: 'Fibre friend', description: 'Hit your fibre target in a day', emoji: '🥦' },
   { id: 'hydrated', title: 'Well watered', description: 'Reach your water goal', emoji: '💧' },
