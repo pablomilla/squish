@@ -1,0 +1,21 @@
+{
+  "svgFiles": 31,
+  "errors": [],
+  "largestStandaloneBytes": 10977,
+  "unlockDurationMs": 1000,
+  "unlockLoops": false,
+  "frameClearance": {
+    "pixelsOutsideAllowedRegions": 0
+  },
+  "checks": [
+    "SVG structure and reference integrity",
+    "No live text or embedded raster",
+    "Standalone items under 15KB",
+    "One-second one-shot optional animation",
+    "Frame respects edge and corner regions"
+  ],
+  "pending": [
+    "In-app rendering, all 12 body colourways and device tests",
+    "Native animation integration; keyframes inspected, browser playback not automated"
+  ]
+}

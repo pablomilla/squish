@@ -1,0 +1,12 @@
+{
+  "id": "squad-cap",
+  "slot": "head",
+  "tier": "earned",
+  "unlock": "Invite a friend who qualifies under the app referral rules; never sold",
+  "viewBox": "0 0 512 512",
+  "canonicalPose": "excited",
+  "anchor": "head",
+  "motion": null,
+  "variants": [],
+  "notes": "Earned only, never purchasable. Fitted cap uses head width, a seven-degree jaunty tilt, and an eye-relative seat. Use fitted files directly; eyes remain readable. Arms retain the existing top layer."
+}

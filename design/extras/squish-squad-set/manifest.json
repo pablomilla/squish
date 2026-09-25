@@ -1,0 +1,17 @@
+{
+  "set": "Squad",
+  "briefVersion": "1.1 \u2014 25 September 2026",
+  "access": "earned by qualifying friend referral only; never sold",
+  "cap": "accessories/head/squad-cap",
+  "frame": "share/frames/squad.svg",
+  "badge": "share/stickers/squad-badge.svg",
+  "unlock": {
+    "file": "share/stickers/squad-badge-unlock.svg",
+    "group": "anim",
+    "durationMs": 1000,
+    "repeat": false,
+    "reducedMotion": "Use squad-badge.svg, never auto-play",
+    "trigger": "Once on a newly awarded reward; not every view render"
+  },
+  "qualification": "App owns friend qualification and eligibility; no thresholds invented"
+}
