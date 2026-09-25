@@ -58,6 +58,8 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
   const [recipeUrl, setRecipeUrl] = useState('');
   const [recipe, setRecipe] = useState<RecipeImport | null>(null);
   const [helpings, setHelpings] = useState(1);
+  // Whether any of the description was spoken, for the "Say it" badge.
+  const [dictated, setDictated] = useState(false);
 
   const mealSlot = slot ?? slotForNow();
   const results = useMemo(() => searchFoods(query, 20), [query]);
@@ -92,6 +94,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
       const imported = await importRecipe(recipeUrl.trim(), mealSlot);
       setRecipe(imported);
       setHelpings(1);
+      useSquish.getState().unlock('first-recipe');
     } catch (error) {
       if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'That recipe could not be read.', '📖');
     } finally {
@@ -139,6 +142,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         setBusy(false);
         return;
       }
+      if (dictated) useSquish.getState().unlock('first-voice');
       onReady(analysis, { slot: analysis.slot ?? mealSlot, date });
     } catch (error) {
       if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'That did not work — give it another go.', '😕');
@@ -274,7 +278,10 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
               then tidy up the bit it misheard. */}
           <DictateButton
             label="your meal"
-            onText={(text) => setDescription((current) => (current ? `${current.trim()} ${text}` : text))}
+            onText={(text) => {
+              setDictated(true);
+              setDescription((current) => (current ? `${current.trim()} ${text}` : text));
+            }}
             onError={(message) => toast(message, '🎤')}
           />
           <div className="row wrap" style={{ gap: 8 }}>

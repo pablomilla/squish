@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Achievement, DayLog, Draft, FoodItem, MealEntry, Profile, Targets } from '../types';
+import type { DayLog, Draft, FoodItem, MealEntry, Profile, Targets } from '../types';
 import {
   CARBS_MAX_SHARE,
   FAT_MAX_SHARE,
@@ -40,23 +40,8 @@ export const DEFAULT_PROFILE: Profile = {
   // No plate size until somebody measures one. See clearAssumedCrockery.
 };
 
-export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first-meal', title: 'First bite', description: 'Log your very first meal', emoji: '🍽️' },
-  { id: 'streak-3', title: 'Three in a row', description: 'Log meals three days running', emoji: '🔥' },
-  { id: 'streak-7', title: 'Full week', description: 'Seven days of logging', emoji: '🗓️' },
-  { id: 'streak-14', title: 'Fortnight', description: 'Two weeks of logging', emoji: '🌿' },
-  { id: 'streak-30', title: 'Squish regular', description: 'Thirty days of logging', emoji: '🏆' },
-  { id: 'streak-100', title: 'Century', description: 'A hundred days of logging', emoji: '💯' },
-  { id: 'streak-365', title: 'A whole year', description: 'A year of logging', emoji: '🎂' },
-  { id: 'first-share', title: 'Show and tell', description: 'Share a progress card', emoji: '📣' },
-  { id: 'squad', title: 'Squad', description: 'A friend you invited got going', emoji: '🤝' },
-  { id: 'squad-week', title: 'Squad goals', description: 'Your whole squad hit its week', emoji: '🏆' },
-  { id: 'protein-hit', title: 'Protein pro', description: 'Hit your protein target in a day', emoji: '💪' },
-  { id: 'fibre-hit', title: 'Fibre friend', description: 'Hit your fibre target in a day', emoji: '🥦' },
-  { id: 'hydrated', title: 'Well watered', description: 'Reach your water goal', emoji: '💧' },
-  { id: 'balanced-day', title: 'Balanced day', description: 'Finish a day scoring 75+', emoji: '⭐' },
-  { id: 'photo-10', title: 'Snap happy', description: 'Analyse ten meals from photos', emoji: '📸' },
-];
+// The catalogue lives with the rules that award it; re-exported for the screens that list it.
+export { ACHIEVEMENTS } from '../lib/achievements';
 
 interface SquishState {
   profile: Profile;

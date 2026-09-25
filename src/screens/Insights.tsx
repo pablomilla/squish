@@ -6,7 +6,8 @@ import ShareSheet from '../components/ShareSheet';
 import { shareStory } from '../lib/shareStory';
 import type { ShareCardData } from '../lib/share';
 import { FlameIcon, ShareIcon } from '../components/icons';
-import { ACHIEVEMENTS, useSquish } from '../store/useSquish';
+import { useSquish } from '../store/useSquish';
+import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS } from '../lib/achievements';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
 import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
 import { MACRO_LABEL, OVER, addOptional, ceilingLimit, isCeiling, round1 } from '../lib/nutrition';
@@ -343,17 +344,32 @@ export default function Insights() {
       <section className="card card--quiet">
         <div className="card-title">
           <h3>Achievements</h3>
-          <span className="tiny muted">{Object.keys(unlocked).length}/{ACHIEVEMENTS.length}</span>
+          <span className="tiny muted">
+            {ACHIEVEMENTS.filter((a) => unlocked[a.id]).length}/{ACHIEVEMENTS.length}
+          </span>
         </div>
-        <div className="badge-grid">
-          {ACHIEVEMENTS.map((a) => (
-            <div key={a.id} className={`achievement ${unlocked[a.id] ? 'is-on' : ''}`} title={a.description}>
-              <span aria-hidden="true">{a.emoji}</span>
-              <b className="tiny">{a.title}</b>
-              <span className="tiny muted">{unlocked[a.id] ? 'unlocked' : a.description}</span>
+        {ACHIEVEMENT_GROUPS.map((group) => {
+          const badges = ACHIEVEMENTS.filter((a) => a.group === group.id);
+          return (
+            <div key={group.id} className="badge-group">
+              <div className="badge-group-head">
+                <h4 className="tiny">{group.title}</h4>
+                <span className="tiny muted">
+                  {badges.filter((a) => unlocked[a.id]).length} of {badges.length}
+                </span>
+              </div>
+              <div className="badge-grid">
+                {badges.map((a) => (
+                  <div key={a.id} className={`achievement ${unlocked[a.id] ? 'is-on' : ''}`} title={a.description}>
+                    <span aria-hidden="true">{a.emoji}</span>
+                    <b className="tiny">{a.title}</b>
+                    <span className="tiny muted">{unlocked[a.id] ? 'unlocked' : a.description}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </section>
 
       <p className="script center" style={{ fontSize: 20, color: 'var(--ink-2)' }}>

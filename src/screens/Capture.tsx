@@ -230,6 +230,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
       setBusy(true);
       try {
         const analysis = await lookupBarcode(code, mealSlot);
+        useSquish.getState().unlock('first-scan');
         streamRef.current?.getTracks().forEach((t) => t.stop());
         onAnalysed(analysis, { slot: analysis.slot ?? mealSlot, date });
       } catch (error) {

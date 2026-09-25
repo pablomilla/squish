@@ -25,3 +25,8 @@
 .achievement span:first-child { font-size: 26px; filter: grayscale(1); }
 .achievement.is-on { opacity: 1; background: var(--yellow-soft); }
 .achievement.is-on span:first-child { filter: none; }
+
+/* Achievements, grouped by what they reward. */
+.badge-group + .badge-group { margin-top: var(--s3); }
+.badge-group-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--s2); }
+.badge-group-head h4 { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }

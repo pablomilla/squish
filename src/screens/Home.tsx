@@ -24,7 +24,7 @@ import './home.css';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
-  const { profile, targets, meals, days, unlock, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
+  const { profile, targets, meals, days, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
     useSquish();
   const [weighing, setWeighing] = useState(false);
   const chosenScene = useSquish((s) => s.scene);
@@ -59,17 +59,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   };
   const mood = moodFor(situation);
 
-  // Daily achievements are awarded from live totals rather than at save time.
-  useEffect(() => {
-    if (totals.protein >= targets.protein) unlock('protein-hit');
-    if (totals.fibre >= targets.fibre) unlock('fibre-hit');
-    if (streak >= 3) unlock('streak-3');
-    if (streak >= 7) unlock('streak-7');
-    if (streak >= 14) unlock('streak-14');
-    if (streak >= 30) unlock('streak-30');
-    if (streak >= 100) unlock('streak-100');
-    if (streak >= 365) unlock('streak-365');
-  }, [totals.protein, totals.fibre, targets.protein, targets.fibre, streak, unlock]);
+  // Badges are awarded from the diary by AchievementSync, whichever screen is open.
 
   // The stored note counts only while it still describes the day it was written
   // about. Log a meal and it is stale, so a fresh one is asked for and the live

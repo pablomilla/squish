@@ -123,6 +123,7 @@ export default function Ask({ onClose }: { onClose: () => void }) {
           setLookups(labels);
         },
       });
+      useSquish.getState().unlock('first-question');
       setWire([...messages, { role: 'assistant', content: reply }]);
       setBubbles((current) => [...current, { role: 'assistant', text: reply, lookups: used.length ? used : undefined }]);
     } catch (error) {
