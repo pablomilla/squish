@@ -103,3 +103,12 @@
 .pack-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pack-words { font-size: 13px; line-height: 1.3; color: var(--ink-2); }
 .pack-tile .tile-note { margin-top: 2px; }
+
+/* Your plan: what the numbers mean, in the reader's own numbers, with the
+   sums one tap away. */
+.plan-summary { margin: 12px 0 0; color: var(--ink-2); line-height: 1.45; }
+.plan-how { margin-top: 8px; }
+.plan-how summary { cursor: pointer; color: var(--brand-ink); font-weight: 600; }
+.plan-how dl { margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.plan-how dt { font-weight: 600; color: var(--ink); }
+.plan-how dd { margin: 0; line-height: 1.4; }

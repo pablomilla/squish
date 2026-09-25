@@ -16,6 +16,7 @@ import { ACCESSORIES, SLOTS, accessoryById, lockedNote, onShow, shelves, toggle,
 import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
 import { packLocked, packsAmong } from '../lib/packs';
+import { explainPlan } from '../lib/planExplained';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { summariseDiary, type DiarySummary } from '../lib/diarySummary';
@@ -101,6 +102,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
   const streak = useMemo(() => streakOf(meals, isoDate()), [meals]);
   const suggested = useMemo(() => computeTargets(profile), [profile]);
   const customised = suggested.calories !== targets.calories;
+  const plan = useMemo(() => explainPlan(profile, targets), [profile, targets]);
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(useSquish.getState(), null, 2)], { type: 'application/json' });
@@ -134,12 +136,14 @@ export default function You({ go }: { go: (route: Route) => void }) {
         </div>
         <div className="you-plan">
           <div className="pill-stat">
-            <span className="tiny muted">Daily energy</span>
+            <span className="tiny muted">Daily target</span>
             <b>{targets.calories} kcal</b>
+            <span className="tiny muted">to eat</span>
           </div>
           <div className="pill-stat">
             <span className="tiny muted">Maintenance</span>
             <b>{maintenance} kcal</b>
+            <span className="tiny muted">your body burns</span>
           </div>
           <div className="pill-stat">
             <span className="tiny muted">Protein</span>
@@ -150,6 +154,18 @@ export default function You({ go }: { go: (route: Route) => void }) {
             <b>{targets.fibre} g</b>
           </div>
         </div>
+        <p className="small plan-summary">{plan.summary}</p>
+        <details className="plan-how">
+          <summary className="small">How these are worked out</summary>
+          <dl>
+            {plan.how.map((line) => (
+              <div key={line.label}>
+                <dt className="tiny">{line.label}</dt>
+                <dd className="tiny muted">{line.words}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
         {customised && (
           <button type="button" className="btn--quiet small" style={{ marginTop: 8 }} onClick={() => { recalcTargets(); toast('Back to the suggested plan', '↩️'); }}>
             Reset to suggested ({suggested.calories} kcal)
