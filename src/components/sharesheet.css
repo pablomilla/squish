@@ -27,3 +27,9 @@
 .decor--sticker img { width: 48px; height: 48px; }
 .decor--on { border-color: var(--brand); }
 .decor--locked img { opacity: 0.55; }
+/* A frame is corner flourishes or a thin border round a 1080 × 1350 card, so
+   shrunk whole to a thumbnail it is a few pixels and reads as blank. The tile
+   shows the top-left corner instead, close up, where the decoration is. */
+.decor--frame .decor-card { width: 100%; max-width: 72px; aspect-ratio: 1; overflow: hidden; }
+.decor--frame .decor-card img { inset: 0 auto auto 0; width: 330%; height: auto; }
+.decor--frame.decor--locked img { opacity: 0.8; }
