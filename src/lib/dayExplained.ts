@@ -99,3 +99,22 @@ export function explainDay(meals: MealEntry[], date: string, targets: Targets, t
 
   return { score, early, calories: Math.round(totals.calories), reasons: shown, tip };
 }
+
+/**
+ * One meal, explained: the same factors its score is built from, biggest
+ * first. `items` supplies the ultra-processed share, as it does when the
+ * meal is scored.
+ */
+export function explainMeal(
+  nutrients: Parameters<typeof scoreBreakdown>[0],
+  items: Parameters<typeof ultraProcessedShare>[0],
+): { score: number; reasons: Reason[]; small: boolean } {
+  const { factors, score } = scoreBreakdown(nutrients, ultraProcessedShare(items));
+  const reasons = (Object.entries(factors) as [ScoreFactorKey, number][])
+    .map(([key, points]) => ({ key, words: WORDS[key], points: Math.round(points) }))
+    .filter((r) => Math.abs(r.points) >= 1)
+    .sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+  // Under about 100 kcal the marks against a food fade out (see qualityScore),
+  // which is worth saying when a small snack scores oddly well.
+  return { score, reasons, small: nutrients.calories > 0 && nutrients.calories < 100 };
+}

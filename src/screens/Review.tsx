@@ -12,6 +12,7 @@ import { useSquish } from '../store/useSquish';
 import { isPaywalled, refineAnalysis } from '../lib/api';
 import { savePhoto } from '../lib/photos';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
+import MealQuality from '../components/MealQuality';
 import { EMPTY, mealLabel, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
 import { friendlyDate } from '../lib/date';
 import './review.css';
@@ -233,6 +234,10 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
           </span>
         )}
       </div>
+
+      {/* Why it scores what it does, updating as items change. Folded: the
+          meal is the point of this screen, the reasons are for whoever asks. */}
+      <MealQuality meal={{ nutrients: totals, items }} folded />
 
       {analysis.coachNote && (
         <div className="review-coach">

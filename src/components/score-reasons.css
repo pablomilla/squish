@@ -1,0 +1,10 @@
+.score-reasons p { margin: 0 0 6px; }
+.score-reasons ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.score-reasons li { display: grid; grid-template-columns: 1fr 90px 34px; align-items: center; gap: 10px; }
+.score-reason-words { font-size: var(--text-label); }
+.score-reason-bar { height: 8px; border-radius: 4px; background: var(--surface-sunk); overflow: hidden; }
+.score-reason-bar span { display: block; height: 100%; border-radius: 4px; }
+.score-reasons .up .score-reason-bar span { background: var(--good); }
+.score-reasons .down .score-reason-bar span { background: var(--warn); }
+.score-reason-points { text-align: right; }
+.meal-quality summary { cursor: pointer; color: var(--brand-ink); font-weight: 600; }

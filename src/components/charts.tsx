@@ -505,30 +505,30 @@ export function StreakDots({ dates, done }: { dates: string[]; done: boolean[] }
 }
 
 /** Small score meter used on meal cards. */
-export function ScoreMeter({ score, size = 44 }: { score: number; size?: number }) {
-  // Nought means unscored, not awful, so it gets a blank ring and a dash
-  // rather than an empty red one shouting zero out of a hundred.
+/**
+ * A meal's or a day's food-quality score: a rounded tile with a leaf, never
+ * a ring. Rings in Squish are amounts — calories, water, a target filling
+ * up — and the quality score looked like one more of them, which it is not:
+ * it says what the food was made of, not how much of it there was. The tile
+ * is its own shape so the two can never be mistaken for each other.
+ *
+ * Nought means unscored, not awful, so it gets a dash rather than a zero.
+ */
+export function ScoreMeter({ score, size = 44, label = size >= 50 }: { score: number; size?: number; label?: boolean }) {
   const scored = score > 0;
-  const tone = !scored ? 'var(--line)' : score >= 75 ? 'var(--good)' : score >= 45 ? 'var(--warn)' : 'var(--bad)';
-  const r = (size - 6) / 2;
-  const c = 2 * Math.PI * r;
+  const band = !scored ? 'none' : score >= 75 ? 'great' : score >= 55 ? 'good' : score >= 38 ? 'soso' : 'room';
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="score-meter" role="img" aria-label={scored ? `Quality score ${score} out of 100` : 'No calories to score'}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-sunk)" strokeWidth="5" />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={tone}
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeDasharray={`${scored ? (c * Math.min(100, score)) / 100 : 0} ${c}`}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-      <text x="50%" y="53%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.32} fontWeight="600" fill="var(--ink)">
-        {scored ? score : '–'}
-      </text>
-    </svg>
+    <span
+      className={`quality-tile quality-tile--${band}`}
+      style={{ width: size, height: size, fontSize: size * (label ? 0.36 : 0.4) }}
+      role="img"
+      aria-label={scored ? `Food quality ${score} out of 100` : 'No calories to score'}
+    >
+      <svg className="quality-leaf" viewBox="0 0 24 24" width={size * 0.26} height={size * 0.26} aria-hidden="true">
+        <path d="M20 4C11 4 5 8 5 15c0 2 .6 3.6 1.5 5 1-4 4-7 8-9-3 2.6-5 5.6-5.8 9.2C9.6 20.6 10.3 21 12 21c6 0 8.5-6.5 8-17Z" fill="currentColor" />
+      </svg>
+      <b>{scored ? score : '–'}</b>
+      {label && <span className="quality-word">quality</span>}
+    </span>
   );
 }

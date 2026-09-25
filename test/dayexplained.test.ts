@@ -75,3 +75,13 @@ test('nothing logged explains nothing', () => {
   const day = explainDay([], TODAY, targets, TODAY);
   assert.deepEqual([day.score, day.reasons, day.tip], [0, [], null]);
 });
+
+test('a meal explains itself with the factors its score is built from', async () => {
+  const { explainMeal } = await import('../src/lib/dayExplained');
+  const pizza: Nutrients = { calories: 820, protein: 34, carbs: 88, fat: 36, fibre: 5, sugar: 10, sodium: 1900, satFat: 16, freeSugar: 4 } as Nutrients;
+  const explained = explainMeal(pizza, [{ id: '1', name: 'Pizza', nutrients: pizza, ultraProcessed: true }] as never);
+  assert.equal(explained.score, qualityScore(pizza, 1));
+  assert.deepEqual(explained.reasons.map((r) => r.key), ['protein', 'processed', 'salt', 'fibre', 'satFat']);
+  assert.equal(explained.small, false);
+  assert.equal(explainMeal(bar, []).small, true, 'a small snack is judged gently, and says so');
+});

@@ -9,6 +9,7 @@ import { CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, T
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
 import DayScoreSheet from '../components/diary/DayScoreSheet';
+import MealQuality from '../components/MealQuality';
 import { explainDay } from '../lib/dayExplained';
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
@@ -105,11 +106,11 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <ProgressRing value={totals.calories} target={targets.calories} size={132} />
           <div className="grow stack">
             <div className="row-between diary-verdict">
-              <span className="small muted">Day score</span>
+              <span className="small muted">Food quality</span>
               {score > 0 ? (
                 // Tappable: what the score is and what moved it. Today, until
                 // there is enough logged, it says so rather than judging.
-                <button type="button" className="diary-score-btn" onClick={() => setExplaining(true)} aria-label="What is the day score?">
+                <button type="button" className="diary-score-btn" onClick={() => setExplaining(true)} aria-label="What is food quality?">
                   <span className={`badge badge--${explained.early ? 'none' : verdict.tone}`}>
                     {explained.early ? 'Early days' : verdict.tone === 'none' ? verdict.label : `${score} ${verdict.label}`}
                   </span>
@@ -229,6 +230,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                 </p>
               </div>
             </div>
+
+            <MealQuality meal={selected} />
 
             <MacroBars totals={selected.nutrients} targets={targets} compact />
             <MinorNutrients totals={selected.nutrients} targets={targets} />

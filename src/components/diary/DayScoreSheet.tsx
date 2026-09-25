@@ -1,6 +1,7 @@
 import { Sheet } from '../ui';
 import { scoreLabel } from '../../lib/nutrition';
 import { EARLY_KCAL, type DayExplained } from '../../lib/dayExplained';
+import ScoreReasons from '../ScoreReasons';
 
 /**
  * What the day score is, and what moved it today. Opened from the score on
@@ -9,10 +10,9 @@ import { EARLY_KCAL, type DayExplained } from '../../lib/dayExplained';
 export default function DayScoreSheet({ open, onClose, explained }: { open: boolean; onClose: () => void; explained: DayExplained }) {
   const { score, early, reasons, tip, calories } = explained;
   const { label, tone } = scoreLabel(score);
-  const biggest = Math.max(1, ...reasons.map((r) => Math.abs(r.points)));
 
   return (
-    <Sheet open={open} onClose={onClose} title="Your day score">
+    <Sheet open={open} onClose={onClose} title="Today's food quality">
       <div className="day-score">
         <div className="day-score-head">
           <span className={`day-score-number day-score-number--${early ? 'none' : tone}`}>{score > 0 ? score : '–'}</span>
@@ -21,7 +21,7 @@ export default function DayScoreSheet({ open, onClose, explained }: { open: bool
             <p className="tiny muted">
               {early
                 ? `${calories} kcal logged so far. The score settles once there is more to go on — about ${EARLY_KCAL} kcal, or a proper meal.`
-                : 'How good today’s food was for what it’s made of — not how much you ate.'}
+                : 'How good today’s food was for what it’s made of. Not how much you ate — that is the calorie ring.'}
             </p>
           </div>
         </div>
@@ -29,22 +29,7 @@ export default function DayScoreSheet({ open, onClose, explained }: { open: bool
         {reasons.length > 0 && (
           <>
             <h4 className="small">{early ? 'So far' : 'What moved it today'}</h4>
-            <ul className="day-reasons">
-              {reasons.map((r) => (
-                <li key={r.key} className={r.points > 0 ? 'up' : 'down'}>
-                  <span className="day-reason-words">
-                    {r.points > 0 ? '↑' : '↓'} {r.words}
-                  </span>
-                  <span className="day-reason-bar" aria-hidden="true">
-                    <span style={{ width: `${(Math.abs(r.points) / biggest) * 100}%` }} />
-                  </span>
-                  <span className="tiny muted day-reason-points">
-                    {r.points > 0 ? '+' : '−'}
-                    {Math.abs(r.points)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <ScoreReasons reasons={reasons} base={false} />
           </>
         )}
 
