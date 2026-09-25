@@ -504,10 +504,8 @@ export function StreakDots({ dates, done }: { dates: string[]; done: boolean[] }
   );
 }
 
-/** Small score meter used on meal cards. */
 /**
- * A meal's or a day's food-quality score: a rounded tile with a leaf, never
- * a ring. Rings in Squish are amounts — calories, water, a target filling
+ * A meal's or a day's food-quality score: a rounded tile, never a ring. Rings in Squish are amounts — calories, water, a target filling
  * up — and the quality score looked like one more of them, which it is not:
  * it says what the food was made of, not how much of it there was. The tile
  * is its own shape so the two can never be mistaken for each other.
@@ -524,9 +522,6 @@ export function ScoreMeter({ score, size = 44, label = size >= 50 }: { score: nu
       role="img"
       aria-label={scored ? `Food quality ${score} out of 100` : 'No calories to score'}
     >
-      <svg className="quality-leaf" viewBox="0 0 24 24" width={size * 0.26} height={size * 0.26} aria-hidden="true">
-        <path d="M20 4C11 4 5 8 5 15c0 2 .6 3.6 1.5 5 1-4 4-7 8-9-3 2.6-5 5.6-5.8 9.2C9.6 20.6 10.3 21 12 21c6 0 8.5-6.5 8-17Z" fill="currentColor" />
-      </svg>
       <b>{scored ? score : '–'}</b>
       {label && <span className="quality-word">quality</span>}
     </span>

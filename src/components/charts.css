@@ -141,14 +141,13 @@
 .micro-value { white-space: nowrap; }
 .micro-note { margin-top: var(--s3); }
 
-/* Food quality: a tile, never a ring (rings are amounts). The leaf says
-   "what it was made of"; the colour follows the four bands. */
+/* Food quality: a tile, never a ring (rings are amounts). The colour
+   follows the four bands. */
 .quality-tile {
-  flex: none; position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
   border-radius: 30%; line-height: 1; background: var(--surface-sunk); color: var(--ink-2);
 }
 .quality-tile b { font-weight: 700; color: var(--ink); }
-.quality-leaf { position: absolute; top: 12%; right: 12%; opacity: 0.85; }
 .quality-word { font-size: 0.34em; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px; opacity: 0.8; }
 .quality-tile--great { background: var(--good-soft); color: var(--good); }
 .quality-tile--good { background: var(--brand-soft); color: var(--brand-ink); }
