@@ -1,7 +1,7 @@
 import { useId, useMemo, type CSSProperties, type Ref } from 'react';
 import type { Mood } from '../types';
 import { MASCOT_ART, MASCOT_VIEWBOX } from './squish-art';
-import { finishGradient, lookById } from '../lib/looks';
+import { finishGradient, lookById, lookVars } from '../lib/looks';
 import { SLOTS, dress, riseOf, wearable, type AccessoryArt, type Outfit, type Slot } from '../lib/outfit';
 import { useSquish } from '../store/useSquish';
 import { useAccessoryArt } from './accessories';
@@ -66,7 +66,17 @@ export function Squish({ mood = 'excited', size = 140, heart = false, bob = true
   // Two mascots on one page would otherwise fight over `url(#skin)`.
   const instance = useId().replace(/[^a-zA-Z0-9]/g, '');
   const chosen = useSquish((s) => s.look);
-  const finish = lookById(look ?? chosen).finish;
+  const wornLook = lookById(look ?? chosen);
+  const finish = wornLook.finish;
+  // A plain colour is painted through the skin custom properties, which the
+  // app sets once, on the page, for the colour somebody has chosen. A Squish
+  // asked to wear a particular colour — a tile in the picker — sets its own,
+  // or every tile would show the chosen colour. The theme is read from the
+  // page, which is where useAppliedTheme puts it.
+  const ownColour =
+    look && !finish
+      ? (lookVars(wornLook, typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark') as CSSProperties)
+      : undefined;
 
   // What they have on, less anything they may not wear today: a lapsed
   // subscription or an ended season takes the item off without anything
@@ -102,7 +112,7 @@ export function Squish({ mood = 'excited', size = 140, heart = false, bob = true
     <svg
       ref={ref}
       className={`squish ${bob ? 'squish--bob' : ''} squish--${mood} ${className}`}
-      style={{ width: size, height: size, ...style }}
+      style={{ width: size, height: size, ...ownColour, ...style }}
       viewBox={MASCOT_VIEWBOX}
       data-rise={layers.head ? riseOf(worn) || undefined : undefined}
       role="img"

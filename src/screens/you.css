@@ -9,8 +9,9 @@
 .learned p + p { margin-top: 6px; }
 .link-button { color: var(--brand-ink); text-decoration: underline; font: inherit; }
 
-/* The colourway picker. Swatches rather than six little mascots: six copies of
-   the artwork is a lot of SVG for a row somebody scrolls past. */
+/* The colourway picker. Each colour is shown on Squish, as the Plus finishes
+   and the wardrobe are: a coloured dot said less about how Squish would look
+   than Squish in the colour. */
 .looks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
 .look {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -112,3 +113,6 @@
 .plan-how dl { margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; }
 .plan-how dt { font-weight: 600; color: var(--ink); }
 .plan-how dd { margin: 0; line-height: 1.4; }
+/* A colour not yet earned: stepped back, but still in its colour — the colour is what is on offer. */
+.look--colour.look--locked .look-preview { opacity: 0.6; }
+.look--colour.look--on .tile-note { color: var(--brand-ink); font-weight: 600; }

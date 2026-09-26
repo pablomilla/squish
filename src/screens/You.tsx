@@ -303,22 +303,17 @@ export default function You({ go }: { go: (route: Route) => void }) {
                 type="button"
                 role="radio"
                 aria-checked={chosen}
-                className={`look${chosen ? ' look--on' : ''}${earned ? '' : ' look--locked'}`}
+                className={`look look--colour${chosen ? ' look--on' : ''}${earned ? '' : ' look--locked'}`}
                 // A locked one is not disabled: pressing it should say how to
                 // get it, which is the only thing somebody wants to know.
                 onClick={() => (earned ? setLook(entry.id) : toast(entry.how, '🔒'))}
                 aria-label={earned ? entry.name : `${entry.name}, locked — ${entry.how}`}
               >
-                <span
-                  className="look-swatch"
-                  aria-hidden="true"
-                  style={{
-                    background: `radial-gradient(circle at 34% 30%, ${
-                      (prefersDark && theme === 'system') || theme === 'dark' ? entry.dark : entry.light
-                    })`,
-                  }}
-                />
-                <span className="tiny">{earned ? entry.name : entry.how}</span>
+                {/* Squish in the colour, like the finishes below: a dot of peach
+                    says less about how Squish will look than Squish in peach. */}
+                <Squish mood="excited" size={58} bob={false} look={entry.id} className="look-preview" label="" />
+                <span className="tile-name">{entry.name}</span>
+                {chosen ? <span className="tile-note">Wearing</span> : !earned && <span className="tile-note">{entry.how}</span>}
               </button>
             );
           })}
