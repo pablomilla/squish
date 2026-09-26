@@ -243,8 +243,15 @@ export async function settleFriend(friendId: string, appOrigin?: string): Promis
 
   // Tell the one who invited, by email where there is mail. Their app says
   // so too, the next time they open the invite card.
+  //
+  // Only to a confirmed address, the same rule as the security notices:
+  // otherwise somebody could make an account in a stranger's name, share its
+  // invite, and have Squish send that stranger mail. The reward itself does
+  // not wait for it — only the email does.
   if (settled?.referrerId && settled.referrerDays && settled.referrerKind && settled.referrerPlusUntil && appOrigin && canSendMail()) {
-    const to = await query<{ email: string }>('select email from accounts where id = $1', [settled.referrerId]);
+    const to = await query<{ email: string }>('select email from accounts where id = $1 and email_verified_at is not null', [
+      settled.referrerId,
+    ]);
     if (to[0]) {
       const link = `${appOrigin}/`;
       const { referrerKind, referrerDays, referrerPlusUntil } = settled;

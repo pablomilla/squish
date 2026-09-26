@@ -196,7 +196,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
   'friend-reward': {
     key: 'friend-reward',
     label: 'Friend reward',
-    when: 'When somebody you invited has used Squish on enough days, and a month of Plus is yours',
+    when: 'When somebody you invited has used Squish on enough days, and a month of Plus is yours — only to confirmed addresses',
     subject: 'Your friend is on Squish — here is your thank-you',
     body: [
       'Good news: a friend you invited to Squish has got going, so you both get a thank-you.',

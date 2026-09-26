@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test, before, after } from 'node:test';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { attributeFriend, friendCodeFor, friendsView, isFriendCode, rewardWords, settleFriend } from '../server/friends';
 import { allowanceWithExtras, extrasFor } from '../server/plan';
@@ -174,4 +176,50 @@ when('an invited friend can see how close they are', async () => {
   const view = await friendsView(friend.id);
   assert.deepEqual(view.mine, { rewarded: false, daysUsed: 2, verified: true });
   assert.equal((await friendsView(inviter.id)).mine, null);
+});
+
+when('the thank-you email goes only to an inviter who has confirmed their address', async () => {
+  // A stand-in mail provider that keeps what it is sent.
+  const sent: { to: string; subject: string }[] = [];
+  const provider = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => (body += chunk));
+    req.on('end', () => {
+      sent.push(JSON.parse(body));
+      res.end('{}');
+    });
+  });
+  await new Promise<void>((resolve) => provider.listen(0, '127.0.0.1', () => resolve()));
+  const saved = process.env.SQUISH_MAIL_WEBHOOK;
+  process.env.SQUISH_MAIL_WEBHOOK = `http://127.0.0.1:${(provider.address() as AddressInfo).port}/`;
+
+  const settleWith = async (inviterVerified: boolean) => {
+    const inviter = await anAccount({ verified: inviterVerified });
+    const friend = await anAccount();
+    await attributeFriend(friend.id, await friendCodeFor(inviter.id), null);
+    await invitedDaysAgo(friend.id, 2);
+    await seen(friend.device, [0, 1, 2]);
+    const settled = await settleFriend(friend.id, 'https://app.squish.online');
+    return { inviter, settled };
+  };
+  const waitFor = async (check: () => boolean) => {
+    for (let i = 0; i < 100 && !check(); i++) await new Promise((resolve) => setTimeout(resolve, 20));
+  };
+
+  try {
+    const stranger = await settleWith(false);
+    assert.equal(stranger.settled?.referrerDays, 30, 'the reward itself does not wait for the address');
+    const confirmed = await settleWith(true);
+    await waitFor(() => sent.length > 0);
+    // Give a wrongly sent one time to arrive too, before saying there was none.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const addresses = sent.map((mail) => mail.to);
+    assert.ok(addresses.includes(`friend-${confirmed.inviter.id}@example.com`), 'the confirmed inviter was not thanked');
+    assert.ok(!addresses.includes(`friend-${stranger.inviter.id}@example.com`), 'mail went to an address nobody confirmed');
+  } finally {
+    if (saved === undefined) delete process.env.SQUISH_MAIL_WEBHOOK;
+    else process.env.SQUISH_MAIL_WEBHOOK = saved;
+    provider.close();
+  }
 });
