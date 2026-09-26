@@ -279,28 +279,31 @@ test('an account keeps the language, country and time zone its app last said', a
 
 /* ---------------- prices where they live ---------------- */
 
+/** A page with its prices unmarked, to read as a person would. */
+const unmarked = (html: string) => html.replace(/<span data-price="\w+">([^<]*)<\/span>/g, '$1');
+
 test('the plans show the price in the currency of the country the browser names', async () => {
   const american = await fetch(`${base}/`, { headers: { 'Accept-Language': 'en-US,en;q=0.9' } });
   assert.match(american.headers.get('vary') ?? '', /Accept-Language/);
-  const html = await american.text();
+  const html = unmarked(await american.text());
   assert.match(html, /<p class="price">\$0<\/p>/);
   assert.match(html, /<p class="price">\$7\.99 <small>a month, or \$59\.99 a year<\/small><\/p>/);
-  assert.match(html, /<a href="\?country=US#plans" aria-current="true">/);
+  assert.match(html, /<a href="\?country=US#plans" data-country="US" aria-current="true">/);
   assert.doesNotMatch(html, /\{monthly\}|\{yearly\}|\{free\}|<!--countries-->/);
 
-  const british = await (await fetch(`${base}/`)).text();
+  const british = unmarked(await (await fetch(`${base}/`)).text());
   assert.match(british, /£6\.99 <small>a month, or £49\.99 a year/, 'Britain where the browser names nowhere');
 });
 
 test('a country picked under the plans wins over the browser, in any language', async () => {
-  const irish = await (await fetch(`${base}/support?country=ie`, { headers: { 'Accept-Language': 'en-US' } })).text();
+  const irish = unmarked(await (await fetch(`${base}/support?country=ie`, { headers: { 'Accept-Language': 'en-US' } })).text());
   assert.match(irish, /Plus is €7\.99 a month or €57\.99 a year/);
 
-  const korean = await (await fetch(`${base}/ko/?country=AU`)).text();
+  const korean = unmarked(await (await fetch(`${base}/ko/?country=AU`)).text());
   assert.match(korean, /KO:A\$11\.99 <small>a month, or A\$84\.99 a year<\/small>|KO:AU\$11\.99 <small>a month, or AU\$84\.99 a year<\/small>/);
   assert.match(korean, /<span aria-hidden="true">🇳🇿<\/span> /, 'every other country is a tap away');
 
-  const unknown = await (await fetch(`${base}/?country=FR`, { headers: { 'Accept-Language': 'en-CA' } })).text();
+  const unknown = unmarked(await (await fetch(`${base}/?country=FR`, { headers: { 'Accept-Language': 'en-CA' } })).text());
   assert.match(unknown, /<p class="price">\$9\.99 /, 'a country Squish does not sell in is ignored');
 });
 
@@ -309,4 +312,33 @@ test('the price sentences reach the translator with their placeholders, not a cu
   assert.ok(site.some((e) => e.text === '{monthly} <small>a month, or {yearly} a year</small>'));
   assert.ok(!site.some((e) => e.text === '{free}'), 'a bare placeholder is nothing to translate');
   assert.ok(!site.some((e) => /£/.test(e.text ?? '')), 'no pounds left in the pages');
+});
+
+test('the page carries every country’s prices for the time zone guess, and says when one was picked', async () => {
+  const read = async (url: string, headers: Record<string, string> = {}) => {
+    const html = await (await fetch(url, { headers })).text();
+    const block = /<script type="application\/json" id="prices-data">([^<]*)<\/script>/.exec(html);
+    assert.ok(block, `no prices data on ${url}`);
+    assert.match(html, /<script src="\/prices\.js" defer><\/script>/);
+    return { html, data: JSON.parse(block[1]) as { region: string; picked: boolean; prices: Record<string, Record<string, string>>; zones: Record<string, string[]> } };
+  };
+
+  const guessed = await read(`${base}/`, { 'Accept-Language': 'en-US' });
+  assert.equal(guessed.data.region, 'US');
+  assert.equal(guessed.data.picked, false);
+  assert.deepEqual(guessed.data.prices.GB, { free: '£0', monthly: '£6.99', yearly: '£49.99' });
+  assert.deepEqual(guessed.data.prices.NZ, { free: '$0', monthly: '$12.99', yearly: '$89.99' });
+  assert.ok(guessed.data.zones.GB.includes('Europe/London'));
+  assert.match(guessed.html, /<span data-price="monthly">\$7\.99<\/span>/);
+
+  const picked = await read(`${base}/support?country=CA`);
+  assert.equal(picked.data.picked, true, 'a picked country is left alone');
+  assert.equal(picked.data.region, 'CA');
+
+  // Written in the page's language, like the prices it replaces.
+  const canadianFrench = await read(`${base}/fr/`, { 'Accept-Language': 'fr-CA' });
+  assert.match(canadianFrench.data.prices.CA.monthly, /^9,99\s\$$/);
+
+  const notFound = await (await fetch(`${base}/nope`)).text();
+  assert.doesNotMatch(notFound, /prices-data|prices\.js/, 'no prices, no script');
 });

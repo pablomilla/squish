@@ -33,7 +33,9 @@
  * paywall shows (src/lib/region.ts). The pages say `{monthly}`, `{yearly}`
  * and `{free}`, filled in for the country the browser's language names
  * ("en-AU", "es-US"), or the one picked under the plans (`?country=AU`).
- * Britain where neither says. Nothing asks where anybody actually is.
+ * Britain where neither says. Then, in the browser, site/prices.js swaps in
+ * the country its clock is set to, if that is one of the six and nobody
+ * picked. Nothing asks where anybody actually is.
  */
 import { readFile } from 'node:fs/promises';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -41,7 +43,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { idOf, localeFor, RTL_LANGUAGES } from '../src/lib/i18n';
 import { LANGUAGE_LIST, isLanguage, type Language } from '../src/lib/language';
-import { REGION_LIST, REGIONS, detectRegion, isRegion, type Region } from '../src/lib/region';
+import { REGION_LIST, REGIONS, TIME_ZONES, detectRegion, isRegion, type Region } from '../src/lib/region';
 import { stringsOf, translateHtml, type Lookup } from './htmlWords';
 import { fillLanguage, registerStrings, speakerFor, translationsFor } from './translate';
 import { acceptLanguage, acceptedTags } from './reader';
@@ -209,20 +211,41 @@ export function sitePrice(amount: number, region: Region, language: Language): s
   }).format(amount);
 }
 
-/** The prices in, and the links to every other country's under the plans. */
-async function withPrices(html: string, region: Region, language: Language): Promise<string> {
-  const price = REGIONS[region].price;
-  const filled = html
-    .replaceAll('{free}', sitePrice(0, region, language))
-    .replaceAll('{monthly}', sitePrice(price.monthly, region, language))
-    .replaceAll('{yearly}', sitePrice(price.yearly, region, language));
-  if (!filled.includes('<!--countries-->')) return filled;
-  const { t } = await speakerFor(language);
-  const links = REGION_LIST.map(
-    (r) =>
-      `<a href="?country=${r.id}#plans"${r.id === region ? ' aria-current="true"' : ''}><span aria-hidden="true">${r.flag}</span> ${t(r.name)}</a>`,
-  ).join('\n            ');
-  return filled.replace('<!--countries-->', links);
+/**
+ * The prices in, and the links to every other country's under the plans.
+ *
+ * Each price is marked (`data-price`), and the page carries every country's
+ * prices, already written in its language, with the table of time zones, for
+ * site/prices.js: a browser whose clock is set to one of the six countries
+ * shows that country's prices, unless somebody picked one. The guess is made
+ * in the browser and goes nowhere.
+ */
+async function withPrices(html: string, region: Region, language: Language, picked: boolean): Promise<string> {
+  if (!/\{(free|monthly|yearly)\}/.test(html)) return html;
+  const pricesIn = (r: Region) => ({
+    free: sitePrice(0, r, language),
+    monthly: sitePrice(REGIONS[r].price.monthly, r, language),
+    yearly: sitePrice(REGIONS[r].price.yearly, r, language),
+  });
+  const shown = pricesIn(region);
+  let filled = html.replace(/\{(free|monthly|yearly)\}/g, (_whole, name: keyof typeof shown) => `<span data-price="${name}">${shown[name]}</span>`);
+  if (filled.includes('<!--countries-->')) {
+    const { t } = await speakerFor(language);
+    const links = REGION_LIST.map(
+      (r) =>
+        `<a href="?country=${r.id}#plans" data-country="${r.id}"${r.id === region ? ' aria-current="true"' : ''}><span aria-hidden="true">${r.flag}</span> ${t(r.name)}</a>`,
+    ).join('\n            ');
+    filled = filled.replace('<!--countries-->', links);
+  }
+  const data = {
+    region,
+    picked,
+    prices: Object.fromEntries(REGION_LIST.map((r) => [r.id, pricesIn(r.id)])),
+    zones: TIME_ZONES,
+  };
+  // Data, not code: a JSON block runs nothing, and "<" is escaped so nothing in it can end the tag.
+  const island = `<script type="application/json" id="prices-data">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>\n  <script src="/prices.js" defer></script>\n`;
+  return filled.replace('</body>', `  ${island}</body>`);
 }
 
 const pages = new Map<string, string>();
@@ -238,8 +261,9 @@ async function page(
   language: Language = 'en',
   prefixed = false,
   region: Region = 'GB',
+  picked = false,
 ): Promise<string | null> {
-  const key = `${file}|${appOrigin}|${language}|${prefixed}|${region}`;
+  const key = `${file}|${appOrigin}|${language}|${prefixed}|${region}|${picked}`;
   const cached = pages.get(key);
   if (cached !== undefined) return cached;
   try {
@@ -263,7 +287,7 @@ async function page(
         return `<link rel="canonical" href="${url.origin}/${language}${url.pathname}" />`;
       });
     }
-    html = (await withPrices(html, region, language)).replaceAll(APP_PLACEHOLDER, appOrigin);
+    html = (await withPrices(html, region, language, picked)).replaceAll(APP_PLACEHOLDER, appOrigin);
     // Cached for the life of the process once whole: the pages only change
     // with a deploy. One still waiting on translations is made again next time.
     if (process.env.NODE_ENV === 'production' && complete) pages.set(key, html);
@@ -338,7 +362,7 @@ export function siteRouter(appOrigin: () => string, distDir: string) {
     void (async () => {
       const file = pageFor(said.rest);
       if (file) {
-        const html = await page(file, appOrigin(), language, Boolean(said.language), prices.region);
+        const html = await page(file, appOrigin(), language, Boolean(said.language), prices.region, prices.picked);
         if (html) {
           res.type('html').set('Cache-Control', 'public, max-age=300').send(html);
           return;
@@ -346,7 +370,7 @@ export function siteRouter(appOrigin: () => string, distDir: string) {
       }
       files(req, res, () =>
         appFiles(req, res, async () => {
-          const missing = await page(join(SITE_DIR, '404.html'), appOrigin(), language, Boolean(said.language), prices.region);
+          const missing = await page(join(SITE_DIR, '404.html'), appOrigin(), language, Boolean(said.language), prices.region, prices.picked);
           res.status(404).type('html').send(missing ?? 'Not found');
         }),
       );

@@ -88,9 +88,14 @@ start-up.
 - Prices are placeholders in the pages (`{monthly}`, `{yearly}`, `{free}`),
   filled in after translating with the country's price from
   `src/lib/region.ts` — the same one the paywall shows — in its currency,
-  written the page's language's way. The country is the one the browser's
-  languages name (`en-AU`), else one picked under the plans (`?country=AU`),
-  else Britain.
+  written the page's language's way. The server picks the country from one
+  chosen under the plans (`?country=AU`), else the one the browser's
+  languages name (`en-AU`), else Britain. Then `site/prices.js`, unless a
+  country was chosen, swaps in the country the device's clock is set to, if
+  it is one of the six — the table is `TIME_ZONES` in `src/lib/region.ts`,
+  and every country's prices come on the page in a JSON block, so the script
+  asks nothing of anybody. It is what puts pounds in front of somebody in
+  Britain with a browser set to American English.
 - The screenshots are pictures of the English app.
 
 ## What it costs

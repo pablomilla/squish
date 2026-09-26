@@ -183,6 +183,46 @@ export function detectRegion(languages: readonly string[] | string | undefined):
   return HOME_REGION;
 }
 
+/**
+ * The six countries' time zones, as a device names them. An entry ending in
+ * "/" covers every zone under it ("Australia/Perth"). Old aliases are in too
+ * ("US/Eastern", "Eire"), since some systems still report them.
+ *
+ * A better guess than the language: plenty of people in Britain have a
+ * browser set to American English, and almost nobody has a clock set to
+ * another country's time. It says a country, never a place.
+ */
+export const TIME_ZONES: Record<Region, string[]> = {
+  GB: ['Europe/London', 'Europe/Belfast', 'Europe/Guernsey', 'Europe/Jersey', 'Europe/Isle_of_Man', 'GB', 'GB-Eire'],
+  IE: ['Europe/Dublin', 'Eire'],
+  US: [
+    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles',
+    'America/Anchorage', 'America/Juneau', 'America/Sitka', 'America/Metlakatla', 'America/Yakutat', 'America/Nome',
+    'America/Adak', 'America/Boise', 'America/Detroit', 'America/Menominee', 'America/Indiana/', 'America/Kentucky/',
+    'America/North_Dakota/', 'America/Indianapolis', 'America/Louisville', 'America/Fort_Wayne', 'Pacific/Honolulu',
+    'US/', 'Navajo',
+  ],
+  CA: [
+    'America/Toronto', 'America/Montreal', 'America/Vancouver', 'America/Edmonton', 'America/Winnipeg', 'America/Regina',
+    'America/Halifax', 'America/St_Johns', 'America/Moncton', 'America/Glace_Bay', 'America/Goose_Bay',
+    'America/Whitehorse', 'America/Dawson', 'America/Yellowknife', 'America/Inuvik', 'America/Iqaluit',
+    'America/Pangnirtung', 'America/Rankin_Inlet', 'America/Resolute', 'America/Cambridge_Bay', 'America/Swift_Current',
+    'America/Dawson_Creek', 'America/Fort_Nelson', 'America/Creston', 'America/Atikokan', 'America/Blanc-Sablon',
+    'America/Thunder_Bay', 'America/Nipigon', 'America/Rainy_River', 'Canada/',
+  ],
+  AU: ['Australia/', 'Antarctica/Macquarie'],
+  NZ: ['Pacific/Auckland', 'Pacific/Chatham', 'NZ', 'NZ-CHAT'],
+};
+
+/** The country a time zone is in, if it is one of the six; null for anywhere else. */
+export function regionFromTimeZone(zone: string | null | undefined): Region | null {
+  if (!zone) return null;
+  for (const region of Object.keys(TIME_ZONES) as Region[]) {
+    if (TIME_ZONES[region].some((entry) => (entry.endsWith('/') ? zone.startsWith(entry) : zone === entry))) return region;
+  }
+  return null;
+}
+
 /** The browser's own guess, where there is a browser. */
 export function browserRegion(): Region {
   const nav = (globalThis as { navigator?: { language?: string; languages?: readonly string[] } }).navigator;

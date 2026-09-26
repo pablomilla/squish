@@ -3,6 +3,8 @@ import { afterEach, test } from 'node:test';
 import {
   REGIONS,
   detectRegion,
+  regionFromTimeZone,
+  TIME_ZONES,
   energyUnitOf,
   energyValue,
   formatEnergy,
@@ -128,4 +130,38 @@ test('the shopping list knows North American and Antipodean names', async () => 
   assert.equal(aisleOf('Cilantro'), 'fruit-veg');
   assert.equal(aisleOf('Tortilla chips'), 'cupboard');
   assert.equal(aisleOf('Ground beef'), 'meat-fish');
+});
+
+test('a time zone names its country, if it is one of the six', () => {
+  assert.equal(regionFromTimeZone('Europe/London'), 'GB');
+  assert.equal(regionFromTimeZone('Europe/Dublin'), 'IE');
+  assert.equal(regionFromTimeZone('America/Chicago'), 'US');
+  assert.equal(regionFromTimeZone('America/Indiana/Indianapolis'), 'US');
+  assert.equal(regionFromTimeZone('Pacific/Honolulu'), 'US');
+  assert.equal(regionFromTimeZone('America/Toronto'), 'CA');
+  assert.equal(regionFromTimeZone('America/St_Johns'), 'CA');
+  assert.equal(regionFromTimeZone('Australia/Perth'), 'AU');
+  assert.equal(regionFromTimeZone('Pacific/Chatham'), 'NZ');
+  assert.equal(regionFromTimeZone('US/Eastern'), 'US', 'old aliases still reported by some systems');
+  assert.equal(regionFromTimeZone('Europe/Paris'), null);
+  assert.equal(regionFromTimeZone('America/Mexico_City'), null, 'the Americas are not all America');
+  assert.equal(regionFromTimeZone('Australian'), null, 'a prefix only matches whole parts');
+  assert.equal(regionFromTimeZone(''), null);
+});
+
+test('every zone in the table is one the runtime knows, and no zone is in two countries', () => {
+  const seen = new Map<string, string>();
+  for (const [region, entries] of Object.entries(TIME_ZONES)) {
+    for (const entry of entries) {
+      assert.ok(!seen.has(entry), `${entry} is in ${seen.get(entry)} and ${region}`);
+      seen.set(entry, region);
+      if (entry.endsWith('/')) continue;
+      assert.doesNotThrow(() => new Intl.DateTimeFormat('en', { timeZone: entry }), `${entry} is not a time zone`);
+    }
+  }
+  // And the runtime's own list for each country is covered.
+  const known = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.('timeZone') ?? [];
+  for (const zone of ['America/Vancouver', 'America/Edmonton', 'America/Winnipeg', 'America/Halifax', 'America/Anchorage', 'Australia/Sydney', 'Pacific/Auckland']) {
+    if (known.includes(zone)) assert.ok(regionFromTimeZone(zone), `${zone} has no country`);
+  }
 });
