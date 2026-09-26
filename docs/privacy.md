@@ -216,15 +216,22 @@ somebody else's service is down.
 
 ### Our email provider — the emails we send you
 
-Squish sends exactly three kinds of email, and only these:
+Squish sends exactly four kinds of email to people who use it, and only
+these:
 
 - **A link to confirm your address**, when you make an account.
 - **A password-reset link**, when you ask for one.
 - **A security notice**, when your account is signed into, or its password is
   changed or reset — so that if it was not you, you find out.
+- **A thank-you for inviting a friend**, when somebody who joined with your
+  invite has got going and you have earned the reward. It says what you got,
+  never who the friend is.
 
 Each is written in the language you use Squish in, translated by Claude once
 for everybody as the app's wording is; nothing about you goes with that.
+
+Partners are also sent a sign-in link for their page, when they ask for one
+or when we send them one (see above). That one is in English.
 
 Security notices only go to an address you have confirmed, so nobody can use
 Squish to send mail to someone else. There is no marketing, no newsletter, and
