@@ -144,7 +144,7 @@ Rules:
 - portion names what the amount is in words — "1 small onion", "2 tbsp", "a handful". grams carries the weight. Do not put weights in the portion text.
 - title is the recipe's own name where the page gives one.
 - confidence is "low" when the yield is a guess, quantities are vague, or the page was clearly not a recipe.
-- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, British English. One or two sentences about the dish.`;
+- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the English of where they live. One or two sentences about the dish.`;
 
 /** What the recipe endpoint returns: a single serving, plus its provenance. */
 export interface RecipeImport extends AnalysisResult {

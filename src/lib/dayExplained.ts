@@ -12,6 +12,7 @@
 import { overPenalty, overTargets, scoreBreakdown, ultraProcessedShare, CEILING_LABEL, type ScoreFactorKey } from './nutrition';
 import { mealsOn, totalsOn, dayScore } from './selectors';
 import type { MealEntry, Targets } from '../types';
+import { fibreWord, saltWord } from './region';
 
 /**
  * Below this, today is too early to judge: one 90 kcal snack at breakfast
@@ -22,8 +23,12 @@ export const EARLY_KCAL = 400;
 
 const WORDS: Record<ScoreFactorKey, string> = {
   protein: 'Protein',
-  fibre: 'Fibre',
-  salt: 'Salt',
+  get fibre() {
+    return fibreWord();
+  },
+  get salt() {
+    return saltWord();
+  },
   sugar: 'Sugar',
   freeSugar: 'Added sugar',
   satFat: 'Saturated fat',

@@ -106,11 +106,14 @@ import {
   type CoachContext,
 } from './claude';
 import { cleanWeekRequest } from './weekplan';
+import { withPlace } from './region';
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '12mb' }));
 app.use(identify);
+// Which country's words and packets the prompts should use, for this request.
+app.use(withPlace);
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DIST = resolve(process.cwd(), 'dist');

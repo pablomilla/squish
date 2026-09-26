@@ -9,6 +9,7 @@ import { NUTRITIONIST_PLAN_NOTE, likesFrom } from '../lib/planner';
 import { PLUS } from '../lib/plan';
 import { isPaywalled, requestWeekPlan, SquishApiError, type WeekPlan } from '../lib/api';
 import './week-plan.css';
+import { energyValue, formatEnergy } from '../lib/region';
 
 type Stage = { kind: 'ask' } | { kind: 'planning' } | { kind: 'preview'; plan: WeekPlan };
 
@@ -204,7 +205,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
               <div className="week-day-head">
                 <h4 className="small">{friendlyDate(day.date)}</h4>
                 <span className="tiny muted">
-                  {day.calories.toLocaleString('en-GB')} of {targets.calories.toLocaleString('en-GB')} kcal
+                  {energyValue(day.calories).toLocaleString()} of {formatEnergy(targets.calories)}
                 </span>
               </div>
               {day.underFloor && <p className="tiny week-light">This day came out light — add a snack if you keep it.</p>}
@@ -230,7 +231,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
                         <span className="week-meal-text">
                           <span className="week-meal-title">{meal.title}</span>
                           <span className="tiny muted">
-                            {meal.slot} · {Math.round(meal.nutrients.calories)} kcal · P{Math.round(meal.nutrients.protein)} ·{' '}
+                            {meal.slot} · {formatEnergy(meal.nutrients.calories)} · P{Math.round(meal.nutrients.protein)} ·{' '}
                             {meal.items.map((item) => item.name).join(', ')}
                           </span>
                         </span>

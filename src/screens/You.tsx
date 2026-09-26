@@ -6,8 +6,9 @@ import PackTile from '../components/PackTile';
 import InviteCard from '../components/InviteCard';
 import SquadCard from '../components/squad/SquadCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
-import { HeightField, NumberField, WeightField } from '../components/fields';
-import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, retuneForUnits, saltGrams, sodiumMg, weightUnitLabel } from '../lib/units';
+import { HeightField, NumberField, RegionField, WeightField } from '../components/fields';
+import { REGIONS, energyUnitOf, energyValue, formatEnergy, regionOf, toKcal, type EnergyUnit } from '../lib/region';
+import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, imperialLabel, retuneForUnits, saltGrams, saltLabel, saltShown, showsSodium, sodiumFromShown, sodiumMg, weightUnitLabel } from '../lib/units';
 import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { ShareIcon, SparkIcon, TrashIcon } from '../components/icons';
@@ -22,7 +23,7 @@ import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../
 import { summariseDiary, type DiarySummary } from '../lib/diarySummary';
 import { PLUS, planNow, redeemInvite, watchStanding, type Standing } from '../lib/plan';
 import { useSquish, MIN_AGE } from '../store/useSquish';
-import { ACTIVITY_LABEL, GLASS_ML, computeTargets, tdee } from '../lib/nutrition';
+import { ACTIVITY_LABEL, GLASS_ML, MACRO_LABEL, computeTargets, tdee } from '../lib/nutrition';
 import { aiStatus, type AiStatus } from '../lib/api';
 import { apiUrl } from '../lib/origin';
 import { friendlyDate, isoDate, lastDays } from '../lib/date';
@@ -137,12 +138,12 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <div className="you-plan">
           <div className="pill-stat">
             <span className="tiny muted">Daily target</span>
-            <b>{targets.calories} kcal</b>
+            <b>{formatEnergy(targets.calories)}</b>
             <span className="tiny muted">to eat</span>
           </div>
           <div className="pill-stat">
             <span className="tiny muted">Maintenance</span>
-            <b>{maintenance} kcal</b>
+            <b>{formatEnergy(maintenance)}</b>
             <span className="tiny muted">your body burns</span>
           </div>
           <div className="pill-stat">
@@ -150,7 +151,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
             <b>{targets.protein} g</b>
           </div>
           <div className="pill-stat">
-            <span className="tiny muted">Fibre</span>
+            <span className="tiny muted">{MACRO_LABEL.fibre}</span>
             <b>{targets.fibre} g</b>
           </div>
         </div>
@@ -168,7 +169,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
         </details>
         {customised && (
           <button type="button" className="btn--quiet small" style={{ marginTop: 8 }} onClick={() => { recalcTargets(); toast('Back to the suggested plan', '↩️'); }}>
-            Reset to suggested ({suggested.calories} kcal)
+            Reset to suggested ({formatEnergy(suggested.calories)})
           </button>
         )}
 
@@ -179,9 +180,9 @@ export default function You({ go }: { go: (route: Route) => void }) {
             </p>
             <p className="tiny muted">
               Over {learned.observation.spanDays} days you averaged{' '}
-              <b>{learned.observation.meanIntake.toLocaleString()} kcal</b> a day and your weight moved{' '}
+              <b>{formatEnergy(learned.observation.meanIntake)}</b> a day and your weight moved{' '}
               <b>{formatWeightDelta(learned.observation.weeklyChangeKg, profile.units)}</b> a week. That puts what you
-              actually burn nearer <b>{learned.applied.toLocaleString()}</b> than the {learned.formula.toLocaleString()}{' '}
+              actually burn nearer <b>{formatEnergy(learned.applied)}</b> than the {formatEnergy(learned.formula)}{' '}
               the formula assumed.
             </p>
             {learned.capped && learned.factor < 1 && (
@@ -196,10 +197,10 @@ export default function You({ go }: { go: (route: Route) => void }) {
                 className="btn btn--soft btn--sm"
                 onClick={() => {
                   applyBurnFactor(learned.factor);
-                  toast(`Plan redone — ${computeTargets({ ...profile, burnFactor: learned.factor }).calories} kcal a day`, '🎯');
+                  toast(`Plan redone — ${formatEnergy(computeTargets({ ...profile, burnFactor: learned.factor }).calories)} a day`, '🎯');
                 }}
               >
-                Use {computeTargets({ ...profile, burnFactor: learned.factor }).calories} kcal instead
+                Use {formatEnergy(computeTargets({ ...profile, burnFactor: learned.factor }).calories)} instead
               </button>
               <button type="button" className="btn--quiet small" onClick={() => setIgnoredLearning(true)}>
                 Leave it
@@ -231,6 +232,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <Row label="Weight" value={formatWeight(profile.weightKg, profile.units)} />
         <Row label="Goal weight" value={formatWeight(profile.targetWeightKg, profile.units)} />
         <Row label="Height" value={formatHeight(profile.heightCm, profile.units)} />
+        <Row label="Country" value={`${REGIONS[regionOf(profile)].flag} ${REGIONS[regionOf(profile)].name}`} />
         <Row label="Age" value={`${profile.age}`} />
         <Row label="Activity" value={ACTIVITY_LABEL[profile.activity]} />
       </section>
@@ -612,6 +614,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
               />
             </div>
           )}
+          <RegionField value={regionOf(profile)} onChange={(region) => setProfile({ region, energy: undefined })} />
           <div className="field">
             <label>Units</label>
             <Segmented
@@ -619,7 +622,18 @@ export default function You({ go }: { go: (route: Route) => void }) {
               onChange={(units) => setProfile(retuneForUnits(profile, units))}
               options={[
                 { value: 'metric' as const, label: 'cm / kg' },
-                { value: 'imperial' as const, label: 'ft / st' },
+                { value: 'imperial' as const, label: imperialLabel() },
+              ]}
+            />
+          </div>
+          <div className="field">
+            <label>Energy</label>
+            <Segmented<EnergyUnit>
+              value={energyUnitOf(profile)}
+              onChange={(energy) => setProfile({ energy: energy === REGIONS[regionOf(profile)].energy ? undefined : energy })}
+              options={[
+                { value: 'kcal', label: 'Calories (kcal)' },
+                { value: 'kJ', label: 'Kilojoules (kJ)' },
               ]}
             />
           </div>
@@ -678,8 +692,19 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <div className="stack">
           <p className="small muted">Override anything Squish suggested — handy if a coach or dietitian set your numbers.</p>
           <div className="row-between">
-            <span className="small">Calories</span>
-            <Stepper value={targets.calories} step={50} min={1000} max={5000} onChange={(calories) => setTargets({ calories })} />
+            <span className="small">{energyUnitOf(profile) === 'kJ' ? 'Energy' : 'Calories'}</span>
+            {energyUnitOf(profile) === 'kJ' ? (
+              <Stepper
+                value={energyValue(targets.calories, 'kJ')}
+                step={200}
+                min={4200}
+                max={20900}
+                onChange={(kj) => setTargets({ calories: toKcal(kj, 'kJ') })}
+                suffix="kJ"
+              />
+            ) : (
+              <Stepper value={targets.calories} step={50} min={1000} max={5000} onChange={(calories) => setTargets({ calories })} />
+            )}
           </div>
           <div className="row-between">
             <span className="small">Protein</span>
@@ -698,7 +723,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
             <Stepper value={targets.satFat ?? 0} step={1} min={0} max={80} onChange={(satFat) => setTargets({ satFat })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Fibre</span>
+            <span className="small">{MACRO_LABEL.fibre}</span>
             <Stepper value={targets.fibre} step={1} min={10} max={60} onChange={(fibre) => setTargets({ fibre })} suffix="g" />
           </div>
           <div className="row-between">
@@ -710,15 +735,26 @@ export default function You({ go }: { go: (route: Route) => void }) {
             <Stepper value={targets.freeSugar ?? 0} step={5} min={0} max={200} onChange={(freeSugar) => setTargets({ freeSugar })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Salt<span className="tiny muted"> · a daily limit</span></span>
-            <Stepper
-              value={saltGrams(targets.sodium ?? 0)}
-              step={0.5}
-              min={0}
-              max={15}
-              onChange={(salt) => setTargets({ sodium: sodiumMg(salt) })}
-              suffix="g"
-            />
+            <span className="small">{saltLabel()}<span className="tiny muted"> · a daily limit</span></span>
+            {showsSodium() ? (
+              <Stepper
+                value={saltShown(targets.sodium ?? 0)}
+                step={100}
+                min={0}
+                max={6000}
+                onChange={(sodium) => setTargets({ sodium: sodiumFromShown(sodium) })}
+                suffix="mg"
+              />
+            ) : (
+              <Stepper
+                value={saltGrams(targets.sodium ?? 0)}
+                step={0.5}
+                min={0}
+                max={15}
+                onChange={(salt) => setTargets({ sodium: sodiumMg(salt) })}
+                suffix="g"
+              />
+            )}
           </div>
           <div className="row-between">
             <span className="small">

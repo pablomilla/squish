@@ -14,17 +14,22 @@ import { unlocksLine } from '../lib/rewards';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
 import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
 import { MACRO_LABEL, OVER, addOptional, ceilingLimit, isCeiling, round1 } from '../lib/nutrition';
-import { formatWeight, formatWeightDelta, saltGrams } from '../lib/units';
+import { formatWeight, formatWeightDelta, saltGrams, saltLabel, saltShown, saltShownFromSalt, saltUnit } from '../lib/units';
+import { currentEnergyUnit, energyValue, fibreWord, formatEnergy } from '../lib/region';
 import type { MacroKey } from '../types';
 import { progressBars, type Range } from '../lib/progressBars';
 import './insights.css';
 
 type Metric = 'calories' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'salt' | 'score';
 
-const METRIC_UNIT: Record<Metric, string> = { calories: 'kcal', protein: 'g', carbs: 'g', fat: 'g', fibre: 'g', sugar: 'g', salt: 'g', score: 'pts' };
-const METRIC_LABEL: Record<Metric, string> = {
-  calories: 'Calories', protein: 'Protein', carbs: 'Carbs', fat: 'Fat', fibre: 'Fibre', sugar: 'Sugar', salt: 'Salt', score: 'Quality',
-};
+/** Functions of the region: kJ or kcal, salt in grams or sodium in milligrams, fibre or fiber. */
+const metricUnit = (m: Metric): string =>
+  ({ calories: currentEnergyUnit(), protein: 'g', carbs: 'g', fat: 'g', fibre: 'g', sugar: 'g', salt: saltUnit(), score: 'pts' })[m];
+const metricLabel = (m: Metric): string =>
+  ({ calories: currentEnergyUnit() === 'kJ' ? 'Energy' : 'Calories', protein: 'Protein', carbs: 'Carbs', fat: 'Fat', fibre: fibreWord(), sugar: 'Sugar', salt: saltLabel(), score: 'Quality' })[m];
+/** A figure as the charts hold it (kcal, grams of salt), in the unit shown. */
+const shown = (m: Metric, value: number): number =>
+  m === 'calories' ? energyValue(value) : m === 'salt' ? saltShownFromSalt(value) : value;
 /** The ones you are trying to stay under rather than reach. */
 const METRIC_CEILING: Metric[] = ['sugar', 'salt'];
 
@@ -47,6 +52,10 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
   const points = useMemo(() => series(meals, dates, targets), [meals, dates, targets]);
   const summary = useMemo(() => summarise(points, targets), [points, targets]);
   const chart = useMemo(() => progressBars(points, range), [points, range]);
+  const shownBars = useMemo(
+    () => (metric === 'calories' || metric === 'salt' ? chart.bars.map((bar) => ({ ...bar, [metric]: shown(metric, bar[metric]) })) : chart.bars),
+    [chart.bars, metric],
+  );
   const week = weekOf(today);
   const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);
   const streak = streakOf(meals, today);
@@ -135,6 +144,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
     sugar: targets.sugar ?? 0,
     salt: saltGrams(targets.sodium ?? 0),
     score: 75,
+    // Held in kcal and salt grams like the bars; converted with them below.
   }[metric];
 
   const macroAverages = useMemo(() => {
@@ -159,7 +169,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
         ? []
         : [{ key: 'freeSugar', label: 'Free sugars', avg: round1(weekTotals.freeSugar / logged), limit: Math.round(targets.freeSugar ?? 0) }]),
       { key: 'sugar', label: 'Sugar', avg: Math.round(weekTotals.sugar / logged), limit: ceilingLimit('sugar', targets) },
-      { key: 'salt', label: 'Salt', avg: saltGrams(weekTotals.sodium / logged), limit: saltGrams(targets.sodium ?? 0) },
+      { key: 'salt', label: saltLabel(), avg: saltShown(weekTotals.sodium / logged), limit: saltShown(targets.sodium ?? 0) },
     ].filter((row) => row.limit > 0);
   }, [points, weekTotals, targets]);
 
@@ -227,22 +237,22 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
         <div className="card-title">
           <h3>
             {chart.grain === 'day' ? 'Daily' : chart.grain === 'week' ? 'Weekly average' : 'Monthly average'}{' '}
-            {METRIC_LABEL[metric].toLowerCase()}
+            {metricLabel(metric).toLowerCase()}
           </h3>
-          <span className="tiny muted">avg {metricAverage} {METRIC_UNIT[metric]}</span>
+          <span className="tiny muted">avg {shown(metric, metricAverage).toLocaleString()} {metricUnit(metric)}</span>
         </div>
         <WeeklyBars
           key={range}
-          points={chart.bars}
-          target={metricTarget}
+          points={shownBars}
+          target={shown(metric, metricTarget)}
           metric={metric}
-          unit={METRIC_UNIT[metric]}
+          unit={metricUnit(metric)}
           ceiling={METRIC_CEILING.includes(metric)}
         />
         <div className="metric-row">
           {(['calories', 'protein', 'carbs', 'fat', 'fibre', 'sugar', 'salt', 'score'] as Metric[]).map((m) => (
             <button key={m} type="button" className="chip" aria-pressed={metric === m} onClick={() => setMetric(m)}>
-              {METRIC_LABEL[m]}
+              {metricLabel(m)}
             </button>
           ))}
         </div>
@@ -251,7 +261,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
       <section className="insights-stats">
         <div className="pill-stat">
           <span className="tiny muted">Avg energy</span>
-          <b>{summary.avgCalories} kcal</b>
+          <b>{formatEnergy(summary.avgCalories)}</b>
         </div>
         <div className="pill-stat">
           <span className="tiny muted">On-target days</span>
@@ -303,15 +313,18 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
             <div className="avg-grid" style={{ gridTemplateColumns: `repeat(${ceilingAverages.length === 4 ? 2 : ceilingAverages.length}, minmax(0, 1fr))` }}>
               {ceilingAverages.map(({ key, label, avg, limit }) => {
                 const under = avg <= limit;
+                const unit = key === 'salt' ? saltUnit() : 'g';
                 return (
                   <div key={key} className="avg-cell">
                     <span className="tiny muted">{label}</span>
-                    <b>{avg} g</b>
+                    <b>
+                      {avg.toLocaleString()} {unit}
+                    </b>
                     <span
                       className={`tiny ${under ? 'avg-on' : 'avg-over'}`}
-                      aria-label={`${under ? 'under' : 'over'} the ${limit} gram daily limit`}
+                      aria-label={`${under ? 'under' : 'over'} the ${limit} ${unit === 'mg' ? 'milligram' : 'gram'} daily limit`}
                     >
-                      {under ? 'under' : 'over'} {limit} g
+                      {under ? 'under' : 'over'} {limit.toLocaleString()} {unit}
                     </span>
                   </div>
                 );
@@ -345,7 +358,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
               <span className="thumb thumb--emoji" aria-hidden="true">{food.emoji ?? '🍽️'}</span>
               <span className="grow">
                 <b className="small">{food.name}</b>
-                <p className="tiny muted">{food.count} time{food.count === 1 ? '' : 's'} · {Math.round(food.kcal)} kcal total</p>
+                <p className="tiny muted">{food.count} time{food.count === 1 ? '' : 's'} · {formatEnergy(food.kcal)} total</p>
               </span>
             </div>
           ))}

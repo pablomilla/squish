@@ -10,12 +10,14 @@
  */
 import { ACTIVITY_LABEL, computeTargets, tdee } from './nutrition';
 import { formatPace, formatWeightDelta } from './units';
+import { aboutEnergy, fibreWord, formatEnergy } from './region';
 import type { Profile, Targets } from '../types';
 
 /** A kilogram of body fat, near enough, in kcal. The same figure the targets use. */
 const KCAL_PER_KG = 7700;
 
-const kcal = (n: number) => `${Math.round(n).toLocaleString('en-GB')} kcal`;
+/** In kcal or kJ, whichever they count in. */
+const kcal = (n: number) => formatEnergy(n);
 
 export interface PlanExplained {
   /** What eating the target should do, in a sentence or two. */
@@ -66,13 +68,13 @@ export function explainPlan(profile: Profile, targets: Targets): PlanExplained {
       words:
         profile.goal === 'maintain'
           ? 'The same as maintenance, because your goal is to stay steady.'
-          : `Maintenance ${profile.goal === 'lose' ? 'minus' : 'plus'} what your pace needs. A kilogram of body fat is roughly ${kcal(KCAL_PER_KG)}, so ${formatPace(profile.pace, profile.units)} a week is about ${kcal(Math.round((Math.min(profile.pace, 1) * KCAL_PER_KG) / 7))} a day.`,
+          : `Maintenance ${profile.goal === 'lose' ? 'minus' : 'plus'} what your pace needs. A kilogram of body fat is roughly ${aboutEnergy(KCAL_PER_KG)}, so ${formatPace(profile.pace, profile.units)} a week is about ${kcal(Math.round((Math.min(profile.pace, 1) * KCAL_PER_KG) / 7))} a day.`,
     },
     {
       label: 'Protein',
       words: `${perKg} g for each kg you weigh${profile.goal === 'lose' ? ' — higher while losing, to help keep muscle' : profile.goal === 'gain' ? ', to help build muscle' : ''}.`,
     },
-    { label: 'Fibre', words: '14 g for every 1,000 kcal you eat: the usual guide for a healthy gut and heart.' },
+    { label: fibreWord(), words: `14 g for every ${aboutEnergy(1000)} you eat: the usual guide for a healthy gut and heart.` },
   ];
 
   return { summary, how };

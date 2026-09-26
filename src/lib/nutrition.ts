@@ -1,5 +1,6 @@
 import type { Activity, FoodItem, MacroKey, MicroKey, Micros, Nutrients, Profile, Targets } from '../types';
 import { MICROS } from '../types';
+import { REGIONS, fibreWord, regionOf, saltWord, type Guidance } from './region';
 
 export const EMPTY: Nutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0 };
 
@@ -75,7 +76,10 @@ export const MACRO_LABEL: Record<MacroKey, string> = {
   protein: 'Protein',
   carbs: 'Carbs',
   fat: 'Fat',
-  fibre: 'Fibre',
+  // A getter, so the label follows their region's spelling (fiber in the US).
+  get fibre() {
+    return fibreWord();
+  },
 };
 
 /** kcal per gram — fibre is counted inside carbs, so it is not double-counted. */
@@ -185,6 +189,13 @@ export const SUGAR_MAX_SHARE = 0.18;
  */
 export const FREE_SUGAR_MAX_SHARE = 0.1;
 
+/**
+ * The daily sodium limit each country's own advice sets, in milligrams.
+ * Britain and Ireland say 6 g of salt, which is 2,400 mg; the US and Canada
+ * say 2,300 mg; Australia and New Zealand's suggested target is 2,000 mg.
+ */
+export const SODIUM_LIMIT: Record<Guidance, number> = { uk: 2400, us: 2300, anz: 2000 };
+
 /** Daily calorie + macro targets, Yazio-style: pace converted to a kcal delta. */
 export function computeTargets(p: Profile): Targets {
   const maintenance = tdee(p);
@@ -211,7 +222,7 @@ export function computeTargets(p: Profile): Targets {
     fibre,
     sugar: Math.round((calories * SUGAR_SHARE) / 4),
     freeSugar: Math.round((calories * FREE_SUGAR_MAX_SHARE) / 4),
-    sodium: 2300,
+    sodium: SODIUM_LIMIT[REGIONS[regionOf(p)].guidance],
     satFat: Math.round((calories * SAT_FAT_MAX_SHARE) / 9),
     micros: microTargets(p),
     fatMax: Math.round((calories * FAT_MAX_SHARE) / 9),
@@ -223,25 +234,53 @@ export function computeTargets(p: Profile): Targets {
 }
 
 /**
- * UK Reference Nutrient Intakes, from the government's own dietary
- * recommendations. These are amounts to reach, not ceilings.
+ * Vitamins and minerals to reach each day, from the guidance where they live:
+ * the UK's Reference Nutrient Intakes for Britain and Ireland, the Dietary
+ * Reference Intakes the US and Canada share, and Australia and New Zealand's
+ * Nutrient Reference Values. Amounts to reach, not ceilings.
  *
- * Only iron varies, and not by sex as such: the higher figure exists because
- * of menstrual losses, which is why it applies to women up to 50 and not
- * after. Anyone who has not told us otherwise gets the higher one — it is a
- * target rather than a limit, and erring towards more iron costs nothing.
+ * Iron is higher for women up to 50 everywhere, because of menstrual losses —
+ * and anyone who has not told us their sex gets the higher of each, since a
+ * target rather than a limit costs nothing by erring upwards. The UK's are
+ * lower across the board: the three bodies set their lines at different
+ * points on the same curve, and each country's figures are the ones its
+ * labels and doctors use.
  */
-export function microTargets(p: Pick<Profile, 'sex' | 'age'>): Micros {
-  const lowerIron = p.sex === 'male' || p.age > 50;
-  return {
-    iron: lowerIron ? 8.7 : 14.8,
-    calcium: 700,
-    // SACN's 2016 figure, not the 5 µg still printed on labels.
-    vitaminD: 10,
-    vitaminB12: 1.5,
-    folate: 200,
-    vitaminC: 40,
-  };
+export function microTargets(p: Pick<Profile, 'sex' | 'age' | 'region'>): Micros {
+  const male = p.sex === 'male';
+  const female = p.sex === 'female';
+  const lowerIron = male || p.age > 50;
+  switch (REGIONS[regionOf(p)].guidance) {
+    case 'us':
+      return {
+        iron: lowerIron ? 8 : 18,
+        calcium: (female && p.age > 50) || p.age > 70 ? 1200 : 1000,
+        vitaminD: p.age > 70 ? 20 : 15,
+        vitaminB12: 2.4,
+        folate: 400,
+        vitaminC: female ? 75 : 90,
+      };
+    case 'anz':
+      return {
+        iron: lowerIron ? 8 : 18,
+        calcium: (female && p.age > 50) || p.age > 70 ? 1300 : 1000,
+        // An adequate intake, set low on the assumption of Australian sun.
+        vitaminD: p.age > 70 ? 15 : p.age > 50 ? 10 : 5,
+        vitaminB12: 2.4,
+        folate: 400,
+        vitaminC: 45,
+      };
+    default:
+      return {
+        iron: lowerIron ? 8.7 : 14.8,
+        calcium: 700,
+        // SACN's 2016 figure, not the 5 µg still printed on labels.
+        vitaminD: 10,
+        vitaminB12: 1.5,
+        folate: 200,
+        vitaminC: 40,
+      };
+  }
 }
 
 export function addNutrients(a: Nutrients, b: Nutrients): Nutrients {
@@ -538,7 +577,9 @@ export const CEILING_LABEL: Record<CeilingKey, string> = {
   fat: 'Fat',
   carbs: 'Carbs',
   sugar: 'Sugar',
-  sodium: 'Salt',
+  get sodium() {
+    return saltWord();
+  },
 };
 
 /**

@@ -9,7 +9,7 @@ const week = (loggedDays: number) => ({ days: 7, loggedDays, avgCalories: logged
 test('a streak card for two days or more, as before', () => {
   const card = shareStory({ streak: 9, best: 12, mealCount: 30, summary: week(7) });
   assert.equal(card.headline, '9 day streak');
-  assert.equal(card.subline, '7 of the last 7 days logged, averaging 1800 kcal.');
+  assert.equal(card.subline, '7 of the last 7 days logged, averaging 1,800 kcal.');
   assert.deepEqual(card.stats.map((s) => s.value), ['12', '72', '30']);
   assert.equal(card.mood, 'cheering');
 });

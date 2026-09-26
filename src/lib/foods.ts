@@ -1,5 +1,6 @@
 import type { FoodItem, Micros, Nutrients } from '../types';
 import { round1, scaleMicros } from './nutrition';
+import { localFood, type Region } from './region';
 
 export interface FoodRecord {
   id: string;
@@ -252,10 +253,29 @@ export const FOODS: FoodRecord[] = [
   f('croissant', 'Croissant', '🥐', '1 croissant', 60, [406, 8.2, 46, 21, 2.6, 11, 424, 12, 9], ['breakfast', 'treat']),
 ];
 
-export function searchFoods(query: string, limit = 24): FoodRecord[] {
+/**
+ * A food as it is called and served where they live. The British name stays
+ * on as a tag, so somebody who searches for "crisps" in Sydney still finds
+ * the potato chips.
+ */
+export function localised(food: FoodRecord, region?: Region): FoodRecord {
+  const local = localFood(food.id, region);
+  if (!local) return food;
+  const renamed = local.name && local.name !== food.name;
+  return {
+    ...food,
+    name: local.name ?? food.name,
+    serving: local.serving ?? food.serving,
+    servingG: local.servingG ?? food.servingG,
+    tags: renamed ? [...food.tags, food.name.toLowerCase()] : food.tags,
+  };
+}
+
+export function searchFoods(query: string, limit = 24, region?: Region): FoodRecord[] {
+  const foods = FOODS.map((food) => localised(food, region));
   const q = query.trim().toLowerCase();
-  if (!q) return FOODS.slice(0, limit);
-  const scored = FOODS.map((food) => {
+  if (!q) return foods.slice(0, limit);
+  const scored = foods.map((food) => {
     const name = food.name.toLowerCase();
     let score = 0;
     if (name === q) score = 100;
@@ -274,12 +294,14 @@ export function searchFoods(query: string, limit = 24): FoodRecord[] {
   return scored.slice(0, limit).map((x) => x.food);
 }
 
-export function foodById(id: string): FoodRecord | undefined {
-  return FOODS.find((x) => x.id === id);
+export function foodById(id: string, region?: Region): FoodRecord | undefined {
+  const food = FOODS.find((x) => x.id === id);
+  return food && localised(food, region);
 }
 
 /** Turn a food record into a logged item at `servings` × its default serving. */
-export function toFoodItem(food: FoodRecord, servings = 1): FoodItem {
+export function toFoodItem(record: FoodRecord, servings = 1): FoodItem {
+  const food = localised(record);
   const grams = food.servingG * servings;
   const factor = grams / 100;
   const n = food.per100;

@@ -9,6 +9,7 @@
  */
 import type { Mood } from '../types';
 import type { RangeSummary } from './selectors';
+import { formatEnergy } from './region';
 
 /** What a card says. Kept here, away from the canvas code, so tests can use it. */
 export interface ShareCardData {
@@ -30,7 +31,7 @@ export interface ShareStory {
 export function shareStory({ streak, best, mealCount, summary }: ShareStory): ShareCardData {
   const logged =
     summary.loggedDays > 0
-      ? `${summary.loggedDays} of the last ${summary.days} days logged, averaging ${summary.avgCalories} kcal.`
+      ? `${summary.loggedDays} of the last ${summary.days} days logged, averaging ${formatEnergy(summary.avgCalories)}.`
       : 'Every day counts.';
 
   if (streak >= 2) {

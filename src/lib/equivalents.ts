@@ -12,6 +12,7 @@
  * line does not repeat itself every time.
  */
 import { foodById } from './foods';
+import { localWords } from './region';
 
 export type GoodNutrient = 'protein' | 'fibre';
 
@@ -80,7 +81,7 @@ export function equivalentFor(nutrient: GoodNutrient, grams: number, seed = 0): 
   const pool = sensible.length ? sensible : [options.reduce((a, b) => (a.count < b.count ? a : b))];
   const pick = pool[Math.abs(Math.floor(seed)) % pool.length];
   const { text, plural } = friendlyCount(Math.max(1, pick.count));
-  return { nutrient, emoji: pick.ref.emoji, amount: `${text} ${plural ? pick.ref.many : pick.ref.one}` };
+  return { nutrient, emoji: pick.ref.emoji, amount: localWords(`${text} ${plural ? pick.ref.many : pick.ref.one}`) };
 }
 
 /** A stable number from some text — a date, a meal's title — so the same thing gets the same food. */

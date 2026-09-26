@@ -29,14 +29,14 @@ export const AISLES: { id: Aisle; title: string }[] = [
 /** Checked in this order, so "chicken stock" is found in the cupboard before "chicken" puts it with the meat. */
 const WORDS: [Aisle, RegExp][] = [
   // Fresh things whose names sound like the cupboard or the freezer.
-  ['fruit-veg', /green beans|runner beans|fine beans|broad beans|mangetout|sugar snap|butternut|bell pepper|red pepper|green pepper|yellow pepper/],
+  ['fruit-veg', /green beans|runner beans|fine beans|broad beans|mangetout|sugar snap|butternut|bell pepper|red pepper|red capsicum|green capsicum|green pepper|yellow pepper/],
   ['frozen', /\bfrozen\b|ice cream|\bpeas\b/],
-  ['cupboard', /\bstock\b|\bcube|tinned|canned|\bbeans\b|lentil|chickpea|\brice\b|pasta|spaghetti|noodle|\boats?\b|porridge|cereal|granola|flour|sugar|honey|\bjam\b|peanut butter|\bnuts?\b|almond|cashew|seeds?\b|\boil\b|vinegar|soy sauce|sauce|ketchup|mayo|mustard|spice|curry paste|paprika|cumin|\bsalt\b|black pepper|peppercorn|quinoa|couscous|crisps|chocolate|biscuit|tomato puree|passata|chopped tomatoes|coconut milk|tuna/],
-  ['drinks', /\bjuice\b|\bcoffee\b|\btea\b|\bwater\b|(orange|lemon|blackcurrant) squash|cola|lemonade|\bwine\b|\bbeer\b|smoothie/],
-  ['meat-fish', /chicken|beef|\bpork\b|\blamb\b|turkey|\bham\b|bacon|sausage|mince|steak|salmon|\bcod\b|haddock|prawn|\bfish\b|mackerel|sardine|chorizo|duck/],
+  ['cupboard', /\bstock\b|\bcube|tinned|canned|\bbeans\b|lentil|chickpea|\brice\b|pasta|spaghetti|noodle|\boats?\b|porridge|cereal|granola|flour|sugar|honey|\bjam\b|peanut butter|\bnuts?\b|almond|cashew|seeds?\b|\boil\b|vinegar|soy sauce|sauce|ketchup|mayo|mustard|spice|curry paste|paprika|cumin|\bsalt\b|black pepper|peppercorn|quinoa|couscous|crisps|potato chips|tortilla chips|chocolate|biscuit|cookie|cracker|muesli bar|granola bar|tomato puree|passata|chopped tomatoes|coconut milk|tuna/],
+  ['drinks', /\bjuice\b|\bcoffee\b|\btea\b|\bwater\b|(orange|lemon|blackcurrant) squash|cola|lemonade|\bsoda\b|soft drink|\bpop\b|\bwine\b|\bbeer\b|smoothie/],
+  ['meat-fish', /chicken|beef|\bpork\b|\blamb\b|turkey|\bham\b|bacon|sausage|mince|steak|salmon|\bcod\b|haddock|prawn|shrimp|\bfish\b|mackerel|sardine|chorizo|duck/],
   ['dairy-eggs', /\bmilk\b|cheese|cheddar|mozzarella|feta|halloumi|parmesan|yoghurt|yogurt|butter\b|cream\b|\beggs?\b|creme fraiche|crème fraîche|skyr|quark|tofu/],
   ['bakery', /bread|\bloaf\b|\broll\b|\bbuns?\b|bagel|wrap|tortilla|pitta|pita|croissant|muffin|crumpet|naan|sourdough|baguette/],
-  ['fruit-veg', /apple|banana|orange|berr(y|ies)|grape|\bpear\b|peach|plum|mango|melon|kiwi|lemon|lime|avocado|tomato|potato|carrot|onion|garlic|ginger|pepper|broccoli|spinach|kale|lettuce|salad|cucumber|courgette|aubergine|mushroom|celery|leek|cabbage|cauliflower|sweetcorn|\bcorn\b|beansprouts|spring onion|herbs?\b|coriander|basil|parsley|chilli|squash|pumpkin|beetroot|\bveg/],
+  ['fruit-veg', /apple|banana|orange|berr(y|ies)|grape|\bpear\b|peach|plum|mango|melon|kiwi|lemon|lime|avocado|tomato|potato|carrot|onion|garlic|ginger|pepper|broccoli|spinach|kale|lettuce|salad|cucumber|courgette|zucchini|aubergine|eggplant|capsicum|kumara|kūmara|mushroom|celery|leek|cabbage|cauliflower|sweetcorn|\bcorn\b|beansprouts|spring onion|herbs?\b|coriander|cilantro|scallion|basil|parsley|chilli|squash|pumpkin|beetroot|\bveg/],
 ];
 
 export function aisleOf(name: string): Aisle {

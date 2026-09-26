@@ -18,6 +18,7 @@
 import { Sheet } from './ui';
 import Squish from './Squish';
 import { PLUS } from '../lib/plan';
+import { currentRegion, formatPrice, weeklyPrice } from '../lib/region';
 import type { OutOfAllowance } from '../lib/api';
 import NutritionistPitch from './NutritionistPitch';
 import './paywall.css';
@@ -125,9 +126,9 @@ export default function Paywall({
               </ul>
 
               <p className="paywall-price">
-                <b>£6.99</b> a month, or <b>£49.99</b> a year
+                <b>{formatPrice(currentRegion().price.monthly)}</b> a month, or <b>{formatPrice(currentRegion().price.yearly)}</b> a year
               </p>
-              <p className="tiny muted">A year is under £1 a week — less than a coffee, for a nutritionist who has read your diary.</p>
+              <p className="tiny muted">A year works out at {weeklyPrice()} a week — less than a coffee, for a nutritionist who has read your diary.</p>
 
               {/*
                 Honest rather than aspirational. There is no way to take money

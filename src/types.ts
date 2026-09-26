@@ -1,3 +1,5 @@
+import type { EnergyUnit, Region } from './lib/region';
+
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export type Mood =
@@ -132,6 +134,14 @@ export interface Profile {
   /** kg per week, positive magnitude. */
   pace: number;
   units: 'metric' | 'imperial';
+  /**
+   * Which of the six countries they are in: prices, food names, kJ or kcal,
+   * salt or sodium. Absent on a profile from before regions, which reads as
+   * Britain — see lib/region.ts.
+   */
+  region?: Region;
+  /** kcal or kJ, when they have chosen other than their region's usual. */
+  energy?: EnergyUnit;
   onboarded: boolean;
   /**
    * What their own logs say about their metabolism, as a multiple of the

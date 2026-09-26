@@ -12,7 +12,7 @@ import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing,
 import { BasketIcon, CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
 import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
-import { formatWeight } from '../lib/units';
+import { formatWeight, saltLabel } from '../lib/units';
 import { useSquish } from '../store/useSquish';
 import Comparison from '../components/Comparison';
 import { equivalentFor, progressWords, seedFrom, type GoodNutrient } from '../lib/equivalents';
@@ -27,6 +27,7 @@ import FriendNudge from '../components/FriendNudge';
 import SquadStrip from '../components/squad/SquadStrip';
 import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
+import { energyValue, formatEnergy } from '../lib/region';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
@@ -123,7 +124,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   }, [nudge, mealsLogged, today, part]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fallbackNudge = todaysMeals.length
-    ? `${remaining(targets.calories, totals.calories)} kcal left today — and ${remaining(targets.protein, totals.protein)} g of protein to go.`
+    ? `${formatEnergy(remaining(targets.calories, totals.calories))} left today — and ${remaining(targets.protein, totals.protein)} g of protein to go.`
     // Asked as an opening rather than a reproach: "nothing squished yet" is a
     // blank page, and "you haven't squished anything" is a telling-off.
     : part === 'night'
@@ -175,7 +176,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             <span className="badge badge--warn">Not saved</span>
           </div>
           <p className="small">
-            <b>{pendingMeal.analysis.title}</b> — {Math.round(pendingMeal.analysis.nutrients.calories)} kcal,{' '}
+            <b>{pendingMeal.analysis.title}</b> — {formatEnergy(pendingMeal.analysis.nutrients.calories)},{' '}
             {friendlyDate(pendingMeal.date).toLowerCase()}.
           </p>
           <div className="row" style={{ gap: 10, marginTop: 12 }}>
@@ -205,7 +206,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           <div className="home-ring-wrap">
             <ProgressRing value={totals.calories} target={targets.calories} size={140} />
             <p className="tiny muted home-ring-caption">
-              {Math.round(totals.calories)} of {targets.calories} kcal
+              {energyValue(totals.calories).toLocaleString()} of {formatEnergy(targets.calories)}
             </p>
           </div>
           <div className="home-today-bars">
@@ -217,7 +218,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         <OverTargetNote over={overTargets(totals, targets)} />
         {totals.calories > 0 && (
           <details className="home-more">
-            <summary className="small">Sugar, salt and more</summary>
+            <summary className="small">Sugar, {saltLabel().toLowerCase()} and more</summary>
             {dayComparison && (
               <Comparison
                 equivalent={dayComparison.equivalent}

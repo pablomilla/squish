@@ -156,6 +156,11 @@ Sent to Anthropic's Claude API, and only when you do one of these things:
 | Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept |
 | Ask the nutritionist to plan your week | Your daily targets, goal and sex (for the minimum it will plan to), the names of meals you eat often and foods you have saved, the notes it has kept, and anything you typed for the plan |
 
+Each of these also carries which of the six countries you chose (the UK,
+Ireland, the US, Canada, Australia or New Zealand) and whether you count in
+kcal or kJ, so the answer uses your words and units. That is a setting, not a
+location: Squish never asks your phone where it is.
+
 Anthropic process it to produce the answer and return it. Their handling is
 governed by their own terms and privacy policy, at
 [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy).

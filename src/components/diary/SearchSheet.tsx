@@ -5,6 +5,7 @@ import { isoDate, parseISO } from '../../lib/date';
 import { searchMeals } from '../../lib/diaryNav';
 import { useSquish } from '../../store/useSquish';
 import type { MealEntry } from '../../types';
+import { formatEnergy } from '../../lib/region';
 
 const SLOT_WORDS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
 
@@ -66,7 +67,7 @@ export default function SearchSheet({ open, onClose, onPick }: { open: boolean; 
                     </span>
                     <b className="small">{meal.title}</b>
                     {items.length > 0 && <span className="tiny muted">{items.join(', ')}</span>}
-                    <span className="tiny muted meal-search-kcal">{Math.round(meal.nutrients.calories)} kcal</span>
+                    <span className="tiny muted meal-search-kcal">{formatEnergy(meal.nutrients.calories)}</span>
                   </button>
                 </li>
               ))}

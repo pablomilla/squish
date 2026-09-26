@@ -4,6 +4,7 @@ import { useToast } from './ui';
 import { CloseIcon } from './icons';
 import { isoDate } from '../lib/date';
 import './plan-card.css';
+import { formatEnergy } from '../lib/region';
 
 /**
  * A meal planned for later: dashed rather than solid, because it has not
@@ -22,7 +23,7 @@ export default function PlanCard({ plan, showSlot = false }: { plan: MealEntry; 
       <span className="plan-card-body">
         <span className="plan-card-title">{plan.title}</span>
         <span className="tiny muted">
-          Planned{showSlot ? ` · ${plan.slot}` : ''} · {Math.round(plan.nutrients.calories)} kcal · P{Math.round(plan.nutrients.protein)}
+          Planned{showSlot ? ` · ${plan.slot}` : ''} · {formatEnergy(plan.nutrients.calories)} · P{Math.round(plan.nutrients.protein)}
         </span>
       </span>
       <button
@@ -30,7 +31,7 @@ export default function PlanCard({ plan, showSlot = false }: { plan: MealEntry; 
         className="btn btn--sm btn--soft"
         onClick={() => {
           const meal = eatPlan(plan.id);
-          if (meal) toast(`Squished it — ${Math.round(meal.nutrients.calories)} kcal logged${ahead ? ' today' : ''}.`, '🎉');
+          if (meal) toast(`Squished it — ${formatEnergy(meal.nutrients.calories)} logged${ahead ? ' today' : ''}.`, '🎉');
         }}
       >
         I ate this

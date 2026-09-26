@@ -18,6 +18,7 @@ import { friendlyDate, isoDate } from '../lib/date';
 import { planDays } from '../lib/planner';
 import './review.css';
 import { describePortion } from '../lib/units';
+import { currentEnergyUnit, energyValue, formatEnergy } from '../lib/region';
 
 /** The corrections people actually make to a scan, one tap each. */
 const HOW_MUCH = [
@@ -189,7 +190,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
        * belongs in Squish's voice, never on the control somebody has to press
        * to keep their dinner.
        */
-      toast(`Squished it — ${Math.round(totals.calories)} kcal logged.`, '🎉');
+      toast(`Squished it — ${formatEnergy(totals.calories)} logged.`, '🎉');
     }
     onDone();
   };
@@ -266,8 +267,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       <div className="card review-totals">
         <div className="review-kcal">
-          <b>{Math.round(totals.calories)}</b>
-          <span className="muted small">kcal · {Math.round((totals.calories / targets.calories) * 100)}% of today</span>
+          <b>{energyValue(totals.calories).toLocaleString()}</b>
+          <span className="muted small">{currentEnergyUnit()} · {Math.round((totals.calories / targets.calories) * 100)}% of today</span>
         </div>
         <MacroBars totals={totals} targets={targets} compact />
         <Comparison equivalent={mealEquivalent(totals, targets, comparisonSeed)} />
@@ -303,7 +304,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                   <span className="item-text">
                     <b>{item.name}</b>
                     <span className="tiny muted">
-                      {describePortion(item.portion, item.grams, item.liquid)} · {Math.round(item.nutrients.calories)} kcal
+                      {describePortion(item.portion, item.grams, item.liquid)} · {formatEnergy(item.nutrients.calories)}
                     </span>
                   </span>
                   <span className="tiny muted item-macros">
@@ -475,7 +476,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       <Sheet open={leaving} onClose={() => setLeaving(false)} title="Save this meal?">
         <p className="small muted">
-          {Math.round(totals.calories)} kcal across {items.length} food{items.length === 1 ? '' : 's'}. Throw it away and
+          {formatEnergy(totals.calories)} across {items.length} food{items.length === 1 ? '' : 's'}. Throw it away and
           you will have to log it again.
         </p>
         <div className="stack" style={{ marginTop: 16 }}>
@@ -523,7 +524,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                 <span className="meal-card-title">{food.name}</span>
                 <span className="tiny muted">
                   {describePortion(food.serving, food.servingG, food.tags.includes('drink'))} ·{' '}
-                  {Math.round((food.per100.calories * food.servingG) / 100)} kcal
+                  {formatEnergy((food.per100.calories * food.servingG) / 100)}
                 </span>
               </span>
               <PlusIcon size={18} />

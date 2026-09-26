@@ -1,10 +1,15 @@
 import { useEffect, useId, useState } from 'react';
 import type { Units } from '../lib/units';
+import { REGION_LIST, isRegion, type Region } from '../lib/region';
 import {
   cmToFeetInches,
   feetInchesToCm,
+  inPounds,
   kgToStonePounds,
   stonePoundsToKg,
+  poundsToKg,
+  KG_PER_POUND,
+  POUNDS_RANGE,
   FEET_RANGE,
   HEIGHT_CM_RANGE,
   MAX_POUNDS_IN_STONE,
@@ -195,6 +200,20 @@ export function WeightField({
     );
   }
 
+  if (inPounds()) {
+    return (
+      <NumberField
+        label={label}
+        value={Math.round((kg / KG_PER_POUND) * 10) / 10}
+        suffix="lb"
+        min={POUNDS_RANGE.min}
+        max={POUNDS_RANGE.max}
+        decimals={1}
+        onChange={(lb) => onChange(poundsToKg(lb))}
+      />
+    );
+  }
+
   const { stone, pounds } = kgToStonePounds(kg);
   return (
     <div className="field">
@@ -222,6 +241,27 @@ export function WeightField({
           onChange={(nextPounds) => onChange(stonePoundsToKg(stone, nextPounds))}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Which of the six countries they live in. A plain select: six rows fit on
+ * any phone, and the phone's own picker is the one people know how to use.
+ */
+export function RegionField({ value, onChange, hint }: { value: Region; onChange: (region: Region) => void; hint?: string }) {
+  const id = useId();
+  return (
+    <div className="field">
+      <label htmlFor={id}>Where you live</label>
+      <select id={id} className="input input--select" value={value} onChange={(event) => isRegion(event.target.value) && onChange(event.target.value)}>
+        {REGION_LIST.map((region) => (
+          <option key={region.id} value={region.id}>
+            {region.flag} {region.name}
+          </option>
+        ))}
+      </select>
+      {hint && <p className="tiny muted">{hint}</p>}
     </div>
   );
 }

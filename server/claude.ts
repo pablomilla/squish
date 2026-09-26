@@ -11,6 +11,7 @@ import { MICROS } from '../src/types';
 import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
+import { regionNote } from './region';
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
@@ -171,13 +172,13 @@ Rules:
 - Break the meal into the individual foods you can actually see or that were described. Do not invent sides that are not there.
 - Nutrition values are per the portion you state, not per 100 g.
 - Count fibre inside total carbohydrate, and give sugar as total sugars.
-- micros are per portion, estimated the way a food composition table would have them. British flour is fortified with iron, calcium and folate, and most breakfast cereals are fortified further, so bread and cereal carry more than the raw grain does. Oily fish and eggs are the food sources of vitamin D; B12 comes only from animal foods and things fortified with it.
+- micros are per portion, estimated the way a food composition table would have them. Flour and breakfast cereals are fortified in most countries (what is added where they live is below), so bread and cereal carry more than the raw grain does. Oily fish and eggs are the food sources of vitamin D; B12 comes only from animal foods and things fortified with it.
 - freeSugar is the added-and-juice share of sugar, counted inside it. An apple, a banana, a carrot and a glass of milk are all 0 — their sugar is not free sugar and no guideline asks anyone to cut it. Juice, honey, syrup, and anything sweetened in a kitchen or a factory is.
 - satFat is the saturated share of fat, counted inside it, and is never larger than fat. It is what the app judges a meal on, so it is worth getting right: butter, cream, cheese, coconut, fatty red meat and pastry are mostly saturated; olive oil, rapeseed, nuts, seeds, avocado and oily fish are mostly not.
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
 - ultraProcessed asks how the food was made, not whether it is good for someone. A home-cooked shepherd's pie is false however much fat is in it; a diet cola is true however few calories are in it.
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
-- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, British English.`;
+- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the English of where they live (below).`;
 
 /** Only the six we know about, only as non-negative numbers. */
 function coerceMicros(raw: unknown): Micros | undefined {
@@ -354,7 +355,8 @@ async function requestMeal(
   const response = await getClient().messages.create({
     model,
     max_tokens: 8000,
-    system,
+    // Where they live goes last, after the rules every country shares.
+    system: `${system}\n\n${regionNote(system === LABEL_SYSTEM ? 'label' : system === RECIPE_SYSTEM ? 'recipe' : 'meal')}`,
     messages: [{ role: 'user', content }],
     ...tuningFor(model, schema),
   });
@@ -466,15 +468,12 @@ Rules:
 - Read the printed figures. Do not estimate, round generously, or fall back on what you know about similar products. If a figure is not legible, leave it out rather than inventing it.
 - Use the per-serving column when the label has one, and set grams to that serving's weight. If the label only gives per 100 g, return the values for 100 g and say so in the portion.
 - portion names the serving in words — "1 serving", "1 bar", "half the pack", "100 g" — and grams carries its weight.
-- Energy: use the kcal figure, not the kJ one.
-- British labels state SALT in grams; the sodium field wants milligrams. Sodium mg is the salt figure in grams multiplied by 400. Do not copy the salt grams into sodium.
-- Carbohydrate on a British label is already net of nothing — it is total carbohydrate, so use it as is. "of which sugars" is the sugar figure. Fibre is often listed separately; use it when present and 0 when it genuinely is not.
-- "Fat, of which saturates" gives both figures: the first is fat, the indented one is satFat. "Carbohydrate, of which sugars" gives total sugars; a British label does not state free sugars, so work freeSugar out from the ingredients list — for most packaged food nearly all of its sugar is free, but not for plain dairy or dried fruit.
+- How a packet is laid out depends on the country; the rules for theirs are below. Fibre is used when it is printed and 0 when it genuinely is not.
 - title is the product name from the packaging when you can read it, otherwise what the food plainly is.
 - Return exactly one item unless the packet genuinely holds separate foods.
 - If the photo is not a nutrition label — a plate of food, a barcode alone, a blurry mess — return an empty items array, a score of 0, and say so kindly in coachNote.
 - confidence is "low" when the print is small, angled, or partly out of frame.
-- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, British English.`;
+- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the English of where they live (below).`;
 
 export async function analyseLabel(
   imageBase64: string,
@@ -601,7 +600,8 @@ export async function coachMessage(ctx: CoachContext): Promise<string> {
     model: MODEL,
     max_tokens: 400,
     system:
-      "You are Squish, a small round blob mascot who helps someone eat well. You speak in one or two short sentences, warm, playful and specific. British English. Never shame food choices, never mention calories as something to 'burn off', never give medical advice. Reply with the message only — no quotes, no preamble.",
+      "You are Squish, a small round blob mascot who helps someone eat well. You speak in one or two short sentences, warm, playful and specific. Never shame food choices, never mention calories as something to 'burn off', never give medical advice. Reply with the message only — no quotes, no preamble.\n\n" +
+      regionNote('coach'),
     thinking: { type: 'disabled' },
     output_config: { effort: 'low' },
     messages: [
@@ -700,7 +700,7 @@ export async function planWeek(req: WeekPlanRequest): Promise<WeekPlan> {
   const stream = getClient().beta.messages.stream({
     model: WEEKPLAN_MODEL,
     max_tokens: 32000,
-    system: WEEKPLAN_SYSTEM,
+    system: `${WEEKPLAN_SYSTEM}\n\n${regionNote('plan')}`,
     messages: [{ role: 'user', content: weekPlanPrompt(req) }],
     ...(haiku
       ? { output_config: { format } }

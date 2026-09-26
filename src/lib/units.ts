@@ -3,9 +3,12 @@
  *
  * Everything is stored in metric — centimetres and kilograms — and converted
  * only for display, so switching units never changes what was recorded.
- * Imperial here is the British reading: feet and inches, stones and pounds.
+ * Imperial is feet and inches everywhere, but a body weight is stones and
+ * pounds only in Britain and Ireland; elsewhere it is plain pounds (see
+ * lib/region.ts).
  */
 import { round1 } from './nutrition';
+import { currentRegion } from './region';
 
 /**
  * Stored weights keep two decimal places of a kilogram.
@@ -94,6 +97,21 @@ export function sodiumMg(salt: number): number {
   return Math.round((salt * 1000) / SALT_PER_SODIUM);
 }
 
+/**
+ * Salt as their packets say it: grams of salt in Britain and Ireland,
+ * milligrams of sodium everywhere else. Stored as sodium throughout.
+ */
+export const showsSodium = () => currentRegion().salt === 'sodium';
+export const saltLabel = () => (showsSodium() ? 'Sodium' : 'Salt');
+export const saltUnit = () => (showsSodium() ? 'mg' : 'g');
+/** The number to show for this much sodium: salt grams to one place, or sodium to the nearest 10 mg. */
+export const saltShown = (sodium: number) => (showsSodium() ? Math.round(sodium / 10) * 10 : saltGrams(sodium));
+/** The same, from a figure already in grams of salt. */
+export const saltShownFromSalt = (salt: number) => (showsSodium() ? Math.round((salt * 1000) / SALT_PER_SODIUM / 10) * 10 : salt);
+export const formatSalt = (sodium: number) => `${saltShown(sodium).toLocaleString(currentRegion().locale)} ${saltUnit()}`;
+/** A limit typed in the shown unit, back to stored sodium. */
+export const sodiumFromShown = (value: number) => (showsSodium() ? Math.round(value) : sodiumMg(value));
+
 export function formatFoodWeight(grams: number): string {
   const ounces = grams / GRAMS_PER_OUNCE;
   const shown = ounces < 10 ? Math.round(ounces * 10) / 10 : Math.round(ounces);
@@ -106,7 +124,7 @@ export function formatFoodWeight(grams: number): string {
  * near enough the same number.
  */
 export function formatDrinkVolume(ml: number): string {
-  const ounces = ml / ML_PER_FLUID_OUNCE;
+  const ounces = ml / currentRegion().fluidOunceMl;
   const shown = ounces < 10 ? Math.round(ounces * 10) / 10 : Math.round(ounces);
   return `${Math.round(ml)} ml (${shown} fl oz)`;
 }
@@ -137,8 +155,12 @@ export function formatHeight(cm: number, units: Units): string {
   return `${feet}′ ${inches}″`;
 }
 
+/** Whether an imperial weight is plain pounds where they live, rather than stones. */
+export const inPounds = () => currentRegion().weight === 'pounds';
+
 export function formatWeight(kg: number, units: Units): string {
   if (units === 'metric') return `${round1(kg)} kg`;
+  if (inPounds()) return `${round1(kg / KG_PER_POUND)} lb`;
   const { stone, pounds } = kgToStonePounds(kg);
   return pounds ? `${stone} st ${round1(pounds)} lb` : `${stone} st`;
 }
@@ -152,6 +174,9 @@ export function formatWeightDelta(kgDelta: number, units: Units): string {
 
 export const weightUnitLabel = (units: Units) => (units === 'metric' ? 'kg' : 'lb');
 
+/** The Units switch's imperial side: "ft / st" in Britain, "ft / lb" elsewhere. */
+export const imperialLabel = () => (inPounds() ? 'ft / lb' : 'ft / st');
+
 /**
  * What the entry fields will accept, chosen so both systems span the same
  * range. When they disagreed, a value you could type in one was silently
@@ -163,6 +188,8 @@ export const weightUnitLabel = (units: Units) => (units === 'metric' ? 'kg' : 'l
  */
 export const WEIGHT_KG_RANGE = { min: 31, max: 250 };
 export const STONE_RANGE = { min: 5, max: 38 };
+/** The kilogram range again, in whole pounds. */
+export const POUNDS_RANGE = { min: 68, max: 551 };
 export const HEIGHT_CM_RANGE = { min: 122, max: 241 };
 export const FEET_RANGE = { min: 4, max: 7 };
 

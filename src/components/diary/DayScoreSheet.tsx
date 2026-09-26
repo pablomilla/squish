@@ -3,6 +3,7 @@ import AskLink from '../AskLink';
 import { scoreLabel } from '../../lib/nutrition';
 import { EARLY_KCAL, type DayExplained } from '../../lib/dayExplained';
 import ScoreReasons from '../ScoreReasons';
+import { aboutEnergy, formatEnergy } from '../../lib/region';
 
 /**
  * What the day score is, and what moved it today. Opened from the score on
@@ -33,8 +34,8 @@ export default function DayScoreSheet({
             <b>{early ? 'Early days' : label}</b>
             <p className="tiny muted">
               {early
-                ? `${calories} kcal logged so far. The score settles once there is more to go on — about ${EARLY_KCAL} kcal, or a proper meal.`
-                : 'How good today’s food was for what it’s made of. Not how much you ate — that is the calorie ring.'}
+                ? `${formatEnergy(calories)} logged so far. The score settles once there is more to go on — about ${aboutEnergy(EARLY_KCAL)}, or a proper meal.`
+                : 'How good today’s food was for what it’s made of. Not how much you ate — that is the energy ring.'}
             </p>
           </div>
         </div>

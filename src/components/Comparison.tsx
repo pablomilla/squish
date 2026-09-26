@@ -7,6 +7,7 @@
 import { useSquish } from '../store/useSquish';
 import type { Equivalent } from '../lib/equivalents';
 import './comparison.css';
+import { localWords } from '../lib/region';
 
 export default function Comparison({ equivalent, lead = 'About the', tail = '' }: { equivalent: Equivalent | null; lead?: string; tail?: string }) {
   // Only an explicit "off" hides it: a diary saved before the setting existed has none, and means on.
@@ -18,7 +19,7 @@ export default function Comparison({ equivalent, lead = 'About the', tail = '' }
         {equivalent.emoji}
       </span>
       <span>
-        {lead} {equivalent.nutrient} of <b>{equivalent.amount}</b>
+        {lead} {localWords(equivalent.nutrient)} of <b>{equivalent.amount}</b>
         {tail}
       </span>
     </p>

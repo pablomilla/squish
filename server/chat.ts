@@ -24,6 +24,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NUTRITIONIST_TOOLS, type ToolCall } from './nutritionist-tools';
 import { priceUsage } from './claude';
 import { bill } from './billing';
+import { regionNote } from './region';
 
 /** Charge a price to whoever is being served, and hand it straight back. */
 const billed = (usd: number | null): number | null => {
@@ -71,7 +72,7 @@ export interface Note {
 export const CHAT_SYSTEM = `You are Squish, a friendly blob who helps someone eat well. Somebody is asking you a question about their own food diary.
 
 How you talk:
-- Warm, plain and brief. Two or three short paragraphs at most, usually less. British English.
+- Warm, plain and brief. Two or three short paragraphs at most, usually less, in the English of where they live.
 - Answer the question that was asked. No preamble, no restating the question, no bulleted lecture unless they asked for a list.
 - Use their actual numbers from the context below when they are relevant, and say when you are generalising instead.
 - Never moralise about food. There are no bad foods, no cheating, no being good or naughty, no earning or burning off a meal.
@@ -340,7 +341,8 @@ export function chatRequest(
     cache_control: { type: 'ephemeral' },
     system: [
       { type: 'text', text: CHAT_SYSTEM, cache_control: { type: 'ephemeral' } },
-      { type: 'text', text: `${contextBlock(context)}\n\n${memoryBlock(notes)}` },
+      // After the cache marker with the diary: the rules stay one set of bytes for every country.
+      { type: 'text', text: `${regionNote('chat')}\n\n${contextBlock(context)}\n\n${memoryBlock(notes)}` },
     ],
     thinking: { type: 'adaptive' },
     output_config: { effort: tuning.effort ?? 'medium' },

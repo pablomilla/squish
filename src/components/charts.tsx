@@ -5,7 +5,8 @@ import { CEILING_LABEL, MACRO_LABEL, MICRO_LABEL, MICRO_UNIT, OVER, ceilingLimit
 import type { OverTarget } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
-import { formatWeight, saltGrams, type Units } from '../lib/units';
+import { formatWeight, saltShown, saltUnit, type Units } from '../lib/units';
+import { currentEnergyUnit, energyValue } from '../lib/region';
 import './charts.css';
 
 export const MACRO_COLOR: Record<MacroKey, string> = {
@@ -28,7 +29,11 @@ interface RingProps {
   children?: React.ReactNode;
 }
 
-export function ProgressRing({ value, target, size = 190, label = 'left', unit = 'kcal', color = 'var(--dv-cal)', children }: RingProps) {
+/** Energy by default, in whichever unit they count in; `unit` for anything else. */
+export function ProgressRing({ value: raw, target: rawTarget, size = 190, label = 'left', unit, color = 'var(--dv-cal)', children }: RingProps) {
+  const value = unit ? raw : energyValue(raw);
+  const target = unit ? rawTarget : energyValue(rawTarget);
+  unit ??= currentEnergyUnit();
   const stroke = Math.round(size * 0.085);
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -58,7 +63,7 @@ export function ProgressRing({ value, target, size = 190, label = 'left', unit =
       <div className="ring-center">
         {children ?? (
           <>
-            <b>{over ? `+${Math.round(value - target)}` : left}</b>
+            <b>{over ? `+${Math.round(value - target).toLocaleString()}` : left.toLocaleString()}</b>
             <span>{unit} {over ? 'over' : label}</span>
           </>
         )}
@@ -91,7 +96,7 @@ export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets
     // are only over at the labelling reference intake — showing the aim here
     // turned a day of fruit amber, which is the thing free sugars just fixed.
     { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: ceilingLimit('sugar', targets), unit: 'g' },
-    { key: 'sodium' as const, label: 'Salt', value: saltGrams(totals.sodium ?? 0), limit: saltGrams(targets.sodium ?? 0), unit: 'g' },
+    { key: 'sodium' as const, label: CEILING_LABEL.sodium, value: saltShown(totals.sodium ?? 0), limit: saltShown(targets.sodium ?? 0), unit: saltUnit() },
   ].filter((row) => row.limit > 0); // No limit set, nothing meaningful to say.
 
   if (!rows.length) return null;
@@ -249,11 +254,12 @@ export function OverTargetNote({ over }: { over: OverTarget[] }) {
         <ul className="over-note-list">
           {over.map((o) => {
             const salt = o.key === 'sodium';
-            const value = salt ? saltGrams(o.value) : Math.round(o.value);
-            const target = salt ? saltGrams(o.target) : Math.round(o.target);
+            const value = salt ? saltShown(o.value) : Math.round(o.value);
+            const target = salt ? saltShown(o.target) : Math.round(o.target);
+            const unit = salt ? saltUnit() : 'g';
             return (
               <li className="tiny" key={o.key}>
-                {CEILING_LABEL[o.key]} {value} g — {overPhrase(o)} your {target} g limit.
+                {CEILING_LABEL[o.key]} {value.toLocaleString()} {unit} — {overPhrase(o)} your {target.toLocaleString()} {unit} limit.
               </li>
             );
           })}
@@ -339,7 +345,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
       <div className="chart-plot" style={{ height }} onPointerLeave={() => setActive(null)}>
         {target > 0 && (
           <div className="chart-target" style={{ bottom: `${(target / max) * 100}%` }}>
-            <span>{ceiling ? 'limit' : 'target'} {round1(target)}</span>
+            <span>{ceiling ? 'limit' : 'target'} {round1(target).toLocaleString()}</span>
           </div>
         )}
         {/* Thirty bars on a phone need the gaps down to the 2px that still separates them. */}

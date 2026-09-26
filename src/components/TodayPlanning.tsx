@@ -4,6 +4,7 @@ import { useSquish } from '../store/useSquish';
 import { isoDate, slotForNow } from '../lib/date';
 import { asAnalysis, ideasFor, remainingToday } from '../lib/planner';
 import './plan-card.css';
+import { formatEnergy } from '../lib/region';
 
 /** After this hour the day is for winding down, not for being handed dinner ideas. */
 const IDEAS_UNTIL_HOUR = 21;
@@ -38,7 +39,7 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
             <h3>Ideas for the rest of today</h3>
           </div>
           <p className="tiny muted">
-            About {left.calories.toLocaleString('en-GB')} kcal{left.protein >= 10 ? ` and ${left.protein} g of protein` : ''} left. A few of
+            About {formatEnergy(left.calories)}{left.protein >= 10 ? ` and ${left.protein} g of protein` : ''} left. A few of
             your own that fit:
           </p>
           <div className="stack">
@@ -52,7 +53,7 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
                 <span className="idea-body">
                   <span className="idea-title">{idea.title}</span>
                   <span className="tiny muted">
-                    {Math.round(idea.nutrients.calories)} kcal · P{Math.round(idea.nutrients.protein)} · {idea.from === 'saved' ? 'saved' : 'you’ve had it before'}
+                    {formatEnergy(idea.nutrients.calories)} · P{Math.round(idea.nutrients.protein)} · {idea.from === 'saved' ? 'saved' : 'you’ve had it before'}
                   </span>
                 </span>
                 <span className="badge">{idea.why}</span>

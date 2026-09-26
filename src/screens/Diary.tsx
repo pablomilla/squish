@@ -24,6 +24,7 @@ import { GLASS_ML, dayVerdict } from '../lib/nutrition';
 import { WeightField } from '../components/fields';
 import './diary.css';
 import { describePortion } from '../lib/units';
+import { formatEnergy } from '../lib/region';
 
 const SLOTS: { key: MealSlot; label: string; emoji: string }[] = [
   { key: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -126,7 +127,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           </p>
           {dayPlans.length > 0 && (
             <p className="tiny muted">
-              {dayPlans.length} planned · about {Math.round(dayPlans.reduce((sum, p) => sum + p.nutrients.calories, 0)).toLocaleString('en-GB')} kcal
+              {dayPlans.length} planned · about {formatEnergy(dayPlans.reduce((sum, p) => sum + p.nutrients.calories, 0))}
               of your {targets.calories.toLocaleString('en-GB')}
             </p>
           )}
@@ -192,7 +193,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
               <h3>
                 <span aria-hidden="true">{emoji}</span> {label}
               </h3>
-              <span className="tiny muted">{ahead ? (planned.length ? 'planned' : '') : `${kcal} kcal`}</span>
+              <span className="tiny muted">{ahead ? (planned.length ? 'planned' : '') : formatEnergy(kcal)}</span>
             </div>
             {planned.length > 0 && (
               <div className="stack diary-plans">
@@ -287,7 +288,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             <div className="row" style={{ gap: 12 }}>
               <ScoreMeter score={selected.score} size={54} />
               <div>
-                <b style={{ fontSize: 24 }}>{Math.round(selected.nutrients.calories)} kcal</b>
+                <b style={{ fontSize: 24 }}>{formatEnergy(selected.nutrients.calories)}</b>
                 <p className="tiny muted">
                   {selected.time} · {selected.slot} · {selected.source === 'photo' ? 'photo analysis' : 'logged by hand'}
                 </p>
@@ -314,7 +315,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                     <b className="small">{item.name}</b>
                     <p className="tiny muted">{describePortion(item.portion, item.grams, item.liquid)}</p>
                   </span>
-                  <span className="small">{Math.round(item.nutrients.calories)} kcal</span>
+                  <span className="small">{formatEnergy(item.nutrients.calories)}</span>
                 </div>
               ))}
             </div>

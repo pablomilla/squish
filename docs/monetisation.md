@@ -61,6 +61,29 @@ to choose it.
 Play's equivalent both have to be applied for. At the standard 30%, even
 £6.99 is thin for a heavy user.
 
+### Outside the UK
+
+Squish is set up for six countries, each with its own price in its own
+money (`src/lib/region.ts`). These are what the store listings should be set
+to; the paywall shows them and nothing is charged through the web app.
+
+| Country | A month | A year | A year, a week |
+|---|---|---|---|
+| United Kingdom | £6.99 | £49.99 | £0.97 |
+| Ireland | €7.99 | €57.99 | €1.12 |
+| United States | $7.99 | $59.99 | $1.16 |
+| Canada | C$9.99 | C$74.99 | C$1.45 |
+| Australia | A$11.99 | A$84.99 | A$1.64 |
+| New Zealand | NZ$12.99 | NZ$89.99 | NZ$1.74 |
+
+They are set by what people pay for apps in each place rather than by the
+exchange rate, and each keeps the same shape as the UK's: the year about 40%
+cheaper than twelve months. Irish, Australian and New Zealand store prices
+include their VAT or GST (23%, 10%, 15%), American and Canadian ones do not —
+sales tax is added at the till — so the US price does the most work per
+dollar. Worth checking each against a heavy user's cost before launch there,
+the same sum as the table above.
+
 ### Offers
 
 Discounts come from the stores' own offers, off a price people genuinely pay:

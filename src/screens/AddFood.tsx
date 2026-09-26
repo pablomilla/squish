@@ -12,6 +12,7 @@ import { analyseText, importRecipe, isPaywalled, SquishApiError, type RecipeImpo
 import { slotForNow } from '../lib/date';
 import './addfood.css';
 import { describePortion } from '../lib/units';
+import { currentEnergyUnit, energyValue, formatEnergy, toKcal } from '../lib/region';
 
 type Tab = 'search' | 'describe' | 'recipe' | 'favourites';
 
@@ -204,7 +205,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                   <span className="meal-card-title">{food.name}</span>
                   <span className="tiny muted">
                     {describePortion(food.serving, food.servingG, food.tags.includes('drink'))} ·{' '}
-                    {Math.round((food.per100.calories * food.servingG) / 100)} kcal
+                    {formatEnergy((food.per100.calories * food.servingG) / 100)}
                   </span>
                 </span>
                 <PlusIcon size={18} />
@@ -224,8 +225,12 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
             <h3>Quick add</h3>
             <p className="tiny muted">Know the numbers already? Pop them straight in.</p>
             <div className="row-between" style={{ marginTop: 10 }}>
-              <span className="small">Calories</span>
-              <Stepper value={quickKcal} step={50} min={0} max={3000} onChange={setQuickKcal} suffix="kcal" />
+              <span className="small">{currentEnergyUnit() === 'kJ' ? 'Energy' : 'Calories'}</span>
+              {currentEnergyUnit() === 'kJ' ? (
+                <Stepper value={energyValue(quickKcal)} step={200} min={0} max={12600} onChange={(kj) => setQuickKcal(toKcal(kj))} suffix="kJ" />
+              ) : (
+                <Stepper value={quickKcal} step={50} min={0} max={3000} onChange={setQuickKcal} suffix="kcal" />
+              )}
             </div>
             <div className="row-between" style={{ marginTop: 8 }}>
               <span className="small">Protein</span>
@@ -253,7 +258,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                 })
               }
             >
-              Add {quickKcal} kcal
+              Add {formatEnergy(quickKcal)}
             </button>
           </div>
         </>
@@ -338,7 +343,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
 
               <div className="divider" />
               <div className="row-between">
-                <b style={{ fontSize: 22 }}>{Math.round(recipe.nutrients.calories * helpings)} kcal</b>
+                <b style={{ fontSize: 22 }}>{formatEnergy(recipe.nutrients.calories * helpings)}</b>
                 <span className="tiny muted">
                   {Math.round(recipe.nutrients.protein * helpings)}P · {Math.round(recipe.nutrients.carbs * helpings)}C ·{' '}
                   {Math.round(recipe.nutrients.fat * helpings)}F
@@ -358,7 +363,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                         <b className="small">{item.name}</b>
                         <p className="tiny muted">{describePortion(scaled.portion, scaled.grams, scaled.liquid)}</p>
                       </span>
-                      <span className="small">{Math.round(scaled.nutrients.calories)} kcal</span>
+                      <span className="small">{formatEnergy(scaled.nutrients.calories)}</span>
                     </div>
                   );
                 })}
@@ -392,7 +397,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                 <span className="meal-card-body">
                   <span className="meal-card-title">{item.name}</span>
                   <span className="tiny muted">
-                    {describePortion(item.portion, item.grams, item.liquid)} · {Math.round(item.nutrients.calories)} kcal
+                    {describePortion(item.portion, item.grams, item.liquid)} · {formatEnergy(item.nutrients.calories)}
                   </span>
                 </span>
                 <HeartIcon size={17} />
@@ -408,7 +413,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
             <b>
               {basket.length} item{basket.length === 1 ? '' : 's'}
             </b>
-            <span className="tiny muted"> · {Math.round(totals.calories)} kcal</span>
+            <span className="tiny muted"> · {formatEnergy(totals.calories)}</span>
           </div>
           <button type="button" className="btn btn--sm" onClick={reviewBasket}>
             Review

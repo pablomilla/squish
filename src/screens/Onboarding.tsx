@@ -7,12 +7,13 @@ import { signIn, type Arrived } from '../lib/account';
 import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
-import { HeightField, NumberField, WeightField } from '../components/fields';
+import { HeightField, NumberField, RegionField, WeightField } from '../components/fields';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
 import type { Activity, Goal, Mood, Profile, Sex } from '../types';
-import { PACE_CHOICES, formatPace, formatWeight, paceIn, paceToKg, retuneForUnits } from '../lib/units';
+import { PACE_CHOICES, formatPace, formatWeight, imperialLabel, paceIn, paceToKg, retuneForUnits } from '../lib/units';
+import { REGIONS, browserRegion, currentEnergyUnit, energyValue, type Region } from '../lib/region';
 import { aroundWhen, goalProjection, type GoalProjection } from '../lib/goalDate';
 import type { Units } from '../lib/units';
 import './onboarding.css';
@@ -51,10 +52,27 @@ const prefersLessMotion = () => {
  */
 export default function Onboarding({ accounts = false }: { accounts?: boolean }) {
   const completeOnboarding = useSquish((s) => s.completeOnboarding);
+  const setProfile = useSquish((s) => s.setProfile);
   const [step, setStep] = useState<Step>('welcome');
   // Which way the steps slide: forward from the right, back from the left.
   const [dir, setDir] = useState<'fwd' | 'back'>('fwd');
-  const [draft, setDraft] = useState<Profile>(DEFAULT_PROFILE);
+  // Starts from the browser's guess at their country, and that country's usual units.
+  const [draft, setDraft] = useState<Profile>(() => {
+    const region = browserRegion();
+    return retuneForUnits({ ...DEFAULT_PROFILE, region }, REGIONS[region].units);
+  });
+
+  /*
+   * The region goes into the store straight away, not only at the end: the
+   * weight field and every formatter read it from there, and a field in
+   * pounds for somebody in Ohio has to be in pounds while they type into it.
+   */
+  useEffect(() => {
+    setProfile({ region: draft.region, energy: undefined });
+  }, [draft.region, setProfile]);
+
+  const moveTo = (region: Region) =>
+    setDraft((d) => retuneForUnits({ ...d, region, energy: undefined }, REGIONS[region].units));
   const [signing, setSigning] = useState<'in' | 'forgot' | null>(null);
   // Somebody who has said they are under 18. Held here only, never saved.
   const [tooYoung, setTooYoung] = useState(false);
@@ -187,6 +205,8 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                 />
               </div>
 
+              <RegionField value={draft.region ?? 'GB'} onChange={moveTo} hint="For your prices, food names and the way labels are read there." />
+
               <div className="field">
                 <label>Units</label>
                 <Segmented<Units>
@@ -194,7 +214,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                   onChange={(units) => setDraft((d) => retuneForUnits(d, units))}
                   options={[
                     { value: 'metric', label: 'cm / kg' },
-                    { value: 'imperial', label: 'ft / st' },
+                    { value: 'imperial', label: imperialLabel() },
                   ]}
                 />
               </div>
@@ -305,7 +325,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                 <div className="row-between" style={{ marginBottom: 10 }}>
                   <span className="muted small">Daily energy</span>
                   <b style={{ fontSize: 28 }}>
-                    <CountUp value={targets.calories} /> kcal
+                    <CountUp value={energyValue(targets.calories)} /> {currentEnergyUnit()}
                   </b>
                 </div>
                 <MacroBars totals={{ calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }} targets={targets} compact />

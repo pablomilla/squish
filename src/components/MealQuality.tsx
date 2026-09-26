@@ -2,6 +2,7 @@ import { mealLabel } from '../lib/nutrition';
 import { explainMeal } from '../lib/dayExplained';
 import ScoreReasons from './ScoreReasons';
 import type { FoodItem, Nutrients } from '../types';
+import { aboutEnergy } from '../lib/region';
 
 /**
  * Why a meal scored what it did: the label, the line that separates quality
@@ -24,7 +25,7 @@ export default function MealQuality({
     <>
       <p className="tiny muted" style={{ margin: '0 0 8px' }}>
         Food quality is about what this was made of, out of 100 — not how much. {mealLabel(score)}.
-        {small && ' Small snacks are judged gently: under about 100 kcal the marks against them fade out.'}
+        {small && ` Small snacks are judged gently: under about ${aboutEnergy(100)} the marks against them fade out.`}
         {saved !== null && ` It was saved as ${saved} under an earlier version of the score; by today's rules it is ${score}.`}
       </p>
       {reasons.length > 0 && <ScoreReasons reasons={reasons} />}

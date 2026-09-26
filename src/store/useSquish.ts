@@ -12,6 +12,7 @@ import {
   microTargets,
 } from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
+import { setCurrentRegion } from '../lib/region';
 import { DEFAULT_LOOK } from '../lib/looks';
 import type { Outfit } from '../lib/outfit';
 import type { ShareDecor } from '../lib/shareDecor';
@@ -521,3 +522,14 @@ export const useSquish = create<SquishState>()(
     },
   ),
 );
+
+/*
+ * Formatters deep in a chart ask lib/region which country and energy unit are
+ * current rather than being handed a profile, so it is kept in step here.
+ * Saved state is read synchronously when the store is made, so this first
+ * call already sees a returning person's region.
+ */
+setCurrentRegion(useSquish.getState().profile);
+useSquish.subscribe((state, prev) => {
+  if (state.profile !== prev.profile) setCurrentRegion(state.profile);
+});
