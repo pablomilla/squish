@@ -34,8 +34,13 @@ any change to "About you" does.
 
 ## How it is chosen
 
-A new person starts on the country their browser's languages name ("en-AU")
-and can change it in onboarding or on You → About you. Anybody whose profile
+A new person starts on the country their device's clock is set to, if it is
+one of the six ("Europe/London", "Australia/Perth" — `TIME_ZONES`), else the
+one their browser's languages name ("en-AU"), and can change it in onboarding
+or on You → About you. The clock comes first because browsers in Britain are
+often set to American English, and clocks almost never to another country's
+time. It is read on the device and sent nowhere. The website guesses its
+prices the same way. Anybody whose profile
 predates regions is British — they signed up to a British app — rather than
 being moved by a guess.
 

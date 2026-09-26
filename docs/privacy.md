@@ -175,7 +175,9 @@ Each of these also carries which of the six countries you chose (the UK,
 Ireland, the US, Canada, Australia or New Zealand) and whether you count in
 kcal or kJ, and the language you chose for the AI, so the answer uses your
 words and units. That is a setting, not a
-location: Squish never asks your phone where it is.
+location: Squish never asks your phone where it is. It starts as a guess from
+your device's language and clock settings, made on the device, and you
+confirm or change it when you set up.
 
 Separately, the app's own wording (buttons, headings, help text) is translated
 by Claude once for everybody; nothing about you goes with that.

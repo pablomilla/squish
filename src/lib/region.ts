@@ -223,10 +223,26 @@ export function regionFromTimeZone(zone: string | null | undefined): Region | nu
   return null;
 }
 
-/** The browser's own guess, where there is a browser. */
+/**
+ * A new person's country: the one their clock is set to, if it is one of the
+ * six, else the one their languages name, else Britain. The clock goes
+ * first because it is wrong far less often — a browser in Leeds set to
+ * "en-US" is common, a clock in Leeds set to Chicago time is not.
+ */
+export function guessRegion(timeZone: string | null | undefined, languages: readonly string[] | string | undefined): Region {
+  return regionFromTimeZone(timeZone) ?? detectRegion(languages);
+}
+
+/** The browser's own guess, where there is a browser. Read here, sent nowhere. */
 export function browserRegion(): Region {
   const nav = (globalThis as { navigator?: { language?: string; languages?: readonly string[] } }).navigator;
-  return detectRegion(nav?.languages?.length ? nav.languages : nav?.language);
+  let zone: string | undefined;
+  try {
+    zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    /* no time zone to go on: the languages alone */
+  }
+  return guessRegion(zone, nav?.languages?.length ? nav.languages : nav?.language);
 }
 
 /**

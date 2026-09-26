@@ -4,6 +4,7 @@ import {
   REGIONS,
   detectRegion,
   regionFromTimeZone,
+  guessRegion,
   TIME_ZONES,
   energyUnitOf,
   energyValue,
@@ -164,4 +165,12 @@ test('every zone in the table is one the runtime knows, and no zone is in two co
   for (const zone of ['America/Vancouver', 'America/Edmonton', 'America/Winnipeg', 'America/Halifax', 'America/Anchorage', 'Australia/Sydney', 'Pacific/Auckland']) {
     if (known.includes(zone)) assert.ok(regionFromTimeZone(zone), `${zone} has no country`);
   }
+});
+
+test('a new person’s country is their clock’s first, then their languages’', () => {
+  assert.equal(guessRegion('Europe/London', ['en-US', 'en']), 'GB', 'a British clock beats an American browser');
+  assert.equal(guessRegion('America/Toronto', 'en-US'), 'CA');
+  assert.equal(guessRegion('Europe/Paris', ['en-AU']), 'AU', 'a clock outside the six says nothing');
+  assert.equal(guessRegion(undefined, 'en-NZ'), 'NZ');
+  assert.equal(guessRegion(null, undefined), 'GB');
 });
