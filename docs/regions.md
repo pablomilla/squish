@@ -50,9 +50,46 @@ line, the ANZ panel in kJ); the country's official advice for the
 nutritionist; the local supermarket for a weekly plan. The JSON the model
 returns is in kcal and sodium mg whatever the country.
 
+## Languages for the AI
+
+Separate from the country (`src/lib/language.ts`): somebody in Texas may want
+Spanish, somebody in Montréal French, while still shopping, reading labels
+and counting in their own country's way. The country decides the food and
+the numbers; the language decides the words.
+
+24 languages: English, then the ones most spoken at home across the six
+countries (Spanish, Polish, Punjabi, Mandarin, Arabic, Tagalog, Hindi,
+Vietnamese and others), plus Welsh, Irish and te reo Māori. A new person
+starts on the first of their browser's languages Squish can write in;
+everybody else stays on English. It is set in onboarding and on You → About
+you, beside the country.
+
+What changes is everything the AI writes: meal titles and food names, the
+coach's notes and daily nudge, the nutritionist's replies (even to the app's
+English suggested questions), notes it keeps, and weekly plans. The prompt
+asks for the language as spoken in their country ("the Spanish people in the
+United States use") and keeps JSON keys, enum values and unit symbols in
+English, so nothing downstream has to understand another language.
+
+Around it:
+
+- **Voice input** listens in their language, in their country's variety
+  where there is one (es-US, fr-CA).
+- **Right to left.** Arabic and Urdu text from the AI — meal names, notes,
+  replies, plans, the shopping list — has `dir="auto"`, so each piece
+  lays itself out the right way.
+- **The shopping list** sorts by aisle from the ingredient's name, which only
+  works in English, so a weekly plan now states each ingredient's aisle and
+  the list uses that first.
+- **Headers.** The language travels as `X-Squish-Language`, and only a value
+  from the fixed list reaches a prompt.
+
 ## Not yet
 
-- The app's own text is British English everywhere except the words above.
-  A full American translation, and other languages, come later.
+- The app's own text is British English everywhere except the words above,
+  in every language. Translating the interface is the next step.
+- A meal planned from a photo or description (rather than a weekly plan) in
+  another language has no aisle, so it lands under "Other" on the list.
+- Barcode lookups return Open Food Facts' own product names.
 - Emails are British.
 - Store prices are set here, not read from the stores.

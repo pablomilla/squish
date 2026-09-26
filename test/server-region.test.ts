@@ -12,10 +12,10 @@ import { DEFAULT_PROFILE } from '../src/store/useSquish';
  * differs only in words and units, never in what the JSON means.
  */
 test('the headers are trusted for nothing: an unknown region is Britain', () => {
-  assert.deepEqual(placeFrom('AU', undefined), { region: 'AU', energy: 'kJ' });
-  assert.deepEqual(placeFrom('AU', 'kcal'), { region: 'AU', energy: 'kcal' });
-  assert.deepEqual(placeFrom('ZZ', 'joules'), { region: 'GB', energy: 'kcal' });
-  assert.deepEqual(placeFrom(undefined, undefined), { region: 'GB', energy: 'kcal' });
+  assert.deepEqual(placeFrom('AU', undefined), { region: 'AU', energy: 'kJ', language: 'en' });
+  assert.deepEqual(placeFrom('AU', 'kcal'), { region: 'AU', energy: 'kcal', language: 'en' });
+  assert.deepEqual(placeFrom('ZZ', 'joules'), { region: 'GB', energy: 'kcal', language: 'en' });
+  assert.deepEqual(placeFrom(undefined, undefined), { region: 'GB', energy: 'kcal', language: 'en' });
   assert.equal(currentPlace().region, 'GB', 'outside a request');
 });
 
@@ -24,9 +24,9 @@ test('the shared rules no longer speak only British', () => {
 });
 
 test('a label is read the way that country prints one', () => {
-  const uk = regionNote('label', { region: 'GB', energy: 'kcal' });
-  const us = regionNote('label', { region: 'US', energy: 'kcal' });
-  const au = regionNote('label', { region: 'AU', energy: 'kJ' });
+  const uk = regionNote('label', { region: 'GB', energy: 'kcal', language: 'en' });
+  const us = regionNote('label', { region: 'US', energy: 'kcal', language: 'en' });
+  const au = regionNote('label', { region: 'AU', energy: 'kJ', language: 'en' });
   assert.match(uk, /SALT in grams/);
   assert.match(us, /Total Carbohydrate" already includes dietary fiber/);
   assert.match(us, /Added Sugars/);
@@ -36,12 +36,12 @@ test('a label is read the way that country prints one', () => {
 });
 
 test('the nutritionist talks in kJ and sodium in Australia, kcal and salt in Britain', () => {
-  const au = regionNote('chat', { region: 'AU', energy: 'kJ' });
+  const au = regionNote('chat', { region: 'AU', energy: 'kJ', language: 'en' });
   assert.match(au, /Australian English/);
   assert.match(au, /kilojoules/);
   assert.match(au, /sodium in mg/);
   assert.match(au, /Australian Dietary Guidelines/);
-  const gb = regionNote('chat', { region: 'GB', energy: 'kcal' });
+  const gb = regionNote('chat', { region: 'GB', energy: 'kcal', language: 'en' });
   assert.match(gb, /British English/);
   assert.match(gb, /salt in grams/);
   assert.match(gb, /Eatwell/);
@@ -49,8 +49,8 @@ test('the nutritionist talks in kJ and sodium in Australia, kcal and salt in Bri
 
 test('the chat keeps its cached rules the same for everyone and puts the country after them', () => {
   const context = { profile: 'x', targets: 'y', today: 'z', week: 'w', recentMeals: [] } as never;
-  const sydney = inPlace({ region: 'AU', energy: 'kJ' }, () => chatRequest([{ role: 'user', content: 'hi' }], context));
-  const leeds = inPlace({ region: 'GB', energy: 'kcal' }, () => chatRequest([{ role: 'user', content: 'hi' }], context));
+  const sydney = inPlace({ region: 'AU', energy: 'kJ', language: 'en' }, () => chatRequest([{ role: 'user', content: 'hi' }], context));
+  const leeds = inPlace({ region: 'GB', energy: 'kcal', language: 'en' }, () => chatRequest([{ role: 'user', content: 'hi' }], context));
   const [rulesA, restA] = sydney.system as { text: string }[];
   const [rulesB, restB] = leeds.system as { text: string }[];
   assert.equal(rulesA.text, rulesB.text);
@@ -59,8 +59,8 @@ test('the chat keeps its cached rules the same for everyone and puts the country
 });
 
 test('a meal plan shops where they live', () => {
-  assert.match(regionNote('plan', { region: 'US', energy: 'kcal' }), /American grocery store/);
-  assert.match(regionNote('plan', { region: 'NZ', energy: 'kJ' }), /New Zealand supermarket/);
+  assert.match(regionNote('plan', { region: 'US', energy: 'kcal', language: 'en' }), /American grocery store/);
+  assert.match(regionNote('plan', { region: 'NZ', energy: 'kJ', language: 'en' }), /New Zealand supermarket/);
 });
 
 test('targets follow each country’s advice', () => {

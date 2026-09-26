@@ -7,13 +7,14 @@ import { signIn, type Arrived } from '../lib/account';
 import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
-import { HeightField, NumberField, RegionField, WeightField } from '../components/fields';
+import { HeightField, LanguageField, NumberField, RegionField, WeightField } from '../components/fields';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
 import type { Activity, Goal, Mood, Profile, Sex } from '../types';
 import { PACE_CHOICES, formatPace, formatWeight, imperialLabel, paceIn, paceToKg, retuneForUnits } from '../lib/units';
 import { REGIONS, browserRegion, currentEnergyUnit, energyValue, type Region } from '../lib/region';
+import { browserLanguage, languageOf } from '../lib/language';
 import { aroundWhen, goalProjection, type GoalProjection } from '../lib/goalDate';
 import type { Units } from '../lib/units';
 import './onboarding.css';
@@ -59,7 +60,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   // Starts from the browser's guess at their country, and that country's usual units.
   const [draft, setDraft] = useState<Profile>(() => {
     const region = browserRegion();
-    return retuneForUnits({ ...DEFAULT_PROFILE, region }, REGIONS[region].units);
+    return retuneForUnits({ ...DEFAULT_PROFILE, region, language: browserLanguage() }, REGIONS[region].units);
   });
 
   /*
@@ -70,6 +71,11 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   useEffect(() => {
     setProfile({ region: draft.region, energy: undefined });
   }, [draft.region, setProfile]);
+
+  // The language too, so anything the AI writes before setup ends is already in it.
+  useEffect(() => {
+    setProfile({ language: draft.language });
+  }, [draft.language, setProfile]);
 
   const moveTo = (region: Region) =>
     setDraft((d) => retuneForUnits({ ...d, region, energy: undefined }, REGIONS[region].units));
@@ -206,6 +212,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
               </div>
 
               <RegionField value={draft.region ?? 'GB'} onChange={moveTo} hint="For your prices, food names and the way labels are read there." />
+              <LanguageField value={languageOf(draft)} onChange={(language) => set({ language })} hint="Meal names, notes, the nutritionist and meal plans. The app’s own buttons are in English for now." />
 
               <div className="field">
                 <label>Units</label>

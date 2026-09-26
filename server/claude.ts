@@ -12,6 +12,7 @@ import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../sr
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
 import { regionNote } from './region';
+import { isAisle } from '../src/lib/shopping';
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
@@ -178,7 +179,7 @@ Rules:
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
 - ultraProcessed asks how the food was made, not whether it is good for someone. A home-cooked shepherd's pie is false however much fat is in it; a diet cola is true however few calories are in it.
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
-- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the English of where they live (below).`;
+- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the language given below.`;
 
 /** Only the six we know about, only as non-negative numbers. */
 function coerceMicros(raw: unknown): Micros | undefined {
@@ -229,6 +230,8 @@ interface ModelMeal {
     grams?: number;
     liquid?: boolean;
     ultraProcessed?: boolean;
+    /** Weekly plans only. */
+    aisle?: string;
     nutrients?: Partial<Nutrients>;
   }[];
 }
@@ -242,6 +245,7 @@ function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult 
     grams: typeof item.grams === 'number' ? Math.round(item.grams) : undefined,
     liquid: item.liquid === true,
     ultraProcessed: item.ultraProcessed === true,
+    ...(isAisle(item.aisle) ? { aisle: item.aisle } : {}),
     nutrients: coerceNutrients(item.nutrients),
   }));
 
@@ -473,7 +477,7 @@ Rules:
 - Return exactly one item unless the packet genuinely holds separate foods.
 - If the photo is not a nutrition label — a plate of food, a barcode alone, a blurry mess — return an empty items array, a score of 0, and say so kindly in coachNote.
 - confidence is "low" when the print is small, angled, or partly out of frame.
-- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the English of where they live (below).`;
+- coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the language given below.`;
 
 export async function analyseLabel(
   imageBase64: string,

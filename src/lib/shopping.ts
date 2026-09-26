@@ -15,6 +15,9 @@ import type { MealEntry } from '../types';
 
 export type Aisle = 'fruit-veg' | 'meat-fish' | 'dairy-eggs' | 'bakery' | 'cupboard' | 'frozen' | 'drinks' | 'other';
 
+export const isAisle = (value: unknown): value is Aisle =>
+  typeof value === 'string' && ['fruit-veg', 'meat-fish', 'dairy-eggs', 'bakery', 'cupboard', 'frozen', 'drinks', 'other'].includes(value);
+
 export const AISLES: { id: Aisle; title: string }[] = [
   { id: 'fruit-veg', title: 'Fruit & veg' },
   { id: 'meat-fish', title: 'Meat & fish' },
@@ -67,13 +70,14 @@ export function shopAmount(total: number, liquid: boolean): string {
 
 /** Every food in the plans for `from`..`to` (inclusive), added up and in aisle order. */
 export function shoppingList(plans: MealEntry[], from: string, to: string): ShoppingLine[] {
-  const lines = new Map<string, { name: string; grams: number; weighed: boolean; liquid: boolean; portions: string[]; meals: Set<string> }>();
+  const lines = new Map<string, { name: string; grams: number; weighed: boolean; liquid: boolean; aisle?: Aisle; portions: string[]; meals: Set<string> }>();
   for (const plan of plans) {
     if (plan.date < from || plan.date > to) continue;
     for (const item of plan.items) {
       const key = keyOf(item.name);
       if (!key) continue;
       const line = lines.get(key) ?? { name: item.name.trim(), grams: 0, weighed: true, liquid: Boolean(item.liquid), portions: [], meals: new Set() };
+      line.aisle ??= isAisle(item.aisle) ? item.aisle : undefined;
       if (item.grams && item.grams > 0) line.grams += item.grams;
       else line.weighed = false;
       line.portions.push(item.portion.trim());
@@ -90,7 +94,7 @@ export function shoppingList(plans: MealEntry[], from: string, to: string): Shop
       else if (line.portions.length === 1) amount = line.portions[0];
       else if (new Set(line.portions).size === 1) amount = `${line.portions.length} × ${line.portions[0]}`;
       else amount = `${line.portions.length} portions`;
-      return { key, name: line.name, amount, aisle: aisleOf(line.name), meals: [...line.meals] };
+      return { key, name: line.name, amount, aisle: line.aisle ?? aisleOf(line.name), meals: [...line.meals] };
     })
     .sort((a, b) => order.indexOf(a.aisle) - order.indexOf(b.aisle) || a.name.localeCompare(b.name));
 }

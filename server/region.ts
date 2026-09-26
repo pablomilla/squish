@@ -14,27 +14,35 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { NextFunction, Request, Response } from 'express';
 import { HOME_REGION, REGIONS, isRegion, type EnergyUnit, type Region } from '../src/lib/region';
+import { LANGUAGES, isLanguage, type Language } from '../src/lib/language';
 
 export interface Place {
   region: Region;
   energy: EnergyUnit;
+  /** What the AI writes in. English unless they chose otherwise. */
+  language: Language;
 }
 
 const store = new AsyncLocalStorage<Place>();
 
-/** From the headers, trusting nothing: an unknown region is Britain, an unknown unit the region's own. */
-export function placeFrom(regionHeader: unknown, energyHeader: unknown): Place {
+/**
+ * From the headers, trusting nothing: an unknown region is Britain, an
+ * unknown unit the region's own, an unknown language English. Only ever
+ * values from fixed lists reach a prompt, so a header cannot carry words in.
+ */
+export function placeFrom(regionHeader: unknown, energyHeader: unknown, languageHeader?: unknown): Place {
   const region = isRegion(regionHeader) ? regionHeader : HOME_REGION;
   const energy = energyHeader === 'kJ' || energyHeader === 'kcal' ? energyHeader : REGIONS[region].energy;
-  return { region, energy };
+  const language = isLanguage(languageHeader) ? languageHeader : 'en';
+  return { region, energy, language };
 }
 
 export function withPlace(req: Request, _res: Response, next: NextFunction): void {
-  store.run(placeFrom(req.get('x-squish-region'), req.get('x-squish-energy')), next);
+  store.run(placeFrom(req.get('x-squish-region'), req.get('x-squish-energy'), req.get('x-squish-language')), next);
 }
 
 /** The place of the request being served; Britain outside one. */
-export const currentPlace = (): Place => store.getStore() ?? { region: HOME_REGION, energy: 'kcal' };
+export const currentPlace = (): Place => store.getStore() ?? { region: HOME_REGION, energy: 'kcal', language: 'en' };
 
 /** For a test or a script that wants a place without a request. */
 export const inPlace = <T>(place: Place, fn: () => T): T => store.run(place, fn);
@@ -72,6 +80,30 @@ const FORTIFIED: Record<Region, string> = {
   NZ: 'New Zealand bread flour carries added folic acid, bread is made with iodised salt, and many cereals are fortified.',
 };
 
+/**
+ * For anybody who chose a language other than English. Everything they will
+ * read is in it; everything the app reads (JSON keys, enum values, units) is
+ * not. The app's own suggested questions are English, so an English question
+ * is not a sign they want English back.
+ */
+function languageRule(kind: NoteFor, place: Place): string {
+  const lang = LANGUAGES[place.language];
+  const country = REGIONS[place.region].name;
+  const what =
+    kind === 'chat'
+      ? 'Reply in it — including to a question written in English, since the app’s own buttons and suggested questions are English. Switch only if they ask you to. Notes you save about them go in it too.'
+      : kind === 'coach'
+        ? 'Write the message in it.'
+        : kind === 'plan'
+          ? 'Write the summary, every meal title, every ingredient name and every portion in it. Name each ingredient the same way every time it appears.'
+          : 'Write the title, every food name, every portion and the coachNote in it.';
+  return [
+    `Language: ${lang.name} (${lang.native}). ${what}`,
+    `They live in ${country}: use the ${lang.name} that people there use, and name foods and products the way ${lang.name} speakers in ${country} would.`,
+    'JSON keys and enum values stay exactly as specified, in English. Units stay as symbols: kcal, kJ, g, mg.',
+  ].join('\n');
+}
+
 export type NoteFor = 'meal' | 'label' | 'recipe' | 'coach' | 'chat' | 'plan';
 
 /**
@@ -80,7 +112,7 @@ export type NoteFor = 'meal' | 'label' | 'recipe' | 'coach' | 'chat' | 'plan';
  */
 export function regionNote(kind: NoteFor, place: Place = currentPlace()): string {
   const info = REGIONS[place.region];
-  const words = `Write in ${info.english}. Name foods the way people there do.`;
+  const words = place.language === 'en' ? `Write in ${info.english}. Name foods the way people there do.` : languageRule(kind, place);
   const energy =
     place.energy === 'kJ'
       ? 'They count energy in kilojoules. Whenever you mention energy in words, give it in kJ (kcal × 4.184, rounded); never write kcal or calories to them.'

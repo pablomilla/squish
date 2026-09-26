@@ -155,7 +155,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         }
       >
         <div className="home-hero-text">
-          <p className="speech speech--right">{nudge ?? fallbackNudge}</p>
+          <p className="speech speech--right" dir="auto">{nudge ?? fallbackNudge}</p>
           <p className="script home-mood">{statusLine(situation)}</p>
         </div>
         <Squish mood={mood} size={132} />

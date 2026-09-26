@@ -230,7 +230,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       )}
 
       <div className="review-title-row">
-        <input className="input review-title" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Meal name" />
+        <input className="input review-title" dir="auto" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Meal name" />
         <ScoreMeter score={score} size={52} />
       </div>
 
@@ -261,7 +261,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       {analysis.coachNote && (
         <div className="review-coach">
           <Squish mood={score >= 55 ? 'nomnom' : 'calm'} size={74} bob={false} />
-          <p className="speech">{analysis.coachNote}</p>
+          <p className="speech" dir="auto">{analysis.coachNote}</p>
         </div>
       )}
 

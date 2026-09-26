@@ -24,7 +24,7 @@ export function MealCard({ meal, onClick }: { meal: MealEntry; onClick?: () => v
       <span className="meal-card-body">
         <span className="meal-card-title">
           {/* The ellipsis needs a non-flex box to happen in. */}
-          <span className="meal-card-name">{meal.title}</span>
+          <span className="meal-card-name" dir="auto">{meal.title}</span>
           {meal.source === 'photo' && <SparkIcon size={14} className="meal-card-ai" />}
         </span>
         <span className="tiny muted meal-card-macros">

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { MicIcon, StopIcon } from './icons';
 import { speechSupported, startDictation } from '../lib/speech';
+import { currentRegion } from '../lib/region';
+import { currentLanguage, speechLocale } from '../lib/language';
 import './dictate.css';
 
 interface Props {
@@ -55,7 +57,7 @@ export default function DictateButton({ onText, onError, label = 'your meal' }: 
         setHeard('');
         onError?.(message);
       },
-    });
+    }, speechLocale(currentLanguage().id, currentRegion().id, currentRegion().locale));
 
     if (!started) {
       onError?.('Dictation would not start. Typing still works.');

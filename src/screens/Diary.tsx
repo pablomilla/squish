@@ -320,7 +320,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
               ))}
             </div>
 
-            {selected.coachNote && <p className="speech">{selected.coachNote}</p>}
+            {selected.coachNote && <p className="speech" dir="auto">{selected.coachNote}</p>}
             {selected.note && <p className="small muted">"{selected.note}"</p>}
 
             <div className="row" style={{ gap: 10 }}>

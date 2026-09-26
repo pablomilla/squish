@@ -199,7 +199,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
 
       {stage.kind === 'preview' && (
         <div className="week-preview">
-          {stage.plan.summary && <p className="small week-summary">{stage.plan.summary}</p>}
+          {stage.plan.summary && <p className="small week-summary" dir="auto">{stage.plan.summary}</p>}
           {stage.plan.days.map((day) => (
             <section key={day.date} className="week-day">
               <div className="week-day-head">
@@ -228,7 +228,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
                             })
                           }
                         />
-                        <span className="week-meal-text">
+                        <span className="week-meal-text" dir="auto">
                           <span className="week-meal-title">{meal.title}</span>
                           <span className="tiny muted">
                             {meal.slot} · {formatEnergy(meal.nutrients.calories)} · P{Math.round(meal.nutrients.protein)} ·{' '}

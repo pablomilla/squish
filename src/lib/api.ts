@@ -7,6 +7,7 @@ import { refreshPlan } from './plan';
 import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 import { currentEnergyUnit, currentRegion } from './region';
+import { currentLanguage } from './language';
 
 const TIMEOUT_MS = 45_000;
 
@@ -87,7 +88,8 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
 /**
  * The headers every call carries: the device token, where the server issues
  * them (absent on a Squish with no database, and everything still works), and
- * which country they are in, so the AI writes in their words and units.
+ * which country they are in and which language they want, so the AI writes in
+ * their words and units.
  */
 async function headers(json: boolean): Promise<Record<string, string>> {
   const token = await deviceToken(apiUrl);
@@ -95,6 +97,7 @@ async function headers(json: boolean): Promise<Record<string, string>> {
     ...(json ? { 'Content-Type': 'application/json' } : {}),
     'X-Squish-Region': currentRegion().id,
     'X-Squish-Energy': currentEnergyUnit(),
+    'X-Squish-Language': currentLanguage().id,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }

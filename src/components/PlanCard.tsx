@@ -21,7 +21,7 @@ export default function PlanCard({ plan, showSlot = false }: { plan: MealEntry; 
   return (
     <div className="plan-card">
       <span className="plan-card-body">
-        <span className="plan-card-title">{plan.title}</span>
+        <span className="plan-card-title" dir="auto">{plan.title}</span>
         <span className="tiny muted">
           Planned{showSlot ? ` · ${plan.slot}` : ''} · {formatEnergy(plan.nutrients.calories)} · P{Math.round(plan.nutrients.protein)}
         </span>

@@ -6,7 +6,8 @@ import PackTile from '../components/PackTile';
 import InviteCard from '../components/InviteCard';
 import SquadCard from '../components/squad/SquadCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
-import { HeightField, NumberField, RegionField, WeightField } from '../components/fields';
+import { HeightField, LanguageField, NumberField, RegionField, WeightField } from '../components/fields';
+import { LANGUAGES, languageOf } from '../lib/language';
 import { REGIONS, energyUnitOf, energyValue, formatEnergy, regionOf, toKcal, type EnergyUnit } from '../lib/region';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, imperialLabel, retuneForUnits, saltGrams, saltLabel, saltShown, showsSodium, sodiumFromShown, sodiumMg, weightUnitLabel } from '../lib/units';
 import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
@@ -233,6 +234,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <Row label="Goal weight" value={formatWeight(profile.targetWeightKg, profile.units)} />
         <Row label="Height" value={formatHeight(profile.heightCm, profile.units)} />
         <Row label="Country" value={`${REGIONS[regionOf(profile)].flag} ${REGIONS[regionOf(profile)].name}`} />
+        <Row label="AI language" value={LANGUAGES[languageOf(profile)].native} />
         <Row label="Age" value={`${profile.age}`} />
         <Row label="Activity" value={ACTIVITY_LABEL[profile.activity]} />
       </section>
@@ -615,6 +617,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
             </div>
           )}
           <RegionField value={regionOf(profile)} onChange={(region) => setProfile({ region, energy: undefined })} />
+          <LanguageField value={languageOf(profile)} onChange={(language) => setProfile({ language })} hint="Meal names, notes, the nutritionist and meal plans. The app’s own buttons are in English for now." />
           <div className="field">
             <label>Units</label>
             <Segmented

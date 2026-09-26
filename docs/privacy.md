@@ -158,7 +158,8 @@ Sent to Anthropic's Claude API, and only when you do one of these things:
 
 Each of these also carries which of the six countries you chose (the UK,
 Ireland, the US, Canada, Australia or New Zealand) and whether you count in
-kcal or kJ, so the answer uses your words and units. That is a setting, not a
+kcal or kJ, and the language you chose for the AI, so the answer uses your
+words and units. That is a setting, not a
 location: Squish never asks your phone where it is.
 
 Anthropic process it to produce the answer and return it. Their handling is

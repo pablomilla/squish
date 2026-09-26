@@ -263,7 +263,10 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
               </ul>
             )}
             {bubble.text.split('\n').filter(Boolean).map((line, i) => (
-              <p key={i}>{line}</p>
+              // Their language may run right to left; the browser works it out per line.
+              <p key={i} dir="auto">
+                {line}
+              </p>
             ))}
           </div>
         ))}

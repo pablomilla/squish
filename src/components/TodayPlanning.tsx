@@ -51,7 +51,7 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
                 onClick={() => go({ name: 'review', draft: { analysis: asAnalysis(idea, slotForNow()), slot: slotForNow(), date: today } })}
               >
                 <span className="idea-body">
-                  <span className="idea-title">{idea.title}</span>
+                  <span className="idea-title" dir="auto">{idea.title}</span>
                   <span className="tiny muted">
                     {formatEnergy(idea.nutrients.calories)} · P{Math.round(idea.nutrients.protein)} · {idea.from === 'saved' ? 'saved' : 'you’ve had it before'}
                   </span>

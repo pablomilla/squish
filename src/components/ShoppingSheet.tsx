@@ -82,7 +82,7 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
                       <label className={`shopping-line${done ? ' is-done' : ''}`}>
                         <input type="checkbox" checked={done} onChange={() => toggleShoppingTick(line.key)} />
                         <span className="shopping-text">
-                          <span className="shopping-name">{line.name}</span>
+                          <span className="shopping-name" dir="auto">{line.name}</span>
                           <span className="tiny muted">
                             {line.amount} · {line.meals.join(', ')}
                           </span>

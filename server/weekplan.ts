@@ -18,6 +18,10 @@
  * the other calls, so it shares their client, pricing and billing.
  */
 import type { MealSlot } from '../src/types';
+import { AISLES } from '../src/lib/shopping';
+
+/** Where each ingredient is bought, so the shopping list sorts in any language. */
+const AISLE_IDS = AISLES.map((a) => a.id);
 
 export const WEEK_DAYS_MIN = 3;
 export const WEEK_DAYS_MAX = 7;
@@ -92,6 +96,7 @@ What a good plan here looks like:
 
 How to write it:
 - Ingredient names are plain shop names, the same name every time the same thing appears ("chicken breast", "basmati rice", "red pepper"), so the shopping list can add them up. One ingredient per item: a stir-fry is chicken breast, noodles, pepper and sauce, not "stir-fry".
+- aisle is the part of a supermarket the ingredient is bought from. The app sorts the shopping list by it, whatever language the names are in.
 - portion is words only ("1 breast", "1 bowl", "2 slices"); grams carries the weight. Nutrition is per the portion stated.
 - Count fibre inside carbohydrate, satFat inside fat, freeSugar inside sugar. freeSugar is 0 for whole fruit, vegetables and plain milk or yoghurt.
 - ultraProcessed asks how the food is made (NOVA 4), not whether it is good.
@@ -174,9 +179,10 @@ export const WEEKPLAN_SCHEMA = {
                       grams: { type: 'number' },
                       liquid: { type: 'boolean' },
                       ultraProcessed: { type: 'boolean' },
+                      aisle: { type: 'string', enum: AISLE_IDS },
                       nutrients: PLAN_NUTRIENTS,
                     },
-                    required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'nutrients'],
+                    required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'aisle', 'nutrients'],
                     additionalProperties: false,
                   },
                 },

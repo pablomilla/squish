@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import type { Units } from '../lib/units';
 import { REGION_LIST, isRegion, type Region } from '../lib/region';
+import { LANGUAGE_LIST, isLanguage, type Language } from '../lib/language';
 import {
   cmToFeetInches,
   feetInchesToCm,
@@ -258,6 +259,25 @@ export function RegionField({ value, onChange, hint }: { value: Region; onChange
         {REGION_LIST.map((region) => (
           <option key={region.id} value={region.id}>
             {region.flag} {region.name}
+          </option>
+        ))}
+      </select>
+      {hint && <p className="tiny muted">{hint}</p>}
+    </div>
+  );
+}
+
+/** Which language the AI writes in, listed by each language's own name. */
+export function LanguageField({ value, onChange, hint }: { value: Language; onChange: (language: Language) => void; hint?: string }) {
+  const id = useId();
+  return (
+    <div className="field">
+      <label htmlFor={id}>Squish’s AI writes in</label>
+      <select id={id} className="input input--select" value={value} onChange={(event) => isLanguage(event.target.value) && onChange(event.target.value)}>
+        {LANGUAGE_LIST.map((language) => (
+          <option key={language.id} value={language.id} lang={language.id}>
+            {language.native}
+            {language.native === language.name ? '' : ` — ${language.name}`}
           </option>
         ))}
       </select>

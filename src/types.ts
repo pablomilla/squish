@@ -1,4 +1,6 @@
 import type { EnergyUnit, Region } from './lib/region';
+import type { Language } from './lib/language';
+import type { Aisle } from './lib/shopping';
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
@@ -81,6 +83,12 @@ export interface FoodItem {
   grams?: number;
   /** Measured by volume rather than weight — a drink, a soup, a sauce. */
   liquid?: boolean;
+  /**
+   * Where it is bought, when the AI said so (a weekly plan does). The
+   * shopping list otherwise guesses from the name, which only works in
+   * English.
+   */
+  aisle?: Aisle;
   nutrients: Nutrients;
 }
 
@@ -142,6 +150,8 @@ export interface Profile {
   region?: Region;
   /** kcal or kJ, when they have chosen other than their region's usual. */
   energy?: EnergyUnit;
+  /** The language the AI writes in. Absent means English — see lib/language.ts. */
+  language?: Language;
   onboarded: boolean;
   /**
    * What their own logs say about their metabolism, as a multiple of the
