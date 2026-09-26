@@ -101,3 +101,12 @@
 :root[data-theme='dark'] .home-hero--scene .home-mood { color: #b3aaff; }
 .home-hero--scene .home-hero-text { align-self: center; }
 .home-hero--scene .squish { align-self: flex-end; margin-bottom: calc(var(--s4) * -1 + 4px); }
+
+/* The day's detail, folded: sugar, salt, the comparison, the macro split. */
+.home-more { margin-top: 10px; }
+.home-more > summary { cursor: pointer; color: var(--brand-ink); font-weight: 600; padding: 4px 0; }
+.home-more[open] > summary { margin-bottom: 8px; }
+.home-planned-head { margin-top: 6px; }
+.home-today-row { display: flex; align-items: center; gap: 14px; }
+.home-today-row .home-ring-wrap { flex: none; margin: 4px 0; }
+.home-today-bars { flex: 1; min-width: 0; }

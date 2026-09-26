@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import TodayPlanning from '../components/TodayPlanning';
+import PlanCard from '../components/PlanCard';
+import ShoppingSheet from '../components/ShoppingSheet';
+import { plansOn } from '../lib/planner';
 import NutritionistCard from '../components/NutritionistCard';
 import type { Route } from '../types';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
 import MealCard from '../components/MealCard';
 import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing, StreakDots } from '../components/charts';
-import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
+import { BasketIcon, CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
 import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
 import { formatWeight } from '../lib/units';
@@ -29,6 +32,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const { profile, targets, meals, days, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
     useSquish();
   const [weighing, setWeighing] = useState(false);
+  const [shopping, setShopping] = useState(false);
   const chosenScene = useSquish((s) => s.scene);
   const unlocked = useSquish((s) => s.unlocked);
   const subscribed = useSubscribed();
@@ -37,6 +41,8 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
   const totals = useMemo(() => totalsOn(meals, today), [meals, today]);
   const todaysMeals = useMemo(() => mealsOn(meals, today), [meals, today]);
+  const plans = useSquish((s) => s.plans);
+  const plannedToday = useMemo(() => plansOn(plans, today), [plans, today]);
   const streak = useMemo(() => streakOf(meals, today), [meals, today]);
   const habits = habitsOn(meals, days, targets, today);
   const week = weekOf(today);
@@ -150,8 +156,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         <Squish mood={mood} size={132} />
       </section>
 
-      <FriendNudge onOpenYou={() => go({ name: 'you' })} />
-      <SquadStrip onOpenYou={() => go({ name: 'you' })} />
 
       {/* A meal that was analysed and never saved. It is offered back rather
           than logged: nobody asked for it to go in the diary, and a tracker
@@ -185,34 +189,40 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           </span>
         </div>
 
-        <div className="home-ring-wrap">
-          <ProgressRing value={totals.calories} target={targets.calories} size={196} />
-          <p className="tiny muted home-ring-caption">
-            {Math.round(totals.calories)} of {targets.calories} kcal
-          </p>
+        {/* Ring and macros side by side, as in the diary, so the whole card and
+            the buttons to log with fit on the first screen of a phone. The
+            macro bars carry protein and fibre with their numbers — the stat
+            pills that used to sit beside the ring said it twice. */}
+        <div className="home-today-row">
+          <div className="home-ring-wrap">
+            <ProgressRing value={totals.calories} target={targets.calories} size={140} />
+            <p className="tiny muted home-ring-caption">
+              {Math.round(totals.calories)} of {targets.calories} kcal
+            </p>
+          </div>
+          <div className="home-today-bars">
+            <MacroBars totals={totals} targets={targets} compact />
+          </div>
         </div>
-
-        {/* The macro bars already carry protein and fibre with their numbers —
-            the stat pills that used to sit beside the ring said it twice. */}
-        <MacroBars totals={totals} targets={targets} compact />
-        {dayComparison && (
-          <Comparison
-            equivalent={dayComparison.equivalent}
-            lead="The"
-            tail={` so far${progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}`}
-          />
-        )}
-        <MinorNutrients totals={totals} targets={targets} />
+        {/* Anything over a limit is said up front; the rest of the detail is a
+            tap away, so the ring and the buttons to log with share a screen. */}
         <OverTargetNote over={overTargets(totals, targets)} />
         {totals.calories > 0 && (
-          <>
+          <details className="home-more">
+            <summary className="small">Sugar, salt and more</summary>
+            {dayComparison && (
+              <Comparison
+                equivalent={dayComparison.equivalent}
+                lead="The"
+                tail={` so far${progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}`}
+              />
+            )}
+            <MinorNutrients totals={totals} targets={targets} />
             <div className="divider" />
             <MacroSplitBar totals={totals} />
-          </>
+          </details>
         )}
       </section>
-
-      <NutritionistCard go={go} />
 
       <section className="home-actions">
         <button type="button" className="action action--primary" onClick={() => go({ name: 'capture' })}>
@@ -235,7 +245,54 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </section>
 
+      <NutritionistCard go={go} />
+
+      {/* What has been eaten today, and what is still planned for later —
+          together, and right under the numbers they add up to. */}
+      <section className="card home-meals">
+        <div className="card-title">
+          <h3>Today's meals</h3>
+          <button type="button" className="btn--quiet small" onClick={() => go({ name: 'meals' })}>
+            See all
+          </button>
+        </div>
+        {todaysMeals.length === 0 && plannedToday.length === 0 ? (
+          <EmptyState
+            mood="calm"
+            action={
+              <button type="button" className="btn btn--soft btn--sm" onClick={() => go({ name: 'capture' })}>
+                Snap your first meal
+              </button>
+            }
+          >
+            Nothing logged yet today — snap a meal and I'll do the maths.
+          </EmptyState>
+        ) : (
+          <div className="stack">
+            {todaysMeals.slice().reverse().map((meal) => (
+              <MealCard key={meal.id} meal={meal} onClick={() => go({ name: 'meals' })} />
+            ))}
+            {plannedToday.length > 0 && (
+              <>
+                <div className="row-between home-planned-head">
+                  <span className="tiny muted">Still planned for today</span>
+                  <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
+                    <BasketIcon size={15} /> Shopping list
+                  </button>
+                </div>
+                {plannedToday.map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} showSlot />
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </section>
       <TodayPlanning go={go} />
+
+
+
+
 
       <p className="section-label">Daily check-ins</p>
 
@@ -341,34 +398,13 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </section>
 
-      <section className="card">
-        <div className="card-title">
-          <h3>Today's meals</h3>
-          <button type="button" className="btn--quiet small" onClick={() => go({ name: 'meals' })}>
-            See all
-          </button>
-        </div>
-        {todaysMeals.length === 0 ? (
-          <EmptyState
-            mood="calm"
-            action={
-              <button type="button" className="btn btn--soft btn--sm" onClick={() => go({ name: 'capture' })}>
-                Snap your first meal
-              </button>
-            }
-          >
-            Nothing logged yet today — snap a meal and I'll do the maths.
-          </EmptyState>
-        ) : (
-          <div className="stack">
-            {todaysMeals.slice(-4).reverse().map((meal) => (
-              <MealCard key={meal.id} meal={meal} onClick={() => go({ name: 'meals' })} />
-            ))}
-          </div>
-        )}
-      </section>
+
+      <FriendNudge onOpenYou={() => go({ name: 'you' })} />
+      <SquadStrip onOpenYou={() => go({ name: 'you' })} />
 
       <p className="script home-footer">Good food. Brighter days. ♡</p>
+
+      <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
 
       <Sheet open={weighing} onClose={() => setWeighing(false)} title="Today's weight">
         <div className="stack">

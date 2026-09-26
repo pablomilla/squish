@@ -1,33 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { Route } from '../types';
 import { useSquish } from '../store/useSquish';
 import { isoDate, slotForNow } from '../lib/date';
-import { asAnalysis, ideasFor, plansOn, remainingToday } from '../lib/planner';
-import PlanCard from './PlanCard';
-import ShoppingSheet from './ShoppingSheet';
-import { BasketIcon } from './icons';
+import { asAnalysis, ideasFor, remainingToday } from '../lib/planner';
 import './plan-card.css';
 
 /** After this hour the day is for winding down, not for being handed dinner ideas. */
 const IDEAS_UNTIL_HOUR = 21;
 
 /**
- * Home's two planning cards: what was planned for today, each a tap from
- * being logged, and a few ideas from their own food for what is left.
+ * Home's ideas for the rest of today, from their own food. (What is planned
+ * for today sits in Home's "Today's meals", beside what has been eaten.)
  *
  * An idea opens in the review screen like any other meal, where it can be
  * logged as eaten or planned for later — so there is one way to save a meal,
  * not two that drift apart.
  */
 export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
-  const plans = useSquish((s) => s.plans);
   const meals = useSquish((s) => s.meals);
   const favourites = useSquish((s) => s.favourites);
   const targets = useSquish((s) => s.targets);
   const today = isoDate();
-  const [shopping, setShopping] = useState(false);
 
-  const planned = useMemo(() => plansOn(plans, today), [plans, today]);
   const ateToday = meals.some((m) => m.date === today);
   const ideas = useMemo(
     () => (ateToday && new Date().getHours() < IDEAS_UNTIL_HOUR ? ideasFor(meals, favourites, targets, today) : []),
@@ -37,22 +31,6 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
 
   return (
     <>
-      <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
-      {planned.length > 0 && (
-        <section className="card home-planned">
-          <div className="card-title">
-            <h3>Planned for today</h3>
-            <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
-              <BasketIcon size={15} /> Shopping list
-            </button>
-          </div>
-          <div className="stack">
-            {planned.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} showSlot />
-            ))}
-          </div>
-        </section>
-      )}
 
       {ideas.length > 0 && (
         <section className="card card--quiet home-ideas">
