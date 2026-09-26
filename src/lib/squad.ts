@@ -10,6 +10,9 @@ import { apiUrl } from './origin';
 import { deviceToken } from './identity';
 import { addDays, isoDate, parseISO, weekOf } from './date';
 import { streakOf } from './selectors';
+import { addToInbox, type CheerInbox, type InboxCheer } from './cheerInbox';
+
+export { inboxFor, type CheerInbox, type InboxCheer } from './cheerInbox';
 import type { MealEntry, Mood } from '../types';
 
 export interface SquadMember {
@@ -77,7 +80,12 @@ async function ask(method: 'GET' | 'POST', path: string, body?: unknown): Promis
 export const refreshSquad = () => ask('GET', '/api/squad');
 export const startSquad = (name: string, displayName: string) => ask('POST', '/api/squad', { name, displayName });
 export const joinSquad = (code: string, displayName: string) => ask('POST', '/api/squad/join', { code, displayName });
-export const leaveSquad = () => ask('POST', '/api/squad/leave');
+export const leaveSquad = async () => {
+  const done = await ask('POST', '/api/squad/leave');
+  // Cheers from a squad somebody has left are not news any more.
+  if (done.ok) clearCheerInbox();
+  return done;
+};
 export const renameInSquad = (displayName: string) => ask('POST', '/api/squad/name', { displayName });
 export const sendCheer = (to: string, cheer: string) => ask('POST', '/api/squad/cheer', { to, cheer });
 export const blockInSquad = (member: string) => ask('POST', '/api/squad/block', { member });
@@ -178,3 +186,45 @@ export function memberMood(member: Pick<SquadMember, 'loggedDay' | 'streak'>, to
   if (member.loggedDay && member.loggedDay >= addDays(today, -2)) return 'calm';
   return 'sleepy';
 }
+
+/* ---------- Today's cheers, kept on this phone so Home can show them ---------- */
+
+/**
+ * The server hands a cheer over once and is told it has been seen, so by
+ * the time Home draws there is nothing "unread" left to go on. This keeps
+ * today's, on the phone, until the squad is opened — which is what lets
+ * the squad strip come up to the top of Home while there is a cheer to see,
+ * and go back down once it has been.
+ */
+const INBOX_KEY = 'squish-cheer-inbox';
+const inboxListeners = new Set<() => void>();
+let inboxCache: CheerInbox | null | undefined;
+
+function readInbox(): CheerInbox | null {
+  if (inboxCache !== undefined) return inboxCache;
+  try {
+    inboxCache = JSON.parse(localStorage.getItem(INBOX_KEY) ?? 'null') as CheerInbox | null;
+  } catch {
+    inboxCache = null;
+  }
+  return inboxCache;
+}
+
+function writeInbox(next: CheerInbox | null): void {
+  inboxCache = next;
+  try {
+    if (next) localStorage.setItem(INBOX_KEY, JSON.stringify(next));
+    else localStorage.removeItem(INBOX_KEY);
+  } catch {
+    // Blocked storage: the cheer was still said, just not kept.
+  }
+  for (const listener of inboxListeners) listener();
+}
+
+export const cheerInbox = (): CheerInbox | null => readInbox();
+export const watchCheerInbox = (listener: () => void): (() => void) => {
+  inboxListeners.add(listener);
+  return () => inboxListeners.delete(listener);
+};
+export const keepCheers = (arrived: InboxCheer[], today = isoDate()) => writeInbox(addToInbox(readInbox(), arrived, today));
+export const clearCheerInbox = () => writeInbox(null);

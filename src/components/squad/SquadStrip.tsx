@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { askForAccount } from '../../lib/account';
 import { isoDate } from '../../lib/date';
-import { loggedToday, pendingSquadInvite } from '../../lib/squad';
+import { clearCheerInbox, loggedToday, pendingSquadInvite } from '../../lib/squad';
+import { cheerById } from '../../lib/cheers';
 import { useStanding } from '../useSubscribed';
-import { useSquad } from './useSquad';
+import { useCheerInbox, useSquad } from './useSquad';
 import SquadSheet, { MemberSquish } from './SquadSheet';
 import SquadForms from './SquadForms';
 import './squad.css';
@@ -15,6 +16,7 @@ import './squad.css';
  */
 export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
   const squad = useSquad();
+  const inbox = useCheerInbox();
   const standing = useStanding();
   const [open, setOpen] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -28,11 +30,33 @@ export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
     return (
       <>
         <section className="card">
-          <button type="button" className="squad-strip" onClick={() => setOpen(true)} aria-label={`${s.name}: open your squad`}>
+          <button
+            type="button"
+            className="squad-strip"
+            onClick={() => {
+              setOpen(true);
+              // Seen now: the strip can go back to its place further down Home.
+              clearCheerInbox();
+            }}
+            aria-label={`${s.name}: open your squad`}
+          >
             <div className="squad-strip-head">
               <h3>{s.name}</h3>
-              <span className="tiny muted">{wonThisWeek ? '🏆 Week done!' : `Cheer ›`}</span>
+              <span className="tiny muted">{wonThisWeek ? '🏆 Week done!' : inbox.length ? 'Cheer back ›' : `Cheer ›`}</span>
             </div>
+            {inbox.length > 0 && (
+              <div className="squad-inbox" role="status">
+                {inbox.slice(0, 2).map((c) => {
+                  const cheer = cheerById(c.cheer);
+                  return (
+                    <p key={c.id} className="small">
+                      <span aria-hidden="true">{cheer?.emoji ?? '💜'}</span> <b>{c.from}</b>: {cheer?.words ?? 'sent you a cheer'}
+                    </p>
+                  );
+                })}
+                {inbox.length > 2 && <p className="tiny muted">and {inbox.length - 2} more today</p>}
+              </div>
+            )}
             <div className="squad-row">
               {s.members.map((member) => (
                 <div key={member.id} className="squad-face">

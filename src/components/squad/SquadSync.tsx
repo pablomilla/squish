@@ -4,7 +4,7 @@ import { useStanding, useSubscribed } from '../useSubscribed';
 import { useSquish } from '../../store/useSquish';
 import { wearable } from '../../lib/outfit';
 import { cheerById } from '../../lib/cheers';
-import { cheersSeen, forgetSquad, postStatus, refreshSquad, statusFrom } from '../../lib/squad';
+import { clearCheerInbox, cheersSeen, forgetSquad, keepCheers, postStatus, refreshSquad, statusFrom } from '../../lib/squad';
 import { useSquad } from './useSquad';
 
 /**
@@ -29,7 +29,10 @@ export default function SquadSync() {
   useEffect(() => {
     if (!standing.known) return;
     if (standing.account && !standing.off) void refreshSquad();
-    else forgetSquad();
+    else {
+      forgetSquad();
+      clearCheerInbox();
+    }
   }, [standing.known, standing.account, standing.off]);
 
   // Coming back to the app is the likeliest moment for news from the squad.
@@ -68,6 +71,8 @@ export default function SquadSync() {
     }
     if (fresh.length > 3) toast(`…and ${fresh.length - 3} more cheers from your squad`, '💜');
     for (const c of fresh) said.current.add(c.id);
+    // Kept for today on this phone, so Home can bring the squad up to show them.
+    keepCheers(fresh.map((c) => ({ id: c.id, from: c.from, cheer: c.cheer })));
     void cheersSeen(fresh.map((c) => c.id));
   }, [squad, toast]);
 

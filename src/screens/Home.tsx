@@ -25,6 +25,7 @@ import { sceneUrl } from '../components/sceneArt';
 import { useSubscribed } from '../components/useSubscribed';
 import FriendNudge from '../components/FriendNudge';
 import SquadStrip from '../components/squad/SquadStrip';
+import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
@@ -33,6 +34,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
     useSquish();
   const [weighing, setWeighing] = useState(false);
   const [shopping, setShopping] = useState(false);
+  const inbox = useCheerInbox();
+  const squad = useSquad();
+  const cheered = inbox.length > 0 && squad.kind === 'in';
   const chosenScene = useSquish((s) => s.scene);
   const unlocked = useSquish((s) => s.unlocked);
   const subscribed = useSubscribed();
@@ -155,6 +159,10 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
         <Squish mood={mood} size={132} />
       </section>
+
+      {/* A cheer from the squad brings it up here until it has been seen; the
+          rest of the time the squad sits lower down, with the other social bits. */}
+      {cheered && <SquadStrip onOpenYou={() => go({ name: 'you' })} />}
 
 
       {/* A meal that was analysed and never saved. It is offered back rather
@@ -400,7 +408,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
 
       <FriendNudge onOpenYou={() => go({ name: 'you' })} />
-      <SquadStrip onOpenYou={() => go({ name: 'you' })} />
+      {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you' })} />}
 
       <p className="script home-footer">Good food. Brighter days. ♡</p>
 
