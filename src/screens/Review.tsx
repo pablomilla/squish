@@ -14,7 +14,8 @@ import { savePhoto } from '../lib/photos';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
 import MealQuality from '../components/MealQuality';
 import { EMPTY, mealLabel, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
-import { friendlyDate } from '../lib/date';
+import { friendlyDate, isoDate } from '../lib/date';
+import { planDays } from '../lib/planner';
 import './review.css';
 import { describePortion } from '../lib/units';
 
@@ -43,7 +44,7 @@ const makeRow = (item: FoodItem): Row => ({
 
 export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDone: () => void; onCancel: () => void }) {
   const toast = useToast();
-  const { targets, addMeal, updateMeal, toggleFavourite, isFavourite, setPendingMeal } = useSquish();
+  const { targets, addMeal, addPlan, updateMeal, toggleFavourite, isFavourite, setPendingMeal } = useSquish();
   const { analysis } = draft;
 
   const [title, setTitle] = useState(analysis.title);
@@ -57,6 +58,13 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   const [fix, setFix] = useState('');
   const [fixing, setFixing] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  // Eaten, or planned for later. Only for a new meal: an edit is of something
+  // already in the diary. A day still to come can only be a plan.
+  const today = isoDate();
+  const canPlan = !draft.editingId;
+  const [planning, setPlanning] = useState(canPlan && draft.date > today);
+  const [planDate, setPlanDate] = useState(draft.date >= today ? draft.date : today);
+  const shownDate = planning ? planDate : draft.date > today ? today : draft.date;
 
   const items = useMemo(() => rows.map((row) => scaledItem(row)), [rows]);
   const totals = useMemo(() => (items.length ? sumNutrients(items) : { ...EMPTY }), [items]);
@@ -147,10 +155,20 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       photo: draft.photo,
       source: (draft.photo ? 'photo' : 'describe') as 'photo' | 'describe',
       aiConfidence: analysis.confidence,
-      date: draft.date,
+      // Nothing is eaten in the future: a meal opened on a day still to come
+      // and saved as eaten is today's.
+      date: draft.date > today ? today : draft.date,
     };
 
     setPendingMeal(null);
+
+    if (planning) {
+      addPlan({ ...payload, date: planDate });
+      const when = planDate === today ? 'today' : planDate === planDays(today)[1] ? 'tomorrow' : `on ${friendlyDate(planDate)}`;
+      toast(`Planned for ${slot === 'snack' ? 'a snack' : slot} ${when}. Tap “I ate this” when you do.`, '🗓️');
+      onDone();
+      return;
+    }
 
     if (draft.editingId) {
       updateMeal(draft.editingId, payload);
@@ -196,12 +214,12 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         <button type="button" className="btn--quiet" onClick={leave} aria-label="Cancel">
           <CloseIcon />
         </button>
-        <span className="tiny muted">{friendlyDate(draft.date)}</span>
+        <span className="tiny muted">{planning ? `Planned · ${friendlyDate(shownDate)}` : friendlyDate(shownDate)}</span>
         {/* A real button, and it stays put while the rest of the screen
             scrolls under it. Meals were being lost to a save that was one
             scroll below wherever anybody had got to. */}
         <button type="button" className="btn btn--sm" onClick={save}>
-          {draft.editingId ? 'Update meal' : 'Save meal'}
+          {draft.editingId ? 'Update meal' : planning ? 'Plan it' : 'Save meal'}
         </button>
       </header>
 
@@ -400,6 +418,31 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         />
       </section>
 
+      {canPlan && (
+        <div className="field">
+          <label htmlFor="meal-when">When</label>
+          <Segmented<'eaten' | 'planned'>
+            label="Eaten or planned"
+            value={planning ? 'planned' : 'eaten'}
+            onChange={(value) => setPlanning(value === 'planned')}
+            options={[
+              { value: 'eaten', label: draft.date > today ? 'Eaten today' : 'Eaten' },
+              { value: 'planned', label: 'Plan for later' },
+            ]}
+          />
+          {planning && (
+            <select id="meal-when" className="input review-plan-day" value={planDate} onChange={(e) => setPlanDate(e.target.value)} aria-label="Which day">
+              {planDays(today).map((day) => (
+                <option key={day} value={day}>
+                  {friendlyDate(day)}
+                </option>
+              ))}
+            </select>
+          )}
+          {planning && <p className="tiny muted">A plan counts for nothing until you tap “I ate this” — on Home, or in your diary.</p>}
+        </div>
+      )}
+
       <div className="field">
         <label htmlFor="meal-slot">Meal</label>
         <Segmented<MealSlot>
@@ -427,7 +470,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       </div>
 
       <button type="button" className="btn btn--block" onClick={save}>
-        {draft.editingId ? 'Update meal' : 'Save meal'}
+        {draft.editingId ? 'Update meal' : planning ? 'Plan it' : 'Save meal'}
       </button>
 
       <Sheet open={leaving} onClose={() => setLeaving(false)} title="Save this meal?">

@@ -13,6 +13,8 @@ import MealQuality from '../components/MealQuality';
 import { explainDay } from '../lib/dayExplained';
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
+import { PLAN_DAYS_AHEAD, planDays, plansOn } from '../lib/planner';
+import PlanCard from '../components/PlanCard';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
 import { GLASS_ML, dayVerdict } from '../lib/nutrition';
@@ -29,7 +31,7 @@ const SLOTS: { key: MealSlot; label: string; emoji: string }[] = [
 
 export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; onEditMeal: (meal: MealEntry) => void }) {
   const toast = useToast();
-  const { meals, days, targets, removeMeal, setWater, setSteps, setWeight, profile } = useSquish();
+  const { meals, days, targets, removeMeal, setWater, setSteps, setWeight, profile, plans } = useSquish();
   const [date, setDate] = useState(isoDate());
   const [selected, setSelected] = useState<MealEntry | null>(null);
   const [picking, setPicking] = useState(false);
@@ -41,7 +43,11 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
     stripRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   }, [date]);
 
-  const strip = useMemo(() => lastDays(14, isoDate()), []);
+  // The last fortnight, and the week ahead for planning.
+  const strip = useMemo(() => [...lastDays(14, isoDate()), ...planDays(isoDate()).slice(1)], []);
+  const ahead = date > isoDate();
+  const lastPlanDay = addDays(isoDate(), PLAN_DAYS_AHEAD);
+  const dayPlans = useMemo(() => plansOn(plans, date), [plans, date]);
   const dayMeals = useMemo(() => mealsOn(meals, date), [meals, date]);
   const totals = useMemo(() => totalsOn(meals, date), [meals, date]);
   const day = days[date];
@@ -65,8 +71,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <button type="button" className="icon-btn" onClick={() => setSearching(true)} aria-label="Search your meals">
             <SearchIcon size={18} />
           </button>
-          <button type="button" className="btn btn--sm" onClick={() => go({ name: 'capture', date })}>
-            <PlusIcon size={16} /> Log
+          <button type="button" className="btn btn--sm" onClick={() => go(ahead ? { name: 'add', date, tab: 'search' } : { name: 'capture', date })}>
+            <PlusIcon size={16} /> {ahead ? 'Plan' : 'Log'}
           </button>
         </div>
       </header>
@@ -84,67 +90,96 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
       <div className="date-strip" role="tablist" aria-label="Choose a day" ref={stripRef}>
         {strip.map((d) => {
           const logged = mealsOn(meals, d).length > 0;
+          const planned = d > isoDate() && plansOn(plans, d).length > 0;
           return (
             <button
               key={d}
               type="button"
               role="tab"
               aria-selected={d === date}
-              className={`date-pill ${d === date ? 'is-on' : ''}`}
+              className={`date-pill ${d === date ? 'is-on' : ''}${d > isoDate() ? ' date-pill--ahead' : ''}`}
               onClick={() => setDate(d)}
             >
               <span className="tiny">{weekdayLetter(d)}</span>
               <b>{Number(d.slice(-2))}</b>
-              <span className={`date-dot ${logged ? 'is-on' : ''}`} aria-hidden="true" />
+              <span className={`date-dot ${logged ? 'is-on' : ''}${planned ? ' is-planned' : ''}`} aria-hidden="true" />
             </button>
           );
         })}
       </div>
 
-      <section className="card diary-summary">
-        <div className="row" style={{ gap: 16 }}>
-          <ProgressRing value={totals.calories} target={targets.calories} size={132} />
-          <div className="grow stack">
-            <div className="row-between diary-verdict">
-              <span className="small muted">Food quality</span>
-              {score > 0 ? (
-                // Tappable: what the score is and what moved it. Today, until
-                // there is enough logged, it says so rather than judging.
-                <button type="button" className="diary-score-btn" onClick={() => setExplaining(true)} aria-label="What is food quality?">
-                  <span className={`badge badge--${explained.early ? 'none' : verdict.tone}`}>
-                    {explained.early ? 'Early days' : verdict.tone === 'none' ? verdict.label : `${score} ${verdict.label}`}
-                  </span>
-                  <span className="why" aria-hidden="true">ⓘ</span>
-                </button>
-              ) : (
-                <span className="badge">Nothing logged</span>
-              )}
+      {ahead ? (
+        <section className="card card--quiet diary-ahead">
+          <p className="small">
+            <b>Planning {friendlyDate(date).toLowerCase() === 'tomorrow' ? 'tomorrow' : friendlyDate(date)}.</b> Add meals you mean to have. They
+            count for nothing until you tap “I ate this” on the day.
+          </p>
+          {dayPlans.length > 0 && (
+            <p className="tiny muted">
+              {dayPlans.length} planned · about {Math.round(dayPlans.reduce((sum, p) => sum + p.nutrients.calories, 0)).toLocaleString('en-GB')} kcal
+              of your {targets.calories.toLocaleString('en-GB')}
+            </p>
+          )}
+        </section>
+      ) : (
+        <section className="card diary-summary">
+          <div className="row" style={{ gap: 16 }}>
+            <ProgressRing value={totals.calories} target={targets.calories} size={132} />
+            <div className="grow stack">
+              <div className="row-between diary-verdict">
+                <span className="small muted">Food quality</span>
+                {score > 0 ? (
+                  // Tappable: what the score is and what moved it. Today, until
+                  // there is enough logged, it says so rather than judging.
+                  <button type="button" className="diary-score-btn" onClick={() => setExplaining(true)} aria-label="What is food quality?">
+                    <span className={`badge badge--${explained.early ? 'none' : verdict.tone}`}>
+                      {explained.early ? 'Early days' : verdict.tone === 'none' ? verdict.label : `${score} ${verdict.label}`}
+                    </span>
+                    <span className="why" aria-hidden="true">ⓘ</span>
+                  </button>
+                ) : (
+                  <span className="badge">Nothing logged</span>
+                )}
+              </div>
+              <MacroBars totals={totals} targets={targets} compact />
             </div>
-            <MacroBars totals={totals} targets={targets} compact />
           </div>
-        </div>
-        {/* Sugar and salt were on the home screen and the review sheet but never
-            here, which is the screen people actually go back through. */}
-        <MinorNutrients totals={totals} targets={targets} />
-        <OverTargetNote over={verdict.over} />
-      </section>
+          {/* Sugar and salt were on the home screen and the review sheet but never
+              here, which is the screen people actually go back through. */}
+          <MinorNutrients totals={totals} targets={targets} />
+          <OverTargetNote over={verdict.over} />
+        </section>
+      )}
 
       <DayScoreSheet open={explaining} onClose={() => setExplaining(false)} explained={explained} />
 
-      <Micronutrients totals={totals} targets={targets} />
+      {!ahead && <Micronutrients totals={totals} targets={targets} />}
 
       {SLOTS.map(({ key, label, emoji }) => {
         const list = dayMeals.filter((m) => m.slot === key);
+        const planned = dayPlans.filter((p) => p.slot === key);
         const kcal = Math.round(list.reduce((sum, m) => sum + m.nutrients.calories, 0));
+        const addRoute: Route = { name: 'add', slot: key, date, tab: 'search' };
         return (
-          <section className={`card ${list.length ? '' : 'card--quiet'}`} key={key}>
+          <section className={`card ${list.length || planned.length ? '' : 'card--quiet'}`} key={key}>
             <div className="card-title">
               <h3>
                 <span aria-hidden="true">{emoji}</span> {label}
               </h3>
-              <span className="tiny muted">{kcal} kcal</span>
+              <span className="tiny muted">{ahead ? (planned.length ? 'planned' : '') : `${kcal} kcal`}</span>
             </div>
-            {list.length === 0 ? (
+            {planned.length > 0 && (
+              <div className="stack diary-plans">
+                {planned.map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+            )}
+            {ahead ? (
+              <button type="button" className="btn--quiet small row" onClick={() => go(addRoute)}>
+                <PlusIcon size={15} /> Plan {key === 'snack' ? 'a snack' : label.toLowerCase()}
+              </button>
+            ) : list.length === 0 ? (
               <div className="slot-empty">
                 <p className="tiny muted">Nothing yet</p>
                 <div className="row" style={{ gap: 8 }}>
@@ -170,34 +205,36 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         );
       })}
 
-      <section className="card">
-        <div className="card-title">
-          <h3>Daily check-ins</h3>
-        </div>
-        <div className="row-between diary-tracker">
-          <span className="small">
-            💧 Water<span className="tiny muted"> · {GLASS_ML} ml</span>
-          </span>
-          <Stepper value={day?.water ?? 0} min={0} max={20} onChange={(v) => setWater(date, v)} suffix="glasses" />
-        </div>
-        <div className="row-between diary-tracker">
-          <span className="small">👟 Steps</span>
-          <Stepper value={day?.steps ?? 0} step={500} min={0} max={50000} onChange={(v) => setSteps(date, v)} />
-        </div>
-        <div className="diary-tracker diary-tracker--field">
-          <span className="small">⚖️ Weight</span>
-          {/* The shared field, so stones stay stones — the diary used to be the
-              one place that insisted on plain pounds. */}
-          <WeightField
-            label="Weight"
-            kg={day?.weightKg ?? profile.weightKg}
-            units={profile.units}
-            onChange={(kg) => setWeight(date, kg)}
-          />
-        </div>
-      </section>
+      {!ahead && (
+        <section className="card">
+          <div className="card-title">
+            <h3>Daily check-ins</h3>
+          </div>
+          <div className="row-between diary-tracker">
+            <span className="small">
+              💧 Water<span className="tiny muted"> · {GLASS_ML} ml</span>
+            </span>
+            <Stepper value={day?.water ?? 0} min={0} max={20} onChange={(v) => setWater(date, v)} suffix="glasses" />
+          </div>
+          <div className="row-between diary-tracker">
+            <span className="small">👟 Steps</span>
+            <Stepper value={day?.steps ?? 0} step={500} min={0} max={50000} onChange={(v) => setSteps(date, v)} />
+          </div>
+          <div className="diary-tracker diary-tracker--field">
+            <span className="small">⚖️ Weight</span>
+            {/* The shared field, so stones stay stones — the diary used to be the
+                one place that insisted on plain pounds. */}
+            <WeightField
+              label="Weight"
+              kg={day?.weightKg ?? profile.weightKg}
+              units={profile.units}
+              onChange={(kg) => setWeight(date, kg)}
+            />
+          </div>
+        </section>
+      )}
 
-      {dayMeals.length === 0 && (
+      {dayMeals.length === 0 && !ahead && (
         <div className="empty">
           <Squish mood={date === isoDate() ? 'calm' : 'sleepy'} size={104} />
           <p style={{ marginTop: 8 }}>
@@ -210,7 +247,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         <button type="button" className="btn--quiet small" onClick={() => setDate(addDays(date, -1))}>
           ← {friendlyDate(addDays(date, -1))}
         </button>
-        {date !== isoDate() && (
+        {date < lastPlanDay && (
           <button type="button" className="btn--quiet small row" onClick={() => setDate(addDays(date, 1))}>
             {friendlyDate(addDays(date, 1))} <ChevronIcon size={16} />
           </button>

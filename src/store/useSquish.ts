@@ -49,6 +49,16 @@ interface SquishState {
   meals: MealEntry[];
   days: Record<string, DayLog>;
   favourites: FoodItem[];
+  /**
+   * Meals planned for later, kept apart from `meals` on purpose.
+   *
+   * Everything that counts — totals, the day's score, streaks, badges, the
+   * squad's "logged today" — reads `meals`. A plan in there with a flag on it
+   * would need every one of those to remember to skip it, and the one that
+   * forgot would count a dinner nobody ate. Here, nothing has to remember.
+   * A plan becomes a meal only when somebody says they ate it.
+   */
+  plans: MealEntry[];
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
   /** "The protein of 3 eggs" on meals and the day. On unless turned off in You → Appearance. */
@@ -106,6 +116,10 @@ interface SquishState {
   addMeal: (meal: Omit<MealEntry, 'id' | 'date' | 'time'> & Partial<Pick<MealEntry, 'id' | 'date' | 'time'>>) => MealEntry;
   updateMeal: (id: string, patch: Partial<MealEntry>) => void;
   removeMeal: (id: string) => void;
+  addPlan: (meal: Omit<MealEntry, 'id' | 'time'> & Partial<Pick<MealEntry, 'id' | 'time'>>) => MealEntry;
+  removePlan: (id: string) => void;
+  /** Log a plan as eaten: today at the time now, or on its own day if that has passed. */
+  eatPlan: (id: string) => MealEntry | undefined;
 
   day: (date: string) => DayLog;
   setWater: (date: string, glasses: number) => void;
@@ -256,6 +270,7 @@ export const useSquish = create<SquishState>()(
       meals: [],
       days: {},
       favourites: [],
+      plans: [],
       unlocked: {},
       theme: 'system',
       comparisons: true,
@@ -315,6 +330,26 @@ export const useSquish = create<SquishState>()(
         set({ meals: get().meals.map((m) => (m.id === id ? { ...m, ...patch } : m)) }),
 
       removeMeal: (id) => set({ meals: get().meals.filter((m) => m.id !== id) }),
+
+      addPlan: (meal) => {
+        const plan: MealEntry = { ...meal, id: meal.id ?? uid(), time: meal.time ?? '' };
+        set({ plans: [...get().plans.filter((p) => p.id !== plan.id), plan] });
+        return plan;
+      },
+
+      removePlan: (id) => set({ plans: get().plans.filter((p) => p.id !== id) }),
+
+      eatPlan: (id) => {
+        const plan = get().plans.find((p) => p.id === id);
+        if (!plan) return undefined;
+        const today = isoDate();
+        // A plan for a day that has gone is logged on that day; one for today
+        // or later is logged now, because now is when it was eaten.
+        const past = plan.date < today;
+        const { id: _planId, ...rest } = plan;
+        set({ plans: get().plans.filter((p) => p.id !== id) });
+        return get().addMeal({ ...rest, date: past ? plan.date : today, time: past && plan.time ? plan.time : undefined });
+      },
 
       day: (date) => get().days[date] ?? emptyDay(date),
 
@@ -390,6 +425,7 @@ export const useSquish = create<SquishState>()(
           meals: [],
           days: {},
           favourites: [],
+          plans: [],
           unlocked: {},
           lastCoachNote: null,
           photoAnalyses: 0,

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import TodayPlanning from '../components/TodayPlanning';
 import type { Route } from '../types';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
@@ -234,6 +235,8 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           Ask the Squish Nutritionist
         </button>
       </section>
+
+      <TodayPlanning go={go} />
 
       <p className="section-label">Daily check-ins</p>
 

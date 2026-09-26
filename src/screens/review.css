@@ -48,3 +48,4 @@
 .fix-row { display: flex; gap: 8px; margin-top: 8px; }
 .fix-row .input { flex: 1; min-width: 0; }
 .fix-row .btn { flex: none; }
+.review-plan-day { margin-top: 8px; }

@@ -35,7 +35,7 @@ an account or a backup.
 | What | Examples |
 |---|---|
 | Your profile | The name you typed, if any; sex, age, height, weight, target weight, activity level, goal, and units |
-| Your meals | Titles, foods, portions, nutrition figures, and your notes |
+| Your meals | Titles, foods, portions, nutrition figures, and your notes — including meals you have planned for later |
 | Your photos | **The meal photographs themselves, which stay here.** Only a thumbnail of each — a few kilobytes — is part of the backup below |
 | Your days | Water, weight entries, and the day's totals |
 | Your settings | Saved foods, achievements earned, colourway, light or dark, reminder times |

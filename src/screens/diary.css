@@ -79,3 +79,11 @@
 .day-tip { padding: 10px 12px; border-radius: var(--r-md); background: var(--brand-soft); }
 .day-how summary { cursor: pointer; color: var(--ink-2); }
 .day-how p { margin-top: 6px; }
+
+/* The week ahead, for planning: dashed, because nothing has happened yet. */
+.date-pill--ahead:not(.is-on) { border-style: dashed; background: transparent; }
+.date-dot.is-planned { background: transparent; box-shadow: inset 0 0 0 1.5px var(--brand); }
+.date-pill.is-on .date-dot.is-planned { box-shadow: inset 0 0 0 1.5px #fff; }
+.diary-ahead p { margin: 0; }
+.diary-ahead p + p { margin-top: 4px; }
+.diary-plans { margin-bottom: 8px; }
