@@ -156,24 +156,34 @@ async function reward(client: PoolClient, accountId: string, days: number): Prom
 }
 
 /**
- * The reward in a sentence, for the email: what they got, and when — in the
- * reader's language, with the date on their own calendar.
+ * The reward in a sentence, for the email: what they got, and until when —
+ * in the reader's language, with the dates on their own calendar. Dates
+ * rather than "for the next 30 days", so the sentence is as true in an email
+ * that waited for a confirmed address as in one sent the minute it was earned.
  */
-export function rewardWords(kind: RewardKind, days: number, plusUntil: Date, words: Speaker = ENGLISH, zone = 'Europe/London'): string {
+export function rewardWords(
+  kind: RewardKind,
+  days: number,
+  plusUntil: Date,
+  words: Speaker = ENGLISH,
+  zone = 'Europe/London',
+  boostUntil: Date = new Date(Date.now() + boost().days * 86_400_000),
+): string {
   const { t } = words;
-  const date = (locale: string, timeZone: string) =>
-    plusUntil.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone });
-  let until: string;
-  try {
-    until = date(words.locale, zone);
-  } catch {
-    until = date('en-GB', 'Europe/London');
-  }
+  const date = (when: Date) => {
+    const options = { day: 'numeric', month: 'long', year: 'numeric' } as const;
+    try {
+      return when.toLocaleDateString(words.locale, { ...options, timeZone: zone });
+    } catch {
+      return when.toLocaleDateString('en-GB', { ...options, timeZone: 'Europe/London' });
+    }
+  };
+  const until = date(plusUntil);
   if (kind === 'started') return t('We have switched Squish Plus on for you — {days} days of it, until {until}. There is nothing to do.', { days, until });
   const extra = boost();
   return t(
-    'As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, for the next {boostDays} days, starting now. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.',
-    { photo: extra.photo, chat: extra.chat, boostDays: extra.days, days, until },
+    'As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, until {boostUntil}. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.',
+    { photo: extra.photo, chat: extra.chat, boostUntil: date(boostUntil), days, until },
   );
 }
 
@@ -243,31 +253,57 @@ export async function settleFriend(friendId: string, appOrigin?: string): Promis
 
   // Tell the one who invited, by email where there is mail. Their app says
   // so too, the next time they open the invite card.
-  //
-  // Only to a confirmed address, the same rule as the security notices:
-  // otherwise somebody could make an account in a stranger's name, share its
-  // invite, and have Squish send that stranger mail. The reward itself does
-  // not wait for it — only the email does.
-  if (settled?.referrerId && settled.referrerDays && settled.referrerKind && settled.referrerPlusUntil && appOrigin && canSendMail()) {
-    const to = await query<{ email: string }>('select email from accounts where id = $1 and email_verified_at is not null', [
-      settled.referrerId,
-    ]);
-    if (to[0]) {
-      const link = `${appOrigin}/`;
-      const { referrerKind, referrerDays, referrerPlusUntil } = settled;
-      const reader = await readerOf(settled.referrerId);
-      void compose(
-        'friend-reward',
-        to[0].email,
-        (words) => ({ reward: rewardWords(referrerKind, referrerDays, referrerPlusUntil, words, reader.zone), app_link: link }),
-        originOf(link),
-        reader,
-      )
-        .then((mail) => sendQuietly(mail, 'friend reward email'))
-        .catch(() => {});
-    }
+  if (settled?.referrerId && settled.referrerDays && appOrigin) {
+    await thankInviter(settled.referrerId, appOrigin).catch(() => {});
   }
   return settled;
+}
+
+/** How long after it was earned a thank-you is still news, in days. */
+const THANKS_WITHIN_DAYS = 30;
+
+/**
+ * Email the one who invited whatever thank-you they are owed — once, and only
+ * to a confirmed address.
+ *
+ * Called when a reward is given, and again when an address is confirmed:
+ * an unconfirmed address is not mailed (anybody could make an account in a
+ * stranger's name and share its invite), but the thank-you is not lost
+ * either — it goes when they confirm. Every reward owed is claimed in one
+ * statement, so a confirmation link followed twice, or two rewards landing
+ * together, send one email, about the newest. One more than a month late is
+ * not news: it is marked told and not sent; the app has said so already.
+ */
+export async function thankInviter(referrerId: string, appOrigin: string): Promise<boolean> {
+  if (!canSendMail()) return false;
+  const owed = await query<{ rewarded_at: Date; referrer_days: number; referrer_kind: RewardKind | null; email: string; plus_until: Date | null }>(
+    `update friend_referrals fr set referrer_emailed_at = now()
+       from accounts a
+      where fr.referrer_id = $1 and a.id = fr.referrer_id and a.email_verified_at is not null
+        and fr.rewarded_at is not null and fr.referrer_days > 0 and fr.referrer_emailed_at is null
+    returning fr.rewarded_at, fr.referrer_days, fr.referrer_kind, a.email, a.plus_until`,
+    [referrerId],
+  );
+  const newest = owed.sort((a, b) => b.rewarded_at.getTime() - a.rewarded_at.getTime())[0];
+  if (!newest?.referrer_kind || !newest.plus_until) return false;
+  if (Date.now() - newest.rewarded_at.getTime() > THANKS_WITHIN_DAYS * 86_400_000) return false;
+
+  const boosts = await query<{ until: Date | null }>(
+    `select max(expires_at) as until from allowance_boosts where account_id = $1 and reason = 'friend invite'`,
+    [referrerId],
+  );
+  const link = `${appOrigin}/`;
+  const reader = await readerOf(referrerId);
+  const { referrer_kind: kind, referrer_days: days, plus_until: plusUntil } = newest;
+  const mail = await compose(
+    'friend-reward',
+    newest.email,
+    (words) => ({ reward: rewardWords(kind, days, plusUntil, words, reader.zone, boosts[0]?.until ?? undefined), app_link: link }),
+    originOf(link),
+    reader,
+  );
+  sendQuietly(mail, 'friend reward email');
+  return true;
 }
 
 export interface FriendsView {

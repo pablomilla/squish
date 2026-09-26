@@ -577,6 +577,17 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table accounts add column time_zone text;
     `,
   },
+  {
+    id: 18,
+    sql: `
+      -- When the one who invited was emailed their thank-you. It waits for a
+      -- confirmed address, so it can be owed for a while. Every reward given
+      -- before this existed counts as told: either it was emailed then, or it
+      -- is too old to be news.
+      alter table friend_referrals add column referrer_emailed_at timestamptz;
+      update friend_referrals set referrer_emailed_at = rewarded_at where rewarded_at is not null;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

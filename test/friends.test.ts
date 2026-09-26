@@ -4,7 +4,7 @@ import { test, before, after } from 'node:test';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
-import { attributeFriend, friendCodeFor, friendsView, isFriendCode, rewardWords, settleFriend } from '../server/friends';
+import { attributeFriend, friendCodeFor, friendsView, isFriendCode, rewardWords, settleFriend, thankInviter } from '../server/friends';
 import { allowanceWithExtras, extrasFor } from '../server/plan';
 
 /**
@@ -134,8 +134,8 @@ when('already on Plus — say a yearly plan: extra AI now, and the month saved o
   await query(`update allowance_boosts set expires_at = now() - interval '1 second' where account_id = $1`, [inviter.id]);
   assert.deepEqual(await allowanceWithExtras(device, 'plus'), before);
 
-  const words = rewardWords('extended', 30, new Date('2027-11-03T12:00:00Z'));
-  assert.match(words, /20 extra photo analyses/);
+  const words = rewardWords('extended', 30, new Date('2027-11-03T12:00:00Z'), undefined, undefined, new Date('2027-10-04T12:00:00Z'));
+  assert.match(words, /20 extra photo analyses and 10 extra questions for the nutritionist, until 4 October 2027\./);
   assert.match(words, /3 November 2027/);
 });
 
@@ -178,9 +178,9 @@ when('an invited friend can see how close they are', async () => {
   assert.equal((await friendsView(inviter.id)).mine, null);
 });
 
-when('the thank-you email goes only to an inviter who has confirmed their address', async () => {
+when('the thank-you waits for a confirmed address, goes once when it is confirmed, and not if it is old news', async () => {
   // A stand-in mail provider that keeps what it is sent.
-  const sent: { to: string; subject: string }[] = [];
+  const sent: { to: string; subject: string; text: string }[] = [];
   const provider = createServer((req, res) => {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
@@ -192,6 +192,7 @@ when('the thank-you email goes only to an inviter who has confirmed their addres
   await new Promise<void>((resolve) => provider.listen(0, '127.0.0.1', () => resolve()));
   const saved = process.env.SQUISH_MAIL_WEBHOOK;
   process.env.SQUISH_MAIL_WEBHOOK = `http://127.0.0.1:${(provider.address() as AddressInfo).port}/`;
+  const APP = 'https://app.squish.online';
 
   const settleWith = async (inviterVerified: boolean) => {
     const inviter = await anAccount({ verified: inviterVerified });
@@ -199,24 +200,47 @@ when('the thank-you email goes only to an inviter who has confirmed their addres
     await attributeFriend(friend.id, await friendCodeFor(inviter.id), null);
     await invitedDaysAgo(friend.id, 2);
     await seen(friend.device, [0, 1, 2]);
-    const settled = await settleFriend(friend.id, 'https://app.squish.online');
-    return { inviter, settled };
+    const settled = await settleFriend(friend.id, APP);
+    return { inviter, friend, settled, address: `friend-${inviter.id}@example.com` };
   };
-  const waitFor = async (check: () => boolean) => {
-    for (let i = 0; i < 100 && !check(); i++) await new Promise((resolve) => setTimeout(resolve, 20));
+  /** Mail is sent without being waited for: wait for it, and a little longer for any that should not come. */
+  const settle = async (until: () => boolean = () => false) => {
+    for (let i = 0; i < 100 && !until(); i++) await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 150));
   };
+  const to = (address: string) => sent.filter((mail) => mail.to === address).length;
+  const confirmAddress = (id: string) => query('update accounts set email_verified_at = now() where id = $1', [id]);
 
   try {
-    const stranger = await settleWith(false);
-    assert.equal(stranger.settled?.referrerDays, 30, 'the reward itself does not wait for the address');
+    // Confirmed already: thanked straight away, once.
     const confirmed = await settleWith(true);
-    await waitFor(() => sent.length > 0);
-    // Give a wrongly sent one time to arrive too, before saying there was none.
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await settle(() => to(confirmed.address) > 0);
+    assert.equal(to(confirmed.address), 1, 'the confirmed inviter was not thanked');
+    assert.equal(await thankInviter(confirmed.inviter.id, APP), false, 'nothing more is owed');
 
-    const addresses = sent.map((mail) => mail.to);
-    assert.ok(addresses.includes(`friend-${confirmed.inviter.id}@example.com`), 'the confirmed inviter was not thanked');
-    assert.ok(!addresses.includes(`friend-${stranger.inviter.id}@example.com`), 'mail went to an address nobody confirmed');
+    // Not confirmed: the reward, but no mail — until the address is confirmed.
+    const later = await settleWith(false);
+    assert.equal(later.settled?.referrerDays, 30, 'the reward itself does not wait for the address');
+    await settle();
+    assert.equal(to(later.address), 0, 'mail went to an address nobody confirmed');
+    assert.equal(await thankInviter(later.inviter.id, APP), false, 'still not confirmed');
+    await confirmAddress(later.inviter.id);
+    // The confirmation link followed twice (mail scanners do): one email.
+    const [first, second] = await Promise.all([thankInviter(later.inviter.id, APP), thankInviter(later.inviter.id, APP)]);
+    assert.equal(Number(first) + Number(second), 1);
+    await settle(() => to(later.address) > 0);
+    assert.equal(to(later.address), 1);
+    assert.match(sent.find((mail) => mail.to === later.address)!.text, /switched Squish Plus on for you — 30 days of it/);
+
+    // Confirmed more than a month after the reward: marked told, not sent.
+    const stale = await settleWith(false);
+    await query(`update friend_referrals set rewarded_at = now() - interval '40 days' where friend_id = $1`, [stale.friend.id]);
+    await confirmAddress(stale.inviter.id);
+    assert.equal(await thankInviter(stale.inviter.id, APP), false);
+    await settle();
+    assert.equal(to(stale.address), 0, 'a thank-you over a month late is not news');
+    const told = await query<{ at: Date | null }>('select referrer_emailed_at as at from friend_referrals where friend_id = $1', [stale.friend.id]);
+    assert.ok(told[0].at, 'and it is not owed any more');
   } finally {
     if (saved === undefined) delete process.env.SQUISH_MAIL_WEBHOOK;
     else process.env.SQUISH_MAIL_WEBHOOK = saved;

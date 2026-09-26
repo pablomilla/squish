@@ -1,5 +1,5 @@
 {
- "version": "0n6npzm067914p",
+ "version": "1383mgn-60zc4c",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -10453,13 +10453,6 @@
    ]
   },
   {
-   "id": "1tl8d210f4i8gs",
-   "text": "As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, for the next {boostDays} days, starting now. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.",
-   "where": [
-    "server/friends.ts"
-   ]
-  },
-  {
    "id": "1tldvuc-ypz0yi",
    "text": "Saved meals",
    "where": [
@@ -10681,6 +10674,13 @@
    "text": "Measure and set them",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1uyutjm-o6icte",
+   "text": "As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, until {boostUntil}. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.",
+   "where": [
+    "server/friends.ts"
    ]
   },
   {

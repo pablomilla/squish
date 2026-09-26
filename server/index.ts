@@ -65,7 +65,7 @@ import {
   updateCost,
 } from './finance';
 import { blockMember, createSquad, joinSquad, leaveSquad, markCheersSeen, renameMe, sendCheer, setStatus, squadFor, type SquadProblem } from './squads';
-import { attributeFriend, friendsView, isFriendCode, qualifyDays, rewardDays, settleFriend } from './friends';
+import { attributeFriend, friendsView, isFriendCode, qualifyDays, rewardDays, settleFriend, thankInviter } from './friends';
 import {
   attribute,
   checkAffiliate,
@@ -752,6 +752,8 @@ app.post('/api/account/verify', requireDevice, meter('verify'), async (req, res)
 app.get('/verify', async (req, res) => {
   const token = typeof req.query.token === 'string' ? req.query.token : '';
   const done = token ? await confirm(token).catch(() => ({ ok: false as const })) : { ok: false as const };
+  // A thank-you for inviting a friend waits for a confirmed address; this is it.
+  if (done.ok) void thankInviter(done.accountId, publicOrigin(req)).catch((error: unknown) => logFailure('friend reward email', error));
 
   // In the account's language; for a link that has run out there is no
   // account to ask, so the browser's.

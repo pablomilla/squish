@@ -234,7 +234,8 @@ Partners are also sent a sign-in link for their page, when they ask for one
 or when we send them one (see above). That one is in English.
 
 Security notices and the thank-you only go to an address you have confirmed,
-so nobody can use Squish to send mail to someone else. There is no marketing, no newsletter, and
+so nobody can use Squish to send mail to someone else. A thank-you earned
+before you confirm is sent when you do, if it is still under a month old. There is no marketing, no newsletter, and
 nothing else. To send these, your address and the message pass through our
 email provider, [Resend](https://resend.com), who deliver them on our behalf
 and do not use them for anything else. Their handling is governed by their own

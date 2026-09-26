@@ -66,7 +66,7 @@ export async function sendVerification(
 }
 
 /** The language is the account's, so the page that says so is in it too. */
-export type Confirmation = { ok: true; email: string; language: string | null } | { ok: false };
+export type Confirmation = { ok: true; accountId: string; email: string; language: string | null } | { ok: false };
 
 /**
  * Follow a link.
@@ -77,17 +77,17 @@ export type Confirmation = { ok: true; email: string; language: string | null } 
  */
 export async function confirm(token: string): Promise<Confirmation> {
   await migrate();
-  const rows = await query<{ email: string; language: string | null }>(
+  const rows = await query<{ id: string; email: string; language: string | null }>(
     `update accounts a
         set email_verified_at = coalesce(a.email_verified_at, now())
        from verifications v
       where v.token_hash = $1
         and v.expires_at > now()
         and v.account_id = a.id
-    returning a.email, a.language`,
+    returning a.id, a.email, a.language`,
     [hashToken(token)],
   );
-  return rows[0] ? { ok: true, email: rows[0].email, language: rows[0].language } : { ok: false };
+  return rows[0] ? { ok: true, accountId: rows[0].id, email: rows[0].email, language: rows[0].language } : { ok: false };
 }
 
 export async function sweepVerifications(): Promise<void> {
