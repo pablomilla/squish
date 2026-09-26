@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import type { Route } from '../types';
 import Squish from './Squish';
-import { SparkIcon } from './icons';
+import { CalendarIcon, SparkIcon } from './icons';
 import { useSquish } from '../store/useSquish';
 import { useNutritionistAccess } from './useSubscribed';
-import { isoDate } from '../lib/date';
 import { suggestedQuestions } from '../lib/askSuggestions';
+import { NUTRITIONIST_PLAN_NOTE } from '../lib/planner';
+import { addDays, isoDate } from '../lib/date';
 import './nutritionist-card.css';
 
 /**
@@ -15,13 +16,18 @@ import './nutritionist-card.css';
  * name, which is the name of a thing nobody has tried. This is the card for
  * it: Squish thinking, a line on what it does, and two or three questions
  * about their own day that a tap asks — so the first thing anybody sees is
- * what they would get, not that they could ask.
+ * what they would get, not that they could ask. Its weekly meal plan is
+ * here too, one tap away: planning the week is the other half of what the
+ * nutritionist does.
  */
 export default function NutritionistCard({ go }: { go: (route: Route) => void }) {
   const meals = useSquish((s) => s.meals);
   const targets = useSquish((s) => s.targets);
   const access = useNutritionistAccess();
+  const plans = useSquish((s) => s.plans);
   const today = isoDate();
+  // Whether the nutritionist has a plan on the go, so the button can open it rather than offer a new one.
+  const planned = plans.some((p) => p.note === NUTRITIONIST_PLAN_NOTE && p.date >= today && p.date <= addDays(today, 7));
   const questions = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 3), [meals, targets, today]);
 
   return (
@@ -41,9 +47,14 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
           </button>
         ))}
       </div>
-      <button type="button" className="nutri-ask" onClick={() => go({ name: 'ask' })}>
-        <SparkIcon size={16} /> What’s on your mind?
-      </button>
+      <div className="nutri-actions">
+        <button type="button" className="nutri-ask" onClick={() => go({ name: 'ask' })}>
+          <SparkIcon size={16} /> Ask anything…
+        </button>
+        <button type="button" className="nutri-plan" onClick={() => go({ name: 'ask', tab: 'plan' })}>
+          <CalendarIcon size={16} /> {planned ? 'My meal plan' : 'Plan my week'}
+        </button>
+      </div>
     </section>
   );
 }

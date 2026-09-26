@@ -5,7 +5,7 @@ import { Segmented, Sheet, useToast } from './ui';
 import { useSquish } from '../store/useSquish';
 import { useSubscribed } from './useSubscribed';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
-import { likesFrom } from '../lib/planner';
+import { NUTRITIONIST_PLAN_NOTE, likesFrom } from '../lib/planner';
 import { PLUS } from '../lib/plan';
 import { isPaywalled, requestWeekPlan, SquishApiError, type WeekPlan } from '../lib/api';
 import './week-plan.css';
@@ -89,7 +89,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
           nutrients: meal.nutrients,
           score: meal.score,
           source: 'describe',
-          note: 'Planned by the nutritionist',
+          note: NUTRITIONIST_PLAN_NOTE,
         });
         added += 1;
       });

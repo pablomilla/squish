@@ -225,7 +225,7 @@ export type Route =
   | { name: 'capture'; slot?: MealSlot; date?: string; shot?: 'plate' | 'label' | 'barcode' }
   | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites' }
   /** `question` is asked as soon as the screen opens: a tap on a suggested question is the question. */
-  | { name: 'ask'; question?: string }
+  | { name: 'ask'; question?: string; tab?: 'ask' | 'plan' }
   /** The dashboard, for whoever runs this Squish. Not a tab; reached from You. */
   | { name: 'admin' }
   | { name: 'review'; draft: Draft };

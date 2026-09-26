@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Squish from '../components/Squish';
 import DictateButton from '../components/DictateButton';
 import { CloseIcon, SparkIcon, TrashIcon } from '../components/icons';
-import { useToast } from '../components/ui';
 import { useSquish } from '../store/useSquish';
 import { askNutritionist, isPaywalled, SquishApiError, type ChatMessage } from '../lib/api';
 import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
@@ -13,7 +12,8 @@ import { showPaywall } from '../lib/paywall';
 import { suggestedQuestions } from '../lib/askSuggestions';
 import { useNutritionistAccess } from '../components/useSubscribed';
 import NutritionistPitch from '../components/NutritionistPitch';
-import WeekPlanSheet from '../components/WeekPlanSheet';
+import MealPlanPanel from '../components/MealPlanPanel';
+import { Segmented, useToast } from '../components/ui';
 import './ask.css';
 
 /**
@@ -45,7 +45,7 @@ interface Bubble {
  * survive is the handful of notes it writes about you, which are listed on
  * the You screen and can be deleted one by one.
  */
-export default function Ask({ onClose, question }: { onClose: () => void; question?: string }) {
+export default function Ask({ onClose, question, tab: startTab }: { onClose: () => void; question?: string; tab?: 'ask' | 'plan' }) {
   const toast = useToast();
   const { profile, targets, meals, nutritionistNotes } = useSquish();
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
@@ -60,7 +60,8 @@ export default function Ask({ onClose, question }: { onClose: () => void; questi
   // the real refusal, which says when it comes back.
   const access = useNutritionistAccess();
   const locked = access.locked;
-  const [weekPlanning, setWeekPlanning] = useState(false);
+  // Two things the nutritionist does: answer, and plan the week.
+  const [tab, setTab] = useState<'ask' | 'plan'>(startTab ?? 'ask');
 
   const today = isoDate();
   const openers = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 4), [meals, targets, today]);
@@ -157,7 +158,6 @@ export default function Ask({ onClose, question }: { onClose: () => void; questi
 
   return (
     <div className="screen ask">
-      <WeekPlanSheet open={weekPlanning} onClose={() => setWeekPlanning(false)} />
       <header className="screen-head">
         <div>
           <h1>Your nutritionist</h1>
@@ -170,13 +170,25 @@ export default function Ask({ onClose, question }: { onClose: () => void; questi
         </button>
       </header>
 
+      <Segmented<'ask' | 'plan'>
+        label="Ask or meal plan"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'ask', label: 'Ask' },
+          { value: 'plan', label: 'Meal plan' },
+        ]}
+      />
+
+      {tab === 'plan' && <MealPlanPanel />}
+
       {/*
         Said before a question is typed, not after it is sent.
         Letting somebody compose a question about their own diary and only
         then telling them it costs money is a small cruelty, and it makes the
         paywall feel like a trick rather than a price.
       */}
-      {locked && (
+      {tab === 'ask' && locked && (
         <div className="ask-locked">
           <Squish mood="thinking" size={88} />
           {question ? (
@@ -197,7 +209,7 @@ export default function Ask({ onClose, question }: { onClose: () => void; questi
         </div>
       )}
 
-      {!locked && <div className="ask-thread">
+      {tab === 'ask' && !locked && <div className="ask-thread">
         {bubbles.length === 0 && (
           <div className="ask-empty">
             <Squish mood="calm" size={104} />
@@ -212,7 +224,7 @@ export default function Ask({ onClose, question }: { onClose: () => void; questi
                 </button>
               ))}
             </div>
-            <button type="button" className="btn btn--soft btn--block ask-week" onClick={() => setWeekPlanning(true)}>
+            <button type="button" className="btn btn--soft btn--block ask-week" onClick={() => setTab('plan')}>
               <SparkIcon size={16} /> Plan my week{access.standing.plan === 'plus' || access.standing.off ? '' : ` · ${PLUS}`}
             </button>
             {nutritionistNotes.length > 0 && (
@@ -278,7 +290,7 @@ export default function Ask({ onClose, question }: { onClose: () => void; questi
         <div ref={endRef} />
       </div>}
 
-      {!locked && <div className="ask-composer">
+      {tab === 'ask' && !locked && <div className="ask-composer">
         <div className="fix-row">
           <input
             className="input"

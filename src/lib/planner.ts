@@ -20,6 +20,9 @@ import type { AnalysisResult, FoodItem, MealEntry, MealSlot, Nutrients, Targets 
 import { addDays } from './date';
 import { EMPTY, addNutrients, qualityScore, ultraProcessedShare } from './nutrition';
 
+/** The note on a plan the nutritionist made, which is how its meal plan finds them again. */
+export const NUTRITIONIST_PLAN_NOTE = 'Planned by the nutritionist';
+
 /** How far ahead the diary lets somebody plan. A week is as far as most people plan food. */
 export const PLAN_DAYS_AHEAD = 7;
 

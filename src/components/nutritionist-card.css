@@ -19,10 +19,16 @@
   transition: transform 0.12s var(--ease), background 0.12s var(--ease);
 }
 .nutri-q:active { transform: scale(0.98); background: rgb(255 255 255 / 0.24); }
+.nutri-actions { display: flex; gap: 8px; margin-top: 10px; }
 .nutri-ask {
-  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 10px; padding: 11px 14px;
-  border-radius: 999px; background: var(--surface); color: var(--ink-3); font-size: var(--text-label);
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; padding: 11px 14px;
+  border-radius: 999px; background: var(--surface); color: var(--ink-3); font-size: var(--text-label); white-space: nowrap; overflow: hidden;
 }
+.nutri-plan {
+  display: flex; align-items: center; gap: 6px; flex: none; padding: 11px 14px; border-radius: 999px;
+  background: rgb(255 255 255 / 0.2); color: #fff; font-weight: 700; font-size: var(--text-label); white-space: nowrap;
+}
+.nutri-plan:active, .nutri-ask:active { transform: scale(0.98); }
 
 /* Ask from where you are: the day, a meal, the week. */
 .ask-link {

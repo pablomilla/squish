@@ -65,3 +65,4 @@
 .ask-locked p { margin: 0; max-width: 30ch; }
 .ask-locked .btn { margin-top: var(--s2); }
 .ask-week { margin-top: 12px; }
+.ask > .segmented { margin-bottom: var(--s3); }
