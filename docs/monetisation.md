@@ -106,6 +106,25 @@ At 10 that is about £2.92 — about 20p a month short, and only for somebody wh
 uses every last allowance; everybody else is comfortably profitable. `SQUISH_PLUS_RECIPES`
 changes it without a deploy.
 
+### Plus weekly plans: 4 a month
+
+The nutritionist's weekly plan (`/api/weekplan`, `server/weekplan.ts`) counts
+as one of the month's 30 questions for the nutritionist, and is capped at 4 a
+month on top — one a week, which is what it is for. The cap is separate
+because one plan is several questions' worth of AI: a week of meals, each
+ingredient with its nutrition, is 8,000–12,000 output tokens with thinking.
+That is an estimate from the schema, not a measurement (no key was available
+where it was built); the server logs each plan's real cost as
+`[squish] weekplan … $0.xxxx`, and the dashboard counts it under the
+nutritionist.
+
+At an estimated $0.20–0.30 a plan, four a month is up to about 80p on top of
+the figures above, for somebody who uses everything. Two knobs, neither
+needing a deploy: `SQUISH_PLUS_WEEKPLANS` sets the monthly cap, and
+`SQUISH_WEEKPLAN_MODEL` can put plans on a cheaper model (Sonnet 5's output
+is $10 per million tokens against Opus 5's $25) without touching the rest.
+Check the logged costs after the first week and set them from those.
+
 ### Why the free AI is a taste, not an allowance
 
 Until 23 September 2026 the free plan had 10 AI analyses and 2 recipe imports

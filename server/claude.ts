@@ -11,6 +11,7 @@ import { MICROS } from '../src/types';
 import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
+import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
 
@@ -626,4 +627,114 @@ Pick the one thing most worth mentioning right now and say it kindly. Fit it to 
     .map((block) => block.text)
     .join('')
     .trim();
+}
+
+
+/* ------------------------------------------------------------------ *
+ * The nutritionist's weekly plan (server/weekplan.ts has the why).
+ * ------------------------------------------------------------------ */
+
+const WEEKPLAN_MODEL = process.env.SQUISH_WEEKPLAN_MODEL ?? MODEL;
+
+export interface PlannedDay {
+  date: string;
+  meals: AnalysisResult[];
+  calories: number;
+  /** Came back under the safety floor. Shown, never quietly passed on. */
+  underFloor: boolean;
+}
+
+export interface WeekPlan {
+  summary: string;
+  days: PlannedDay[];
+}
+
+export class WeekPlanError extends Error {}
+
+interface ModelWeek {
+  summary?: string;
+  days?: { day?: number; meals?: (ModelMeal & { slot?: MealSlot })[] }[];
+}
+
+const addDaysIso = (iso: string, delta: number): string => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + delta));
+  return date.toISOString().slice(0, 10);
+};
+
+const SLOT_ORDER: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+/**
+ * The model's week, made into days the app can plan with: each day once, in
+ * order, within the days asked for, its meals in meal order and shaped like
+ * any other analysis. Exported for the tests, which never call the API.
+ */
+export function toWeekPlan(parsed: ModelWeek, req: WeekPlanRequest): WeekPlan {
+  const floor = floorFor(req.sex);
+  const seen = new Set<number>();
+  const days = (parsed.days ?? [])
+    .filter((d) => Number.isInteger(d.day) && d.day! >= 1 && d.day! <= req.days && !seen.has(d.day!) && seen.add(d.day!))
+    .sort((a, b) => a.day! - b.day!)
+    .map((d) => {
+      const meals = (d.meals ?? [])
+        .filter((m) => m.slot && SLOT_ORDER.includes(m.slot) && (m.items ?? []).length > 0)
+        .map((m) => ({ ...toAnalysis({ ...m, score: undefined }, m.slot), slot: m.slot }))
+        .sort((a, b) => SLOT_ORDER.indexOf(a.slot!) - SLOT_ORDER.indexOf(b.slot!));
+      const calories = Math.round(meals.reduce((sum, m) => sum + m.nutrients.calories, 0));
+      return { date: addDaysIso(req.startDate, d.day! - 1), meals, calories, underFloor: calories < floor };
+    })
+    .filter((d) => d.meals.length > 0);
+  return { summary: parsed.summary?.trim() ?? '', days };
+}
+
+/**
+ * Ask for the week. Streamed, because a week of meals with thinking can run
+ * past a minute and a non-streamed request that long risks a timeout; and
+ * with the server-side fallback, so a refusal on one model is retried on
+ * another rather than handed back as an empty week.
+ */
+export async function planWeek(req: WeekPlanRequest): Promise<WeekPlan> {
+  const startedAt = Date.now();
+  const haiku = WEEKPLAN_MODEL.startsWith('claude-haiku');
+  const format = { type: 'json_schema' as const, schema: WEEKPLAN_SCHEMA as unknown as Record<string, unknown> };
+  const stream = getClient().beta.messages.stream({
+    model: WEEKPLAN_MODEL,
+    max_tokens: 32000,
+    system: WEEKPLAN_SYSTEM,
+    messages: [{ role: 'user', content: weekPlanPrompt(req) }],
+    ...(haiku
+      ? { output_config: { format } }
+      : {
+          thinking: { type: 'adaptive' as const },
+          output_config: { effort: 'medium' as const, format },
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default' as const,
+        }),
+  });
+  const response = await stream.finalMessage();
+
+  const usage = response.usage;
+  const usd = billed(
+    priceUsage(response.model, {
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: usage.cache_creation_input_tokens ?? 0,
+    }),
+  );
+  console.info(
+    `[squish] weekplan model=${response.model} days=${req.days} in=${usage.input_tokens} out=${usage.output_tokens} ` +
+      `${usd === null ? 'unpriced' : `$${usd.toFixed(4)}`} ${((Date.now() - startedAt) / 1000).toFixed(1)}s stop=${response.stop_reason}`,
+  );
+
+  if (response.stop_reason === 'refusal') throw new WeekPlanError('The nutritionist could not plan that week. Try different preferences.');
+  if (response.stop_reason === 'max_tokens') throw new WeekPlanError('That plan ran long. Try fewer days, or without snacks.');
+
+  const text = response.content
+    .filter((block): block is Anthropic.Beta.BetaTextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('');
+  const plan = toWeekPlan(JSON.parse(text) as ModelWeek, req);
+  if (!plan.days.length) throw new WeekPlanError('The plan came back empty. Try again in a moment.');
+  return plan;
 }

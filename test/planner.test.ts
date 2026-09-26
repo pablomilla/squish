@@ -87,3 +87,13 @@ test('a plan is not a meal until it is eaten, and then it is logged once', async
   assert.equal(useSquish.getState().eatPlan('gone'), undefined);
   useSquish.getState().resetAll();
 });
+
+test('what they like: most-logged meals of the last month first, then saved foods, each once', async () => {
+  const { likesFrom } = await import('../src/lib/planner');
+  const history = [
+    meal('2026-09-20', 'Chicken wrap', n(550, 38)), meal('2026-09-21', 'chicken wrap', n(550, 38)),
+    meal('2026-09-22', 'Veggie chilli', n(480, 18)), meal('2026-07-01', 'Old soup', n(300, 10)),
+  ];
+  const saved: FoodItem[] = [{ id: 's', name: 'Greek yoghurt bowl', portion: '1', nutrients: n(320, 26) }, { id: 't', name: 'Veggie Chilli', portion: '1', nutrients: n(480, 18) }];
+  assert.deepEqual(likesFrom(history, saved, TODAY), ['Chicken wrap', 'Veggie chilli', 'Greek yoghurt bowl']);
+});

@@ -84,6 +84,14 @@ export type Period = 'month' | 'ever';
 /** How each tier's allowance is counted: Plus by the month, free once. */
 export const PERIOD: Record<Plan, Period> = { free: 'ever', plus: 'month' };
 
+/**
+ * The nutritionist's weekly plan: Plus only, and each one also counts as one
+ * of the month's questions for the nutritionist — it is the nutritionist's
+ * time. Capped separately because one costs several questions' worth of AI:
+ * a week is a lot of meals. Four is one a week, which is what it is for.
+ */
+export const WEEKPLANS_PER_MONTH = count('SQUISH_PLUS_WEEKPLANS', 4);
+
 const NOTHING: Record<Billable, number> = { photo: 0, chat: 0, recipe: 0 };
 
 /**
@@ -148,7 +156,7 @@ export async function planFor(device: Device): Promise<Plan> {
  * because that is what a request arrives with; the join is where a person is
  * reassembled from the devices they hold.
  */
-export async function usedThisMonth(device: Device, kind: Billable): Promise<number> {
+export async function usedThisMonth(device: Device, kind: Billable | 'weekplan'): Promise<number> {
   const owner = device.accountId ?? device.id;
   const rows = await query<{ used: string }>(
     `select coalesce(sum(u.count), 0) as used

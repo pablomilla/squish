@@ -27,7 +27,7 @@ import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
 import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
 import { renderEmail } from './emailRender';
-import { ALLOWANCE, PERIOD, allowanceWithExtras, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, type Billable, type Plan } from './plan';
+import { ALLOWANCE, PERIOD, WEEKPLANS_PER_MONTH, allowanceWithExtras, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, usedThisMonth, type Billable, type Plan } from './plan';
 import {
   createInvite,
   deleteInvite,
@@ -100,9 +100,12 @@ import {
   coachMessage,
   credentialSource,
   hasCredentials,
+  planWeek,
   refineAnalysis,
+  WeekPlanError,
   type CoachContext,
 } from './claude';
+import { cleanWeekRequest } from './weekplan';
 
 const app = express();
 app.use(cors());
@@ -204,7 +207,9 @@ const hits = new Map<string, { count: number; resetAt: number }>();
  * guessing down, so they stay per-device and per-day and have nothing to do
  * with which tier somebody is on.
  */
-const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify', number> = {
+const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify' | 'weekplan', number> = {
+  // Weekly plans are counted, not guarded here: /api/weekplan has its own monthly cap.
+  weekplan: 0,
   // Each one is an email to an address. Five a day is plenty for somebody
   // whose first one went to spam, and not much of a tool for mailing a
   // stranger over and over.
@@ -1914,6 +1919,56 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
     }
     logFailure('recipe import', error);
     res.status(502).json({ error: 'That recipe could not be read. Try another page.' });
+  }
+});
+
+/**
+ * Before a weekly plan spends one of the nutritionist's questions: has this
+ * month's run of plans been used? Checked first so a refused plan costs
+ * nothing. Free users pass straight through to the meter, whose answer —
+ * this is part of Plus — is the useful one for them.
+ */
+async function weekPlanCap(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (req.device && (await planFor(req.device)) === 'plus' && (await usedThisMonth(req.device, 'weekplan')) >= WEEKPLANS_PER_MONTH) {
+      res.status(429).json({
+        error: 'rate_limited',
+        message: `That is this month's ${WEEKPLANS_PER_MONTH} weekly plans. They come back on the 1st — planning meals yourself is unaffected.`,
+      });
+      return;
+    }
+  } catch (error) {
+    logFailure('weekplan cap', error);
+  }
+  next();
+}
+
+/**
+ * The nutritionist plans a few days of meals. Body: WeekPlanRequest (see
+ * server/weekplan.ts). Plus only, through the nutritionist's allowance; the
+ * answer is days of meals for the app to add as plans, never a logged meal.
+ */
+app.post('/api/weekplan', weekPlanCap, meter('chat'), async (req, res) => {
+  const request = cleanWeekRequest(req.body);
+  if (!request) {
+    res.status(400).json({ error: 'Your targets are needed to plan a week.' });
+    return;
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: 'Planning a week needs the AI, and no key is configured on this server.' });
+    return;
+  }
+  try {
+    const plan = await planWeek(request);
+    if (req.device) await spend(req.device.id, 'weekplan').catch(() => undefined);
+    res.json(plan);
+  } catch (error) {
+    if (error instanceof WeekPlanError) {
+      res.status(502).json({ error: error.message });
+      return;
+    }
+    logFailure('weekplan', error);
+    res.status(502).json({ error: 'The nutritionist could not plan that just now. Try again in a moment.' });
   }
 });
 

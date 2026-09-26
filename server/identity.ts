@@ -109,7 +109,7 @@ export function sameSecret(a: string, b: string): boolean {
  * these are a brake on guessing — a password, or an invite code that is worth
  * money to whoever finds one.
  */
-export type Spend = 'photo' | 'chat' | 'recipe' | 'signin' | 'reset' | 'invite' | 'verify';
+export type Spend = 'photo' | 'chat' | 'recipe' | 'weekplan' | 'signin' | 'reset' | 'invite' | 'verify';
 
 /**
  * Count one, and say how many have been counted today.

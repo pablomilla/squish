@@ -1,0 +1,32 @@
+/* The nutritionist's weekly plan: ask, wait, choose what to keep. */
+.week-ask, .week-preview { display: flex; flex-direction: column; gap: 12px; }
+.week-ask > p, .week-preview > p { margin: 0; }
+.week-plus { align-self: flex-start; background: var(--brand-soft); color: var(--brand-ink); }
+.week-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.week-planning { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px 0 32px; text-align: center; }
+.week-planning p { margin: 0; }
+.week-summary { color: var(--ink-2); line-height: 1.45; }
+.week-day { border-radius: var(--r-lg); background: var(--surface-sunk); padding: 10px 12px; }
+.week-day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.week-day-head h4 { margin: 0; }
+.week-light { margin: 4px 0 0; color: var(--warn); font-weight: 600; }
+.week-day ul { list-style: none; margin: 6px 0 0; padding: 0; }
+.week-meal { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.week-day li:first-child .week-meal { border-top: 0; }
+.week-meal-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.week-meal-title { font-weight: 600; color: var(--ink); }
+.week-meal.is-left .week-meal-title { color: var(--ink-3); text-decoration: line-through; font-weight: 500; }
+/* Inputs are stripped of their native look app-wide, so the box is drawn here (as on the shopping list). */
+.week-meal input {
+  width: 22px; height: 22px; flex: none; margin: 1px 0 0; border-radius: 7px;
+  border: 2px solid var(--line-strong); background: var(--surface); cursor: pointer;
+  display: grid; place-content: center;
+}
+.week-meal input::after {
+  content: ''; width: 10px; height: 6px; margin-top: -2px;
+  border: solid #fff; border-width: 0 0 2.5px 2.5px; transform: rotate(-45deg) scale(0);
+}
+.week-meal input:checked { background: var(--brand); border-color: var(--brand); }
+.week-meal input:checked::after { transform: rotate(-45deg) scale(1); }
+.week-meal input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.week-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; }

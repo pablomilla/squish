@@ -95,9 +95,9 @@ async function headers(json: boolean): Promise<Record<string, string>> {
   };
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+async function post<T>(path: string, body: unknown, timeoutMs = TIMEOUT_MS): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await unwrap<T>(
       path,
@@ -221,6 +221,40 @@ export interface RecipeImport extends AnalysisResult {
  */
 export async function importRecipe(url: string, slot?: MealSlot): Promise<RecipeImport> {
   return post<RecipeImport>('/api/recipe', { url, slot });
+}
+
+/** One planned day from the nutritionist: its meals, shaped like any analysis, and whether it came back light. */
+export interface PlannedDay {
+  date: string;
+  meals: AnalysisResult[];
+  calories: number;
+  underFloor: boolean;
+}
+
+export interface WeekPlan {
+  summary: string;
+  days: PlannedDay[];
+}
+
+export interface WeekPlanAsk {
+  startDate: string;
+  days: number;
+  slots: MealSlot[];
+  snacks: boolean;
+  calorieTarget: number;
+  proteinTarget: number;
+  fibreTarget: number;
+  goal: string;
+  sex: string;
+  likes: string[];
+  notes: string[];
+  preferences: string;
+  cooking: 'quick' | 'normal' | 'batch';
+}
+
+/** A week takes the nutritionist a while to think through: up to two minutes, not the usual 45 seconds. */
+export async function requestWeekPlan(ask: WeekPlanAsk): Promise<WeekPlan> {
+  return post<WeekPlan>('/api/weekplan', ask, 150_000);
 }
 
 /**

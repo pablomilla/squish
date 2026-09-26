@@ -5,7 +5,7 @@ import MealCard from '../components/MealCard';
 import Squish from '../components/Squish';
 import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, Stepper, useToast } from '../components/ui';
-import { BasketIcon, CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, TrashIcon } from '../components/icons';
+import { BasketIcon, CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
 import DayScoreSheet from '../components/diary/DayScoreSheet';
@@ -16,6 +16,7 @@ import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/
 import { PLAN_DAYS_AHEAD, planDays, plansOn } from '../lib/planner';
 import PlanCard from '../components/PlanCard';
 import ShoppingSheet from '../components/ShoppingSheet';
+import WeekPlanSheet from '../components/WeekPlanSheet';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
 import { GLASS_ML, dayVerdict } from '../lib/nutrition';
@@ -38,6 +39,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   const [picking, setPicking] = useState(false);
   const [searching, setSearching] = useState(false);
   const [shopping, setShopping] = useState(false);
+  const [weekPlanning, setWeekPlanning] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
 
   // The strip runs oldest → newest, so bring the chosen day into view.
@@ -83,6 +85,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
       </header>
 
       <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
+      <WeekPlanSheet open={weekPlanning} onClose={() => setWeekPlanning(false)} />
       <CalendarSheet key={`${date}-${picking}`} open={picking} date={date} onClose={() => setPicking(false)} onPick={setDate} />
       <SearchSheet
         open={searching}
@@ -126,11 +129,16 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
               of your {targets.calories.toLocaleString('en-GB')}
             </p>
           )}
-          {dayPlans.length > 0 && (
-            <button type="button" className="btn--quiet small row diary-shop-link" onClick={() => setShopping(true)}>
-              <BasketIcon size={15} /> Shopping list
+          <div className="row diary-ahead-links">
+            <button type="button" className="btn--quiet small row" onClick={() => setWeekPlanning(true)}>
+              <SparkIcon size={15} /> Plan my week with the nutritionist
             </button>
-          )}
+            {dayPlans.length > 0 && (
+              <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
+                <BasketIcon size={15} /> Shopping list
+              </button>
+            )}
+          </div>
         </section>
       ) : (
         <section className="card diary-summary">

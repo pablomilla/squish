@@ -40,6 +40,12 @@ services:
         sync: false
       - key: SQUISH_PLUS_CHATS
         sync: false
+      # Weekly plans from the nutritionist a month (default 4), and optionally a
+      # cheaper model for them alone. See docs/monetisation.md.
+      - key: SQUISH_PLUS_WEEKPLANS
+        sync: false
+      - key: SQUISH_WEEKPLAN_MODEL
+        sync: false
       # Turns on the device token, the diary backup and accounts. Filled in by
       # Render from the database below, so there is nothing to type.
       #

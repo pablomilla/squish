@@ -123,3 +123,24 @@ export function ideasFor(
 export function asAnalysis(meal: Pick<Idea, 'title' | 'items' | 'nutrients' | 'score'>, slot: MealSlot): AnalysisResult {
   return { title: meal.title, items: meal.items, nutrients: meal.nutrients, score: meal.score, coachNote: '', confidence: 'high', slot };
 }
+
+/**
+ * What they already eat, for the nutritionist to plan around: the meals
+ * logged most often in the last month, then saved foods, each once. Titles
+ * only — their taste, not their diary.
+ */
+export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: string, count = 15): string[] {
+  const since = addDays(today, -30);
+  const tally = new Map<string, { title: string; times: number }>();
+  for (const meal of meals) {
+    if (meal.date < since || meal.date > today) continue;
+    const key = meal.title.trim().toLowerCase();
+    if (!key) continue;
+    const known = tally.get(key) ?? { title: meal.title.trim(), times: 0 };
+    known.times += 1;
+    tally.set(key, known);
+  }
+  const often = [...tally.values()].sort((a, b) => b.times - a.times || a.title.localeCompare(b.title)).map((t) => t.title);
+  const saved = favourites.map((f) => f.name.trim()).filter((name) => name && !tally.has(name.toLowerCase()));
+  return [...often, ...saved].slice(0, count);
+}

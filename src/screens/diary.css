@@ -87,4 +87,5 @@
 .diary-ahead p { margin: 0; }
 .diary-ahead p + p { margin-top: 4px; }
 .diary-plans { margin-bottom: 8px; }
-.diary-shop-link { margin-top: 6px; padding-left: 0; }
+.diary-ahead-links { flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; }
+.diary-ahead-links .btn--quiet { padding-left: 0; }
