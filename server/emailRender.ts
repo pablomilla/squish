@@ -17,6 +17,7 @@
  * becoming markup.
  */
 import type { EmailDefinition, Wording } from './emails';
+import { RTL_LANGUAGES, speaker, type Speaker } from '../src/lib/i18n';
 
 /** Squish's colours, from src/styles/tokens.css. */
 const INK = '#2b2340';
@@ -40,20 +41,35 @@ export interface Rendered {
 const escape = (text: string): string =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+/** For text between tags, where quotes need no escaping (and read better in the source for it). */
+const escapeText = (text: string): string => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const PLACEHOLDER = /\{([a-zA-Z_]+)\}/g;
 
 /** Fill placeholders in plain text. Unknown ones are left as typed. */
 const fill = (text: string, values: Record<string, string>): string =>
   text.replace(PLACEHOLDER, (whole, name: string) => values[name] ?? whole);
 
+/** For the dashboard's previews and anything else in English. */
+const ENGLISH = speaker({ language: 'en', locale: 'en-GB', lookup: () => undefined });
+
+/**
+ * `words` is the reader's language: the wording arrives translated already,
+ * and it gives the footer, the fallback under the button, and the page's
+ * language and direction.
+ */
 export function renderEmail(
   definition: EmailDefinition,
   wording: Wording,
   values: Record<string, string>,
   origin: string,
+  words: Speaker = ENGLISH,
 ): Rendered {
+  const { t } = words;
+  const english = words.language === 'en';
   const urls = new Set(definition.placeholders.filter((p) => p.url).map((p) => p.name));
-  const privacy = `${origin}/privacy`;
+  const privacy = english ? `${origin}/privacy` : `${origin}/privacy?lang=${words.language}`;
+  const why = t('You are getting this because of activity on a Squish account using this address.');
   const body = wording.body.replace(/\r\n/g, '\n').replace(/\s+$/, '');
 
   /* ---------------- plain text ---------------- */
@@ -63,7 +79,7 @@ export function renderEmail(
     '',
     '—',
     `Squish · ${COMPANY}`,
-    `You are getting this because of activity on a Squish account using this address. Privacy: ${privacy}`,
+    `${why} ${t('Privacy: {link}', { link: privacy })}`,
   ].join('\n');
 
   /* ---------------- HTML ---------------- */
@@ -86,7 +102,7 @@ export function renderEmail(
       const href = escape(values[button.placeholder]);
       const label = escape(wording.buttonLabel || button.label);
       const fallback = button.fallback
-        ? `<p style="margin:14px 0 22px;font-size:13px;line-height:1.5;color:${INK_3}">If the button doesn't work, copy this into your browser:<br><a href="${href}" style="color:${BRAND};word-break:break-all">${href}</a></p>`
+        ? `<p style="margin:14px 0 22px;font-size:13px;line-height:1.5;color:${INK_3}">${escapeText(t("If the button doesn't work, copy this into your browser:"))}<br><a href="${href}" style="color:${BRAND};word-break:break-all">${href}</a></p>`
         : '';
       return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:${button.fallback ? '6px 0 0' : '6px 0 22px'}"><tr><td style="border-radius:999px;background:${BRAND}"><a href="${href}" style="display:inline-block;padding:14px 26px;font-family:${FONT};font-size:16px;font-weight:600;line-height:1;color:#ffffff;text-decoration:none;border-radius:999px">${label}</a></td></tr></table>${fallback}`;
     }
@@ -99,7 +115,7 @@ export function renderEmail(
   const subject = fill(wording.subject, values);
 
   const html = `<!doctype html>
-<html lang="en-GB">
+<html lang="${escape(english ? 'en-GB' : words.language === 'zh' ? 'zh-Hans' : words.language)}" dir="${RTL_LANGUAGES.has(words.language) ? 'rtl' : 'ltr'}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -107,7 +123,7 @@ export function renderEmail(
 <meta name="supported-color-schemes" content="light">
 <title>${escape(subject)}</title>
 </head>
-<body style="margin:0;padding:0;background:${PAGE}">
+<body style="margin:0;padding:0;background:${PAGE}"${RTL_LANGUAGES.has(words.language) ? ' dir="rtl"' : ''}>
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${PAGE}">${preheader}</div>
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:${PAGE}">
 <tr><td align="center" style="padding:28px 14px">
@@ -123,7 +139,7 @@ ${parts.join('\n')}
 </td></tr>
 <tr><td style="padding:18px 8px 0;font-size:12px;line-height:1.6;color:${INK_2}">
 Squish · ${escape(COMPANY)}<br>
-You are getting this because of activity on a Squish account using this address. <a href="${escape(privacy)}" style="color:${INK_2};text-decoration:underline">Privacy policy</a>
+${escapeText(why)} <a href="${escape(privacy)}" style="color:${INK_2};text-decoration:underline">${escapeText(t('Privacy policy'))}</a>
 </td></tr>
 </table>
 </td></tr>

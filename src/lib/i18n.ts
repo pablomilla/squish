@@ -54,6 +54,7 @@ export function setLanguage(next: { language: string; locale: string; messages?:
   language = next.language;
   locale = next.locale;
   messages = next.messages ?? {};
+  current = speaker({ language, locale, lookup: (id) => messages[id] });
 }
 
 export const uiLanguage = () => language;
@@ -61,12 +62,16 @@ export const uiLanguage = () => language;
 export const uiLocale = () => locale;
 
 /** Fill `{name}` from vars; anything not given is left as written. */
-export function fill(text: string, vars?: Vars): string {
-  if (!vars) return text;
-  return text.replace(/\{(\w+)\}/g, (whole, name: string) => (name in vars ? formatVar(vars[name]) : whole));
-}
+export const fill = (text: string, vars?: Vars): string => fillFor(text, vars, locale);
 
-const formatVar = (value: string | number) => (typeof value === 'number' ? value.toLocaleString(locale) : value);
+function fillFor(text: string, vars: Vars | undefined, loc: string): string {
+  if (!vars) return text;
+  return text.replace(/\{(\w+)\}/g, (whole, name: string) => {
+    if (!(name in vars)) return whole;
+    const value = vars[name];
+    return typeof value === 'number' ? value.toLocaleString(loc) : value;
+  });
+}
 
 /**
  * Accented look-alikes of every letter, with the placeholders and tags left
@@ -88,21 +93,57 @@ export function pseudo(text: string): string {
   return `[${out}]`;
 }
 
-function lookup(key: string): Translation | undefined {
-  return messages[idOf(key)];
+/** What `t` and `plural` need: a language, a locale for numbers, and the translations. */
+export interface Speaker {
+  language: string;
+  locale: string;
+  t: (english: string, vars?: Vars) => string;
+  plural: (n: number, forms: { one: string; other: string }, vars?: Vars) => string;
 }
+
+/**
+ * `t` and `plural` for one language. The app has one, set at start-up; the
+ * server makes one for each email it writes, in the reader's language.
+ */
+export function speaker(next: { language: string; locale: string; lookup: (id: string) => Translation | undefined }): Speaker {
+  const { language: lang, locale: loc, lookup } = next;
+  const fillIn = (text: string, vars?: Vars) => fillFor(text, vars, loc);
+  const find = (key: string) => lookup(idOf(key));
+  return {
+    language: lang,
+    locale: loc,
+    t(english, vars) {
+      if (lang === 'en' || !english) return fillIn(english, vars);
+      if (lang === PSEUDO) return fillIn(pseudo(english), vars);
+      const found = find(english);
+      return fillIn(typeof found === 'string' ? found : english, vars);
+    },
+    plural(n, forms, vars) {
+      const all = { n, ...vars };
+      const english = n === 1 ? forms.one : forms.other;
+      if (lang === 'en') return fillIn(english, all);
+      if (lang === PSEUDO) return fillIn(pseudo(english), all);
+      const found = find(pluralKey(forms));
+      if (!found || typeof found === 'string') return fillIn(english, all);
+      let rule: Intl.LDMLPluralRule = 'other';
+      try {
+        rule = new Intl.PluralRules(loc).select(n);
+      } catch {
+        /* an unknown locale: "other" is always there */
+      }
+      return fillIn(found[rule] ?? found.other, all);
+    },
+  };
+}
+
+let current: Speaker = speaker({ language, locale, lookup: () => undefined });
 
 /**
  * A string in their language: `t('Log a meal')`, `t('{n} kcal left', { n })`.
  * Also used on a string held in a variable, when that string was collected
  * elsewhere (a server message marked with `msg`, a table of names).
  */
-export function t(english: string, vars?: Vars): string {
-  if (language === 'en' || !english) return fill(english, vars);
-  if (language === PSEUDO) return fill(pseudo(english), vars);
-  const found = lookup(english);
-  return fill(typeof found === 'string' ? found : english, vars);
-}
+export const t = (english: string, vars?: Vars): string => current.t(english, vars);
 
 /**
  * A count with its noun, in whichever plural form their language wants for
@@ -110,21 +151,7 @@ export function t(english: string, vars?: Vars): string {
  * forms; Polish and Arabic have more, and the translation carries them all.
  * `{n}` is always available, formatted for their locale.
  */
-export function plural(n: number, forms: { one: string; other: string }, vars?: Vars): string {
-  const all = { n, ...vars };
-  const english = (n === 1 ? forms.one : forms.other);
-  if (language === 'en') return fill(english, all);
-  if (language === PSEUDO) return fill(pseudo(english), all);
-  const found = lookup(pluralKey(forms));
-  if (!found || typeof found === 'string') return fill(english, all);
-  let rule: Intl.LDMLPluralRule = 'other';
-  try {
-    rule = new Intl.PluralRules(locale).select(n);
-  } catch {
-    /* an unknown locale: "other" is always there */
-  }
-  return fill(found[rule] ?? found.other, all);
-}
+export const plural = (n: number, forms: { one: string; other: string }, vars?: Vars): string => current.plural(n, forms, vars);
 
 /**
  * Marks a string for translation without translating it: for a message the

@@ -40,12 +40,19 @@
   var title = box.querySelector('[data-title]');
   var text = box.querySelector('[data-text]');
   var button = box.querySelector('button');
-  var name = typeof profile.name === 'string' && profile.name ? ', ' + profile.name : '';
+  var name = typeof profile.name === 'string' ? profile.name : '';
+
+  /** A sentence from the page, in whatever language it was served in. */
+  var words = document.getElementById('move-words');
+  function word(key) {
+    var found = words && words.content.querySelector('[data-word="' + key + '"]');
+    return found ? found.textContent : '';
+  }
 
   function settled() {
-    title.textContent = 'Your diary now lives at the new address';
-    text.textContent = 'Squish moved to app.squish.online, and your diary went with it. Bookmark it, or add it to your home screen again.';
-    button.textContent = 'Open Squish';
+    title.textContent = word('settledTitle');
+    text.textContent = word('settledText');
+    button.textContent = word('open');
     button.onclick = function () {
       location.href = APP;
     };
@@ -57,9 +64,8 @@
     return;
   }
 
-  title.textContent = 'Welcome back' + name;
-  text.textContent =
-    'Squish has moved to app.squish.online. Your diary is in this browser, and one tap takes it with you — meals, targets and all.';
+  title.textContent = name ? word('welcomeName').replace('{name}', name) : word('welcome');
+  text.textContent = word('movedText');
 
   function auth() {
     return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + device.token };
@@ -102,7 +108,7 @@
 
   button.onclick = function () {
     button.disabled = true;
-    button.textContent = 'Moving your diary…';
+    button.textContent = word('moving');
     ensureDevice()
       .then(lastSave)
       .then(function () {
@@ -126,8 +132,8 @@
       })
       .catch(function () {
         button.disabled = false;
-        button.textContent = 'Try again';
-        text.textContent = 'That did not work — probably the connection. Your diary is still safe in this browser.';
+        button.textContent = word('retry');
+        text.textContent = word('failed');
       });
   };
 })();

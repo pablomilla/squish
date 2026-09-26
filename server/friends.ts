@@ -33,6 +33,8 @@ import type { PoolClient } from 'pg';
 import { migrate, query, transaction } from './db';
 import { compose, originOf } from './emails';
 import { canSendMail, sendQuietly } from './mail';
+import { readerOf } from './reader';
+import { speaker, type Speaker } from '../src/lib/i18n';
 
 const setting = (name: string, fallback: number): number => {
   const raw = Number(process.env[name]);
@@ -153,16 +155,29 @@ async function reward(client: PoolClient, accountId: string, days: number): Prom
   return { kind: live ? 'extended' : 'started', plusUntil: after.rows[0].plus_until };
 }
 
-/** The reward in a sentence, for the email: what they got, and when. */
-export function rewardWords(kind: RewardKind, days: number, plusUntil: Date): string {
-  const until = plusUntil.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' });
-  if (kind === 'started') return `We have switched Squish Plus on for you — ${days} days of it, until ${until}. There is nothing to do.`;
+/**
+ * The reward in a sentence, for the email: what they got, and when — in the
+ * reader's language, with the date on their own calendar.
+ */
+export function rewardWords(kind: RewardKind, days: number, plusUntil: Date, words: Speaker = ENGLISH, zone = 'Europe/London'): string {
+  const { t } = words;
+  const date = (locale: string, timeZone: string) =>
+    plusUntil.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone });
+  let until: string;
+  try {
+    until = date(words.locale, zone);
+  } catch {
+    until = date('en-GB', 'Europe/London');
+  }
+  if (kind === 'started') return t('We have switched Squish Plus on for you — {days} days of it, until {until}. There is nothing to do.', { days, until });
   const extra = boost();
-  return (
-    `As you are already on Plus, you get ${extra.photo} extra photo analyses and ${extra.chat} extra questions for the nutritionist, ` +
-    `for the next ${extra.days} days, starting now. And the ${days} days of Plus are saved for you, added to the end of your current Plus — it now runs until ${until}.`
+  return t(
+    'As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, for the next {boostDays} days, starting now. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.',
+    { photo: extra.photo, chat: extra.chat, boostDays: extra.days, days, until },
   );
 }
+
+const ENGLISH = speaker({ language: 'en', locale: 'en-GB', lookup: () => undefined });
 
 export interface Settled {
   friendDays: number;
@@ -232,11 +247,14 @@ export async function settleFriend(friendId: string, appOrigin?: string): Promis
     const to = await query<{ email: string }>('select email from accounts where id = $1', [settled.referrerId]);
     if (to[0]) {
       const link = `${appOrigin}/`;
+      const { referrerKind, referrerDays, referrerPlusUntil } = settled;
+      const reader = await readerOf(settled.referrerId);
       void compose(
         'friend-reward',
         to[0].email,
-        { reward: rewardWords(settled.referrerKind, settled.referrerDays, settled.referrerPlusUntil), app_link: link },
+        (words) => ({ reward: rewardWords(referrerKind, referrerDays, referrerPlusUntil, words, reader.zone), app_link: link }),
         originOf(link),
+        reader,
       )
         .then((mail) => sendQuietly(mail, 'friend reward email'))
         .catch(() => {});

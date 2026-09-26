@@ -15,7 +15,13 @@
  * the life of the app.
  */
 import { readFile } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { idOf } from '../src/lib/i18n';
+import type { Language } from '../src/lib/language';
+import { stringsOf, translateHtml } from './htmlWords';
+import { registerStrings } from './translate';
+import { htmlTag, pageWords } from './site';
 
 const SOURCE = resolve(process.cwd(), 'docs/privacy.md');
 
@@ -190,21 +196,42 @@ ${back ? '<a class="back" href="/">← Back to Squish</a>' : ''}
 </body>
 </html>`;
 
+/**
+ * Said at the top of the policy in any other language. The policy is
+ * translated for reading; the English is the one Squish is held to.
+ */
+const TRANSLATION_NOTE =
+  '<p><em>This is a translation, to make the policy easier to read. If it and the <a href="/privacy?lang=en">English version</a> ever differ, the English is what counts.</em></p>';
+
+const withNote = (html: string): string => html.replace('<main>\n', `<main>\n${TRANSLATION_NOTE}\n`);
+
 let cached: string | null = null;
 
+/** The policy's strings, to translate with everything else at start-up. */
+export function registerPrivacyStrings(): number {
+  if (!existsSync(SOURCE)) return 0;
+  const strings = stringsOf(withNote(standalonePage(render(readFileSync(SOURCE, 'utf8')))));
+  registerStrings(strings.map((text) => ({ id: idOf(text), text, where: ['site/privacy'] })));
+  return strings.length;
+}
+
 /**
- * The rendered page.
+ * The rendered page, in a language.
  *
- * Cached after the first read, because the file cannot change without a
- * deploy. Null where the file is missing, which the route turns into an
- * honest 404 rather than a blank page claiming to be a policy.
+ * The English is cached after the first read, because the file cannot change
+ * without a deploy. Null where the file is missing, which the route turns
+ * into an honest 404 rather than a blank page claiming to be a policy.
  */
-export async function privacyPage(): Promise<string | null> {
-  if (cached) return cached;
-  try {
-    cached = standalonePage(render(await readFile(SOURCE, 'utf8')));
-    return cached;
-  } catch {
-    return null;
+export async function privacyPage(language: Language = 'en'): Promise<string | null> {
+  if (!cached) {
+    try {
+      cached = standalonePage(render(await readFile(SOURCE, 'utf8')));
+    } catch {
+      return null;
+    }
   }
+  if (language === 'en') return cached;
+  const page = withNote(cached);
+  const words = await pageWords(language, page);
+  return translateHtml(page, words.lookup).replace('<html lang="en-GB">', htmlTag(language));
 }

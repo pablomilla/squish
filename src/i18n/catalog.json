@@ -1,5 +1,5 @@
 {
- "version": "1vsst4l-xlrvmb",
+ "version": "0n6npzm067914p",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -582,6 +582,13 @@
    ]
   },
   {
+   "id": "036zgc804a1kmp",
+   "text": "an unrecognised device",
+   "where": [
+    "server/notices.ts"
+   ]
+  },
+  {
    "id": "038ds4m-haajl1",
    "text": "Keep my data",
    "where": [
@@ -678,6 +685,13 @@
    "text": "Previous month",
    "where": [
     "src/components/diary/CalendarSheet.tsx"
+   ]
+  },
+  {
+   "id": "03qh95p-hmg80m",
+   "text": "<strong>{email}</strong> is yours, as far as Squish is concerned. If anything important happens on your account — a new sign-in, a changed password — this is where we will tell you.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -1855,6 +1869,13 @@
    ]
   },
   {
+   "id": "0c3itix0z2l6ii",
+   "text": "Confirmation links work for a week. Go back to Squish where you use it, open <strong>You → Account</strong>, and send yourself a fresh one. You can close this page.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0c3z3k30nlk2cu",
    "text": "There were two eggs, not one",
    "where": [
@@ -2417,6 +2438,13 @@
    ]
   },
   {
+   "id": "0fhaxvj-5vwcza",
+   "text": "Privacy policy",
+   "where": [
+    "server/emailRender.ts"
+   ]
+  },
+  {
    "id": "0fkadb00hdtob9",
    "text": "{left} of {total} free left",
    "where": [
@@ -2662,6 +2690,13 @@
    "text": "Well over your {nutrient} for the day",
    "where": [
     "src/lib/dayExplained.ts"
+   ]
+  },
+  {
+   "id": "0hacovh0urylpl",
+   "text": "That is confirmed",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -3669,6 +3704,13 @@
    "text": "Coffee with milk",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0n0azyq0xrakir",
+   "text": "If the button doesn't work, copy this into your browser:",
+   "where": [
+    "server/emailRender.ts"
    ]
   },
   {
@@ -4741,6 +4783,13 @@
    "text": "What would have made {day} better?",
    "where": [
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "0tldm6k0fajppt",
+   "text": "You can close this page now and carry on in Squish, in the app or browser tab you were using. It will notice by itself.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -5894,10 +5943,24 @@
    ]
   },
   {
+   "id": "11cm2c70h0w12p",
+   "text": "Confirmed — Squish",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "11fi1m20urw8eh",
    "text": "A week takes a minute or so to think through.",
    "where": [
     "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
+   "id": "11gxs0i-x2xswq",
+   "text": "You are getting this because of activity on a Squish account using this address.",
+   "where": [
+    "server/emailRender.ts"
    ]
   },
   {
@@ -7552,6 +7615,13 @@
    ]
   },
   {
+   "id": "1bq8vfp-2zt6cm",
+   "text": "We have switched Squish Plus on for you — {days} days of it, until {until}. There is nothing to do.",
+   "where": [
+    "server/friends.ts"
+   ]
+  },
+  {
    "id": "1bseo86018lus6",
    "text": "tomorrow",
    "where": [
@@ -8541,6 +8611,13 @@
    ]
   },
   {
+   "id": "1hz0b85061txki",
+   "text": "That link has run out",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1hzmxtu-bwr122",
    "text": "Back",
    "where": [
@@ -8823,6 +8900,13 @@
    "text": "{unit} over",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "1jgmvy50sk17pd",
+   "text": "Privacy: {link}",
+   "where": [
+    "server/emailRender.ts"
    ]
   },
   {
@@ -9921,6 +10005,13 @@
    ]
   },
   {
+   "id": "1qlfe3x-6vj3xo",
+   "text": "{browser} on {system}",
+   "where": [
+    "server/notices.ts"
+   ]
+  },
+  {
    "id": "1qm562v-x3295w",
    "text": "Old friends",
    "where": [
@@ -10362,6 +10453,13 @@
    ]
   },
   {
+   "id": "1tl8d210f4i8gs",
+   "text": "As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, for the next {boostDays} days, starting now. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.",
+   "where": [
+    "server/friends.ts"
+   ]
+  },
+  {
    "id": "1tldvuc-ypz0yi",
    "text": "Saved meals",
    "where": [
@@ -10686,6 +10784,13 @@
    ]
   },
   {
+   "id": "1vhak4l-b6cm3m",
+   "text": "Link expired — Squish",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1vhs4by0ueypda",
    "text": "The old password and the new one, please.",
    "where": [
@@ -10915,6 +11020,13 @@
    "text": "Protein pro",
    "where": [
     "src/lib/achievements.ts"
+   ]
+  },
+  {
+   "id": "1x7w5pq-7y4m25",
+   "text": "Confirming your email for Squish.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {

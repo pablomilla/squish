@@ -17,6 +17,8 @@
 import { query } from './db';
 import { sendQuietly } from './mail';
 import { compose } from './emails';
+import { readerOf, type Reader } from './reader';
+import { msg, type Speaker } from '../src/lib/i18n';
 
 /**
  * "Safari on iPhone", from a user-agent string.
@@ -25,7 +27,7 @@ import { compose } from './emails';
  * own a Windows computer", and nothing that would identify a person or a
  * machine — this goes into an email, and emails get forwarded.
  */
-export function describeDevice(userAgent: string | undefined): string {
+export function describeDevice(userAgent: string | undefined, { t }: Pick<Speaker, 't'> = { t: (text, vars) => fillEnglish(text, vars) }): string {
   const ua = userAgent ?? '';
 
   const system =
@@ -48,20 +50,35 @@ export function describeDevice(userAgent: string | undefined): string {
     : /Safari\//.test(ua) ? 'Safari'
     : null;
 
-  if (browser && system) return `${browser} on ${system}`;
-  return browser ?? system ?? 'an unrecognised device';
+  if (browser && system) return t('{browser} on {system}', { browser, system });
+  return browser ?? system ?? t(UNRECOGNISED);
 }
 
-/** When, the way a person reads a time. */
-function when(now = new Date()): string {
-  return `${now.toLocaleString('en-GB', {
-    timeZone: 'Europe/London',
+const UNRECOGNISED = msg('an unrecognised device');
+
+const fillEnglish = (text: string, vars?: Record<string, string | number>) =>
+  text.replace(/\{(\w+)\}/g, (whole, name: string) => (vars && name in vars ? String(vars[name]) : whole));
+
+/**
+ * When, the way a person reads a time: in their language, on their own
+ * clock, with the zone's short name so nobody has to wonder whose clock
+ * ("Wednesday 23 September at 09:41 BST", "miércoles, 23 de septiembre, 4:41 GMT-5").
+ */
+export function when(reader: Pick<Reader, 'zone'>, words: Pick<Speaker, 'locale'>, now = new Date()): string {
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: reader.zone,
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     hour: '2-digit',
     minute: '2-digit',
-  })} (UK time)`;
+    timeZoneName: 'short',
+  };
+  try {
+    return now.toLocaleString(words.locale, options);
+  } catch {
+    return now.toLocaleString('en-GB', { ...options, timeZone: 'Europe/London' });
+  }
 }
 
 async function confirmedAddress(accountId: string): Promise<string | null> {
@@ -72,17 +89,26 @@ async function confirmedAddress(accountId: string): Promise<string | null> {
   return rows[0]?.email ?? null;
 }
 
+/*
+ * In the language the account is kept in, never the one of the request that
+ * set the notice off: that is the very sign-in the owner may not recognise.
+ */
 export async function noticeSignIn(accountId: string, userAgent: string | undefined, origin: string): Promise<void> {
   const to = await confirmedAddress(accountId);
   if (!to) return;
-  sendQuietly(await compose('signin', to, { device: describeDevice(userAgent), time: when(), app_link: origin }, origin), 'sign-in notice');
+  const reader = await readerOf(accountId);
+  sendQuietly(
+    await compose('signin', to, (words) => ({ device: describeDevice(userAgent, words), time: when(reader, words), app_link: origin }), origin, reader),
+    'sign-in notice',
+  );
 }
 
 export async function noticePasswordChanged(accountId: string, how: 'changed' | 'reset', origin: string): Promise<void> {
   const to = await confirmedAddress(accountId);
   if (!to) return;
+  const reader = await readerOf(accountId);
   sendQuietly(
-    await compose(how === 'reset' ? 'password-reset' : 'password-changed', to, { time: when(), app_link: origin }, origin),
+    await compose(how === 'reset' ? 'password-reset' : 'password-changed', to, (words) => ({ time: when(reader, words), app_link: origin }), origin, reader),
     'password notice',
   );
 }

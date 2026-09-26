@@ -15,6 +15,7 @@ import { switchedIdentity } from './autobackup';
 import { refreshPlan } from './plan';
 import { forgetReferral, referral } from './referral';
 import { t } from './i18n';
+import { placeHeaders } from './place';
 
 export interface Who {
   signedIn: boolean;
@@ -41,6 +42,8 @@ async function headers(): Promise<Record<string, string>> {
   const token = await deviceToken(apiUrl);
   return {
     'Content-Type': 'application/json',
+    // So the emails this account is sent come in their language and time zone.
+    ...placeHeaders(),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }

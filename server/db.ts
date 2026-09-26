@@ -566,6 +566,17 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 17,
+    sql: `
+      -- The language, country and time zone an account uses Squish in, as the
+      -- app last said, so the emails it is sent can be written in that
+      -- language with times in that zone. Null until the app first says.
+      alter table accounts add column language text;
+      alter table accounts add column region text;
+      alter table accounts add column time_zone text;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

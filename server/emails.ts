@@ -18,8 +18,19 @@
  * Each email goes out twice over: a branded HTML version and a plain-text one
  * beside it, for mail apps that do not show designs and for anybody who has
  * images and styling turned off.
+ *
+ * And each goes out in the language its reader uses Squish in. The English
+ * here — or the dashboard's — is translated line by line through the same
+ * store as the app's interface: the defaults ahead of time, an edited
+ * wording the first time somebody needs it. A line that is only a
+ * placeholder (`{link}`) is left alone, so the button is still a button. The
+ * partner and test emails are for the business, and stay in English.
  */
 import { hasDatabase, migrate, query } from './db';
+import { idOf, type Speaker } from '../src/lib/i18n';
+import type { Language } from '../src/lib/language';
+import { registerStrings, speakerFor, translationsFor, type CatalogEntry } from './translate';
+import { DEFAULT_READER, type Reader } from './reader';
 
 export type EmailKey = 'verify' | 'reset' | 'signin' | 'password-changed' | 'password-reset' | 'partner-signin' | 'friend-reward' | 'test';
 
@@ -47,6 +58,8 @@ export interface EmailDefinition {
   button: { placeholder: string; label: string; fallback: boolean } | null;
   placeholders: Placeholder[];
   required: string[];
+  /** Sent in the reader's language. False for the ones that go to the business. */
+  translated: boolean;
 }
 
 const LINK = (about: string, sample: string): Placeholder => ({ name: 'link', about, sample, url: true });
@@ -58,8 +71,8 @@ const APP: Placeholder = {
 };
 const TIME: Placeholder = {
   name: 'time',
-  about: 'When it happened, in UK time',
-  sample: 'Wednesday 23 September at 09:41 (UK time)',
+  about: 'When it happened, in their own time zone',
+  sample: 'Wednesday 23 September at 09:41 BST',
 };
 
 const IF_NOT_YOU =
@@ -88,6 +101,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
       { name: 'days', about: 'How many days the link works for', sample: '7' },
     ],
     required: ['link'],
+    translated: true,
   },
 
   reset: {
@@ -110,6 +124,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
       { name: 'hours', about: 'How many hours the link works for', sample: '2' },
     ],
     required: ['link'],
+    translated: true,
   },
 
   signin: {
@@ -133,6 +148,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
       APP,
     ],
     required: [],
+    translated: true,
   },
 
   'password-changed': {
@@ -153,6 +169,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     button: { placeholder: 'app_link', label: 'Open Squish', fallback: false },
     placeholders: [TIME, APP],
     required: [],
+    translated: true,
   },
 
   'password-reset': {
@@ -173,6 +190,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     button: { placeholder: 'app_link', label: 'Open Squish', fallback: false },
     placeholders: [TIME, APP],
     required: [],
+    translated: true,
   },
 
   'friend-reward': {
@@ -200,6 +218,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
       APP,
     ],
     required: ['reward'],
+    translated: true,
   },
 
   'partner-signin': {
@@ -225,6 +244,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
       { name: 'expiry', about: 'How long the link works for', sample: '30 minutes' },
     ],
     required: ['link'],
+    translated: false,
   },
 
   test: {
@@ -240,6 +260,7 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     button: null,
     placeholders: [],
     required: [],
+    translated: false,
   },
 };
 
@@ -413,14 +434,60 @@ export function originOf(link?: string): string {
   return (process.env.SQUISH_PUBLIC_ORIGIN?.trim() || 'https://app.squish.online').replace(/\/$/, '');
 }
 
-/** An email ready to hand to sendMail: the wording in force, filled in, both versions. */
+/* ------------------------------------------------------------------ *
+ * In the reader's language
+ * ------------------------------------------------------------------ */
+
+const hasWords = (line: string): boolean => /\p{L}/u.test(line.replace(PLACEHOLDER, ''));
+
+/** The lines of a wording a translator sees: the subject, the button, and each line of the body with words in it. */
+export function wordingStrings(definition: EmailDefinition, wording: Wording): CatalogEntry[] {
+  const where = [`email: ${definition.label}`];
+  const lines = [wording.subject, wording.buttonLabel ?? '', ...wording.body.split('\n')].map((line) => line.trim()).filter(hasWords);
+  return [...new Set(lines)].map((text) => ({ id: idOf(text), text, where }));
+}
+
+// The default wordings are translated ahead of time, with the app's interface.
+registerStrings(Object.values(EMAILS).filter((d) => d.translated).flatMap((d) => wordingStrings(d, defaultWording(d))));
+
+/**
+ * A wording in another language. Any line without a translation that passes
+ * the check stays English, so the worst case is an email in two languages —
+ * never one missing its link.
+ */
+export async function translateWording(definition: EmailDefinition, wording: Wording, language: Language): Promise<Wording> {
+  if (language === 'en' || !definition.translated) return wording;
+  const found = await translationsFor(language, wordingStrings(definition, wording));
+  const line = (text: string): string => {
+    const trimmed = text.trim();
+    if (!hasWords(trimmed)) return text;
+    const value = found.get(idOf(trimmed));
+    return typeof value === 'string' ? text.replace(trimmed, value) : text;
+  };
+  return {
+    subject: line(wording.subject),
+    body: wording.body.split('\n').map(line).join('\n'),
+    buttonLabel: wording.buttonLabel === null ? null : line(wording.buttonLabel),
+  };
+}
+
+/**
+ * An email ready to hand to sendMail: the wording in force, in the reader's
+ * language, filled in, both versions. Values that are words themselves (a
+ * device, a date) are made with the reader's `t`, so they match.
+ */
 export async function compose(
   key: EmailKey,
   to: string,
-  values: Record<string, string>,
+  values: Record<string, string> | ((words: Speaker) => Record<string, string>),
   origin: string,
+  reader: Reader = DEFAULT_READER,
 ): Promise<{ to: string; subject: string; text: string; html: string }> {
   const { renderEmail } = await import('./emailRender');
+  const definition = EMAILS[key];
+  const language = definition.translated ? reader.language : 'en';
+  const words = await speakerFor(language, reader.region);
   const { wording } = await wordingFor(key);
-  return { to, ...renderEmail(EMAILS[key], wording, values, origin) };
+  const translated = await translateWording(definition, wording, language);
+  return { to, ...renderEmail(definition, translated, typeof values === 'function' ? values(words) : values, origin, words) };
 }

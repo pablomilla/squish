@@ -23,6 +23,7 @@ import { promisify } from 'node:util';
 import { migrate, query, transaction } from './db';
 import { sendMail } from './mail';
 import { compose, originOf } from './emails';
+import { readerOf, type Reader } from './reader';
 import { judgePassword } from './passwords';
 
 const scrypt = promisify(scryptCallback) as (
@@ -320,7 +321,7 @@ const hashToken = (token: string): string => createHash('sha256').update(token).
  * tool for finding out who has one, and the people most interested in that
  * list are not the ones who forgot their password.
  */
-export async function requestReset(email: string, link: (token: string) => string): Promise<void> {
+export async function requestReset(email: string, link: (token: string) => string, said: Partial<Reader> = {}): Promise<void> {
   await migrate();
   const address = normaliseEmail(email);
 
@@ -335,7 +336,9 @@ export async function requestReset(email: string, link: (token: string) => strin
   );
 
   const url = link(token);
-  await sendMail(await compose('reset', address, { link: url, hours: String(RESET_HOURS) }, originOf(url)));
+  // In the account's language; the asker's only for an account that never said.
+  const reader = await readerOf(found.id, said);
+  await sendMail(await compose('reset', address, { link: url, hours: String(RESET_HOURS) }, originOf(url), reader));
 }
 
 export type ResetResult = { ok: true; accountId: string } | { ok: false; reason: 'bad_token' | 'weak_password' | 'breached'; message?: string };

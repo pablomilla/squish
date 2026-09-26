@@ -15,6 +15,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { migrate, query } from './db';
 import { sendMail } from './mail';
 import { compose, originOf } from './emails';
+import { readerOf, type Reader } from './reader';
 
 /** A week: long enough to get round to it, short enough to be worth losing. */
 const DAYS = 7;
@@ -37,7 +38,12 @@ export async function isVerified(accountId: string): Promise<boolean> {
  * told it did not go — unlike a security notice, this is something somebody
  * is waiting for.
  */
-export async function sendVerification(accountId: string, link: (token: string) => string): Promise<'sent' | 'already'> {
+export async function sendVerification(
+  accountId: string,
+  link: (token: string) => string,
+  /** What the request asking for it says, for an account that has not said yet. */
+  said: Partial<Reader> = {},
+): Promise<'sent' | 'already'> {
   await migrate();
   const rows = await query<{ email: string; verified: boolean }>(
     'select email, email_verified_at is not null as verified from accounts where id = $1',
@@ -54,11 +60,13 @@ export async function sendVerification(accountId: string, link: (token: string) 
   );
 
   const url = link(token);
-  await sendMail(await compose('verify', account.email, { link: url, days: String(DAYS) }, originOf(url)));
+  const reader = await readerOf(accountId, said);
+  await sendMail(await compose('verify', account.email, { link: url, days: String(DAYS) }, originOf(url), reader));
   return 'sent';
 }
 
-export type Confirmation = { ok: true; email: string } | { ok: false };
+/** The language is the account's, so the page that says so is in it too. */
+export type Confirmation = { ok: true; email: string; language: string | null } | { ok: false };
 
 /**
  * Follow a link.
@@ -69,17 +77,17 @@ export type Confirmation = { ok: true; email: string } | { ok: false };
  */
 export async function confirm(token: string): Promise<Confirmation> {
   await migrate();
-  const rows = await query<{ email: string }>(
+  const rows = await query<{ email: string; language: string | null }>(
     `update accounts a
         set email_verified_at = coalesce(a.email_verified_at, now())
        from verifications v
       where v.token_hash = $1
         and v.expires_at > now()
         and v.account_id = a.id
-    returning a.email`,
+    returning a.email, a.language`,
     [hashToken(token)],
   );
-  return rows[0] ? { ok: true, email: rows[0].email } : { ok: false };
+  return rows[0] ? { ok: true, email: rows[0].email, language: rows[0].language } : { ok: false };
 }
 
 export async function sweepVerifications(): Promise<void> {

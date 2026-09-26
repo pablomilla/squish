@@ -10,8 +10,10 @@ import {
   pluralCategories,
   readTranslation,
   translateRequest,
-  useTranslator,
+  setTranslator,
+  wanted,
   type CatalogEntry,
+  type Translator,
 } from '../server/translate';
 
 /**
@@ -25,7 +27,7 @@ before(async () => {
   }
 });
 after(async () => {
-  useTranslator(null);
+  setTranslator(null);
   if (hasDatabase()) {
     await query(`delete from ui_translations where language in ('pl', 'cy', 'de')`);
     await closeDatabase();
@@ -65,7 +67,7 @@ test('the request lists the plural categories and asks for them in the schema', 
 test('missing strings are translated in batches, checked, and kept; broken ones stay English', async () => {
   if (!CATALOG.entries.length) return;
   const calls: number[] = [];
-  useTranslator(async (entries) => {
+  const german: Translator = async (entries) => {
     calls.push(entries.length);
     const out: Record<string, unknown> = {};
     entries.forEach((entry, i) => {
@@ -73,11 +75,14 @@ test('missing strings are translated in batches, checked, and kept; broken ones 
       else out[entry.id] = { one: `DE ${entry.one}`, other: `DE ${entry.other}` };
     });
     return out;
-  });
+  };
+  setTranslator(german);
   await fillLanguage('de');
   assert.ok(calls.every((n) => n <= BATCH));
-  assert.equal(calls.reduce((a, b) => a + b, 0), CATALOG.entries.length);
+  assert.equal(calls.reduce((a, b) => a + b, 0), wanted().length);
 
+  // Without a translator, so the pack's nudge to fill the rest does not race the run below.
+  setTranslator(null);
   const pack = await languagePack('de');
   const kept = Object.keys(pack.messages).length;
   assert.ok(kept > 0);
@@ -90,6 +95,7 @@ test('missing strings are translated in batches, checked, and kept; broken ones 
   }
 
   // A second run asks only for what is still missing.
+  setTranslator(german);
   calls.length = 0;
   await fillLanguage('de');
   assert.equal(calls.reduce((a, b) => a + b, 0), CATALOG.entries.length - Object.keys(pack.messages).length);
@@ -98,7 +104,7 @@ test('missing strings are translated in batches, checked, and kept; broken ones 
 test('two requests at once share one run', async () => {
   let running = 0;
   let most = 0;
-  useTranslator(async (entries) => {
+  setTranslator(async (entries) => {
     running++;
     most = Math.max(most, running);
     await new Promise((resolve) => setTimeout(resolve, 5));
@@ -110,7 +116,7 @@ test('two requests at once share one run', async () => {
 });
 
 test('with no translator there is nothing to do, and English is what shows', async () => {
-  useTranslator(null);
+  setTranslator(null);
   assert.equal(await fillLanguage('pl'), 0);
   const pack = await languagePack('pl');
   assert.equal(pack.complete, CATALOG.entries.length === 0);

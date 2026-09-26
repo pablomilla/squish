@@ -21,8 +21,9 @@ import { MAX_TOOL_ROUNDS, chatStep, cleanMessages, cleanNotes, toolRounds, type 
 import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
-import { privacyPage, standalonePage } from './privacy';
+import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
+import { acceptLanguage, readerFromRequest, rememberReader } from './reader';
 import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
 import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
@@ -39,7 +40,8 @@ import {
   suggestCode,
 } from './invites';
 import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
-import { privacyRedirect, siteRouter } from './site';
+import { htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
+import { isLanguage } from '../src/lib/language';
 import {
   claimPartnerLink,
   emailTaken,
@@ -109,7 +111,7 @@ import {
 import { cleanWeekRequest } from './weekplan';
 import { withPlace } from './region';
 import { msg } from '../src/lib/i18n';
-import { isTranslatable, languagePack, useTranslator, warmAll } from './translate';
+import { isTranslatable, languagePack, speakerFor, setTranslator, warmAll } from './translate';
 
 const app = express();
 app.use(cors());
@@ -183,6 +185,9 @@ declare module 'express-serve-static-core' {
 async function identify(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     req.device = (await deviceFor(readToken(req))) ?? undefined;
+    // The language, country and time zone the app is in, for the emails the
+    // account is sent. Not awaited: one write when they change, none otherwise.
+    if (req.device?.accountId) void rememberReader(req.device.accountId, readerFromRequest(req));
   } catch (error) {
     logFailure('device lookup', error);
   }
@@ -606,6 +611,7 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
     const signedInBefore = req.device!.accountId ?? null;
     const made = await signUp(req.device!.id, email, password);
     if (made.ok) {
+      await rememberReader(made.account.id, readerFromRequest(req));
       // Whoever's link they arrived by, if anyone's: an affiliate's, or a
       // friend's invite. Never allowed to fail the sign-up: a stale link is not
       // the new account's problem.
@@ -621,7 +627,7 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
       // Not awaited into the response, and never allowed to fail it: the
       // account exists either way, and there is a button to send it again.
       if (canSendMail()) {
-        void sendVerification(made.account.id, (token) => verifyLink(req, token)).catch((error: unknown) =>
+        void sendVerification(made.account.id, (token) => verifyLink(req, token), readerFromRequest(req)).catch((error: unknown) =>
           logFailure('verification email', error),
         );
       }
@@ -725,7 +731,7 @@ app.post('/api/account/verify', requireDevice, meter('verify'), async (req, res)
     return;
   }
   try {
-    const result = await sendVerification(id, (token) => verifyLink(req, token));
+    const result = await sendVerification(id, (token) => verifyLink(req, token), readerFromRequest(req));
     res.json({ result });
   } catch (error) {
     logFailure('verification email', error);
@@ -747,28 +753,36 @@ app.get('/verify', async (req, res) => {
   const token = typeof req.query.token === 'string' ? req.query.token : '';
   const done = token ? await confirm(token).catch(() => ({ ok: false as const })) : { ok: false as const };
 
+  // In the account's language; for a link that has run out there is no
+  // account to ask, so the browser's.
+  const language = done.ok && isLanguage(done.language) ? done.language : acceptLanguage(req.get('accept-language'));
+  const { t } = await speakerFor(language);
   const body = done.ok
-    ? `<h1>That is confirmed</h1>
-<p><strong>${escapeHtml(done.email)}</strong> is yours, as far as Squish is concerned. If anything
-important happens on your account — a new sign-in, a changed password — this is where we will tell you.</p>
-<p>You can close this page now and carry on in Squish, in the app or browser tab you were using. It
-will notice by itself.</p>`
-    : `<h1>That link has run out</h1>
-<p>Confirmation links work for a week. Go back to Squish where you use it, open <strong>You → Account</strong>,
-and send yourself a fresh one. You can close this page.</p>`;
+    ? `<h1>${escapeHtml(t('That is confirmed'))}</h1>
+<p>${richHtml(t('<strong>{email}</strong> is yours, as far as Squish is concerned. If anything important happens on your account — a new sign-in, a changed password — this is where we will tell you.')).replace('{email}', escapeHtml(done.email))}</p>
+<p>${escapeHtml(t('You can close this page now and carry on in Squish, in the app or browser tab you were using. It will notice by itself.'))}</p>`
+    : `<h1>${escapeHtml(t('That link has run out'))}</h1>
+<p>${richHtml(t('Confirmation links work for a week. Go back to Squish where you use it, open <strong>You → Account</strong>, and send yourself a fresh one. You can close this page.'))}</p>`;
 
   res
     .status(done.ok ? 200 : 410)
     .type('html')
     .send(
-      standalonePage(body, done.ok ? 'Confirmed — Squish' : 'Link expired — Squish', 'Confirming your email for Squish.', {
+      standalonePage(body, done.ok ? t('Confirmed — Squish') : t('Link expired — Squish'), t('Confirming your email for Squish.'), {
         back: false,
-      }),
+      }).replace('<html lang="en-GB">', htmlTag(language)),
     );
 });
 
 const escapeHtml = (text: string): string =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** A translated sentence as HTML: its <strong> tags kept, everything else escaped. */
+const richHtml = (text: string): string =>
+  text
+    .split(/(<\/?strong>)/)
+    .map((part, i) => (i % 2 ? part : escapeHtml(part)))
+    .join('');
 
 /** Needs an account, not just a device: there is nothing here for a stranger. */
 function requireAccount(req: Request, res: Response, next: NextFunction): void {
@@ -1695,7 +1709,7 @@ app.post('/api/account/reset', requireDevice, meter('reset'), async (req, res) =
   }
 
   try {
-    await requestReset(email, (token) => `${publicOrigin(req)}/reset?token=${encodeURIComponent(token)}`);
+    await requestReset(email, (token) => `${publicOrigin(req)}/reset?token=${encodeURIComponent(token)}`, readerFromRequest(req));
   } catch (error) {
     // Logged, not reported. The answer is the same either way, and a failure
     // that only happens for addresses that exist is itself a leak.
@@ -1754,7 +1768,10 @@ function publicOrigin(req?: Request): string {
  * the same for everybody and say nothing about anyone. Cached briefly by the
  * browser; the app keeps its own copy too.
  */
-if (hasCredentials()) useTranslator(translateBatch);
+if (hasCredentials()) setTranslator(translateBatch);
+// The website's and the privacy policy's English, translated alongside the app's.
+registerSiteStrings();
+registerPrivacyStrings();
 app.get('/api/i18n/:language', async (req, res) => {
   const { language } = req.params;
   if (!isTranslatable(language)) {
@@ -2124,10 +2141,16 @@ app.use(siteRouter(() => publicOrigin(), DIST));
 app.get('/privacy', async (req, res) => {
   const elsewhere = privacyRedirect(req.hostname);
   if (elsewhere) {
-    res.redirect(301, elsewhere);
+    // With the query: `?lang=es` from an email's footer goes along.
+    const query = req.originalUrl.indexOf('?');
+    res.redirect(301, query < 0 ? elsewhere : `${elsewhere}${req.originalUrl.slice(query)}`);
     return;
   }
-  const html = await privacyPage();
+  // `?lang=` where a link said (the website's, an email's); else the browser's first choice.
+  const asked = req.query.lang;
+  const language = isLanguage(asked) ? asked : acceptLanguage(req.get('accept-language'));
+  if (!isLanguage(asked)) res.vary('Accept-Language');
+  const html = await privacyPage(language);
   if (!html) {
     logFailure('privacy policy', new Error(`could not read docs/privacy.md from ${process.cwd()}`));
     res.status(404).type('text/plain').send('The privacy policy is missing from this deployment.');

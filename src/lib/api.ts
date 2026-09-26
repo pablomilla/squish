@@ -6,8 +6,7 @@ import { showPaywall } from './paywall';
 import { refreshPlan } from './plan';
 import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
-import { currentEnergyUnit, currentRegion } from './region';
-import { currentLanguage } from './language';
+import { placeHeaders } from './place';
 import { t } from './i18n';
 
 const TIMEOUT_MS = 45_000;
@@ -98,9 +97,7 @@ async function headers(json: boolean): Promise<Record<string, string>> {
   const token = await deviceToken(apiUrl);
   return {
     ...(json ? { 'Content-Type': 'application/json' } : {}),
-    'X-Squish-Region': currentRegion().id,
-    'X-Squish-Energy': currentEnergyUnit(),
-    'X-Squish-Language': currentLanguage().id,
+    ...placeHeaders(),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }

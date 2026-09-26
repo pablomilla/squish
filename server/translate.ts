@@ -16,13 +16,20 @@
  *
  * At start-up the server works through every language in turn, so after a
  * deploy the new strings are ready before most people open the app.
+ *
+ * The same store serves the emails and the website. Their English is not in
+ * the app's catalog — the app has no use for it — so they register it here
+ * when the server starts (`registerStrings`), and it is translated alongside.
+ * An email wording edited in the dashboard is new English, translated the
+ * first time somebody needs it in another language (`translationsFor`).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type Anthropic from '@anthropic-ai/sdk';
 import { hasDatabase, query } from './db';
 import { LANGUAGES, isLanguage, type Language } from '../src/lib/language';
-import type { PluralForms, Translation } from '../src/lib/i18n';
+import { localeFor, speaker, type PluralForms, type Speaker, type Translation } from '../src/lib/i18n';
+import { REGIONS, isRegion } from '../src/lib/region';
 
 export interface CatalogEntry {
   id: string;
@@ -43,6 +50,26 @@ export const CATALOG: Catalog = JSON.parse(readFileSync(join(import.meta.dirname
 export const TRANSLATED_LANGUAGES = (Object.keys(LANGUAGES) as Language[]).filter((l) => l !== 'en');
 
 export const BATCH = 60;
+
+// ---- What there is to translate --------------------------------------------------------------
+
+/** English from outside the app's catalog: the emails and the website. */
+const extra = new Map<string, CatalogEntry>();
+
+/** Add strings to translate with everything else. Safe to call with ones already known. */
+export function registerStrings(entries: CatalogEntry[]): void {
+  for (const entry of entries) {
+    const known = extra.get(entry.id);
+    if (known) {
+      for (const where of entry.where) if (!known.where.includes(where)) known.where.push(where);
+    } else if (!CATALOG.entries.some((e) => e.id === entry.id)) {
+      extra.set(entry.id, { ...entry, where: [...entry.where] });
+    }
+  }
+}
+
+/** Everything the server keeps translated: the app's catalog, then the emails and the website. */
+export const wanted = (): CatalogEntry[] => [...CATALOG.entries, ...extra.values()];
 
 // ---- Checking a translation ---------------------------------------------------------------
 
@@ -90,11 +117,27 @@ export function acceptable(entry: CatalogEntry, value: unknown, language: string
 /** Without a database (local development), translations live as long as the process. */
 const memory = new Map<string, Map<string, Translation>>();
 
+/**
+ * What was read from the database, for a few minutes: every page of the
+ * website and every email would otherwise read a language's whole table.
+ * What this process translates is added as it is stored; what another
+ * instance translated shows up when the copy runs out.
+ */
+const recent = new Map<Language, { at: number; found: Map<string, Translation> }>();
+const FRESH_MS = 5 * 60_000;
+
 async function stored(language: Language): Promise<Map<string, Translation>> {
   if (!hasDatabase()) return memory.get(language) ?? new Map();
+  const copy = recent.get(language);
+  if (copy && Date.now() - copy.at < FRESH_MS) return copy.found;
   const rows = await query<{ id: string; value: Translation }>('select id, value from ui_translations where language = $1', [language]);
-  return new Map(rows.map((row) => [row.id, row.value]));
+  const found = new Map(rows.map((row) => [row.id, row.value]));
+  recent.set(language, { at: Date.now(), found });
+  return found;
 }
+
+/** Forget the copies, for a test that changed the table underneath. */
+export const forgetStored = (): void => recent.clear();
 
 async function store(language: Language, found: Map<string, Translation>): Promise<void> {
   if (!found.size) return;
@@ -111,6 +154,8 @@ async function store(language: Language, found: Map<string, Translation>): Promi
      on conflict (language, id) do nothing`,
     [language, ids, ids.map((id) => JSON.stringify(found.get(id)))],
   );
+  const copy = recent.get(language);
+  if (copy) for (const [id, value] of found) if (!copy.found.has(id)) copy.found.set(id, value);
 }
 
 // ---- Translating -----------------------------------------------------------------------------
@@ -120,8 +165,34 @@ export type Translator = (entries: CatalogEntry[], language: Language) => Promis
 let translator: Translator | null = null;
 
 /** The Claude-backed translator is set by index.ts when there are credentials; tests set their own. */
-export function useTranslator(next: Translator | null): void {
+export function setTranslator(next: Translator | null): void {
   translator = next;
+}
+
+/**
+ * Translate these, a batch at a time, keeping the ones that pass the check.
+ * Stops at the first failure: what is left waits for the next attempt.
+ */
+async function translateEntries(language: Language, entries: CatalogEntry[]): Promise<Map<string, Translation>> {
+  const added = new Map<string, Translation>();
+  if (!translator) return added;
+  for (let i = 0; i < entries.length; i += BATCH) {
+    const batch = entries.slice(i, i + BATCH);
+    try {
+      const answer = await translator(batch, language);
+      const good = new Map<string, Translation>();
+      for (const entry of batch) {
+        const value = answer[entry.id];
+        if (acceptable(entry, value, language)) good.set(entry.id, value);
+      }
+      await store(language, good);
+      for (const [id, value] of good) added.set(id, value);
+    } catch (error) {
+      console.error(`Translating into ${language} failed:`, error instanceof Error ? error.message : error);
+      break;
+    }
+  }
+  return added;
 }
 
 const running = new Map<Language, Promise<number>>();
@@ -136,28 +207,50 @@ export function fillLanguage(language: Language): Promise<number> {
   const run = (async () => {
     if (!translator) return 0;
     const have = await stored(language);
-    const missing = CATALOG.entries.filter((entry) => !have.has(entry.id));
-    let added = 0;
-    for (let i = 0; i < missing.length; i += BATCH) {
-      const batch = missing.slice(i, i + BATCH);
-      try {
-        const answer = await translator(batch, language);
-        const good = new Map<string, Translation>();
-        for (const entry of batch) {
-          const value = answer[entry.id];
-          if (acceptable(entry, value, language)) good.set(entry.id, value);
-        }
-        await store(language, good);
-        added += good.size;
-      } catch (error) {
-        console.error(`Translating into ${language} failed:`, error instanceof Error ? error.message : error);
-        break;
-      }
-    }
-    return added;
+    const missing = wanted().filter((entry) => !have.has(entry.id));
+    return (await translateEntries(language, missing)).size;
   })().finally(() => running.delete(language));
   running.set(language, run);
   return run;
+}
+
+/**
+ * The translations of these strings, translating any that are missing there
+ * and then — for an email, which cannot be sent later in a better language.
+ * Waits at most `waitMs` for Claude; whatever is not back by then is left
+ * out, and shows in English.
+ */
+export async function translationsFor(language: Language, entries: CatalogEntry[], waitMs = 20_000): Promise<Map<string, Translation>> {
+  const have = await stored(language);
+  const out = new Map<string, Translation>();
+  const missing: CatalogEntry[] = [];
+  for (const entry of entries) {
+    const value = have.get(entry.id);
+    if (value !== undefined) out.set(entry.id, value);
+    else if (!missing.some((m) => m.id === entry.id)) missing.push(entry);
+  }
+  if (missing.length && translator && waitMs > 0) {
+    let timer: NodeJS.Timeout | undefined;
+    const late = new Promise<Map<string, Translation>>((resolve) => {
+      timer = setTimeout(() => resolve(new Map()), waitMs);
+    });
+    const got = await Promise.race([translateEntries(language, missing), late]).finally(() => clearTimeout(timer));
+    for (const [id, value] of got) out.set(id, value);
+  }
+  return out;
+}
+
+/**
+ * `t` and `plural` in somebody's language, on the server: for an email, or a
+ * page of the website. Uses what is translated already and never waits.
+ * The region makes the numbers and dates local ("es-US").
+ */
+export async function speakerFor(language: Language, region?: string): Promise<Speaker> {
+  const regionLocale = REGIONS[isRegion(region) ? region : 'GB'].locale;
+  const locale = localeFor(language, regionLocale);
+  if (language === 'en') return speaker({ language, locale, lookup: () => undefined });
+  const have = await stored(language).catch(() => new Map<string, Translation>());
+  return speaker({ language, locale, lookup: (id) => have.get(id) });
 }
 
 export interface LanguagePack {
@@ -206,7 +299,7 @@ How to translate:
 - Keep every {placeholder} exactly as written, and every <tag> and </tag> around the words that belong inside it. You may move them to where the sentence needs them.
 - Do not translate: Squish, Squish Plus, units (kcal, kJ, g, mg, ml, kg, lb), emoji.
 - Source strings are British English. Use the standard form of the target language that is widely understood.
-- "where" says which screen a string is used on, for context.
+- "where" says which screen a string is used on, for context. Some strings come from the Squish website ("site/…") or from an email Squish sends ("email: …"): translate those as a good native website or email would read — full sentences, still warm and plain. HTML tags there may be numbered, like <a1> or <span2>: keep each exactly as it is, around the same words. Keep web and email addresses, company details and prices exactly as written.
 
 For counted strings you get the English "one" and "other" forms and must give every plural form the target language uses, in the categories listed. Each form may use {n} for the number.`;
 

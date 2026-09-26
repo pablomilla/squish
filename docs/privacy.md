@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 24 September 2026**
+**Last updated: 26 September 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -65,6 +65,10 @@ Backup is on by default where this copy of Squish has a database.
   after two hours.
 - **Whether you have confirmed your email address**, and, until you do, a
   hashed confirmation link that expires after a week.
+- **The language, country and time zone your app is set to**, as it last
+  said, so the emails we send you are in your language and give times on
+  your own clock. The time zone is your device's setting (for example
+  "Europe/London"), not your location.
 - **If you arrived by somebody's referral link** (squish.online/r/…) and
   then made an account: which referrer's code you came with, and when. That
   is so we can pay them their share of a subscription; they are told how many
@@ -112,6 +116,12 @@ its log only when something fails, and those entries do not contain your diary.
 The website at squish.online sets no cookies, runs no analytics and loads
 nothing from anybody else — not even its font. The app itself lives at
 app.squish.online.
+
+It shows itself in the language your browser asks for first, or the one you
+pick at the bottom of the page, which becomes part of the address
+(squish.online/es/). Nothing remembers the choice but the address itself.
+This policy is translated too, for reading; if a translation and the English
+ever differ, the English is what counts.
 
 Squish used to live at squish.online, and a browser keeps what a site saves
 under the address it was saved at. So if you used Squish there before it
@@ -205,6 +215,9 @@ Squish sends exactly three kinds of email, and only these:
 - **A password-reset link**, when you ask for one.
 - **A security notice**, when your account is signed into, or its password is
   changed or reset — so that if it was not you, you find out.
+
+Each is written in the language you use Squish in, translated by Claude once
+for everybody as the app's wording is; nothing about you goes with that.
 
 Security notices only go to an address you have confirmed, so nobody can use
 Squish to send mail to someone else. There is no marketing, no newsletter, and
