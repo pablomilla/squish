@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useToast } from './ui';
 import { achievementById, earnedFrom } from '../lib/achievements';
+import { unlocksLine } from '../lib/rewards';
 import { useSquish } from '../store/useSquish';
 
 /**
@@ -40,7 +41,8 @@ export default function AchievementSync() {
     for (const id of fresh) seen.current.add(id);
     if (fresh.length === 1) {
       const badge = achievementById(fresh[0])!;
-      toast(`New badge: ${badge.title} — ${badge.description.charAt(0).toLowerCase()}${badge.description.slice(1)}`, badge.emoji);
+      const unlocks = unlocksLine(badge.id);
+      toast(`New badge: ${badge.title}${unlocks ? `. ${unlocks.replace('Unlocks', 'You unlocked')}.` : ` — ${badge.description.charAt(0).toLowerCase()}${badge.description.slice(1)}`}`, badge.emoji);
     } else if (fresh.length > 1) {
       toast(`${fresh.length} new badges — see them on Insights`, '🏅');
     }

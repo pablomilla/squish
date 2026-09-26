@@ -30,3 +30,4 @@
 .badge-group + .badge-group { margin-top: var(--s3); }
 .badge-group-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--s2); }
 .badge-group-head h4 { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.achievement-reward { color: var(--brand-ink); font-weight: 600; margin-top: 2px; }

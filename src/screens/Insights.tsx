@@ -8,6 +8,7 @@ import type { ShareCardData } from '../lib/share';
 import { FlameIcon, ShareIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS } from '../lib/achievements';
+import { unlocksLine } from '../lib/rewards';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
 import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
 import { MACRO_LABEL, OVER, addOptional, ceilingLimit, isCeiling, round1 } from '../lib/nutrition';
@@ -359,13 +360,17 @@ export default function Insights() {
                 </span>
               </div>
               <div className="badge-grid">
-                {badges.map((a) => (
-                  <div key={a.id} className={`achievement ${unlocked[a.id] ? 'is-on' : ''}`} title={a.description}>
-                    <span aria-hidden="true">{a.emoji}</span>
-                    <b className="tiny">{a.title}</b>
-                    <span className="tiny muted">{unlocked[a.id] ? 'unlocked' : a.description}</span>
-                  </div>
-                ))}
+                {badges.map((a) => {
+                  const unlocks = unlocksLine(a.id);
+                  return (
+                    <div key={a.id} className={`achievement ${unlocked[a.id] ? 'is-on' : ''}`} title={a.description}>
+                      <span aria-hidden="true">{a.emoji}</span>
+                      <b className="tiny">{a.title}</b>
+                      <span className="tiny muted">{unlocked[a.id] ? 'unlocked' : a.description}</span>
+                      {unlocks && !unlocked[a.id] && <span className="tiny achievement-reward">🎁 {unlocks}</span>}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

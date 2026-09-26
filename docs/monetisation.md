@@ -157,8 +157,9 @@ Nineteen things Squish can wear, one each on the head, face and neck
 `npm run build:accessories`). They follow the same three rules:
 
 - **Earned:** party hat (first meal), round glasses (three days running),
-  knitted scarf (a full week).
-- **Plus:** crown, heart sunglasses, headphones.
+  knitted scarf (a full week), headphones (fifty days logged, in a row or
+  not), squad cap (a friend you invited got going).
+- **Plus:** crown, heart sunglasses.
 - **Packs, bought once:** Chef (hat, neckerchief), Sporty (sweatband, medal),
   Cosy (beanie, earmuffs). Shown in the app but not on sale — there is nowhere
   for a purchase to live yet (below).
@@ -177,7 +178,8 @@ tidy up, and it comes back if they do.
 Twelve places for the Home card to show behind Squish, each light and dark
 (`src/lib/scenes.ts`; copied into `src/assets/scenes` by
 `npm run build:scenes`). Morning kitchen is earned at two weeks of logging and
-the park picnic at thirty days; beach, starry night and space come with Plus;
+the park picnic at thirty days, and the beach by coming back after a week or
+more away ("Welcome back"); starry night and space come with Plus;
 the rainy window is in the Cosy pack; and each season has one (snowy village,
 fireworks, sweet shop, blossom garden, ice-lolly stand, pumpkin patch), on the
 same terms as seasonal accessories. The same every-render check applies: a

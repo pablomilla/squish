@@ -118,3 +118,12 @@ test('variety: different foods, and a full day of meals', () => {
 test('meals dated in the future earn nothing yet', () => {
   assert.equal(earned([meal(addDays(TODAY, 3))]).size, 0);
 });
+
+test('the new middle-distance badges carry something to use, and say so', async () => {
+  const { rewardsFor, unlocksLine } = await import('../src/lib/rewards');
+  assert.deepEqual(rewardsFor('welcome-back'), ['the Beach day scene']);
+  assert.deepEqual(rewardsFor('days-50'), ['Headphones']);
+  assert.equal(unlocksLine('days-50'), 'Unlocks Headphones');
+  assert.match(unlocksLine('first-meal'), /^Unlocks .+ and \d+ more$/, 'a long list is cut short');
+  assert.equal(unlocksLine('first-question'), '');
+});

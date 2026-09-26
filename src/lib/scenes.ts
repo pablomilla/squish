@@ -31,7 +31,8 @@ const season = (s: Season) => ({ unlock: { kind: 'season', season: s } as const,
 export const SCENES: Scene[] = [
   { id: 'kitchen', name: 'Morning kitchen', ...earned('streak-14', 'Two weeks of logging') },
   { id: 'picnic', name: 'Park picnic', ...earned('streak-30', 'Thirty days of logging') },
-  { id: 'beach', name: 'Beach day', ...plus },
+  // Back from a holiday, or just back: the reward for returning after a week or more away.
+  { id: 'beach', name: 'Beach day', ...earned('welcome-back', 'Come back after a week away') },
   { id: 'stars', name: 'Starry night', ...plus },
   { id: 'space', name: 'Space', ...plus },
   { id: 'rainy-window', name: 'Rainy window', ...pack('cosy', 'Cosy pack') },

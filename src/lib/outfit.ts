@@ -94,7 +94,7 @@ export const ACCESSORIES: Accessory[] = [
   { id: 'squad-cap', name: 'Squad cap', slot: 'head', ...earned('squad', 'Invite a friend who gets going'), rise: 11 },
   { id: 'crown', name: 'Little crown', slot: 'head', ...plus, rise: 29 },
   { id: 'heart-shades', name: 'Heart sunglasses', slot: 'face', ...plus },
-  { id: 'headphones', name: 'Headphones', slot: 'head', ...plus },
+  { id: 'headphones', name: 'Headphones', slot: 'head', ...earned('days-50', 'Log on fifty days, any fifty') },
   { id: 'chef-hat', name: 'Chef’s hat', slot: 'head', ...pack('chef'), rise: 61 },
   { id: 'neckerchief', name: 'Neckerchief', slot: 'neck', ...pack('chef') },
   { id: 'sweatband', name: 'Sweatband', slot: 'head', ...pack('sporty') },
