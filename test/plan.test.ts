@@ -65,11 +65,12 @@ when('a subscription that has run out is free again, with nothing having to run'
 
 /* ---------------- what that entitles them to ---------------- */
 
-when('the free plan gets a taste of the analysis, and nothing else that costs money', async () => {
+when('the free plan gets a taste of the analysis and the nutritionist, and nothing else that costs money', async () => {
   // Straight from docs/monetisation.md: everything cheap to serve is free, and
   // of the AI, only enough to find out whether it is any good.
   assert.equal(ALLOWANCE.free.photo, 5, 'somebody has to be able to try the analysis');
-  assert.equal(ALLOWANCE.free.chat, 0);
+  assert.equal(ALLOWANCE.free.chat, 3, 'and the nutritionist, which is what Plus is sold on');
+  assert.ok(ALLOWANCE.plus.chat > ALLOWANCE.free.chat);
   assert.equal(ALLOWANCE.free.recipe, 0);
   assert.ok(ALLOWANCE.plus.photo > ALLOWANCE.free.photo);
   assert.ok(ALLOWANCE.plus.chat > 0);

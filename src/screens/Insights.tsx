@@ -7,6 +7,8 @@ import { shareStory } from '../lib/shareStory';
 import type { ShareCardData } from '../lib/share';
 import { FlameIcon, ShareIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
+import AskLink from '../components/AskLink';
+import type { Route } from '../types';
 import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS } from '../lib/achievements';
 import { unlocksLine } from '../lib/rewards';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
@@ -26,7 +28,7 @@ const METRIC_LABEL: Record<Metric, string> = {
 /** The ones you are trying to stay under rather than reach. */
 const METRIC_CEILING: Metric[] = ['sugar', 'salt'];
 
-export default function Insights() {
+export default function Insights({ go }: { go?: (route: Route) => void }) {
   const [sharing, setSharing] = useState(false);
   const { meals, days, targets, unlocked, profile, unlock } = useSquish();
   const [range, setRange] = useState<Range>('7');
@@ -212,6 +214,14 @@ export default function Insights() {
         <div className="divider" />
         <StreakDots dates={week} done={loggedThisWeek} />
       </section>
+
+      {go && (
+        <AskLink
+          label="Ask the nutritionist about your week"
+          question="How was my week, and what’s the one thing to change?"
+          onAsk={(question) => go({ name: 'ask', question })}
+        />
+      )}
 
       <section className="card">
         <div className="card-title">

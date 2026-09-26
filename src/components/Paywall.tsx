@@ -19,13 +19,18 @@ import { Sheet } from './ui';
 import Squish from './Squish';
 import { PLUS } from '../lib/plan';
 import type { OutOfAllowance } from '../lib/api';
+import NutritionistPitch from './NutritionistPitch';
 import './paywall.css';
 
 const WHAT: Record<OutOfAllowance['kind'], string> = {
   photo: 'AI meal analyses',
   chat: 'questions for the nutritionist',
   recipe: 'recipe imports',
+  weekplan: 'weekly plans from the nutritionist',
 };
+
+/** Reached by trying to use the nutritionist: the sheet leads with it. */
+const aboutNutritionist = (kind: OutOfAllowance['kind']) => kind === 'chat' || kind === 'weekplan';
 
 /** The day the month turns over, said the way a person would say it. */
 function comesBack(iso: string | null | undefined): string {
@@ -55,9 +60,11 @@ export default function Paywall({
         <div className="stack paywall">
           <Squish mood="excited" size={84} />
           <p className="small">
-            Make a free account and your first {standing.taste ?? 5} AI meal analyses are on us — snap the plate, or
-            just say what you ate.
+            {aboutNutritionist(standing.kind)
+              ? `Make a free account and ask the nutritionist ${standing.taste ?? 3} questions on us — it reads your diary before it answers.`
+              : `Make a free account and your first ${standing.taste ?? 5} AI meal analyses are on us — snap the plate, or just say what you ate.`}
           </p>
+          {aboutNutritionist(standing.kind) && <NutritionistPitch compact />}
           <p className="tiny muted">
             An account also keeps a copy of your diary, so a new phone is not a fresh start. Logging by hand, food
             search and everything else stay free without one.
@@ -92,18 +99,22 @@ export default function Paywall({
                 they never had one. "You have used your 0 free questions" is
                 the sort of sentence that makes an app feel written by nobody.
               */}
+              {aboutNutritionist(standing.kind) && <h3 className="paywall-headline">Your own nutritionist</h3>}
               <p className="small">
                 {standing.allowance === 0
                   ? `${WHAT[standing.kind][0].toUpperCase()}${WHAT[standing.kind].slice(1)} come with ${PLUS}.`
-                  : `That was your ${standing.allowance} free AI meal analyses. From here, they are part of ${PLUS}.`}
+                  : `That was your ${standing.allowance} free ${WHAT[standing.kind]}. From here, they are part of ${PLUS}.`}
               </p>
 
+              {aboutNutritionist(standing.kind) && <NutritionistPitch />}
+
               <ul className="paywall-list">
-                <li>
-                  <b>60 AI meal analyses a month</b> — snap the plate, or say or type what you ate
+                <li className="paywall-star">
+                  <b>The nutritionist</b> — 30 questions a month about your own diary, and a weekly meal plan with its
+                  shopping list
                 </li>
                 <li>
-                  <b>The nutritionist</b> — 30 questions a month about your own diary, not the internet's
+                  <b>60 AI meal analyses a month</b> — snap the plate, or say or type what you ate
                 </li>
                 <li>
                   <b>10 recipe imports a month</b> — paste a link, get a portion's nutrition
@@ -116,6 +127,7 @@ export default function Paywall({
               <p className="paywall-price">
                 <b>£6.99</b> a month, or <b>£49.99</b> a year
               </p>
+              <p className="tiny muted">A year is under £1 a week — less than a coffee, for a nutritionist who has read your diary.</p>
 
               {/*
                 Honest rather than aspirational. There is no way to take money

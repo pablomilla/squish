@@ -40,7 +40,7 @@ export const isPaywalled = (error: unknown): boolean =>
 /** What the server says when an allowance has run out. */
 export interface OutOfAllowance {
   plan: 'free' | 'plus';
-  kind: 'photo' | 'chat' | 'recipe';
+  kind: 'photo' | 'chat' | 'recipe' | 'weekplan';
   used: number;
   allowance: number;
   /** 'month' for Plus; 'ever' for the free taste, which does not come back. */

@@ -23,3 +23,6 @@
 .paywall-price { font-size: var(--text-section); }
 .paywall-soon { background: var(--surface-2); border-radius: var(--r-lg); padding: 12px 14px; }
 .paywall .btn { width: 100%; margin-top: 4px; }
+.paywall-headline { margin: 0; font-size: var(--text-section); }
+.paywall-star { background: var(--brand-soft) !important; }
+.paywall-star b { color: var(--brand-ink); }

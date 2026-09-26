@@ -17,6 +17,7 @@ import { PLAN_DAYS_AHEAD, planDays, plansOn } from '../lib/planner';
 import PlanCard from '../components/PlanCard';
 import ShoppingSheet from '../components/ShoppingSheet';
 import WeekPlanSheet from '../components/WeekPlanSheet';
+import AskLink from '../components/AskLink';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
 import { GLASS_ML, dayVerdict } from '../lib/nutrition';
@@ -170,7 +171,13 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         </section>
       )}
 
-      <DayScoreSheet open={explaining} onClose={() => setExplaining(false)} explained={explained} />
+      <DayScoreSheet
+        open={explaining}
+        onClose={() => setExplaining(false)}
+        explained={explained}
+        question={date === isoDate() ? 'What would make today’s food better?' : `What would have made ${friendlyDate(date)} better?`}
+        onAsk={(question) => go({ name: 'ask', question })}
+      />
 
       {!ahead && <Micronutrients totals={totals} targets={targets} />}
 
@@ -288,6 +295,13 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             </div>
 
             <MealQuality meal={selected} />
+            <AskLink
+              question={`How could I make my ${selected.title.trim().toLowerCase()} even better?`}
+              onAsk={(question) => {
+                setSelected(null);
+                go({ name: 'ask', question });
+              }}
+            />
 
             <MacroBars totals={selected.nutrients} targets={targets} compact />
             <MinorNutrients totals={selected.nutrients} targets={targets} />

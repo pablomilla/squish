@@ -239,7 +239,7 @@ function Shell() {
       <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
       {route.name === 'home' && <Home go={go} />}
       {route.name === 'meals' && <Diary go={go} onEditMeal={editMeal} />}
-      {route.name === 'insights' && <Insights />}
+      {route.name === 'insights' && <Insights go={go} />}
       {route.name === 'you' && <You go={go} />}
       {route.name === 'capture' && (
         <Capture slot={route.slot} date={route.date} shot={route.shot} onCancel={home} onAnalysed={openReview} go={go} />
@@ -247,7 +247,7 @@ function Shell() {
       {route.name === 'add' && (
         <AddFood slot={route.slot} date={route.date} initialTab={route.tab} onCancel={home} onReady={openReview} />
       )}
-      {route.name === 'ask' && <Ask onClose={home} />}
+      {route.name === 'ask' && <Ask key={route.question ?? ''} onClose={home} question={route.question} />}
       {route.name === 'admin' && <Admin onClose={() => setRoute({ name: 'you' })} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
       </Suspense>

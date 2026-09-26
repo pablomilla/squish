@@ -64,3 +64,4 @@
 .ask-locked h2 { font-size: var(--text-section); margin: 4px 0 0; }
 .ask-locked p { margin: 0; max-width: 30ch; }
 .ask-locked .btn { margin-top: var(--s2); }
+.ask-week { margin-top: 12px; }

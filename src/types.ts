@@ -224,7 +224,8 @@ export type Route =
   /** `shot` opens straight into that mode — a barcode is two taps, not three. */
   | { name: 'capture'; slot?: MealSlot; date?: string; shot?: 'plate' | 'label' | 'barcode' }
   | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites' }
-  | { name: 'ask' }
+  /** `question` is asked as soon as the screen opens: a tap on a suggested question is the question. */
+  | { name: 'ask'; question?: string }
   /** The dashboard, for whoever runs this Squish. Not a tab; reached from You. */
   | { name: 'admin' }
   | { name: 'review'; draft: Draft };

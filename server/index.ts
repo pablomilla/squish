@@ -17,7 +17,7 @@ import type { AnalysisResult, MealSlot } from '../src/types';
 import { demoEstimateFromPhoto, estimateFromText } from '../src/lib/estimate';
 import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
-import { chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
+import { MAX_TOOL_ROUNDS, chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
@@ -323,7 +323,7 @@ const KIND_WORDS: Record<Billable, string> = {
 const OUT_OF: Record<Plan, Record<Billable, string>> = {
   free: {
     photo: `That was your free taste of the AI. ${PLUS} has ${ALLOWANCE.plus.photo} analyses a month — and logging by hand, food search and your diary stay free.`,
-    chat: `The nutritionist is part of ${PLUS}.`,
+    chat: `That was your ${ALLOWANCE.free.chat} free questions for the nutritionist. ${PLUS} has ${ALLOWANCE.plus.chat} a month, and weekly meal plans.`,
     recipe: `Recipe imports are part of ${PLUS}.`,
   },
   plus: {
@@ -1847,7 +1847,49 @@ app.get('/api/barcode/:code', async (req, res) => {
  * Rate limited like the analysis endpoints, because a chat box is the easiest
  * thing in the app to leave running up a bill.
  */
-app.post('/api/chat', meter('chat'), async (req, res) => {
+/**
+ * A question counts once, however many times it looks in the diary.
+ *
+ * Each lookup is another round trip here — the browser runs the lookup and
+ * sends the result back for the next step — and every round used to be
+ * metered as a question. One question that checked three things spent four
+ * of the month's thirty, so "30 questions" was really about ten, and a free
+ * taste of three was one answer. Now only the round that starts with a typed
+ * question is counted; the lookup rounds that follow are billed to it.
+ *
+ * A lookup round is still refused to somebody with no allowance at all, or
+ * who is over it, so a hand-made tool result cannot be a way in for free.
+ */
+async function meterQuestion(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const messages = cleanMessages(req.body?.turns);
+  const rounds = messages ? toolRounds(messages) : 0;
+  if (rounds === 0) {
+    await meter('chat')(req, res, next);
+    return;
+  }
+  if (rounds > MAX_TOOL_ROUNDS + 1) {
+    res.status(400).json({ error: 'That is a lot of looking. Ask again from the start.' });
+    return;
+  }
+  if (!req.device) {
+    rateLimit(req, res, next);
+    return;
+  }
+  try {
+    const plan = await planFor(req.device);
+    const allowance = (await allowanceWithExtras(req.device, plan)).chat;
+    if (allowance === 0 || (await usedFor(req.device, 'chat', plan)) > allowance) {
+      res.status(402).json({ error: 'out_of_allowance', plan, kind: 'chat', used: 0, allowance, period: PERIOD[plan], needsAccount: false, resets: null, message: OUT_OF[plan].chat });
+      return;
+    }
+    billedTo(req.device.id, 'chat', next);
+  } catch (error) {
+    logFailure('metering', error);
+    rateLimit(req, res, next);
+  }
+}
+
+app.post('/api/chat', meterQuestion, async (req, res) => {
   const { turns, context, notes } = req.body ?? {};
 
   const messages = cleanMessages(turns);
@@ -1930,7 +1972,17 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
  */
 async function weekPlanCap(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    if (req.device && (await planFor(req.device)) === 'plus' && (await usedThisMonth(req.device, 'weekplan')) >= WEEKPLANS_PER_MONTH) {
+    // Plus only, even with free questions left: the free taste is three
+    // questions, and a week of meals is several questions' worth of AI.
+    const plan = req.device ? await planFor(req.device) : null;
+    if (plan === 'free') {
+      res.status(402).json({
+        error: 'out_of_allowance', plan, kind: 'weekplan', used: 0, allowance: 0, period: 'ever',
+        needsAccount: false, resets: null, message: `Weekly plans from the nutritionist are part of ${PLUS}.`,
+      });
+      return;
+    }
+    if (req.device && plan === 'plus' && (await usedThisMonth(req.device, 'weekplan')) >= WEEKPLANS_PER_MONTH) {
       res.status(429).json({
         error: 'rate_limited',
         message: `That is this month's ${WEEKPLANS_PER_MONTH} weekly plans. They come back on the 1st — planning meals yourself is unaffected.`,

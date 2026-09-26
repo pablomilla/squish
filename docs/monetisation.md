@@ -125,6 +125,25 @@ needing a deploy: `SQUISH_PLUS_WEEKPLANS` sets the monthly cap, and
 is $10 per million tokens against Opus 5's $25) without touching the rest.
 Check the logged costs after the first week and set them from those.
 
+### The nutritionist: 3 free questions, and a question counts once
+
+Plus is sold on the nutritionist, and nobody pays for something they have
+never tried. So a free account now gets **3 questions**, once, like the 5
+free analyses (`SQUISH_FREE_CHATS`; signed-out browsers are told an account
+unlocks them). Weekly plans stay Plus only.
+
+At a few cents a question, the taste costs about 10–15 cents per account that
+uses all of it — once, not monthly.
+
+Until 27 September 2026 every *lookup* the nutritionist made was metered as a
+question: it asks the app for a day or a meal, the app answers, and each of
+those round trips went through the meter. A question that checked three
+things spent four of the month's 30. Now only the round that starts with a
+typed question is counted; lookup rounds are billed to it but not counted
+again (and refused to anybody with no allowance, so a hand-made lookup is not
+a way in). The cost per month is unchanged for the same use — what changes
+is that "30 questions" now means thirty questions.
+
 ### Why the free AI is a taste, not an allowance
 
 Until 23 September 2026 the free plan had 10 AI analyses and 2 recipe imports

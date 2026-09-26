@@ -1,4 +1,5 @@
 import { Sheet } from '../ui';
+import AskLink from '../AskLink';
 import { scoreLabel } from '../../lib/nutrition';
 import { EARLY_KCAL, type DayExplained } from '../../lib/dayExplained';
 import ScoreReasons from '../ScoreReasons';
@@ -7,7 +8,19 @@ import ScoreReasons from '../ScoreReasons';
  * What the day score is, and what moved it today. Opened from the score on
  * the diary, so the number teaches something rather than only judging.
  */
-export default function DayScoreSheet({ open, onClose, explained }: { open: boolean; onClose: () => void; explained: DayExplained }) {
+export default function DayScoreSheet({
+  open,
+  onClose,
+  explained,
+  onAsk,
+  question,
+}: {
+  open: boolean;
+  onClose: () => void;
+  explained: DayExplained;
+  onAsk?: (question: string) => void;
+  question?: string;
+}) {
   const { score, early, reasons, tip, calories } = explained;
   const { label, tone } = scoreLabel(score);
 
@@ -34,6 +47,8 @@ export default function DayScoreSheet({ open, onClose, explained }: { open: bool
         )}
 
         {tip && <p className="small day-tip">💡 {tip}</p>}
+
+        {onAsk && question && <AskLink question={question} onAsk={onAsk} />}
 
         <details className="day-how">
           <summary className="small">How it works</summary>

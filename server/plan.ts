@@ -69,7 +69,10 @@ const count = (name: string, fallback: number): number => {
 export const ALLOWANCE: Record<Plan, Record<Billable, number>> = {
   free: {
     photo: count('SQUISH_FREE_TASTE', 5),
-    chat: count('SQUISH_FREE_CHATS', 0),
+    // A taste of the nutritionist, like the taste of photo analysis: three
+    // questions with a free account, once. It is the thing people upgrade
+    // for, and nobody upgrades for something they have never tried.
+    chat: count('SQUISH_FREE_CHATS', 3),
     recipe: count('SQUISH_FREE_RECIPES', 0),
   },
   plus: {

@@ -8,16 +8,13 @@ import { askNutritionist, isPaywalled, SquishApiError, type ChatMessage } from '
 import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
 import { contextFor } from '../lib/nutritionist-session';
 import { isoDate } from '../lib/date';
-import { PLUS, planNow, watchStanding, type Standing } from '../lib/plan';
+import { PLUS } from '../lib/plan';
 import { showPaywall } from '../lib/paywall';
+import { suggestedQuestions } from '../lib/askSuggestions';
+import { useNutritionistAccess } from '../components/useSubscribed';
+import NutritionistPitch from '../components/NutritionistPitch';
+import WeekPlanSheet from '../components/WeekPlanSheet';
 import './ask.css';
-
-const OPENERS = [
-  'What am I short of?',
-  'How were my weekends?',
-  'When did I last eat fish?',
-  'Is my protein getting better?',
-];
 
 /**
  * A stand-in for what the server would have said, so the explainer can open
@@ -48,7 +45,7 @@ interface Bubble {
  * survive is the handful of notes it writes about you, which are listed on
  * the You screen and can be deleted one by one.
  */
-export default function Ask({ onClose }: { onClose: () => void }) {
+export default function Ask({ onClose, question }: { onClose: () => void; question?: string }) {
   const toast = useToast();
   const { profile, targets, meals, nutritionistNotes } = useSquish();
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
@@ -58,14 +55,22 @@ export default function Ask({ onClose }: { onClose: () => void }) {
   const [lookups, setLookups] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
 
-  // Locked only where the server says this person has no questions at all.
-  // Somebody who has used up an allowance they do have gets the composer and
+  // Locked where there is nothing to ask with: signed out, or a free taste
+  // used up. Somebody on Plus who has used the month gets the composer and
   // the real refusal, which says when it comes back.
-  const [standing, setStanding] = useState<Standing>(planNow);
-  useEffect(() => watchStanding(setStanding), []);
-  const locked = standing.known && !standing.off && standing.allowance.chat === 0;
+  const access = useNutritionistAccess();
+  const locked = access.locked;
+  const [weekPlanning, setWeekPlanning] = useState(false);
 
   const today = isoDate();
+  const openers = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 4), [meals, targets, today]);
+  const unlock = () =>
+    showPaywall({
+      ...WALL,
+      allowance: access.standing.allowance.chat,
+      needsAccount: access.needsAccount,
+      taste: access.needsAccount ? 3 : undefined,
+    });
 
   // The outline it gets for free, so an easy question needs no lookup at all.
   // Built where the loop is, not here, so an eval sees the same summary.
@@ -140,12 +145,25 @@ export default function Ask({ onClose }: { onClose: () => void }) {
     }
   };
 
+  // A question tapped elsewhere — on Home, in the diary — is asked on arrival.
+  const askedOnArrival = useRef(false);
+  useEffect(() => {
+    if (!question || locked || askedOnArrival.current) return;
+    askedOnArrival.current = true;
+    void ask(question);
+    // Once, on arrival: `ask` is re-made every render and must not re-run this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [question, locked]);
+
   return (
     <div className="screen ask">
+      <WeekPlanSheet open={weekPlanning} onClose={() => setWeekPlanning(false)} />
       <header className="screen-head">
         <div>
-          <h1>Squish Nutritionist</h1>
-          <p>Reads your diary before it answers</p>
+          <h1>Your nutritionist</h1>
+          <p>
+            Reads your diary before it answers{access.label ? ` · ${access.label}` : ''}
+          </p>
         </div>
         <button type="button" className="btn btn--sm btn--ghost" onClick={onClose} aria-label="Close">
           <CloseIcon size={18} />
@@ -160,14 +178,20 @@ export default function Ask({ onClose }: { onClose: () => void }) {
       */}
       {locked && (
         <div className="ask-locked">
-          <Squish mood="calm" size={88} />
-          <h2>The nutritionist is part of {PLUS}</h2>
+          <Squish mood="thinking" size={88} />
+          {question ? (
+            <h2>“{question}” — I can answer that from your diary.</h2>
+          ) : (
+            <h2>{access.needsAccount ? 'Ask me three questions, free' : 'Your own nutritionist'}</h2>
+          )}
           <p className="small muted">
-            It reads your own diary before it answers — every day, every meal, every vitamin Squish tracks — and that
-            is the part of the app with a real bill behind it.
+            {access.needsAccount
+              ? 'Make a free account and your first three questions are on us.'
+              : `You have used your free questions. With ${PLUS} it is 30 a month, and a meal plan for your week.`}
           </p>
-          <button type="button" className="btn" onClick={() => showPaywall(WALL)}>
-            What comes with {PLUS}?
+          <NutritionistPitch />
+          <button type="button" className="btn btn--block" onClick={unlock}>
+            {access.needsAccount ? 'Try it free' : `See ${PLUS}`}
           </button>
           <p className="tiny muted">Your diary, charts, streaks and food search do not need it.</p>
         </div>
@@ -182,12 +206,15 @@ export default function Ask({ onClose }: { onClose: () => void }) {
               Squish tracks — but I am an app, so for anything medical see a GP or a dietitian.
             </p>
             <div className="ask-openers">
-              {OPENERS.map((opener) => (
+              {openers.map((opener) => (
                 <button key={opener} type="button" className="chip" onClick={() => void ask(opener)}>
                   {opener}
                 </button>
               ))}
             </div>
+            <button type="button" className="btn btn--soft btn--block ask-week" onClick={() => setWeekPlanning(true)}>
+              <SparkIcon size={16} /> Plan my week{access.standing.plan === 'plus' || access.standing.off ? '' : ` · ${PLUS}`}
+            </button>
             {nutritionistNotes.length > 0 && (
               <div className="ask-memory">
                 <h2>What I remember about you</h2>
