@@ -85,6 +85,12 @@ start-up.
   with it.
 - A page with strings still untranslated shows them in English and sets the
   language translating in the background, like the app.
+- Prices are placeholders in the pages (`{monthly}`, `{yearly}`, `{free}`),
+  filled in after translating with the country's price from
+  `src/lib/region.ts` — the same one the paywall shows — in its currency,
+  written the page's language's way. The country is the one the browser's
+  languages name (`en-AU`), else one picked under the plans (`?country=AU`),
+  else Britain.
 - The screenshots are pictures of the English app.
 
 ## What it costs
@@ -112,4 +118,3 @@ allowance.
 - Native-speaker review. Claude's translations are good but not checked by a
   person; the ones that matter most (onboarding, the paywall) are worth a look
   by someone fluent in each launch language.
-- The website's prices are in pounds whatever the country.

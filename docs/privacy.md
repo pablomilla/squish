@@ -119,7 +119,11 @@ app.squish.online.
 
 It shows itself in the language your browser asks for first, or the one you
 pick at the bottom of the page, which becomes part of the address
-(squish.online/es/). Nothing remembers the choice but the address itself.
+(squish.online/es/). Prices are shown in the currency of the country your
+browser's language names (English as spoken in Australia, say), or the one
+you pick under the prices — not from where you actually are, which the
+website never looks up. Nothing remembers either choice but the address
+itself.
 This policy is translated too, for reading; if a translation and the English
 ever differ, the English is what counts.
 

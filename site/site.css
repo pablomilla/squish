@@ -211,6 +211,11 @@ p { margin: 0 0 14px; }
 .plan ul { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; }
 .plan li { display: flex; gap: 10px; align-items: baseline; font-size: 17px; }
 .plan li::before { content: '✓'; color: var(--good); font-weight: 700; }
+.countries { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 22px; font-size: 15px; color: var(--ink-2); }
+.countries p { margin: 0; }
+.countries nav { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.countries a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+.countries a[aria-current] { color: var(--ink); font-weight: 600; }
 .plan .soon { margin-top: 18px; font-size: 15px; color: var(--ink-3); }
 .plan-badge { position: absolute; top: -13px; inset-inline-end: 22px; background: var(--brand); color: #fff; font-size: 14px; font-weight: 600; border-radius: 999px; padding: 3px 12px; }
 @media (max-width: 760px) { .plans { grid-template-columns: 1fr; } }

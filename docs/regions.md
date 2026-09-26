@@ -95,5 +95,5 @@ its AI, and restarts Squish in it.
 - A meal planned from a photo or description (rather than a weekly plan) in
   another language has no aisle, so it lands under "Other" on the list.
 - Barcode lookups return Open Food Facts' own product names.
-- Emails are British.
-- Store prices are set here, not read from the stores.
+- Store prices are set here, not read from the stores. The website shows the
+  same ones, in the visitor's currency (see docs/translation.md).

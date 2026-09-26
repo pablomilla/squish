@@ -35,7 +35,8 @@ const KEEP = new Set(['Squish', 'Plus', 'Squish Plus']);
 
 const TOKEN = /<!--[\s\S]*?-->|<![^>]*>|<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>|<\/?[a-zA-Z][^>]*>|[^<]+|</g;
 
-const hasLetters = (text: string): boolean => /\p{L}/u.test(text);
+/** Whether there are words to translate: letters outside any {placeholder}. */
+const hasLetters = (text: string): boolean => /\p{L}/u.test(text.replace(/\{\w+\}/g, ''));
 
 interface Tag {
   name: string;

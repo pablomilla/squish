@@ -97,8 +97,13 @@ export async function readerOf(accountId: string, fallback: Partial<Reader> = {}
  * weights the browser gave: "pt-BR,pt;q=0.9,en;q=0.8" is Portuguese.
  */
 export function acceptLanguage(header: string | undefined): Language {
-  if (!header) return 'en';
-  const tags = header
+  return detectLanguage(acceptedTags(header));
+}
+
+/** An Accept-Language header's tags, most wanted first. */
+export function acceptedTags(header: string | undefined): string[] {
+  if (!header) return [];
+  return header
     .split(',')
     .map((part, i) => {
       const [tag, ...params] = part.trim().split(';');
@@ -108,5 +113,4 @@ export function acceptLanguage(header: string | undefined): Language {
     .filter((t) => t.tag && t.tag !== '*' && t.q > 0)
     .sort((a, b) => b.q - a.q || a.i - b.i)
     .map((t) => t.tag);
-  return detectLanguage(tags);
 }

@@ -276,3 +276,37 @@ test('an account keeps the language, country and time zone its app last said', a
     await query('delete from accounts where id = $1', [id]);
   }
 });
+
+/* ---------------- prices where they live ---------------- */
+
+test('the plans show the price in the currency of the country the browser names', async () => {
+  const american = await fetch(`${base}/`, { headers: { 'Accept-Language': 'en-US,en;q=0.9' } });
+  assert.match(american.headers.get('vary') ?? '', /Accept-Language/);
+  const html = await american.text();
+  assert.match(html, /<p class="price">\$0<\/p>/);
+  assert.match(html, /<p class="price">\$7\.99 <small>a month, or \$59\.99 a year<\/small><\/p>/);
+  assert.match(html, /<a href="\?country=US#plans" aria-current="true">/);
+  assert.doesNotMatch(html, /\{monthly\}|\{yearly\}|\{free\}|<!--countries-->/);
+
+  const british = await (await fetch(`${base}/`)).text();
+  assert.match(british, /£6\.99 <small>a month, or £49\.99 a year/, 'Britain where the browser names nowhere');
+});
+
+test('a country picked under the plans wins over the browser, in any language', async () => {
+  const irish = await (await fetch(`${base}/support?country=ie`, { headers: { 'Accept-Language': 'en-US' } })).text();
+  assert.match(irish, /Plus is €7\.99 a month or €57\.99 a year/);
+
+  const korean = await (await fetch(`${base}/ko/?country=AU`)).text();
+  assert.match(korean, /KO:A\$11\.99 <small>a month, or A\$84\.99 a year<\/small>|KO:AU\$11\.99 <small>a month, or AU\$84\.99 a year<\/small>/);
+  assert.match(korean, /<span aria-hidden="true">🇳🇿<\/span> /, 'every other country is a tap away');
+
+  const unknown = await (await fetch(`${base}/?country=FR`, { headers: { 'Accept-Language': 'en-CA' } })).text();
+  assert.match(unknown, /<p class="price">\$9\.99 /, 'a country Squish does not sell in is ignored');
+});
+
+test('the price sentences reach the translator with their placeholders, not a currency', () => {
+  const site = wanted().filter((e) => e.where.some((w) => w.startsWith('site/')));
+  assert.ok(site.some((e) => e.text === '{monthly} <small>a month, or {yearly} a year</small>'));
+  assert.ok(!site.some((e) => e.text === '{free}'), 'a bare placeholder is nothing to translate');
+  assert.ok(!site.some((e) => /£/.test(e.text ?? '')), 'no pounds left in the pages');
+});

@@ -153,7 +153,7 @@
         <div class="plans">
           <article class="plan">
             <h3>Free</h3>
-            <p class="price">£0</p>
+            <p class="price">{free}</p>
             <p class="muted small">No card, no trial, no catch.</p>
             <ul>
               <li>Food search, barcodes and logging by hand</li>
@@ -166,7 +166,7 @@
           <article class="plan plan--plus">
             <span class="plan-badge">Plus</span>
             <h3>Squish Plus</h3>
-            <p class="price">£6.99 <small>a month, or £49.99 a year</small></p>
+            <p class="price">{monthly} <small>a month, or {yearly} a year</small></p>
             <p class="muted small">Everything in Free, and:</p>
             <ul>
               <li>60 AI meal analyses a month — snap it, say it or type it</li>
@@ -177,6 +177,11 @@
             </ul>
             <p class="soon">Plus goes on sale with the iPhone and Android apps.</p>
           </article>
+        </div>
+        <!-- Prices are filled in for the visitor's country; these links show another's. -->
+        <div class="countries">
+          <p>Prices where you live:</p>
+          <nav aria-label="Countries"><!--countries--></nav>
         </div>
       </div>
     </section>
