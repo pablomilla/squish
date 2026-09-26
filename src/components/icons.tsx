@@ -211,3 +211,10 @@ export const CalendarIcon = ({ size = 20, className }: IconProps) => (
     <path d="M3.5 10h17M8 3v4M16 3v4" />
   </svg>
 );
+
+export const BasketIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3.5 9.5h17l-1.6 9.1a1.5 1.5 0 0 1-1.5 1.2H6.6a1.5 1.5 0 0 1-1.5-1.2z" />
+    <path d="m8 9.5 3-5.5M16 9.5l-3-5.5M9.5 13.5v3M14.5 13.5v3" />
+  </svg>
+);

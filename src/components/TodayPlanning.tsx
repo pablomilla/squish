@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Route } from '../types';
 import { useSquish } from '../store/useSquish';
 import { isoDate, slotForNow } from '../lib/date';
 import { asAnalysis, ideasFor, plansOn, remainingToday } from '../lib/planner';
 import PlanCard from './PlanCard';
+import ShoppingSheet from './ShoppingSheet';
+import { BasketIcon } from './icons';
 import './plan-card.css';
 
 /** After this hour the day is for winding down, not for being handed dinner ideas. */
@@ -23,6 +25,7 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
   const favourites = useSquish((s) => s.favourites);
   const targets = useSquish((s) => s.targets);
   const today = isoDate();
+  const [shopping, setShopping] = useState(false);
 
   const planned = useMemo(() => plansOn(plans, today), [plans, today]);
   const ateToday = meals.some((m) => m.date === today);
@@ -34,10 +37,14 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
 
   return (
     <>
+      <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
       {planned.length > 0 && (
         <section className="card home-planned">
           <div className="card-title">
             <h3>Planned for today</h3>
+            <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
+              <BasketIcon size={15} /> Shopping list
+            </button>
           </div>
           <div className="stack">
             {planned.map((plan) => (

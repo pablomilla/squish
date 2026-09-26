@@ -17,6 +17,7 @@ import type { Outfit } from '../lib/outfit';
 import type { ShareDecor } from '../lib/shareDecor';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow, type PartOfDay } from '../lib/date';
+import type { Extra } from '../lib/shopping';
 
 /**
  * Squish is for adults. It sets calorie targets and gives diet feedback, and
@@ -59,6 +60,8 @@ interface SquishState {
    * A plan becomes a meal only when somebody says they ate it.
    */
   plans: MealEntry[];
+  /** What is ticked off the shopping list, and anything added to it by hand. The list itself is made from `plans`. */
+  shopping: { ticked: string[]; extras: Extra[] };
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
   /** "The protein of 3 eggs" on meals and the day. On unless turned off in You → Appearance. */
@@ -120,6 +123,11 @@ interface SquishState {
   removePlan: (id: string) => void;
   /** Log a plan as eaten: today at the time now, or on its own day if that has passed. */
   eatPlan: (id: string) => MealEntry | undefined;
+  toggleShoppingTick: (key: string) => void;
+  addShoppingExtra: (name: string) => void;
+  removeShoppingExtra: (id: string) => void;
+  /** Done shopping: forget the ticks, and the hand-added things that were ticked. */
+  clearShoppingTicked: () => void;
 
   day: (date: string) => DayLog;
   setWater: (date: string, glasses: number) => void;
@@ -271,6 +279,7 @@ export const useSquish = create<SquishState>()(
       days: {},
       favourites: [],
       plans: [],
+      shopping: { ticked: [], extras: [] },
       unlocked: {},
       theme: 'system',
       comparisons: true,
@@ -338,6 +347,28 @@ export const useSquish = create<SquishState>()(
       },
 
       removePlan: (id) => set({ plans: get().plans.filter((p) => p.id !== id) }),
+
+      toggleShoppingTick: (key) => {
+        const { ticked, extras } = get().shopping;
+        set({ shopping: { extras, ticked: ticked.includes(key) ? ticked.filter((k) => k !== key) : [...ticked, key] } });
+      },
+
+      addShoppingExtra: (name) => {
+        const tidy = name.trim().slice(0, 60);
+        if (!tidy) return;
+        const { ticked, extras } = get().shopping;
+        set({ shopping: { ticked, extras: [...extras, { id: uid(), name: tidy }] } });
+      },
+
+      removeShoppingExtra: (id) => {
+        const { ticked, extras } = get().shopping;
+        set({ shopping: { ticked: ticked.filter((k) => k !== `extra:${id}`), extras: extras.filter((e) => e.id !== id) } });
+      },
+
+      clearShoppingTicked: () => {
+        const { ticked, extras } = get().shopping;
+        set({ shopping: { ticked: [], extras: extras.filter((e) => !ticked.includes(`extra:${e.id}`)) } });
+      },
 
       eatPlan: (id) => {
         const plan = get().plans.find((p) => p.id === id);
@@ -426,6 +457,7 @@ export const useSquish = create<SquishState>()(
           days: {},
           favourites: [],
           plans: [],
+          shopping: { ticked: [], extras: [] },
           unlocked: {},
           lastCoachNote: null,
           photoAnalyses: 0,

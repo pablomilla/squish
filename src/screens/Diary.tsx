@@ -5,7 +5,7 @@ import MealCard from '../components/MealCard';
 import Squish from '../components/Squish';
 import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, Stepper, useToast } from '../components/ui';
-import { CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, TrashIcon } from '../components/icons';
+import { BasketIcon, CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, TrashIcon } from '../components/icons';
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
 import DayScoreSheet from '../components/diary/DayScoreSheet';
@@ -15,6 +15,7 @@ import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
 import { PLAN_DAYS_AHEAD, planDays, plansOn } from '../lib/planner';
 import PlanCard from '../components/PlanCard';
+import ShoppingSheet from '../components/ShoppingSheet';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
 import { GLASS_ML, dayVerdict } from '../lib/nutrition';
@@ -36,6 +37,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   const [selected, setSelected] = useState<MealEntry | null>(null);
   const [picking, setPicking] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [shopping, setShopping] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
 
   // The strip runs oldest → newest, so bring the chosen day into view.
@@ -71,12 +73,16 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <button type="button" className="icon-btn" onClick={() => setSearching(true)} aria-label="Search your meals">
             <SearchIcon size={18} />
           </button>
+          <button type="button" className="icon-btn" onClick={() => setShopping(true)} aria-label="Shopping list">
+            <BasketIcon size={18} />
+          </button>
           <button type="button" className="btn btn--sm" onClick={() => go(ahead ? { name: 'add', date, tab: 'search' } : { name: 'capture', date })}>
             <PlusIcon size={16} /> {ahead ? 'Plan' : 'Log'}
           </button>
         </div>
       </header>
 
+      <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
       <CalendarSheet key={`${date}-${picking}`} open={picking} date={date} onClose={() => setPicking(false)} onPick={setDate} />
       <SearchSheet
         open={searching}
@@ -119,6 +125,11 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
               {dayPlans.length} planned · about {Math.round(dayPlans.reduce((sum, p) => sum + p.nutrients.calories, 0)).toLocaleString('en-GB')} kcal
               of your {targets.calories.toLocaleString('en-GB')}
             </p>
+          )}
+          {dayPlans.length > 0 && (
+            <button type="button" className="btn--quiet small row diary-shop-link" onClick={() => setShopping(true)}>
+              <BasketIcon size={15} /> Shopping list
+            </button>
           )}
         </section>
       ) : (
