@@ -12,8 +12,9 @@ import type { MealEntry, Targets } from '../types';
 import { addDays, lastDays } from './date';
 import { EMPTY, addNutrients } from './nutrition';
 import { formatEnergy, localWords } from './region';
+import { t } from './i18n';
 
-const FALLBACKS = ['What am I short of?', 'Is my protein getting better?', 'When did I last eat fish?', 'What’s a good high-protein breakfast?'];
+const FALLBACKS = () => [t('What am I short of?'), t('Is my protein getting better?'), t('When did I last eat fish?'), t('What’s a good high-protein breakfast?')];
 
 export function suggestedQuestions(meals: MealEntry[], targets: Targets, today: string, hour: number, count = 3): string[] {
   const out: string[] = [];
@@ -27,20 +28,20 @@ export function suggestedQuestions(meals: MealEntry[], targets: Targets, today: 
   const kcalLeft = Math.round(targets.calories - eaten.calories);
 
   // Today first: it is what they are thinking about.
-  if (hour >= 16 && hour < 21 && kcalLeft >= 300) add(`What should I have for dinner with ${formatEnergy(kcalLeft)} left?`);
-  if (todays.length && hour >= 12 && proteinGap >= 25) add(`How can I get ${proteinGap} g more protein today?`);
+  if (hour >= 16 && hour < 21 && kcalLeft >= 300) add(t('What should I have for dinner with {energy} left?', { energy: formatEnergy(kcalLeft) }));
+  if (todays.length && hour >= 12 && proteinGap >= 25) add(t('How can I get {grams} g more protein today?', { grams: proteinGap }));
   const latest = todays.at(-1);
-  if (latest && latest.title.trim().length <= 40) add(`Was my ${latest.title.trim().toLowerCase()} a good choice?`);
+  if (latest && latest.title.trim().length <= 40) add(t('Was my {meal} a good choice?', { meal: latest.title.trim().toLocaleLowerCase() }));
 
   // Then the week.
   const week = lastDays(7, addDays(today, -1));
   const logged = week.filter((d) => meals.some((m) => m.date === d));
   if (logged.length >= 3) {
-    add('How was my week?');
+    add(t('How was my week?'));
     const fibre = meals.filter((m) => logged.includes(m.date)).reduce((sum, m) => sum + m.nutrients.fibre, 0) / logged.length;
-    if (fibre < targets.fibre * 0.7) add(localWords('How can I eat more fibre?'));
+    if (fibre < targets.fibre * 0.7) add(localWords(t('How can I eat more fibre?')));
   }
 
-  for (const q of FALLBACKS) add(q);
+  for (const q of FALLBACKS()) add(q);
   return out.slice(0, count);
 }

@@ -19,9 +19,10 @@
 import type { AnalysisResult, FoodItem, MealEntry, MealSlot, Nutrients, Targets } from '../types';
 import { addDays } from './date';
 import { EMPTY, addNutrients, qualityScore, ultraProcessedShare } from './nutrition';
+import { msg, t } from './i18n';
 
 /** The note on a plan the nutritionist made, which is how its meal plan finds them again. */
-export const NUTRITIONIST_PLAN_NOTE = 'Planned by the nutritionist';
+export const NUTRITIONIST_PLAN_NOTE = msg('Planned by the nutritionist');
 
 /** How far ahead the diary lets somebody plan. A week is as far as most people plan food. */
 export const PLAN_DAYS_AHEAD = 7;
@@ -114,7 +115,7 @@ export function ideasFor(
     .map(({ idea, times }) => {
       const proteinFit = left.protein > 0 ? Math.min(1, idea.nutrients.protein / left.protein) : 0;
       const rank = proteinFit * 2 + idea.score / 100 + Math.min(times, 5) * 0.1;
-      const why = left.protein >= 15 && proteinFit >= 0.4 ? 'good for protein' : times >= 3 ? 'a regular' : 'fits your day';
+      const why = left.protein >= 15 && proteinFit >= 0.4 ? t('good for protein') : times >= 3 ? t('a regular') : t('fits your day');
       return { idea: { ...idea, why }, rank };
     })
     .sort((a, b) => b.rank - a.rank || a.idea.title.localeCompare(b.idea.title));

@@ -21,6 +21,7 @@ import SquadSync from './components/squad/SquadSync';
 import AchievementSync from './components/AchievementSync';
 import { onPaywall } from './lib/paywall';
 import { askForAccount, resetTokenInUrl } from './lib/account';
+import { t } from './lib/i18n';
 
 /*
  * Home and the waking screen arrive with the app, because they are the first
@@ -41,10 +42,10 @@ const ResetPassword = lazyScreen(() => import('./screens/ResetPassword'));
 const Partners = lazyScreen(() => import('./screens/Partners'));
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
-  { name: 'home', label: 'Home', Icon: HomeIcon },
-  { name: 'meals', label: 'Diary', Icon: DiaryIcon },
-  { name: 'insights', label: 'Insights', Icon: InsightsIcon },
-  { name: 'you', label: 'You', Icon: YouIcon },
+  { name: 'home', label: t('Home'), Icon: HomeIcon },
+  { name: 'meals', label: t('Diary'), Icon: DiaryIcon },
+  { name: 'insights', label: t('Insights'), Icon: InsightsIcon },
+  { name: 'you', label: t('You'), Icon: YouIcon },
 ];
 
 /**
@@ -97,11 +98,11 @@ function Shell() {
     void arriveFromOldAddress(apiUrl).then(async (result) => {
       if (result === 'none') return;
       if (result === 'kept') {
-        toast('This browser already has a diary here, so the one from the old address was left where it was.', '📦');
+        toast(t('This browser already has a diary here, so the one from the old address was left where it was.'), '📦');
         return;
       }
       if (result === 'expired') {
-        toast('That link has been used or is too old. Go back to squish.online and press the button again.', '⏳');
+        toast(t('That link has been used or is too old. Go back to squish.online and press the button again.'), '⏳');
         return;
       }
       await refreshPlan();
@@ -109,7 +110,7 @@ function Shell() {
       const profile = (found?.state as { profile?: { onboarded?: boolean; name?: string } } | null)?.profile;
       if (found && profile?.onboarded) {
         adoptBackup(found);
-        toast(`Welcome back${profile.name ? `, ${profile.name}` : ''}. Your diary moved with you.`, '🫧');
+        toast(profile.name ? t('Welcome back, {name}. Your diary moved with you.', { name: profile.name }) : t('Welcome back. Your diary moved with you.'), '🫧');
       }
     });
   }, [awake, toast]);
@@ -257,14 +258,14 @@ function Shell() {
       <AchievementSync />
 
       {isTab && (
-        <nav className="tabbar" aria-label="Main">
+        <nav className="tabbar" aria-label={t('Main')}>
           {TABS.slice(0, 2).map(({ name, label, Icon }) => (
             <button key={name} type="button" aria-current={route.name === name ? 'page' : undefined} onClick={() => go({ name } as Route)}>
               <Icon />
               {label}
             </button>
           ))}
-          <button type="button" className="tab-fab" onClick={() => setAdding(true)} aria-label="Add food">
+          <button type="button" className="tab-fab" onClick={() => setAdding(true)} aria-label={t('Add food')}>
             <PlusIcon size={28} />
           </button>
           {TABS.slice(2).map(({ name, label, Icon }) => (

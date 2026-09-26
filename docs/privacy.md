@@ -162,6 +162,9 @@ kcal or kJ, and the language you chose for the AI, so the answer uses your
 words and units. That is a setting, not a
 location: Squish never asks your phone where it is.
 
+Separately, the app's own wording (buttons, headings, help text) is translated
+by Claude once for everybody; nothing about you goes with that.
+
 Anthropic process it to produce the answer and return it. Their handling is
 governed by their own terms and privacy policy, at
 [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy).

@@ -9,6 +9,7 @@
  */
 import type { DaySeriesPoint } from './selectors';
 import { addDays, parseISO, weekdayLetter } from './date';
+import { t, uiLocale } from './i18n';
 
 export type Range = '7' | '30' | 'all';
 export type Grain = 'day' | 'week' | 'month';
@@ -24,10 +25,10 @@ export interface BarPoint extends DaySeriesPoint {
 const WEEKS_UP_TO_DAYS = 26 * 7;
 
 /** "21 Sep", the British way round, whatever language the browser is set to. */
-const shortDate = (iso: string) => parseISO(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-const monthShort = (iso: string) => parseISO(iso).toLocaleDateString('en-GB', { month: 'short' });
-const monthLong = (iso: string) => parseISO(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-const dayLong = (iso: string) => parseISO(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const shortDate = (iso: string) => parseISO(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
+const monthShort = (iso: string) => parseISO(iso).toLocaleDateString(uiLocale(), { month: 'short' });
+const monthLong = (iso: string) => parseISO(iso).toLocaleDateString(uiLocale(), { month: 'long', year: 'numeric' });
+const dayLong = (iso: string) => parseISO(iso).toLocaleDateString(uiLocale(), { weekday: 'short', day: 'numeric', month: 'short' });
 
 /** The Monday a date's week starts on. */
 function mondayOf(iso: string): string {
@@ -88,7 +89,7 @@ export function progressBars(points: DaySeriesPoint[], range: Range): { grain: G
       bars: weeks.map(([monday, days], i) => ({
         ...average(monday, days),
         label: everyNth(i, weeks.length, step) ? shortDate(monday) : '',
-        title: `Week of ${shortDate(monday)}`,
+        title: t('Week of {date}', { date: shortDate(monday) }),
       })),
     };
   }

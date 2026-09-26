@@ -13,6 +13,7 @@ import { slotForNow } from '../lib/date';
 import './addfood.css';
 import { describePortion } from '../lib/units';
 import { currentEnergyUnit, energyValue, formatEnergy, toKcal } from '../lib/region';
+import { plural, t } from '../lib/i18n';
 
 type Tab = 'search' | 'describe' | 'recipe' | 'favourites';
 
@@ -26,10 +27,10 @@ type Tab = 'search' | 'describe' | 'recipe' | 'favourites';
  * as what they actually are — a way to change your mind, not a decision.
  */
 const TITLES: Record<Tab, string> = {
-  search: 'Search foods',
-  describe: 'Describe a meal',
-  recipe: 'Import a recipe',
-  favourites: 'Saved meals',
+  search: t('Search foods'),
+  describe: t('Describe a meal'),
+  recipe: t('Import a recipe'),
+  favourites: t('Saved meals'),
 };
 
 interface Props {
@@ -41,9 +42,9 @@ interface Props {
 }
 
 const EXAMPLES = [
-  'two scrambled eggs on wholemeal toast with avocado',
-  'chicken burrito and a diet cola',
-  'porridge with blueberries and a spoon of peanut butter',
+  t('two scrambled eggs on wholemeal toast with avocado'),
+  t('chicken burrito and a diet cola'),
+  t('porridge with blueberries and a spoon of peanut butter'),
 ];
 
 export default function AddFood({ slot, date, initialTab = 'search', onCancel, onReady }: Props) {
@@ -68,14 +69,14 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
 
   const add = (item: FoodItem) => {
     setBasket((list) => [...list, item]);
-    toast(`${item.name} added`, '➕');
+    toast(t('{food} added', { food: item.name }), '➕');
   };
 
   const reviewBasket = () => {
     if (!basket.length) return;
     onReady(
       {
-        title: basket.length === 1 ? basket[0].name : `${basket[0].name} +${basket.length - 1}`,
+        title: basket.length === 1 ? basket[0].name : t('{first} +{count} more', { first: basket[0].name, count: basket.length - 1 }),
         items: basket,
         nutrients: totals,
         score: qualityScore(totals, ultraProcessedShare(basket)),
@@ -97,7 +98,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
       setHelpings(1);
       useSquish.getState().unlock('first-recipe');
     } catch (error) {
-      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'That recipe could not be read.', '📖');
+      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : t('That recipe could not be read.'), '📖');
     } finally {
       setBusy(false);
     }
@@ -132,21 +133,21 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
   const describe = async () => {
     const text = description.trim();
     if (text.length < 3) {
-      toast('Tell me a little more about it.', '✍️');
+      toast(t('Tell me a little more about it.'), '✍️');
       return;
     }
     setBusy(true);
     try {
       const analysis = await analyseText(text, mealSlot);
       if (!analysis.items.length) {
-        toast('I could not place that one — try the search tab.', '😅');
+        toast(t('I could not place that one — try the search tab.'), '😅');
         setBusy(false);
         return;
       }
       if (dictated) useSquish.getState().unlock('first-voice');
       onReady(analysis, { slot: analysis.slot ?? mealSlot, date });
     } catch (error) {
-      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'That did not work — give it another go.', '😕');
+      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : t('That did not work — give it another go.'), '😕');
       setBusy(false);
     }
   };
@@ -155,8 +156,8 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
     return (
       <div className="screen addfood-busy">
         <Squish mood="thinking" size={150} />
-        <h2>Working out the numbers…</h2>
-        <p className="muted small center">Breaking your description into foods and portions.</p>
+        <h2>{t('Working out the numbers…')}</h2>
+        <p className="muted small center">{t('Breaking your description into foods and portions.')}</p>
       </div>
     );
   }
@@ -164,7 +165,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
   return (
     <div className="screen addfood">
       <header className="row-between">
-        <button type="button" className="btn--quiet" onClick={onCancel} aria-label="Close">
+        <button type="button" className="btn--quiet" onClick={onCancel} aria-label={t('Close')}>
           <CloseIcon />
         </button>
         <h2>{TITLES[tab]}</h2>
@@ -172,14 +173,14 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
       </header>
 
       <Segmented<Tab>
-        label="How would you like to add it?"
+        label={t('How would you like to add it?')}
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'search', label: 'Search' },
-          { value: 'describe', label: 'Describe' },
-          { value: 'recipe', label: 'Recipe' },
-          { value: 'favourites', label: 'Saved' },
+          { value: 'search', label: t('Search') },
+          { value: 'describe', label: t('Describe') },
+          { value: 'recipe', label: t('Recipe') },
+          { value: 'favourites', label: t('Saved') },
         ]}
       />
 
@@ -191,9 +192,9 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
               className="input"
               value={query}
               autoFocus
-              placeholder="Search foods — rice, salmon, latte…"
+              placeholder={t('Search foods — rice, salmon, latte…')}
               onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search foods"
+              aria-label={t('Search foods')}
             />
           </div>
 
@@ -213,19 +214,19 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
             ))}
             {results.length === 0 && (
               <div className="empty">
-                <p>No match for "{query}".</p>
+                <p>{t('No match for “{query}”.', { query })}</p>
                 <button type="button" className="btn btn--soft btn--sm" style={{ marginTop: 10 }} onClick={() => { setDescription(query); setTab('describe'); }}>
-                  Let Squish work it out instead
+                  {t('Let Squish work it out instead')}
                 </button>
               </div>
             )}
           </div>
 
           <div className="card quick-add">
-            <h3>Quick add</h3>
-            <p className="tiny muted">Know the numbers already? Pop them straight in.</p>
+            <h3>{t('Quick add')}</h3>
+            <p className="tiny muted">{t('Know the numbers already? Pop them straight in.')}</p>
             <div className="row-between" style={{ marginTop: 10 }}>
-              <span className="small">{currentEnergyUnit() === 'kJ' ? 'Energy' : 'Calories'}</span>
+              <span className="small">{currentEnergyUnit() === 'kJ' ? t('Energy') : t('Calories')}</span>
               {currentEnergyUnit() === 'kJ' ? (
                 <Stepper value={energyValue(quickKcal)} step={200} min={0} max={12600} onChange={(kj) => setQuickKcal(toKcal(kj))} suffix="kJ" />
               ) : (
@@ -233,7 +234,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
               )}
             </div>
             <div className="row-between" style={{ marginTop: 8 }}>
-              <span className="small">Protein</span>
+              <span className="small">{t('Protein')}</span>
               <Stepper value={quickProtein} step={5} min={0} max={200} onChange={setQuickProtein} suffix="g" />
             </div>
             <button
@@ -243,9 +244,9 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
               onClick={() =>
                 add({
                   id: `quick-${Date.now()}`,
-                  name: 'Quick add',
+                  name: t('Quick add'),
                   emoji: '⚡',
-                  portion: '1 entry',
+                  portion: t('1 entry'),
                   nutrients: {
                     calories: quickKcal,
                     protein: quickProtein,
@@ -258,7 +259,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                 })
               }
             >
-              Add {formatEnergy(quickKcal)}
+              {t('Add {energy}', { energy: formatEnergy(quickKcal) })}
             </button>
           </div>
         </>
@@ -268,21 +269,21 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         <div className="stack">
           <div className="describe-hero">
             <Squish mood="excited" size={92} bob={false} />
-            <p className="speech">Tell me what you ate in your own words — I'll turn it into calories and macros.</p>
+            <p className="speech">{t("Tell me what you ate in your own words — I'll turn it into calories and macros.")}</p>
           </div>
           <textarea
             className="textarea"
             value={description}
             autoFocus
             rows={4}
-            placeholder="e.g. chicken salad wrap, an apple and a flat white"
+            placeholder={t('e.g. chicken salad wrap, an apple and a flat white')}
             onChange={(e) => setDescription(e.target.value)}
-            aria-label="Describe your meal"
+            aria-label={t('Describe your meal')}
           />
           {/* Appended rather than replacing: people dictate the bulk of it and
               then tidy up the bit it misheard. */}
           <DictateButton
-            label="your meal"
+            label={t('your meal')}
             onText={(text) => {
               setDictated(true);
               setDescription((current) => (current ? `${current.trim()} ${text}` : text));
@@ -297,7 +298,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
             ))}
           </div>
           <button type="button" className="btn btn--block" onClick={() => void describe()}>
-            <SparkIcon size={18} /> Work it out
+            <SparkIcon size={18} /> {t('Work it out')}
           </button>
         </div>
       )}
@@ -306,7 +307,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         <div className="stack">
           <div className="describe-hero">
             <Squish mood="excited" size={92} bob={false} />
-            <p className="speech">Paste a recipe from anywhere on the web and I'll work out what one helping of it comes to.</p>
+            <p className="speech">{t("Paste a recipe from anywhere on the web and I'll work out what one helping of it comes to.")}</p>
           </div>
           <input
             className="input"
@@ -314,7 +315,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
             inputMode="url"
             value={recipeUrl}
             placeholder="https://…"
-            aria-label="Recipe web address"
+            aria-label={t('Recipe web address')}
             onChange={(e) => setRecipeUrl(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -324,7 +325,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
             }}
           />
           <button type="button" className="btn btn--block" disabled={!recipeUrl.trim() || busy} onClick={() => void readRecipe()}>
-            <SparkIcon size={18} /> {busy ? 'Reading…' : 'Read the recipe'}
+            <SparkIcon size={18} /> {busy ? t('Reading…') : t('Read the recipe')}
           </button>
 
           {recipe && (
@@ -332,12 +333,12 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
               <div className="card-title">
                 <h3>{recipe.title}</h3>
                 <span className="tiny muted">
-                  makes {recipe.servings} {recipe.servings === 1 ? 'serving' : 'servings'}
+                  {plural(recipe.servings, { one: 'makes {n} serving', other: 'makes {n} servings' })}
                 </span>
               </div>
 
               <div className="row-between">
-                <span className="small">How many did you have?</span>
+                <span className="small">{t('How many did you have?')}</span>
                 <Stepper value={helpings} step={0.5} min={0.5} max={10} onChange={setHelpings} suffix="×" />
               </div>
 
@@ -345,8 +346,11 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
               <div className="row-between">
                 <b style={{ fontSize: 22 }}>{formatEnergy(recipe.nutrients.calories * helpings)}</b>
                 <span className="tiny muted">
-                  {Math.round(recipe.nutrients.protein * helpings)}P · {Math.round(recipe.nutrients.carbs * helpings)}C ·{' '}
-                  {Math.round(recipe.nutrients.fat * helpings)}F
+                  {t('P{protein} C{carbs} F{fat}', {
+                    protein: Math.round(recipe.nutrients.protein * helpings),
+                    carbs: Math.round(recipe.nutrients.carbs * helpings),
+                    fat: Math.round(recipe.nutrients.fat * helpings),
+                  })}
                 </span>
               </div>
 
@@ -373,11 +377,11 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
                   further from the truth than a photo of the actual plate, and
                   it should not pretend otherwise. */}
               <p className="tiny muted" style={{ marginTop: 10 }}>
-                Worked out from the ingredients on the page — check it against what you actually put in.
+                {t('Worked out from the ingredients on the page — check it against what you actually put in.')}
               </p>
 
               <button type="button" className="btn btn--block" style={{ marginTop: 10 }} onClick={useRecipe}>
-                <PlusIcon size={18} /> Use this
+                <PlusIcon size={18} /> {t('Use this')}
               </button>
             </section>
           )}
@@ -388,7 +392,7 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
         <div className="stack">
           {favourites.length === 0 ? (
             <EmptyState mood="calm">
-              No favourites yet. Tap the heart on any food you log and it will live here.
+              {t('No favourites yet. Tap the heart on any food you log and it will live here.')}
             </EmptyState>
           ) : (
             favourites.map((item) => (
@@ -410,13 +414,11 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
       {basket.length > 0 && (
         <div className="basket">
           <div>
-            <b>
-              {basket.length} item{basket.length === 1 ? '' : 's'}
-            </b>
+            <b>{plural(basket.length, { one: '{n} item', other: '{n} items' })}</b>
             <span className="tiny muted"> · {formatEnergy(totals.calories)}</span>
           </div>
           <button type="button" className="btn btn--sm" onClick={reviewBasket}>
-            Review
+            {t('Review')}
           </button>
         </div>
       )}

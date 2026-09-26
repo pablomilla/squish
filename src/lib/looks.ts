@@ -18,6 +18,7 @@
  */
 import type { Achievement } from '../types';
 import { PLUS } from './subscription';
+import { t } from './i18n';
 
 /**
  * How a look is come by. A union rather than two optional fields, so a look
@@ -75,48 +76,48 @@ export interface Look {
 export const LOOKS: Look[] = [
   {
     id: 'squish',
-    name: 'Squish',
-    how: 'The original',
+    name: t('Squish'),
+    how: t('The original'),
     unlock: { kind: 'always' },
     light: ['#fffaf4', '#fdeadc', '#f6d7c4'],
     dark: ['#fdf3ea', '#f4ddcc', '#e2bfa9'],
   },
   {
     id: 'peach',
-    name: 'Peach',
-    how: 'Log your first meal',
+    name: t('Peach'),
+    how: t('Log your first meal'),
     unlock: { kind: 'achievement', id: 'first-meal' },
     light: ['#fff6f2', '#fcd9cb', '#f5bda8'],
     dark: ['#ffeee7', '#f8c9b5', '#e8a98f'],
   },
   {
     id: 'blueberry',
-    name: 'Blueberry',
-    how: 'Three days running',
+    name: t('Blueberry'),
+    how: t('Three days running'),
     unlock: { kind: 'achievement', id: 'streak-3' },
     light: ['#f6f5ff', '#ddd9fb', '#c3bcf2'],
     dark: ['#eeecfd', '#cdc7f6', '#ada4e6'],
   },
   {
     id: 'matcha',
-    name: 'Matcha',
-    how: 'Hit your fibre target',
+    name: t('Matcha'),
+    how: t('Hit your fibre target'),
     unlock: { kind: 'achievement', id: 'fibre-hit' },
     light: ['#f7fbf2', '#dcecd0', '#c2dcb0'],
     dark: ['#eff7e8', '#cbe3ba', '#aecb98'],
   },
   {
     id: 'cocoa',
-    name: 'Cocoa',
-    how: 'A full week of logging',
+    name: t('Cocoa'),
+    how: t('A full week of logging'),
     unlock: { kind: 'achievement', id: 'streak-7' },
     light: ['#faf3ee', '#e6d2c2', '#d0b39d'],
     dark: ['#f2e6db', '#d8bda6', '#bb9a7f'],
   },
   {
     id: 'midnight',
-    name: 'Midnight',
-    how: 'Thirty days of logging',
+    name: t('Midnight'),
+    how: t('Thirty days of logging'),
     unlock: { kind: 'achievement', id: 'streak-30' },
     light: ['#f0f1f7', '#cbd0e2', '#a8b0cc'],
     dark: ['#e5e8f2', '#b9c0d8', '#949dbb'],
@@ -138,7 +139,7 @@ export const LOOKS: Look[] = [
  */
 export const PLUS_LOOKS: Look[] = [
   {
-    id: 'rainbow', name: 'Rainbow', how: PLUS, unlock: { kind: 'subscriber' },
+    id: 'rainbow', name: t('Rainbow'), how: PLUS, unlock: { kind: 'subscriber' },
     light: ['#fffaf7', '#ffd6e0', '#c9b8ff'],
     dark: ['#fff3f6', '#ffc6d4', '#b9a5ff'],
     finish: {
@@ -147,7 +148,7 @@ export const PLUS_LOOKS: Look[] = [
     },
   },
   {
-    id: 'holo', name: 'Holographic', how: PLUS, unlock: { kind: 'subscriber' },
+    id: 'holo', name: t('Holographic'), how: PLUS, unlock: { kind: 'subscriber' },
     light: ['#ffffff', '#e9ecff', '#cfd6ff'],
     dark: ['#ffffff', '#e0e4ff', '#c2cbff'],
     finish: {
@@ -157,7 +158,7 @@ export const PLUS_LOOKS: Look[] = [
     },
   },
   {
-    id: 'gold', name: 'Gold', how: PLUS, unlock: { kind: 'subscriber' },
+    id: 'gold', name: t('Gold'), how: PLUS, unlock: { kind: 'subscriber' },
     light: ['#fff8dc', '#f3cf6b', '#c99a33'],
     dark: ['#fff4d2', '#ecc45d', '#bf8f2b'],
     finish: {
@@ -167,7 +168,7 @@ export const PLUS_LOOKS: Look[] = [
     },
   },
   {
-    id: 'chrome', name: 'Chrome', how: PLUS, unlock: { kind: 'subscriber' },
+    id: 'chrome', name: t('Chrome'), how: PLUS, unlock: { kind: 'subscriber' },
     light: ['#ffffff', '#d6dce3', '#9aa6b3'],
     dark: ['#ffffff', '#ccd3db', '#8e9aa8'],
     finish: {
@@ -176,7 +177,7 @@ export const PLUS_LOOKS: Look[] = [
     },
   },
   {
-    id: 'candy', name: 'Candy', how: PLUS, unlock: { kind: 'subscriber' },
+    id: 'candy', name: t('Candy'), how: PLUS, unlock: { kind: 'subscriber' },
     light: ['#fff7f9', '#ffd1dc', '#f7a8bb'],
     dark: ['#fff1f5', '#ffc2d1', '#ee97ad'],
     finish: {
@@ -185,7 +186,7 @@ export const PLUS_LOOKS: Look[] = [
     },
   },
   {
-    id: 'sunset', name: 'Sunset', how: PLUS, unlock: { kind: 'subscriber' },
+    id: 'sunset', name: t('Sunset'), how: PLUS, unlock: { kind: 'subscriber' },
     light: ['#fff4ec', '#ffb38a', '#ff7fa3'],
     dark: ['#ffede2', '#ffa679', '#f96f96'],
     finish: {

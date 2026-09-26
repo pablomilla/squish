@@ -6,6 +6,7 @@ import { wearable } from '../../lib/outfit';
 import { cheerById } from '../../lib/cheers';
 import { clearCheerInbox, cheersSeen, forgetSquad, keepCheers, postStatus, refreshSquad, statusFrom } from '../../lib/squad';
 import { useSquad } from './useSquad';
+import { t } from '../../lib/i18n';
 
 /**
  * Keeps this person's squad in step, from wherever they are in the app:
@@ -69,7 +70,7 @@ export default function SquadSync() {
       const cheer = cheerById(c.cheer);
       if (cheer) toast(`${c.from}: ${cheer.words}`, cheer.emoji);
     }
-    if (fresh.length > 3) toast(`…and ${fresh.length - 3} more cheers from your squad`, '💜');
+    if (fresh.length > 3) toast(t('…and {n} more cheers from your squad', { n: fresh.length - 3 }), '💜');
     for (const c of fresh) said.current.add(c.id);
     // Kept for today on this phone, so Home can bring the squad up to show them.
     keepCheers(fresh.map((c) => ({ id: c.id, from: c.from, cheer: c.cheer })));

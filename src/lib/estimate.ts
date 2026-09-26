@@ -9,6 +9,7 @@
 import type { AnalysisResult, FoodItem, MealSlot } from '../types';
 import { FOODS, searchFoods, toFoodItem, type FoodRecord } from './foods';
 import { qualityScore, round1, sumNutrients, ultraProcessedShare } from './nutrition';
+import { t } from './i18n';
 
 const NUMBER_WORDS: Record<string, number> = {
   a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
@@ -91,17 +92,17 @@ function itemFor(part: ParsedPart): FoodItem | undefined {
 function titleFrom(items: FoodItem[], fallback: string): string {
   if (!items.length) return fallback;
   if (items.length === 1) return items[0].name;
-  if (items.length === 2) return `${items[0].name} & ${items[1].name}`;
-  return `${items[0].name} +${items.length - 1} more`;
+  if (items.length === 2) return t('{first} & {second}', { first: items[0].name, second: items[1].name });
+  return t('{first} +{count} more', { first: items[0].name, count: items.length - 1 });
 }
 
 function noteFor(result: { score: number; items: FoodItem[] }): string {
   const { score, items } = result;
-  if (!items.length) return "I could not place that one — try searching the food list and I'll do the maths.";
-  if (score >= 75) return 'Lovely balance — plenty of protein and fibre in there. High five!';
-  if (score >= 55) return 'Nicely balanced. A handful of veg alongside would top it off.';
-  if (score >= 38) return 'Tasty! Maybe pair it with something green or a protein boost later.';
-  return 'Enjoy it — no guilt here. Something lighter next meal will even the day out.';
+  if (!items.length) return t("I could not place that one — try searching the food list and I'll do the maths.");
+  if (score >= 75) return t('Lovely balance — plenty of protein and fibre in there. High five!');
+  if (score >= 55) return t('Nicely balanced. A handful of veg alongside would top it off.');
+  if (score >= 38) return t('Tasty! Maybe pair it with something green or a protein boost later.');
+  return t('Enjoy it — no guilt here. Something lighter next meal will even the day out.');
 }
 
 /** Parse a free-text meal description into an estimated analysis. */
@@ -111,7 +112,7 @@ export function estimateFromText(description: string, slot?: MealSlot): Analysis
   const nutrients = sumNutrients(items);
   const score = qualityScore(nutrients, ultraProcessedShare(items));
   return {
-    title: titleFrom(items, description.slice(0, 40) || 'Meal'),
+    title: titleFrom(items, description.slice(0, 40) || t('Meal')),
     slot,
     items,
     nutrients,
@@ -142,13 +143,13 @@ export function demoEstimateFromPhoto(seed: string, slot?: MealSlot): AnalysisRe
 
   const nutrients = sumNutrients(items);
   return {
-    title: titleFrom(items, 'Your meal'),
+    title: titleFrom(items, t('Your meal')),
     slot,
     items,
     nutrients,
     score: qualityScore(nutrients, ultraProcessedShare(items)),
     coachNote:
-      'Demo estimate — I could not look at the photo without an Anthropic API key, so this is a typical plate. Tweak the items and they are yours.',
+      t('Demo estimate — I could not look at the photo without an Anthropic API key, so this is a typical plate. Tweak the items and they are yours.'),
     confidence: 'low',
     offline: true,
   };

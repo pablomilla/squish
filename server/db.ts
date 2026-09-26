@@ -551,6 +551,21 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 16,
+    sql: `
+      -- The app's interface in other languages, translated once by Claude
+      -- and shared by everybody. Keyed by the English string's id, so a
+      -- changed string is simply a new row. Nothing personal is in here.
+      create table ui_translations (
+        language text not null,
+        id text not null,
+        value jsonb not null,
+        created_at timestamptz not null default now(),
+        primary key (language, id)
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

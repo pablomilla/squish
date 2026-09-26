@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useToast } from './ui';
 import { achievementById, earnedFrom } from '../lib/achievements';
-import { unlocksLine } from '../lib/rewards';
+import { rewardsFor } from '../lib/rewards';
 import { useSquish } from '../store/useSquish';
+import { plural, t } from '../lib/i18n';
+import { listWords } from '../lib/packs';
 
 /**
  * Awards the badges the diary shows, and says so when one arrives.
@@ -41,10 +43,15 @@ export default function AchievementSync() {
     for (const id of fresh) seen.current.add(id);
     if (fresh.length === 1) {
       const badge = achievementById(fresh[0])!;
-      const unlocks = unlocksLine(badge.id);
-      toast(`New badge: ${badge.title}${unlocks ? `. ${unlocks.replace('Unlocks', 'You unlocked')}.` : ` — ${badge.description.charAt(0).toLowerCase()}${badge.description.slice(1)}`}`, badge.emoji);
+      const rewards = rewardsFor(badge.id);
+      toast(
+        rewards.length
+          ? t('New badge: {badge}. You unlocked {rewards}.', { badge: badge.title, rewards: listWords(rewards.length > 3 ? [...rewards.slice(0, 2), plural(rewards.length - 2, { one: '{n} more', other: '{n} more' })] : rewards) })
+          : t('New badge: {badge} — {how}', { badge: badge.title, how: badge.description }),
+        badge.emoji,
+      );
     } else if (fresh.length > 1) {
-      toast(`${fresh.length} new badges — see them on Insights`, '🏅');
+      toast(plural(fresh.length, { one: '{n} new badge — see it on Insights', other: '{n} new badges — see them on Insights' }), '🏅');
     }
   }, [unlocked, toast]);
 

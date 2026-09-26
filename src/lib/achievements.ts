@@ -23,15 +23,16 @@ import type { Achievement, DayLog, MealEntry, Targets } from '../types';
 import { addDays, isoDate, weekOf } from './date';
 import { addNutrients, EMPTY } from './nutrition';
 import { bestStreak, dayScore } from './selectors';
+import { t } from './i18n';
 
 export type AchievementGroup = 'showing-up' | 'eating-well' | 'variety' | 'trying' | 'friends';
 
 export const ACHIEVEMENT_GROUPS: { id: AchievementGroup; title: string }[] = [
-  { id: 'showing-up', title: 'Showing up' },
-  { id: 'eating-well', title: 'Eating well' },
-  { id: 'variety', title: 'Variety' },
-  { id: 'trying', title: 'Trying things' },
-  { id: 'friends', title: 'Friends' },
+  { id: 'showing-up', title: t('Showing up') },
+  { id: 'eating-well', title: t('Eating well') },
+  { id: 'variety', title: t('Variety') },
+  { id: 'trying', title: t('Trying things') },
+  { id: 'friends', title: t('Friends') },
 ];
 
 type Entry = Achievement & { group: AchievementGroup };
@@ -45,43 +46,43 @@ const a = (group: AchievementGroup, id: string, title: string, description: stri
 
 /** In the order Insights shows them, group by group. Ids are stored — never rename one. */
 export const ACHIEVEMENTS: Entry[] = [
-  a('showing-up', 'first-meal', 'First bite', 'Log your very first meal', '🍽️'),
-  a('showing-up', 'streak-3', 'Three in a row', 'Log meals three days running', '🔥'),
-  a('showing-up', 'streak-7', 'Full week', 'Seven days of logging', '🗓️'),
-  a('showing-up', 'days-10', 'Ten days', 'Log on ten days — any ten', '🔟'),
-  a('showing-up', 'streak-14', 'Fortnight', 'Two weeks of logging', '🌿'),
-  a('showing-up', 'streak-30', 'Squish regular', 'Thirty days of logging', '🏆'),
-  a('showing-up', 'welcome-back', 'Welcome back', 'Log again after a week or more away', '👋'),
-  a('showing-up', 'days-50', 'Fifty days', 'Log on fifty days in all', '🌟'),
-  a('showing-up', 'streak-50', 'Half century', 'Fifty days of logging', '🎯'),
-  a('showing-up', 'streak-100', 'Century', 'A hundred days of logging', '💯'),
-  a('showing-up', 'streak-200', 'Two hundred', 'Two hundred days of logging', '🚀'),
-  a('showing-up', 'days-250', 'Old friends', 'Log on 250 days in all', '💜'),
-  a('showing-up', 'streak-365', 'A whole year', 'A year of logging', '🎂'),
+  a('showing-up', 'first-meal', t('First bite'), t('Log your very first meal'), '🍽️'),
+  a('showing-up', 'streak-3', t('Three in a row'), t('Log meals three days running'), '🔥'),
+  a('showing-up', 'streak-7', t('Full week'), t('Seven days of logging'), '🗓️'),
+  a('showing-up', 'days-10', t('Ten days'), t('Log on ten days — any ten'), '🔟'),
+  a('showing-up', 'streak-14', t('Fortnight'), t('Two weeks of logging'), '🌿'),
+  a('showing-up', 'streak-30', t('Squish regular'), t('Thirty days of logging'), '🏆'),
+  a('showing-up', 'welcome-back', t('Welcome back'), t('Log again after a week or more away'), '👋'),
+  a('showing-up', 'days-50', t('Fifty days'), t('Log on fifty days in all'), '🌟'),
+  a('showing-up', 'streak-50', t('Half century'), t('Fifty days of logging'), '🎯'),
+  a('showing-up', 'streak-100', t('Century'), t('A hundred days of logging'), '💯'),
+  a('showing-up', 'streak-200', t('Two hundred'), t('Two hundred days of logging'), '🚀'),
+  a('showing-up', 'days-250', t('Old friends'), t('Log on 250 days in all'), '💜'),
+  a('showing-up', 'streak-365', t('A whole year'), t('A year of logging'), '🎂'),
 
-  a('eating-well', 'protein-hit', 'Protein pro', 'Hit your protein target in a day', '💪'),
-  a('eating-well', 'fibre-hit', 'Fibre friend', 'Hit your fibre target in a day', '🥦'),
-  a('eating-well', 'hydrated', 'Well watered', 'Reach your water goal', '💧'),
-  a('eating-well', 'balanced-day', 'Balanced day', 'Finish a day scoring 75+', '⭐'),
-  a('eating-well', 'protein-week', 'Protein week', 'Hit your protein target on 5 days in one week', '🥚'),
-  a('eating-well', 'balanced-3', 'Hat-trick', 'Three days in a row scoring 75+', '🎩'),
-  a('eating-well', 'water-week', 'Hydration habit', 'Reach your water goal 7 days running', '🌊'),
-  a('eating-well', 'fibre-30', 'Fibre fan', 'Hit your fibre target on 30 days', '🌾'),
+  a('eating-well', 'protein-hit', t('Protein pro'), t('Hit your protein target in a day'), '💪'),
+  a('eating-well', 'fibre-hit', t('Fibre friend'), t('Hit your fibre target in a day'), '🥦'),
+  a('eating-well', 'hydrated', t('Well watered'), t('Reach your water goal'), '💧'),
+  a('eating-well', 'balanced-day', t('Balanced day'), t('Finish a day scoring 75+'), '⭐'),
+  a('eating-well', 'protein-week', t('Protein week'), t('Hit your protein target on 5 days in one week'), '🥚'),
+  a('eating-well', 'balanced-3', t('Hat-trick'), t('Three days in a row scoring 75+'), '🎩'),
+  a('eating-well', 'water-week', t('Hydration habit'), t('Reach your water goal 7 days running'), '🌊'),
+  a('eating-well', 'fibre-30', t('Fibre fan'), t('Hit your fibre target on 30 days'), '🌾'),
 
-  a('variety', 'full-day', 'Full day', 'Log breakfast, lunch and dinner in one day', '🍳'),
-  a('variety', 'foods-25', 'Curious eater', 'Log 25 different foods', '🧺'),
-  a('variety', 'foods-100', 'Adventurous eater', 'Log 100 different foods', '🌍'),
+  a('variety', 'full-day', t('Full day'), t('Log breakfast, lunch and dinner in one day'), '🍳'),
+  a('variety', 'foods-25', t('Curious eater'), t('Log 25 different foods'), '🧺'),
+  a('variety', 'foods-100', t('Adventurous eater'), t('Log 100 different foods'), '🌍'),
 
-  a('trying', 'photo-10', 'Snap happy', 'Analyse ten meals from photos', '📸'),
-  a('trying', 'first-scan', 'Beep!', 'Scan a barcode', '🏷️'),
-  a('trying', 'first-voice', 'Say it', 'Log a meal by talking', '🎙️'),
-  a('trying', 'first-recipe', 'Home cook', 'Import a recipe', '📖'),
-  a('trying', 'first-question', 'Curious mind', 'Ask the nutritionist a question', '💬'),
-  a('trying', 'weigh-4', 'Checking in', 'Weigh in four weeks in a row', '⚖️'),
-  a('trying', 'first-share', 'Show and tell', 'Share a progress card', '📣'),
+  a('trying', 'photo-10', t('Snap happy'), t('Analyse ten meals from photos'), '📸'),
+  a('trying', 'first-scan', t('Beep!'), t('Scan a barcode'), '🏷️'),
+  a('trying', 'first-voice', t('Say it'), t('Log a meal by talking'), '🎙️'),
+  a('trying', 'first-recipe', t('Home cook'), t('Import a recipe'), '📖'),
+  a('trying', 'first-question', t('Curious mind'), t('Ask the nutritionist a question'), '💬'),
+  a('trying', 'weigh-4', t('Checking in'), t('Weigh in four weeks in a row'), '⚖️'),
+  a('trying', 'first-share', t('Show and tell'), t('Share a progress card'), '📣'),
 
-  a('friends', 'squad', 'Squad', 'A friend you invited got going', '🤝'),
-  a('friends', 'squad-week', 'Squad goals', 'Your whole squad hit its week', '🏆'),
+  a('friends', 'squad', t('Squad'), t('A friend you invited got going'), '🤝'),
+  a('friends', 'squad-week', t('Squad goals'), t('Your whole squad hit its week'), '🏆'),
 ];
 
 export const achievementById = (id: string): Entry | undefined => ACHIEVEMENTS.find((entry) => entry.id === id);

@@ -13,29 +13,30 @@
  */
 import { foodById } from './foods';
 import { localWords } from './region';
+import { plural, pluralForms, t } from './i18n';
 
 export type GoodNutrient = 'protein' | 'fibre';
 
 interface Reference {
   id: string;
   emoji: string;
-  one: string;
-  many: string;
+  /** "{n} egg" / "{n} eggs": whole phrases, so a language can put the number where it goes. */
+  forms: { one: string; other: string };
 }
 
 const REFERENCES: Record<GoodNutrient, Reference[]> = {
   protein: [
-    { id: 'egg', emoji: '🥚', one: 'egg', many: 'eggs' },
-    { id: 'milk', emoji: '🥛', one: 'glass of milk', many: 'glasses of milk' },
-    { id: 'tuna', emoji: '🐟', one: 'tin of tuna', many: 'tins of tuna' },
-    { id: 'chicken', emoji: '🍗', one: 'chicken breast', many: 'chicken breasts' },
+    { id: 'egg', emoji: '🥚', forms: pluralForms({ one: '{n} egg', other: '{n} eggs' }) },
+    { id: 'milk', emoji: '🥛', forms: pluralForms({ one: '{n} glass of milk', other: '{n} glasses of milk' }) },
+    { id: 'tuna', emoji: '🐟', forms: pluralForms({ one: '{n} tin of tuna', other: '{n} tins of tuna' }) },
+    { id: 'chicken', emoji: '🍗', forms: pluralForms({ one: '{n} chicken breast', other: '{n} chicken breasts' }) },
   ],
   fibre: [
-    { id: 'apple', emoji: '🍎', one: 'apple', many: 'apples' },
-    { id: 'banana', emoji: '🍌', one: 'banana', many: 'bananas' },
-    { id: 'orange', emoji: '🍊', one: 'orange', many: 'oranges' },
-    { id: 'bread', emoji: '🍞', one: 'slice of wholemeal bread', many: 'slices of wholemeal bread' },
-    { id: 'broccoli', emoji: '🥦', one: 'portion of broccoli', many: 'portions of broccoli' },
+    { id: 'apple', emoji: '🍎', forms: pluralForms({ one: '{n} apple', other: '{n} apples' }) },
+    { id: 'banana', emoji: '🍌', forms: pluralForms({ one: '{n} banana', other: '{n} bananas' }) },
+    { id: 'orange', emoji: '🍊', forms: pluralForms({ one: '{n} orange', other: '{n} oranges' }) },
+    { id: 'bread', emoji: '🍞', forms: pluralForms({ one: '{n} slice of wholemeal bread', other: '{n} slices of wholemeal bread' }) },
+    { id: 'broccoli', emoji: '🥦', forms: pluralForms({ one: '{n} portion of broccoli', other: '{n} portions of broccoli' }) },
   ],
 };
 
@@ -47,15 +48,14 @@ function gramsIn(ref: Reference, nutrient: GoodNutrient): number {
 }
 
 /** 1, 1½, 2, 2½ … then whole numbers: halves matter when counting eggs, not when counting twelve of them. */
-function friendlyCount(count: number): { text: string; plural: boolean } {
+function friendlyCount(count: number): { text: string; value: number } {
   if (count < 3) {
     const halves = Math.round(count * 2) / 2;
     const whole = Math.floor(halves);
-    const text = halves % 1 ? `${whole}½` : String(whole);
-    return { text, plural: halves !== 1 };
+    return { text: halves % 1 ? `${whole}½` : String(whole), value: halves };
   }
   const n = Math.round(count);
-  return { text: String(n), plural: true };
+  return { text: String(n), value: n };
 }
 
 export interface Equivalent {
@@ -80,8 +80,8 @@ export function equivalentFor(nutrient: GoodNutrient, grams: number, seed = 0): 
   // Past eight of everything, the biggest food keeps the number readable.
   const pool = sensible.length ? sensible : [options.reduce((a, b) => (a.count < b.count ? a : b))];
   const pick = pool[Math.abs(Math.floor(seed)) % pool.length];
-  const { text, plural } = friendlyCount(Math.max(1, pick.count));
-  return { nutrient, emoji: pick.ref.emoji, amount: localWords(`${text} ${plural ? pick.ref.many : pick.ref.one}`) };
+  const { text, value } = friendlyCount(Math.max(1, pick.count));
+  return { nutrient, emoji: pick.ref.emoji, amount: localWords(plural(value, pick.ref.forms, { n: text })) };
 }
 
 /** A stable number from some text — a date, a meal's title — so the same thing gets the same food. */
@@ -114,7 +114,7 @@ export function mealEquivalent(
 export function progressWords(have: number, target: number): string {
   if (!(target > 0)) return '';
   const share = have / target;
-  if (share >= 1) return ' — that’s your target!';
-  if (share >= 0.75) return ' — nearly there';
+  if (share >= 1) return ` ${t('— that’s your target!')}`;
+  if (share >= 0.75) return ` ${t('— nearly there')}`;
   return '';
 }

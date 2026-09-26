@@ -12,6 +12,8 @@ import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../sr
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
 import { regionNote } from './region';
+import { readTranslation, translateRequest, type CatalogEntry } from './translate';
+import type { Language } from '../src/lib/language';
 import { isAisle } from '../src/lib/shopping';
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
@@ -741,4 +743,23 @@ export async function planWeek(req: WeekPlanRequest): Promise<WeekPlan> {
   const plan = toWeekPlan(JSON.parse(text) as ModelWeek, req);
   if (!plan.days.length) throw new WeekPlanError('The plan came back empty. Try again in a moment.');
   return plan;
+}
+
+/**
+ * A batch of interface strings, translated. Not billed to anybody: the
+ * interface is translated once for everyone, so its cost is the business's,
+ * and is logged for the record.
+ */
+export async function translateBatch(entries: CatalogEntry[], language: Language): Promise<Record<string, unknown>> {
+  const response = await getClient().messages.create(translateRequest(entries, language, MODEL));
+  if (response.stop_reason === 'refusal' || response.stop_reason === 'max_tokens') {
+    throw new Error(`translation stopped: ${response.stop_reason}`);
+  }
+  const text = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('');
+  const usd = priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens });
+  console.log(`    Translated ${entries.length} strings into ${language}${usd === null ? '' : ` for $${usd.toFixed(3)}`}.`);
+  return readTranslation(text);
 }

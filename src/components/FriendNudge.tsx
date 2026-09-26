@@ -5,6 +5,8 @@ import { useStanding } from './useSubscribed';
 import { useSquish } from '../store/useSquish';
 import SquadUnlocked from './SquadUnlocked';
 import './invite.css';
+import { plural, t } from '../lib/i18n';
+import { rich, richPlural } from '../lib/i18n-react';
 
 const capitalised = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
 
@@ -38,8 +40,10 @@ export default function FriendNudge({ onOpenYou }: { onOpenYou: () => void }) {
     return (
       <section className="card invite-nudge">
         <p className="small">
-          <b>🎁 A friend invited you.</b> Make an account and use Squish on {offer.qualifyDays} different days, and you both get{' '}
-          {periodWords(offer.rewardDays)} of Squish Plus.
+          {rich('<b>🎁 A friend invited you.</b> Make an account and use Squish on {days} different days, and you both get {period} of Squish Plus.', {
+            days: offer.qualifyDays,
+            period: periodWords(offer.rewardDays),
+          }, { b: (text) => <b>{text}</b> })}
         </p>
         <button
           type="button"
@@ -49,7 +53,7 @@ export default function FriendNudge({ onOpenYou }: { onOpenYou: () => void }) {
             onOpenYou();
           }}
         >
-          Make an account
+          {t('Make an account')}
         </button>
       </section>
     );
@@ -61,12 +65,14 @@ export default function FriendNudge({ onOpenYou }: { onOpenYou: () => void }) {
     return (
       <section className="card invite-nudge">
         <p className="small">
-          <b>🎉 {friends.fresh === 1 ? 'A friend you invited has' : `${friends.fresh} friends you invited have`} got going.</b> Your
-          thank-you is ready.
+          {richPlural(friends.fresh, {
+            one: '<b>🎉 A friend you invited has got going.</b> Your thank-you is ready.',
+            other: '<b>🎉 {n} friends you invited have got going.</b> Your thank-you is ready.',
+          }, {}, { b: (text) => <b>{text}</b> })}
         </p>
         <SquadUnlocked compact />
         <button type="button" className="btn btn--sm" onClick={onOpenYou}>
-          See what you've got
+          {t("See what you've got")}
         </button>
       </section>
     );
@@ -78,12 +84,12 @@ export default function FriendNudge({ onOpenYou }: { onOpenYou: () => void }) {
     return (
       <section className="card invite-nudge">
         <p className="small">
-          <b>🎁 {capitalised(periodWords(friends.rewardDays))} of Squish Plus, for you and your friend.</b>{' '}
+          <b>{t('🎁 {period} of Squish Plus, for you and your friend.', { period: capitalised(periodWords(friends.rewardDays)) })}</b>{' '}
           {!mine.verified
-            ? 'Confirm your email address first — the link is in your inbox.'
+            ? t('Confirm your email address first — the link is in your inbox.')
             : left <= 0
-              ? 'It is on its way.'
-              : `${mine.daysUsed} of ${friends.qualifyDays} days done — ${left === 1 ? 'one more to go' : `${left} more to go`}.`}
+              ? t('It is on its way.')
+              : plural(left, { one: '{done} of {days} days done — one more to go.', other: '{done} of {days} days done — {n} more to go.' }, { done: mine.daysUsed, days: friends.qualifyDays })}
         </p>
         <div className="invite-dots" aria-hidden="true">
           {Array.from({ length: friends.qualifyDays }, (_, i) => (

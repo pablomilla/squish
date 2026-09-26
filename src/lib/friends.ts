@@ -9,6 +9,7 @@
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
 import { referral } from './referral';
+import { plural, t } from './i18n';
 
 export interface Friends {
   code: string;
@@ -78,14 +79,14 @@ export function friendOffer(): Promise<FriendOffer | null> {
 
 /** "a month" for 30 days, which is what it will nearly always be; "3 months" for 90. */
 export function periodWords(days: number): string {
-  if (days > 0 && days % 30 === 0) return days === 30 ? 'a month' : `${days / 30} months`;
-  if (days > 0 && days % 7 === 0) return days === 7 ? 'a week' : `${days / 7} weeks`;
-  return `${days} day${days === 1 ? '' : 's'}`;
+  if (days > 0 && days % 30 === 0) return days === 30 ? t('a month') : plural(days / 30, { one: '{n} month', other: '{n} months' });
+  if (days > 0 && days % 7 === 0) return days === 7 ? t('a week') : plural(days / 7, { one: '{n} week', other: '{n} weeks' });
+  return plural(days, { one: '{n} day', other: '{n} days' });
 }
 
 /** What goes with a shared card or link, invite included. */
 export const inviteText = (friends: Pick<Friends, 'rewardDays'>, lead?: string): string =>
-  `${lead ? `${lead} ` : ''}Join me on Squish and we both get ${periodWords(friends.rewardDays)} of Squish Plus:`;
+  `${lead ? `${lead} ` : ''}${t('Join me on Squish and we both get {period} of Squish Plus:', { period: periodWords(friends.rewardDays) })}`;
 
 /**
  * Hand the invite to the phone's share sheet, or copy it where there is none.

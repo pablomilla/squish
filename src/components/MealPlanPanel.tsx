@@ -10,6 +10,7 @@ import { addDays, friendlyDate, isoDate } from '../lib/date';
 import { NUTRITIONIST_PLAN_NOTE, PLAN_DAYS_AHEAD, plansOn } from '../lib/planner';
 import { PLUS } from '../lib/plan';
 import './meal-plan-panel.css';
+import { plural, t } from '../lib/i18n';
 
 /**
  * The nutritionist's meal plan, where the nutritionist lives.
@@ -42,27 +43,24 @@ export default function MealPlanPanel() {
       {days.length === 0 ? (
         <div className="meal-plan-empty">
           <Squish mood="thinking" size={96} />
-          <h2>Let me plan your week</h2>
+          <h2>{t('Let me plan your week')}</h2>
           <p className="small muted">
-            Meals around your targets, the food you already like, and anything you’ve told me — an allergy, a food you avoid. With a
-            shopping list to match, and you choose what to keep.
+            {t('Meals around your targets, the food you already like, and anything you’ve told me — an allergy, a food you avoid. With a shopping list to match, and you choose what to keep.')}
           </p>
           <button type="button" className="btn btn--block" onClick={() => setPlanning(true)}>
-            <SparkIcon size={16} /> Plan my week
+            <SparkIcon size={16} /> {t('Plan my week')}
           </button>
-          {!subscribed && <p className="tiny muted">Part of {PLUS}.</p>}
+          {!subscribed && <p className="tiny muted">{t('Part of {plus}.', { plus: PLUS })}</p>}
         </div>
       ) : (
         <>
           <div className="meal-plan-head">
             <p className="small">
-              <b>
-                {count} meal{count === 1 ? '' : 's'} planned
-              </b>{' '}
-              <span className="muted">· tap “I ate this” when you do</span>
+              <b>{plural(count, { one: '{n} meal planned', other: '{n} meals planned' })}</b>{' '}
+              <span className="muted">{t('· tap “I ate this” when you do')}</span>
             </p>
             <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
-              <BasketIcon size={15} /> Shopping list
+              <BasketIcon size={15} /> {t('Shopping list')}
             </button>
           </div>
           {days.map((day) => (
@@ -76,9 +74,9 @@ export default function MealPlanPanel() {
             </section>
           ))}
           <button type="button" className="btn btn--soft btn--block" onClick={() => setPlanning(true)}>
-            <SparkIcon size={16} /> Plan a new week
+            <SparkIcon size={16} /> {t('Plan a new week')}
           </button>
-          <p className="tiny muted center">These are in your diary too, dashed until you eat them.</p>
+          <p className="tiny muted center">{t('These are in your diary too, dashed until you eat them.')}</p>
         </>
       )}
     </div>

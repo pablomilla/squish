@@ -28,6 +28,7 @@ import SquadStrip from '../components/squad/SquadStrip';
 import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
 import { energyValue, formatEnergy } from '../lib/region';
+import { plural, t } from '../lib/i18n';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
@@ -124,25 +125,25 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   }, [nudge, mealsLogged, today, part]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fallbackNudge = todaysMeals.length
-    ? `${formatEnergy(remaining(targets.calories, totals.calories))} left today — and ${remaining(targets.protein, totals.protein)} g of protein to go.`
+    ? t('{energy} left today — and {grams} g of protein to go.', { energy: formatEnergy(remaining(targets.calories, totals.calories)), grams: remaining(targets.protein, totals.protein) })
     // Asked as an opening rather than a reproach: "nothing squished yet" is a
     // blank page, and "you haven't squished anything" is a telling-off.
     : part === 'night'
       ? // Late on, "what's first?" reads as an invitation to eat. The day can simply end.
-        'Nothing squished today — that’s fine. Tomorrow is a fresh page.'
-      : 'Nothing squished yet — what’s first?';
+        t('Nothing squished today — that’s fine. Tomorrow is a fresh page.')
+      : t('Nothing squished yet — what’s first?');
 
   return (
     <div className="screen home">
       <header className="home-top">
         <div>
           <p className="tiny muted">{greeting()}</p>
-          <h1>{profile.name ? `Hi ${profile.name}` : 'Hello there'}</h1>
+          <h1>{profile.name ? t('Hi {name}', { name: profile.name }) : t('Hello there')}</h1>
         </div>
-        <div className="home-streak" title="Logging streak">
+        <div className="home-streak" title={t('Logging streak')}>
           <FlameIcon size={18} />
           <b>{streak}</b>
-          <span className="tiny">day{streak === 1 ? '' : 's'}</span>
+          <span className="tiny">{plural(streak, { one: 'day', other: 'days' })}</span>
         </div>
       </header>
 
@@ -172,19 +173,19 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       {pendingMeal && (
         <section className="card home-pending">
           <div className="card-title">
-            <h3>Unfinished meal</h3>
-            <span className="badge badge--warn">Not saved</span>
+            <h3>{t('Unfinished meal')}</h3>
+            <span className="badge badge--warn">{t('Not saved')}</span>
           </div>
           <p className="small">
             <b>{pendingMeal.analysis.title}</b> — {formatEnergy(pendingMeal.analysis.nutrients.calories)},{' '}
-            {friendlyDate(pendingMeal.date).toLowerCase()}.
+            {friendlyDate(pendingMeal.date).toLocaleLowerCase()}.
           </p>
           <div className="row" style={{ gap: 10, marginTop: 12 }}>
             <button type="button" className="btn btn--sm grow" onClick={() => go({ name: 'review', draft: pendingMeal })}>
-              Finish it
+              {t('Finish it')}
             </button>
             <button type="button" className="btn btn--sm btn--ghost" onClick={() => setPendingMeal(null)}>
-              Throw it away
+              {t('Throw it away')}
             </button>
           </div>
         </section>
@@ -192,10 +193,8 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
       <section className="card card--hero home-today">
         <div className="card-title">
-          <h3>Today</h3>
-          <span className="badge">
-            {todaysMeals.length} meal{todaysMeals.length === 1 ? '' : 's'}
-          </span>
+          <h3>{t('Today')}</h3>
+          <span className="badge">{plural(todaysMeals.length, { one: '{n} meal', other: '{n} meals' })}</span>
         </div>
 
         {/* Ring and macros side by side, as in the diary, so the whole card and
@@ -206,7 +205,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           <div className="home-ring-wrap">
             <ProgressRing value={totals.calories} target={targets.calories} size={140} />
             <p className="tiny muted home-ring-caption">
-              {energyValue(totals.calories).toLocaleString()} of {formatEnergy(targets.calories)}
+              {t('{eaten} of {target}', { eaten: energyValue(totals.calories), target: formatEnergy(targets.calories) })}
             </p>
           </div>
           <div className="home-today-bars">
@@ -218,12 +217,12 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         <OverTargetNote over={overTargets(totals, targets)} />
         {totals.calories > 0 && (
           <details className="home-more">
-            <summary className="small">Sugar, {saltLabel().toLowerCase()} and more</summary>
+            <summary className="small">{t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })}</summary>
             {dayComparison && (
               <Comparison
                 equivalent={dayComparison.equivalent}
-                lead="The"
-                tail={` so far${progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}`}
+                variant="day"
+                tail={progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}
               />
             )}
             <MinorNutrients totals={totals} targets={targets} />
@@ -236,20 +235,20 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       <section className="home-actions">
         <button type="button" className="action action--primary" onClick={() => go({ name: 'capture' })}>
           <CameraIcon size={22} />
-          Snap a meal
+          {t('Snap a meal')}
         </button>
         <div className="home-actions-row">
           <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'describe' })}>
             <PenIcon size={20} />
-            Describe
+            {t('Describe')}
           </button>
           <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'search' })}>
             <SearchIcon size={20} />
-            Search
+            {t('Search')}
           </button>
           <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'favourites' })}>
             <HeartIcon size={20} />
-            Saved
+            {t('Saved')}
           </button>
         </div>
       </section>
@@ -260,9 +259,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           together, and right under the numbers they add up to. */}
       <section className="card home-meals">
         <div className="card-title">
-          <h3>Today's meals</h3>
+          <h3>{t("Today's meals")}</h3>
           <button type="button" className="btn--quiet small" onClick={() => go({ name: 'meals' })}>
-            See all
+            {t('See all')}
           </button>
         </div>
         {todaysMeals.length === 0 && plannedToday.length === 0 ? (
@@ -270,11 +269,11 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             mood="calm"
             action={
               <button type="button" className="btn btn--soft btn--sm" onClick={() => go({ name: 'capture' })}>
-                Snap your first meal
+                {t('Snap your first meal')}
               </button>
             }
           >
-            Nothing logged yet today — snap a meal and I'll do the maths.
+            {t("Nothing logged yet today — snap a meal and I'll do the maths.")}
           </EmptyState>
         ) : (
           <div className="stack">
@@ -284,9 +283,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             {plannedToday.length > 0 && (
               <>
                 <div className="row-between home-planned-head">
-                  <span className="tiny muted">Still planned for today</span>
+                  <span className="tiny muted">{t('Still planned for today')}</span>
                   <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
-                    <BasketIcon size={15} /> Shopping list
+                    <BasketIcon size={15} /> {t('Shopping list')}
                   </button>
                 </div>
                 {plannedToday.map((plan) => (
@@ -303,17 +302,15 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
 
 
-      <p className="section-label">Daily check-ins</p>
+      <p className="section-label">{t('Daily check-ins')}</p>
 
       <section className="home-trackers">
         <div className="card card--quiet tracker">
           <div className="row-between">
             <span className="row tiny muted" style={{ gap: 6 }}>
-              <DropIcon size={16} /> Water
+              <DropIcon size={16} /> {t('Water')}
             </span>
-            <b className="small">
-              {day?.water ?? 0}/{targets.water} glasses
-            </b>
+            <b className="small">{t('{done}/{target} glasses', { done: day?.water ?? 0, target: targets.water })}</b>
           </div>
           <div className="glasses">
             {Array.from({ length: targets.water }, (_, i) => (
@@ -321,20 +318,20 @@ export default function Home({ go }: { go: (route: Route) => void }) {
                 key={i}
                 type="button"
                 className={`glass ${i < (day?.water ?? 0) ? 'is-full' : ''}`}
-                aria-label={`${i + 1} glass${i ? 'es' : ''} of water`}
+                aria-label={plural(i + 1, { one: '{n} glass of water', other: '{n} glasses of water' })}
                 onClick={() => setWater(today, i + 1 === (day?.water ?? 0) ? i : i + 1)}
               />
             ))}
           </div>
           <p className="tiny muted">
-            {waterVolume(day?.water ?? 0)} of {waterVolume(targets.water)} — a glass is {GLASS_ML} ml
+            {t('{drunk} of {target} — a glass is {ml} ml', { drunk: waterVolume(day?.water ?? 0), target: waterVolume(targets.water), ml: GLASS_ML })}
           </p>
         </div>
 
         <div className="card card--quiet tracker">
           <div className="row-between">
             <span className="row tiny muted" style={{ gap: 6 }}>
-              <ShoeIcon size={16} /> Movement
+              <ShoeIcon size={16} /> {t('Movement')}
             </span>
             <b className="small">
               {(day?.steps ?? 0).toLocaleString()} / {targets.steps.toLocaleString()}
@@ -352,7 +349,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
                 key={add}
                 type="button"
                 className="chip"
-                aria-label={`Add ${add.toLocaleString()} steps`}
+                aria-label={t('Add {n} steps', { n: add })}
                 onClick={() => setSteps(today, (day?.steps ?? 0) + add)}
               >
                 +{add >= 1000 ? `${add / 1000}k` : add}
@@ -360,7 +357,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             ))}
             {(day?.steps ?? 0) > 0 && (
               <button type="button" className="chip" onClick={() => setSteps(today, 0)}>
-                Clear
+                {t('Clear')}
               </button>
             )}
           </div>
@@ -370,35 +367,35 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       <button type="button" className="card card--quiet weigh-row" onClick={() => setWeighing(true)}>
         <span className="row" style={{ gap: 8 }}>
           <span aria-hidden="true">⚖️</span>
-          <span className="small">Weight</span>
+          <span className="small">{t('Weight')}</span>
         </span>
         <span className="row" style={{ gap: 6 }}>
-          <b className="small">{day?.weightKg ? formatWeight(day.weightKg, profile.units) : 'Tap to log'}</b>
+          <b className="small">{day?.weightKg ? formatWeight(day.weightKg, profile.units) : t('Tap to log')}</b>
           <ChevronIcon size={16} />
         </span>
       </button>
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>This week</h3>
-          <span className="tiny muted">{loggedThisWeek.filter(Boolean).length}/7 days logged</span>
+          <h3>{t('This week')}</h3>
+          <span className="tiny muted">{t('{n}/7 days logged', { n: loggedThisWeek.filter(Boolean).length })}</span>
         </div>
         <StreakDots dates={week} done={loggedThisWeek} />
         <div className="divider" />
-        <p className="tiny muted habit-caption">Targets hit, out of seven days</p>
+        <p className="tiny muted habit-caption">{t('Targets hit, out of seven days')}</p>
         <div className="habit-grid">
           {(
             [
-              { key: 'meals', label: 'Meals' },
-              { key: 'protein', label: 'Protein' },
-              { key: 'water', label: 'Water' },
-              { key: 'movement', label: 'Movement' },
+              { key: 'meals', label: t('Meals') },
+              { key: 'protein', label: t('Protein') },
+              { key: 'water', label: t('Water') },
+              { key: 'movement', label: t('Movement') },
             ] as const
           ).map(({ key, label }) => (
             <div
               key={key}
               className={`habit ${tally[key] >= 5 ? 'is-on' : ''}`}
-              aria-label={`${label} target met on ${tally[key]} of 7 days`}
+              aria-label={t('{habit} target met on {n} of 7 days', { habit: label, n: tally[key] })}
             >
               <span className="tiny">{label}</span>
               <b>{tally[key]}/7</b>
@@ -411,25 +408,25 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       <FriendNudge onOpenYou={() => go({ name: 'you' })} />
       {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you' })} />}
 
-      <p className="script home-footer">Good food. Brighter days. ♡</p>
+      <p className="script home-footer">{t('Good food. Brighter days. ♡')}</p>
 
       <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
 
-      <Sheet open={weighing} onClose={() => setWeighing(false)} title="Today's weight">
+      <Sheet open={weighing} onClose={() => setWeighing(false)} title={t("Today's weight")}>
         <div className="stack">
           <WeightField
-            label="Weight"
+            label={t('Weight')}
             kg={day?.weightKg ?? profile.weightKg}
             units={profile.units}
             onChange={(kg) => setWeight(today, kg)}
           />
           <p className="tiny muted">
             {lastWeighIn
-              ? `Last logged ${formatWeight(lastWeighIn.weightKg, profile.units)} on ${friendlyDate(lastWeighIn.date)}.`
-              : 'Weigh yourself at the same time of day — first thing is the steadiest.'}
+              ? t('Last logged {weight} on {date}.', { weight: formatWeight(lastWeighIn.weightKg, profile.units), date: friendlyDate(lastWeighIn.date) })
+              : t('Weigh yourself at the same time of day — first thing is the steadiest.')}
           </p>
           <button type="button" className="btn btn--block" onClick={() => setWeighing(false)}>
-            Done
+            {t('Done')}
           </button>
         </div>
       </Sheet>

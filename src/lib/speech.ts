@@ -1,3 +1,4 @@
+import { t } from './i18n';
 /**
  * Dictating a meal instead of typing it.
  *
@@ -75,12 +76,12 @@ export interface DictationHandlers {
 /** What went wrong, in words a person can act on. */
 export function speechErrorMessage(code: string): string {
   if (code === 'not-allowed' || code === 'service-not-allowed') {
-    return 'Squish needs permission to use the microphone. You can allow it in your browser settings.';
+    return t('Squish needs permission to use the microphone. You can allow it in your browser settings.');
   }
-  if (code === 'no-speech') return "I didn't catch anything — have another go.";
-  if (code === 'audio-capture') return 'No microphone found.';
-  if (code === 'network') return 'The speech service could not be reached.';
-  return 'Dictation stopped unexpectedly. Typing still works.';
+  if (code === 'no-speech') return t("I didn't catch anything — have another go.");
+  if (code === 'audio-capture') return t('No microphone found.');
+  if (code === 'network') return t('The speech service could not be reached.');
+  return t('Dictation stopped unexpectedly. Typing still works.');
 }
 
 /** Whitespace and case are not differences worth noticing when comparing. */

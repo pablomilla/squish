@@ -10,14 +10,12 @@ import { PLUS } from '../lib/plan';
 import { isPaywalled, requestWeekPlan, SquishApiError, type WeekPlan } from '../lib/api';
 import './week-plan.css';
 import { energyValue, formatEnergy } from '../lib/region';
+import { plural, t } from '../lib/i18n';
+import { slotName, slotWord } from '../lib/words';
 
 type Stage = { kind: 'ask' } | { kind: 'planning' } | { kind: 'preview'; plan: WeekPlan };
 
-const MEALS: { slot: MealSlot; label: string }[] = [
-  { slot: 'breakfast', label: 'Breakfast' },
-  { slot: 'lunch', label: 'Lunch' },
-  { slot: 'dinner', label: 'Dinner' },
-];
+const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
 
 /**
  * The nutritionist plans the days ahead, for Plus.
@@ -70,7 +68,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
       setStage({ kind: 'preview', plan: week });
     } catch (error) {
       setStage({ kind: 'ask' });
-      if (!isPaywalled(error)) toast(error instanceof SquishApiError || error instanceof Error ? error.message : 'That did not work — try again.', '😕');
+      if (!isPaywalled(error)) toast(error instanceof SquishApiError || error instanceof Error ? error.message : t('That did not work — try again.'), '😕');
       else onClose();
     }
   };
@@ -95,50 +93,49 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
         added += 1;
       });
     }
-    toast(`${added} meal${added === 1 ? '' : 's'} added to your plans — and to your shopping list.`, '🗓️');
+    toast(plural(added, { one: '{n} meal added to your plans — and to your shopping list.', other: '{n} meals added to your plans — and to your shopping list.' }), '🗓️');
     setStage({ kind: 'ask' });
     onClose();
   };
 
   return (
-    <Sheet open={open} onClose={close} title="Plan my week">
+    <Sheet open={open} onClose={close} title={t('Plan my week')}>
       {stage.kind === 'ask' && (
         <div className="week-ask">
           <p className="small muted">
-            The nutritionist plans meals around your targets, the foods you already eat, and anything you have told it — an allergy, a food you avoid.
-            You choose what to keep.
+            {t('The nutritionist plans meals around your targets, the foods you already eat, and anything you have told it — an allergy, a food you avoid. You choose what to keep.')}
           </p>
-          {!subscribed && <p className="badge badge--plus week-plus">Part of {PLUS}</p>}
+          {!subscribed && <p className="badge badge--plus week-plus">{t('Part of {plus}', { plus: PLUS })}</p>}
 
           <div className="field">
-            <label>How many days</label>
+            <label>{t('How many days')}</label>
             <Segmented<'3' | '5' | '7'>
-              label="How many days"
+              label={t('How many days')}
               value={days}
               onChange={setDays}
               options={[
-                { value: '3', label: '3 days' },
-                { value: '5', label: '5 days' },
-                { value: '7', label: 'A week' },
+                { value: '3', label: plural(3, { one: '{n} day', other: '{n} days' }) },
+                { value: '5', label: plural(5, { one: '{n} day', other: '{n} days' }) },
+                { value: '7', label: t('A week') },
               ]}
             />
           </div>
           <div className="field">
-            <label>Starting</label>
+            <label>{t('Starting')}</label>
             <Segmented<'today' | 'tomorrow'>
-              label="Starting"
+              label={t('Starting')}
               value={start}
               onChange={setStart}
               options={[
-                { value: 'today', label: 'Today' },
-                { value: 'tomorrow', label: 'Tomorrow' },
+                { value: 'today', label: t('Today') },
+                { value: 'tomorrow', label: t('Tomorrow') },
               ]}
             />
           </div>
           <div className="field">
-            <label>Which meals</label>
+            <label>{t('Which meals')}</label>
             <div className="week-chips">
-              {MEALS.map(({ slot, label }) => {
+              {MEALS.map((slot) => {
                 const on = slots.includes(slot);
                 return (
                   <button
@@ -148,52 +145,52 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
                     aria-pressed={on}
                     onClick={() => setSlots((list) => (on ? list.filter((s) => s !== slot) : [...list, slot]))}
                   >
-                    {label}
+                    {slotName(slot)}
                   </button>
                 );
               })}
               <button type="button" className={`chip${snacks ? ' chip--on' : ''}`} aria-pressed={snacks} onClick={() => setSnacks((s) => !s)}>
-                A snack
+                {t('A snack')}
               </button>
             </div>
           </div>
           <div className="field">
-            <label>Cooking</label>
+            <label>{t('Cooking')}</label>
             <Segmented<'quick' | 'normal' | 'batch'>
-              label="Cooking"
+              label={t('Cooking')}
               value={cooking}
               onChange={setCooking}
               options={[
-                { value: 'quick', label: 'Quick' },
-                { value: 'normal', label: 'Mixed' },
-                { value: 'batch', label: 'Batch cook' },
+                { value: 'quick', label: t('Quick') },
+                { value: 'normal', label: t('Mixed') },
+                { value: 'batch', label: t('Batch cook') },
               ]}
             />
           </div>
           <div className="field">
-            <label htmlFor="week-prefs">Anything else (optional)</label>
+            <label htmlFor="week-prefs">{t('Anything else (optional)')}</label>
             <textarea
               id="week-prefs"
               className="textarea"
               rows={2}
               maxLength={300}
               value={preferences}
-              placeholder="Vegetarian, no mushrooms, fish twice a week…"
+              placeholder={t('Vegetarian, no mushrooms, fish twice a week…')}
               onChange={(e) => setPreferences(e.target.value)}
             />
           </div>
           <button type="button" className="btn btn--block" disabled={!slots.length} onClick={() => void plan()}>
-            Plan my {days === '7' ? 'week' : `${days} days`}
+            {days === '7' ? t('Plan my week') : t('Plan my {n} days', { n: Number(days) })}
           </button>
-          <p className="tiny muted center">Uses one of this month's questions for the nutritionist.</p>
+          <p className="tiny muted center">{t("Uses one of this month's questions for the nutritionist.")}</p>
         </div>
       )}
 
       {stage.kind === 'planning' && (
         <div className="week-planning" role="status" aria-live="polite">
           <Squish mood="thinking" size={110} />
-          <p className="small">Planning your meals…</p>
-          <p className="tiny muted">A week takes a minute or so to think through.</p>
+          <p className="small">{t('Planning your meals…')}</p>
+          <p className="tiny muted">{t('A week takes a minute or so to think through.')}</p>
         </div>
       )}
 
@@ -205,10 +202,10 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
               <div className="week-day-head">
                 <h4 className="small">{friendlyDate(day.date)}</h4>
                 <span className="tiny muted">
-                  {energyValue(day.calories).toLocaleString()} of {formatEnergy(targets.calories)}
+                  {t('{eaten} of {target}', { eaten: energyValue(day.calories), target: formatEnergy(targets.calories) })}
                 </span>
               </div>
-              {day.underFloor && <p className="tiny week-light">This day came out light — add a snack if you keep it.</p>}
+              {day.underFloor && <p className="tiny week-light">{t('This day came out light — add a snack if you keep it.')}</p>}
               <ul>
                 {day.meals.map((meal, index) => {
                   const key = keyOf(day.date, index);
@@ -231,7 +228,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
                         <span className="week-meal-text" dir="auto">
                           <span className="week-meal-title">{meal.title}</span>
                           <span className="tiny muted">
-                            {meal.slot} · {formatEnergy(meal.nutrients.calories)} · P{Math.round(meal.nutrients.protein)} ·{' '}
+                            {slotWord(meal.slot ?? 'dinner')} · {formatEnergy(meal.nutrients.calories)} · {t('P{protein}', { protein: Math.round(meal.nutrients.protein) })} ·{' '}
                             {meal.items.map((item) => item.name).join(', ')}
                           </span>
                         </span>
@@ -244,13 +241,13 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
           ))}
           <div className="week-actions">
             <button type="button" className="btn btn--block" onClick={() => keep(stage.plan)}>
-              Add to my plans
+              {t('Add to my plans')}
             </button>
             <button type="button" className="btn--quiet small" onClick={() => setStage({ kind: 'ask' })}>
-              Start again
+              {t('Start again')}
             </button>
           </div>
-          <p className="tiny muted center">Plans count for nothing until you tap “I ate this”. Untick anything you don’t fancy.</p>
+          <p className="tiny muted center">{t('Plans count for nothing until you tap “I ate this”. Untick anything you don’t fancy.')}</p>
         </div>
       )}
     </Sheet>

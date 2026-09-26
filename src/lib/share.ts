@@ -55,6 +55,7 @@ const BRAND = {
 };
 
 import type { ShareCardData } from './shareStory';
+import { t } from './i18n';
 export type { ShareCardData };
 
 /**
@@ -301,7 +302,7 @@ export async function renderShareCard(data: ShareCardData, mascot: SVGSVGElement
 
   ctx.fillStyle = BRAND.ink2;
   ctx.font = `700 ${framed ? 34 : 38}px Caveat, cursive`;
-  ctx.fillText('your little health buddy', centre, markTop + markHeight + 6);
+  ctx.fillText(t('your little health buddy'), centre, markTop + markHeight + 6);
 
   // Last, over everything: it only ever draws in the outer band and corners.
   if (decor.frame) ctx.drawImage(await sized(decor.frame, CARD_WIDTH, CARD_HEIGHT, 'frame'), 0, 0, CARD_WIDTH, CARD_HEIGHT);

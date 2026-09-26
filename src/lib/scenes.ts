@@ -15,6 +15,7 @@
  * they do.
  */
 import { entitled, onShow, SEASONS, type Entitlement, type ItemUnlock, type Pack, type Season } from './outfit';
+import { t } from './i18n';
 
 export interface Scene {
   id: string;
@@ -24,24 +25,24 @@ export interface Scene {
 }
 
 const earned = (id: string, how: string) => ({ unlock: { kind: 'achievement', id } as const, how });
-const plus = { unlock: { kind: 'subscriber' } as const, how: 'Comes with Squish Plus' };
+const plus = { unlock: { kind: 'subscriber' } as const, how: t('Comes with Squish Plus') };
 const pack = (p: Pack, name: string) => ({ unlock: { kind: 'pack', pack: p } as const, how: name });
-const season = (s: Season) => ({ unlock: { kind: 'season', season: s } as const, how: `${SEASONS[s].name}, with Squish Plus` });
+const season = (s: Season) => ({ unlock: { kind: 'season', season: s } as const, how: t('{season}, with Squish Plus', { season: SEASONS[s].name }) });
 
 export const SCENES: Scene[] = [
-  { id: 'kitchen', name: 'Morning kitchen', ...earned('streak-14', 'Two weeks of logging') },
-  { id: 'picnic', name: 'Park picnic', ...earned('streak-30', 'Thirty days of logging') },
+  { id: 'kitchen', name: t('Morning kitchen'), ...earned('streak-14', t('Two weeks of logging')) },
+  { id: 'picnic', name: t('Park picnic'), ...earned('streak-30', t('Thirty days of logging')) },
   // Back from a holiday, or just back: the reward for returning after a week or more away.
-  { id: 'beach', name: 'Beach day', ...earned('welcome-back', 'Come back after a week away') },
-  { id: 'stars', name: 'Starry night', ...plus },
-  { id: 'space', name: 'Space', ...plus },
-  { id: 'rainy-window', name: 'Rainy window', ...pack('cosy', 'Cosy pack') },
-  { id: 'snowy-village', name: 'Snowy village', ...season('winter') },
-  { id: 'fireworks-city', name: 'Fireworks', ...season('new-year') },
-  { id: 'sweet-shop', name: 'Sweet shop', ...season('valentines') },
-  { id: 'blossom-garden', name: 'Blossom garden', ...season('spring') },
-  { id: 'ice-lolly-stand', name: 'Ice-lolly stand', ...season('summer') },
-  { id: 'pumpkin-patch', name: 'Pumpkin patch', ...season('halloween') },
+  { id: 'beach', name: t('Beach day'), ...earned('welcome-back', t('Come back after a week away')) },
+  { id: 'stars', name: t('Starry night'), ...plus },
+  { id: 'space', name: t('Space'), ...plus },
+  { id: 'rainy-window', name: t('Rainy window'), ...pack('cosy', t('Cosy pack')) },
+  { id: 'snowy-village', name: t('Snowy village'), ...season('winter') },
+  { id: 'fireworks-city', name: t('Fireworks'), ...season('new-year') },
+  { id: 'sweet-shop', name: t('Sweet shop'), ...season('valentines') },
+  { id: 'blossom-garden', name: t('Blossom garden'), ...season('spring') },
+  { id: 'ice-lolly-stand', name: t('Ice-lolly stand'), ...season('summer') },
+  { id: 'pumpkin-patch', name: t('Pumpkin patch'), ...season('halloween') },
 ];
 
 export const sceneById = (id: string | undefined): Scene | undefined => (id ? SCENES.find((s) => s.id === id) : undefined);

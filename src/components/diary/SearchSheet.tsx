@@ -6,14 +6,15 @@ import { searchMeals } from '../../lib/diaryNav';
 import { useSquish } from '../../store/useSquish';
 import type { MealEntry } from '../../types';
 import { formatEnergy } from '../../lib/region';
+import { plural, t, uiLocale } from '../../lib/i18n';
+import { slotName } from '../../lib/words';
 
-const SLOT_WORDS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
 
 /** A date with its year only when it is not this one. */
 const when = (iso: string) => {
   const d = parseISO(iso);
   const thisYear = iso.slice(0, 4) === isoDate().slice(0, 4);
-  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', ...(thisYear ? {} : { year: 'numeric' }) });
+  return d.toLocaleDateString(uiLocale(), { weekday: 'short', day: 'numeric', month: 'short', ...(thisYear ? {} : { year: 'numeric' }) });
 };
 
 /**
@@ -27,7 +28,7 @@ export default function SearchSheet({ open, onClose, onPick }: { open: boolean; 
   const searching = query.trim().length >= 2;
 
   return (
-    <Sheet open={open} onClose={onClose} title="Search your meals">
+    <Sheet open={open} onClose={onClose} title={t('Search your meals')}>
       <div className="meal-search">
         <label className="meal-search-box">
           <SearchIcon size={18} />
@@ -35,21 +36,21 @@ export default function SearchSheet({ open, onClose, onPick }: { open: boolean; 
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Lasagne, porridge, sushi…"
-            aria-label="Search your meals"
+            placeholder={t('Lasagne, porridge, sushi…')}
+            aria-label={t('Search your meals')}
             autoFocus
             enterKeyHint="search"
           />
         </label>
 
         {!searching ? (
-          <p className="tiny muted">Every meal you have logged, searched on your phone. Try a dish or an ingredient.</p>
+          <p className="tiny muted">{t('Every meal you have logged, searched on your phone. Try a dish or an ingredient.')}</p>
         ) : hits.length === 0 ? (
-          <p className="small muted">Nothing matching “{query.trim()}” yet.</p>
+          <p className="small muted">{t('Nothing matching “{query}” yet.', { query: query.trim() })}</p>
         ) : (
           <>
             <p className="tiny muted">
-              {hits.length === 60 ? 'The 60 most recent' : hits.length} {hits.length === 1 ? 'meal' : 'meals'}
+              {hits.length === 60 ? t('The {n} most recent meals', { n: 60 }) : plural(hits.length, { one: '{n} meal', other: '{n} meals' })}
             </p>
             <ul className="meal-search-results">
               {hits.map(({ meal, items }) => (
@@ -63,7 +64,7 @@ export default function SearchSheet({ open, onClose, onPick }: { open: boolean; 
                     }}
                   >
                     <span className="tiny muted">
-                      {when(meal.date)} · {SLOT_WORDS[meal.slot] ?? meal.slot}
+                      {when(meal.date)} · {slotName(meal.slot)}
                     </span>
                     <b className="small">{meal.title}</b>
                     {items.length > 0 && <span className="tiny muted">{items.join(', ')}</span>}

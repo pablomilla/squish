@@ -8,6 +8,7 @@
  */
 import { ACCESSORIES, PACKS, SLOTS, type Accessory, type Outfit, type Pack } from './outfit';
 import { SCENES, type Scene } from './scenes';
+import { t, uiLanguage, uiLocale } from './i18n';
 
 export interface PackContents {
   pack: Pack;
@@ -24,11 +25,18 @@ export interface PackContents {
 const inPack = (pack: Pack) => (thing: { unlock: { kind: string; pack?: Pack } }) =>
   thing.unlock.kind === 'pack' && thing.unlock.pack === pack;
 
-/** A list in words: "a", "a and b", "a, b and c". */
+/** A list in words, the way their language joins one: "a, b and c", "a, b y c". */
 export function listWords(words: string[]): string {
   if (words.length <= 1) return words[0] ?? '';
-  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+  try {
+    return new Intl.ListFormat(uiLocale(), { style: 'long', type: 'conjunction' }).format(words);
+  } catch {
+    return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+  }
 }
+
+/** Lower-case the first letter mid-sentence — in English only: German capitalises its nouns. */
+const midSentence = (name: string) => (uiLanguage() === 'en' ? name.charAt(0).toLowerCase() + name.slice(1) : name);
 
 export function packContents(pack: Pack): PackContents {
   const items = ACCESSORIES.filter(inPack(pack));
@@ -39,8 +47,8 @@ export function packContents(pack: Pack): PackContents {
     if (first) look[id] = first.id;
   }
   // Only the first word keeps its capital: "Chef's hat and neckerchief".
-  const names = [...items.map((item) => item.name), ...scenes.map((scene) => `the ${scene.name} scene`)].map((name, i) =>
-    i === 0 || name.startsWith('the ') ? name : name.charAt(0).toLowerCase() + name.slice(1),
+  const names = [...items.map((item) => item.name), ...scenes.map((scene) => t('the {name} scene', { name: scene.name }))].map((name, i) =>
+    i === 0 || name.startsWith('the ') ? name : midSentence(name),
   );
   return { pack, name: PACKS[pack], items, scenes, look, words: listWords(names), count: items.length + scenes.length };
 }
@@ -53,4 +61,5 @@ export function packsAmong(things: { unlock: { kind: string; pack?: Pack } }[]):
   return ALL_PACKS.filter((contents) => things.some((thing) => thing.unlock.kind === 'pack' && thing.unlock.pack === contents.pack));
 }
 
-export const packLocked = (contents: PackContents): string => `The ${contents.name} — ${contents.words.charAt(0).toLowerCase()}${contents.words.slice(1)} — is not on sale yet.`;
+export const packLocked = (contents: PackContents): string =>
+  t('The {pack} — {contents} — is not on sale yet.', { pack: contents.name, contents: midSentence(contents.words) });

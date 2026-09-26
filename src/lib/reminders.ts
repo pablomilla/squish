@@ -14,6 +14,7 @@
  */
 import { LocalNotifications, type PermissionStatus } from '@capacitor/local-notifications';
 import { isNative } from './origin';
+import { t } from './i18n';
 
 export type ReminderBlocker = 'ok' | 'not-on-web' | 'denied' | 'unavailable';
 
@@ -34,9 +35,9 @@ const IDS: Record<keyof ReminderTimes, number> = { breakfast: 1, lunch: 2, dinne
 
 /** Said in Squish's voice, because it arrives on a lock screen with its name on it. */
 const WORDS: Record<keyof ReminderTimes, { title: string; body: string }> = {
-  breakfast: { title: 'Morning', body: 'What did breakfast look like?' },
-  lunch: { title: 'Lunchtime', body: 'Worth logging while you remember it.' },
-  dinner: { title: 'Evening', body: 'Round the day off — what was dinner?' },
+  breakfast: { title: t('Morning'), body: t('What did breakfast look like?') },
+  lunch: { title: t('Lunchtime'), body: t('Worth logging while you remember it.') },
+  dinner: { title: t('Evening'), body: t('Round the day off — what was dinner?') },
 };
 
 /** "08:30" → { hour: 8, minute: 30 }, or nothing if it is not a time. */
@@ -64,11 +65,11 @@ export function explainBlocker(blocker: ReminderBlocker): string {
     case 'not-on-web':
       // Not a fault, and not a thing to fix. A web page cannot wake a phone
       // without a server awake at breakfast to do it for them.
-      return 'Reminders live in the Squish app on your phone, where they can nudge you without needing a server awake at breakfast.';
+      return t('Reminders live in the Squish app on your phone, where they can nudge you without needing a server awake at breakfast.');
     case 'denied':
-      return 'Notifications are turned off for Squish. You can allow them again in your phone’s settings.';
+      return t('Notifications are turned off for Squish. You can allow them again in your phone’s settings.');
     case 'unavailable':
-      return 'This device will not let Squish schedule reminders.';
+      return t('This device will not let Squish schedule reminders.');
     default:
       return '';
   }
@@ -98,11 +99,11 @@ export async function enableReminders(times: ReminderTimes): Promise<EnableResul
     return { ok: false, blocker: 'unavailable', message: explainBlocker('unavailable') };
   }
   if (status.display !== 'granted') {
-    return { ok: false, blocker: 'denied', message: 'Reminders need permission to show notifications.' };
+    return { ok: false, blocker: 'denied', message: t('Reminders need permission to show notifications.') };
   }
 
   const meals = (Object.keys(IDS) as (keyof ReminderTimes)[]).filter((meal) => at(times[meal]));
-  if (!meals.length) return { ok: false, message: 'Set a time for at least one meal first.' };
+  if (!meals.length) return { ok: false, message: t('Set a time for at least one meal first.') };
 
   try {
     // Clear first: a meal whose time was removed should stop, and scheduling
@@ -118,7 +119,7 @@ export async function enableReminders(times: ReminderTimes): Promise<EnableResul
     });
     return { ok: true };
   } catch {
-    return { ok: false, message: 'Reminders could not be set up. Try again in a moment.' };
+    return { ok: false, message: t('Reminders could not be set up. Try again in a moment.') };
   }
 }
 

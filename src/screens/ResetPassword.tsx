@@ -15,6 +15,7 @@ import Squish from '../components/Squish';
 import PasswordField from '../components/PasswordField';
 import { clearResetUrl, completeReset } from '../lib/account';
 import './reset.css';
+import { t } from '../lib/i18n';
 
 export default function ResetPassword({ token }: { token: string }) {
   const [password, setPassword] = useState('');
@@ -44,23 +45,23 @@ export default function ResetPassword({ token }: { token: string }) {
 
       {done ? (
         <>
-          <h1>That is done</h1>
-          <p className="small muted">You can sign in with your new password now.</p>
+          <h1>{t('That is done')}</h1>
+          <p className="small muted">{t('You can sign in with your new password now.')}</p>
           <button type="button" className="btn" onClick={() => location.assign('/')}>
-            Open Squish
+            {t('Open Squish')}
           </button>
         </>
       ) : (
         <>
-          <h1>Pick a new password</h1>
+          <h1>{t('Pick a new password')}</h1>
           <form className="stack reset-form" onSubmit={(event) => void go(event)}>
             <PasswordField
               id="reset-password"
-              label="New password"
+              label={t('New password')}
               value={password}
               onChange={setPassword}
               autoComplete="new-password"
-              hint="Four words you will remember beats one word with a number on the end."
+              hint={t('Four words you will remember beats one word with a number on the end.')}
             />
             {trouble && (
               <p className="tiny reset-trouble" role="alert">
@@ -68,7 +69,7 @@ export default function ResetPassword({ token }: { token: string }) {
               </p>
             )}
             <button type="submit" className="btn" disabled={busy || !password}>
-              {busy ? 'One moment…' : 'Set my password'}
+              {busy ? t('One moment…') : t('Set my password')}
             </button>
           </form>
         </>

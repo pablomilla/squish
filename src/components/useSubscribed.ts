@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { planNow, watchStanding, type Standing } from '../lib/plan';
+import { plural, t } from '../lib/i18n';
 
 const subscribe = (listener: () => void) => watchStanding(() => listener());
 
@@ -28,8 +29,8 @@ export function useNutritionistAccess(): NutritionistAccess {
   const standing = useStanding();
   if (!standing.known || standing.off) return { locked: false, needsAccount: false, label: null, standing };
   const left = standing.left.chat;
-  if (standing.plan === 'plus') return { locked: false, needsAccount: false, label: `${left} left this month`, standing };
-  if (standing.needsAccount) return { locked: true, needsAccount: true, label: 'Free to try', standing };
-  if (left > 0) return { locked: false, needsAccount: false, label: `${left} free question${left === 1 ? '' : 's'}`, standing };
+  if (standing.plan === 'plus') return { locked: false, needsAccount: false, label: t('{n} left this month', { n: left }), standing };
+  if (standing.needsAccount) return { locked: true, needsAccount: true, label: t('Free to try'), standing };
+  if (left > 0) return { locked: false, needsAccount: false, label: plural(left, { one: '{n} free question', other: '{n} free questions' }), standing };
   return { locked: true, needsAccount: false, label: 'Squish Plus', standing };
 }

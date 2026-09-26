@@ -84,10 +84,14 @@ Around it:
 - **Headers.** The language travels as `X-Squish-Language`, and only a value
   from the fixed list reaches a prompt.
 
+## The interface
+
+The app itself is translated too — see docs/translation.md. Choosing a
+language on the first screen or on You → About you switches both the app and
+its AI, and restarts Squish in it.
+
 ## Not yet
 
-- The app's own text is British English everywhere except the words above,
-  in every language. Translating the interface is the next step.
 - A meal planned from a photo or description (rather than a weekly plan) in
   another language has no aisle, so it lands under "Other" on the list.
 - Barcode lookups return Open Food Facts' own product names.

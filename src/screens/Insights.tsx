@@ -19,14 +19,26 @@ import { currentEnergyUnit, energyValue, fibreWord, formatEnergy } from '../lib/
 import type { MacroKey } from '../types';
 import { progressBars, type Range } from '../lib/progressBars';
 import './insights.css';
+import { plural, t, uiLanguage } from '../lib/i18n';
 
 type Metric = 'calories' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'salt' | 'score';
 
 /** Functions of the region: kJ or kcal, salt in grams or sodium in milligrams, fibre or fiber. */
 const metricUnit = (m: Metric): string =>
-  ({ calories: currentEnergyUnit(), protein: 'g', carbs: 'g', fat: 'g', fibre: 'g', sugar: 'g', salt: saltUnit(), score: 'pts' })[m];
+  ({ calories: currentEnergyUnit(), protein: 'g', carbs: 'g', fat: 'g', fibre: 'g', sugar: 'g', salt: saltUnit(), score: t('pts') })[m];
 const metricLabel = (m: Metric): string =>
-  ({ calories: currentEnergyUnit() === 'kJ' ? 'Energy' : 'Calories', protein: 'Protein', carbs: 'Carbs', fat: 'Fat', fibre: fibreWord(), sugar: 'Sugar', salt: saltLabel(), score: 'Quality' })[m];
+  ({
+    calories: currentEnergyUnit() === 'kJ' ? t('Energy') : t('Calories'),
+    protein: t('Protein'),
+    carbs: t('Carbs'),
+    fat: t('Fat'),
+    fibre: fibreWord(),
+    sugar: t('Sugar'),
+    salt: saltLabel(),
+    score: t('Quality'),
+  })[m];
+/** Mid-sentence: lower case in English, as written in languages (German) where nouns keep their capital. */
+const inSentence = (words: string) => (uiLanguage() === 'en' ? words.toLowerCase() : words);
 /** A figure as the charts hold it (kcal, grams of salt), in the unit shown. */
 const shown = (m: Metric, value: number): number =>
   m === 'calories' ? energyValue(value) : m === 'salt' ? saltShownFromSalt(value) : value;
@@ -164,11 +176,11 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
     return [
       ...(weekTotals.satFat === undefined
         ? []
-        : [{ key: 'satFat', label: 'Saturates', avg: round1(weekTotals.satFat / logged), limit: Math.round(targets.satFat ?? 0) }]),
+        : [{ key: 'satFat', label: t('Saturates'), avg: round1(weekTotals.satFat / logged), limit: Math.round(targets.satFat ?? 0) }]),
       ...(weekTotals.freeSugar === undefined
         ? []
-        : [{ key: 'freeSugar', label: 'Free sugars', avg: round1(weekTotals.freeSugar / logged), limit: Math.round(targets.freeSugar ?? 0) }]),
-      { key: 'sugar', label: 'Sugar', avg: Math.round(weekTotals.sugar / logged), limit: ceilingLimit('sugar', targets) },
+        : [{ key: 'freeSugar', label: t('Free sugars'), avg: round1(weekTotals.freeSugar / logged), limit: Math.round(targets.freeSugar ?? 0) }]),
+      { key: 'sugar', label: t('Sugar'), avg: Math.round(weekTotals.sugar / logged), limit: ceilingLimit('sugar', targets) },
       { key: 'salt', label: saltLabel(), avg: saltShown(weekTotals.sodium / logged), limit: saltShown(targets.sodium ?? 0) },
     ].filter((row) => row.limit > 0);
   }, [points, weekTotals, targets]);
@@ -177,8 +189,8 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
     <div className="screen insights">
       <header className="screen-head">
         <div>
-          <h1>Your progress</h1>
-          <p>{summary.loggedDays} of {summary.days} days logged</p>
+          <h1>{t('Your progress')}</h1>
+          <p>{t('{logged} of {days} days logged', { logged: summary.loggedDays, days: summary.days })}</p>
         </div>
         <div className="home-streak">
           <FlameIcon size={18} />
@@ -187,13 +199,13 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
       </header>
 
       <Segmented<Range>
-        label="Range"
+        label={t('Range')}
         value={range}
         onChange={setRange}
         options={[
-          { value: '7', label: 'Weekly' },
-          { value: '30', label: 'Monthly' },
-          { value: 'all', label: 'All time' },
+          { value: '7', label: t('Weekly') },
+          { value: '30', label: t('Monthly') },
+          { value: 'all', label: t('All time') },
         ]}
       />
 
@@ -203,15 +215,15 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
           <div>
             <p className="speech">
               {streak >= 3
-                ? `You're on a ${streak} day streak! Keep it going 💜`
-                : 'Log something today and we start a new streak together.'}
+                ? t("You're on a {n} day streak! Keep it going 💜", { n: streak })
+                : t('Log something today and we start a new streak together.')}
             </p>
             <p className="tiny muted" style={{ marginTop: 8 }}>
-              Best streak: {best} day{best === 1 ? '' : 's'}
+              {plural(best, { one: 'Best streak: {n} day', other: 'Best streak: {n} days' })}
             </p>
             {forgave && (
               <p className="tiny" style={{ marginTop: 4, color: 'var(--brand-ink)' }}>
-                You missed a day and came back — the streak held. It takes two in a row to lose it.
+                {t('You missed a day and came back — the streak held. It takes two in a row to lose it.')}
               </p>
             )}
           </div>
@@ -219,7 +231,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
         {/* Always here, so the share card — and its frames and stickers — can
             be found before there is a streak to put on it. */}
         <button type="button" className="btn btn--soft btn--block share-trigger" onClick={() => setSharing(true)}>
-          <ShareIcon size={18} /> {streak >= 2 ? 'Share my streak' : 'Share a card'}
+          <ShareIcon size={18} /> {streak >= 2 ? t('Share my streak') : t('Share a card')}
         </button>
         <div className="divider" />
         <StreakDots dates={week} done={loggedThisWeek} />
@@ -227,8 +239,8 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
 
       {go && (
         <AskLink
-          label="Ask the nutritionist about your week"
-          question="How was my week, and what’s the one thing to change?"
+          label={t('Ask the nutritionist about your week')}
+          question={t('How was my week, and what’s the one thing to change?')}
           onAsk={(question) => go({ name: 'ask', question })}
         />
       )}
@@ -236,10 +248,13 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
       <section className="card">
         <div className="card-title">
           <h3>
-            {chart.grain === 'day' ? 'Daily' : chart.grain === 'week' ? 'Weekly average' : 'Monthly average'}{' '}
-            {metricLabel(metric).toLowerCase()}
+            {chart.grain === 'day'
+              ? t('Daily {metric}', { metric: inSentence(metricLabel(metric)) })
+              : chart.grain === 'week'
+                ? t('Weekly average {metric}', { metric: inSentence(metricLabel(metric)) })
+                : t('Monthly average {metric}', { metric: inSentence(metricLabel(metric)) })}
           </h3>
-          <span className="tiny muted">avg {shown(metric, metricAverage).toLocaleString()} {metricUnit(metric)}</span>
+          <span className="tiny muted">{t('avg {value} {unit}', { value: shown(metric, metricAverage), unit: metricUnit(metric) })}</span>
         </div>
         <WeeklyBars
           key={range}
@@ -260,27 +275,27 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
 
       <section className="insights-stats">
         <div className="pill-stat">
-          <span className="tiny muted">Avg energy</span>
+          <span className="tiny muted">{t('Avg energy')}</span>
           <b>{formatEnergy(summary.avgCalories)}</b>
         </div>
         <div className="pill-stat">
-          <span className="tiny muted">On-target days</span>
+          <span className="tiny muted">{t('On-target days')}</span>
           <b>{summary.onTargetDays}</b>
         </div>
         <div className="pill-stat">
-          <span className="tiny muted">Avg quality</span>
+          <span className="tiny muted">{t('Avg quality')}</span>
           <b>{summary.avgScore}/100</b>
         </div>
         <div className="pill-stat">
-          <span className="tiny muted">Habit rate</span>
+          <span className="tiny muted">{t('Habit rate')}</span>
           <b>{habitScore}%</b>
         </div>
       </section>
 
       <section className="card">
         <div className="card-title">
-          <h3>Average day</h3>
-          <span className="tiny muted">per logged day</span>
+          <h3>{t('Average day')}</h3>
+          <span className="tiny muted">{t('per logged day')}</span>
         </div>
         <MacroSplitBar totals={{ calories: weekTotals.calories, protein: weekTotals.protein, carbs: weekTotals.carbs, fat: weekTotals.fat, fibre: weekTotals.fibre }} />
         <div className="divider" />
@@ -299,9 +314,9 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
                 <b>{avg} g</b>
                 <span
                   className={`tiny ${on ? 'avg-on' : over ? 'avg-over' : 'avg-off'}`}
-                  aria-label={`${Math.round(share * 100)} per cent of the ${MACRO_LABEL[key]} goal`}
+                  aria-label={t('{percent} per cent of the {nutrient} goal', { percent: Math.round(share * 100), nutrient: MACRO_LABEL[key] })}
                 >
-                  {over ? `over ${limit} g` : on ? 'on target' : `${Math.round(share * 100)}%`}
+                  {over ? t('over {n} g', { n: limit }) : on ? t('on target') : `${Math.round(share * 100)}%`}
                 </span>
               </div>
             );
@@ -322,9 +337,9 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
                     </b>
                     <span
                       className={`tiny ${under ? 'avg-on' : 'avg-over'}`}
-                      aria-label={`${under ? 'under' : 'over'} the ${limit} ${unit === 'mg' ? 'milligram' : 'gram'} daily limit`}
+                      aria-label={under ? t('under the {limit} {unit} daily limit', { limit, unit }) : t('over the {limit} {unit} daily limit', { limit, unit })}
                     >
-                      {under ? 'under' : 'over'} {limit.toLocaleString()} {unit}
+                      {under ? t('under {limit} {unit}', { limit, unit }) : t('over {limit} {unit}', { limit, unit })}
                     </span>
                   </div>
                 );
@@ -336,14 +351,16 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
 
       <section className="card">
         <div className="card-title">
-          <h3>Weight</h3>
-          <span className="tiny muted">goal {formatWeight(profile.targetWeightKg, profile.units)}</span>
+          <h3>{t('Weight')}</h3>
+          <span className="tiny muted">{t('goal {weight}', { weight: formatWeight(profile.targetWeightKg, profile.units) })}</span>
         </div>
         <WeightTrend points={weights} goalKg={profile.targetWeightKg} units={profile.units} />
         {weights.length >= 2 && (
           <p className="tiny muted" style={{ marginTop: 6 }}>
-            {formatWeightDelta(weights[weights.length - 1].weightKg - weights[0].weightKg, profile.units)} since{' '}
-            {shortDate(weights[0].date)}
+            {t('{change} since {date}', {
+              change: formatWeightDelta(weights[weights.length - 1].weightKg - weights[0].weightKg, profile.units),
+              date: shortDate(weights[0].date),
+            })}
           </p>
         )}
       </section>
@@ -351,14 +368,16 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
       {topFoods.length > 0 && (
         <section className="card card--quiet">
           <div className="card-title">
-            <h3>You eat a lot of…</h3>
+            <h3>{t('You eat a lot of…')}</h3>
           </div>
           {topFoods.map((food) => (
             <div className="list-row" key={food.name}>
               <span className="thumb thumb--emoji" aria-hidden="true">{food.emoji ?? '🍽️'}</span>
               <span className="grow">
                 <b className="small">{food.name}</b>
-                <p className="tiny muted">{food.count} time{food.count === 1 ? '' : 's'} · {formatEnergy(food.kcal)} total</p>
+                <p className="tiny muted">
+                  {plural(food.count, { one: '{n} time · {energy} total', other: '{n} times · {energy} total' }, { energy: formatEnergy(food.kcal) })}
+                </p>
               </span>
             </div>
           ))}
@@ -367,7 +386,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>Achievements</h3>
+          <h3>{t('Achievements')}</h3>
           <span className="tiny muted">
             {ACHIEVEMENTS.filter((a) => unlocked[a.id]).length}/{ACHIEVEMENTS.length}
           </span>
@@ -379,7 +398,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
               <div className="badge-group-head">
                 <h4 className="tiny">{group.title}</h4>
                 <span className="tiny muted">
-                  {badges.filter((a) => unlocked[a.id]).length} of {badges.length}
+                  {t('{n} of {total}', { n: badges.filter((a) => unlocked[a.id]).length, total: badges.length })}
                 </span>
               </div>
               <div className="badge-grid">
@@ -389,7 +408,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
                     <div key={a.id} className={`achievement ${unlocked[a.id] ? 'is-on' : ''}`} title={a.description}>
                       <span aria-hidden="true">{a.emoji}</span>
                       <b className="tiny">{a.title}</b>
-                      <span className="tiny muted">{unlocked[a.id] ? 'unlocked' : a.description}</span>
+                      <span className="tiny muted">{unlocked[a.id] ? t('unlocked') : a.description}</span>
                       {unlocks && !unlocked[a.id] && <span className="tiny achievement-reward">🎁 {unlocks}</span>}
                     </div>
                   );
@@ -401,7 +420,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
       </section>
 
       <p className="script center" style={{ fontSize: 20, color: 'var(--ink-2)' }}>
-        A happier you, with Squish.
+        {t('A happier you, with Squish.')}
       </p>
 
       <ShareSheet open={sharing} onClose={() => setSharing(false)} data={shareData} />

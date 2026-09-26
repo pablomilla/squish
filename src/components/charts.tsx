@@ -8,6 +8,7 @@ import { shortDate, weekdayLetter } from '../lib/date';
 import { formatWeight, saltShown, saltUnit, type Units } from '../lib/units';
 import { currentEnergyUnit, energyValue } from '../lib/region';
 import './charts.css';
+import { t, uiLocale } from '../lib/i18n';
 
 export const MACRO_COLOR: Record<MacroKey, string> = {
   protein: 'var(--dv-protein)',
@@ -64,7 +65,7 @@ export function ProgressRing({ value: raw, target: rawTarget, size = 190, label 
         {children ?? (
           <>
             <b>{over ? `+${Math.round(value - target).toLocaleString()}` : left.toLocaleString()}</b>
-            <span>{unit} {over ? 'over' : label}</span>
+            <span>{over ? t('{unit} over', { unit }) : label === 'left' ? t('{unit} left', { unit }) : `${unit} ${label}`}</span>
           </>
         )}
       </div>
@@ -88,14 +89,14 @@ export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets
     // otherwise read as a day with none in it.
     ...(totals.satFat === undefined
       ? []
-      : [{ key: 'satFat' as const, label: 'Saturates', value: round1(totals.satFat), limit: Math.round(targets.satFat ?? 0), unit: 'g' }]),
+      : [{ key: 'satFat' as const, label: t('Saturates'), value: round1(totals.satFat), limit: Math.round(targets.satFat ?? 0), unit: 'g' }]),
     ...(totals.freeSugar === undefined
       ? []
-      : [{ key: 'freeSugar' as const, label: 'Free sugars', value: round1(totals.freeSugar), limit: Math.round(targets.freeSugar ?? 0), unit: 'g' }]),
+      : [{ key: 'freeSugar' as const, label: t('Free sugars'), value: round1(totals.freeSugar), limit: Math.round(targets.freeSugar ?? 0), unit: 'g' }]),
     // Against the limit, not the aim. Total sugars aim at 10% of energy but
     // are only over at the labelling reference intake — showing the aim here
     // turned a day of fruit amber, which is the thing free sugars just fixed.
-    { key: 'sugar' as const, label: 'Sugar', value: Math.round(totals.sugar ?? 0), limit: ceilingLimit('sugar', targets), unit: 'g' },
+    { key: 'sugar' as const, label: t('Sugar'), value: Math.round(totals.sugar ?? 0), limit: ceilingLimit('sugar', targets), unit: 'g' },
     { key: 'sodium' as const, label: CEILING_LABEL.sodium, value: saltShown(totals.sodium ?? 0), limit: saltShown(targets.sodium ?? 0), unit: saltUnit() },
   ].filter((row) => row.limit > 0); // No limit set, nothing meaningful to say.
 
@@ -150,8 +151,8 @@ export function Micronutrients({ totals, targets }: { totals: Nutrients; targets
   return (
     <details className="card micro-card">
       <summary className="card-title">
-        <h3>Vitamins &amp; minerals</h3>
-        <span className="tiny muted">{rows.filter((r) => r.value >= r.target).length} of {rows.length} met</span>
+        <h3>{t('Vitamins & minerals')}</h3>
+        <span className="tiny muted">{t('{met} of {total} met', { met: rows.filter((r) => r.value >= r.target).length, total: rows.length })}</span>
       </summary>
 
       <div className="micro-list">
@@ -164,7 +165,7 @@ export function Micronutrients({ totals, targets }: { totals: Nutrients; targets
               <div
                 className="macro-track micro-track"
                 role="img"
-                aria-label={`${row.label}: ${round1(row.value)} of ${row.target} ${row.unit}`}
+                aria-label={t('{nutrient}: {value} of {target} {unit}', { nutrient: row.label, value: round1(row.value), target: row.target, unit: row.unit })}
               >
                 <span
                   className="macro-fill"
@@ -172,7 +173,7 @@ export function Micronutrients({ totals, targets }: { totals: Nutrients; targets
                 />
               </div>
               <span className="tiny micro-value">
-                <b>{round1(row.value)}</b>
+                <b>{round1(row.value).toLocaleString()}</b>
                 <span className="muted"> / {row.target} {row.unit}</span>
               </span>
             </div>
@@ -184,8 +185,7 @@ export function Micronutrients({ totals, targets }: { totals: Nutrients; targets
           that looks precise about a vitamin invites more trust than it has
           earned. */}
       <p className="tiny muted micro-note">
-        Estimated from what you logged, so treat these as a rough guide. Anything logged without a figure for a
-        vitamin is not counted towards it.
+        {t('Estimated from what you logged, so treat these as a rough guide. Anything logged without a figure for a vitamin is not counted towards it.')}
       </p>
     </details>
   );
@@ -217,7 +217,7 @@ export function MacroBars({ totals, targets, compact = false }: { totals: Nutrie
             <div
               className="macro-track"
               role="img"
-              aria-label={`${MACRO_LABEL[key]}: ${value} of ${target} grams${over ? ', over target' : ''}`}
+              aria-label={over ? t('{nutrient}: {value} of {target} grams, over target', { nutrient: MACRO_LABEL[key], value, target }) : t('{nutrient}: {value} of {target} grams', { nutrient: MACRO_LABEL[key], value, target })}
             >
               {/* backgroundColor, not background: the shorthand would wipe out
                   the stripes the stylesheet lays over an out-of-range bar. */}
@@ -250,7 +250,7 @@ export function OverTargetNote({ over }: { over: OverTarget[] }) {
         {/* No "today" — the diary shows other days, and it was wrong on those.
             "Limit" rather than "target": for fat that is a different, higher
             number, and being above the target is not the thing being reported. */}
-        <b className="small">{loud ? 'Well over the limit' : 'Over the limit'}</b>
+        <b className="small">{loud ? t('Well over the limit') : t('Over the limit')}</b>
         <ul className="over-note-list">
           {over.map((o) => {
             const salt = o.key === 'sodium';
@@ -259,7 +259,7 @@ export function OverTargetNote({ over }: { over: OverTarget[] }) {
             const unit = salt ? saltUnit() : 'g';
             return (
               <li className="tiny" key={o.key}>
-                {CEILING_LABEL[o.key]} {value.toLocaleString()} {unit} — {overPhrase(o)} your {target.toLocaleString()} {unit} limit.
+                {t('{nutrient} {value} {unit} — {how} your {target} {unit} limit.', { nutrient: CEILING_LABEL[o.key], value, unit, how: overPhrase(o), target })}
               </li>
             );
           })}
@@ -345,7 +345,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
       <div className="chart-plot" style={{ height }} onPointerLeave={() => setActive(null)}>
         {target > 0 && (
           <div className="chart-target" style={{ bottom: `${(target / max) * 100}%` }}>
-            <span>{ceiling ? 'limit' : 'target'} {round1(target).toLocaleString()}</span>
+            <span>{ceiling ? t('limit {n}', { n: round1(target) }) : t('target {n}', { n: round1(target) })}</span>
           </div>
         )}
         {/* Thirty bars on a phone need the gaps down to the 2px that still separates them. */}
@@ -362,7 +362,7 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
                 onFocus={() => setActive(index)}
                 onBlur={() => setActive(null)}
                 onClick={() => setActive(isActive ? null : index)}
-                aria-label={`${point.title ?? shortDate(point.date)}: ${value} ${unit}`}
+                aria-label={`${point.title ?? shortDate(point.date)}: ${value.toLocaleString()} ${unit}`}
               >
                 <span className="chart-bar-hit" />
                 <span
@@ -386,14 +386,14 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
           {active !== null && points[active] ? (
             <>
               {points[active].title ?? shortDate(points[active].date)} ·{' '}
-              <b>{points[active][metric] > 0 ? `${points[active][metric].toLocaleString('en-GB')} ${unit}` : 'nothing logged'}</b>
+              <b>{points[active][metric] > 0 ? `${points[active][metric].toLocaleString(uiLocale())} ${unit}` : t('nothing logged')}</b>
             </>
           ) : (
-            <span className="muted">Tap a bar for its figure</span>
+            <span className="muted">{t('Tap a bar for its figure')}</span>
           )}
         </span>
         <button type="button" className="btn--quiet tiny" aria-expanded={showTable} aria-controls={tableId} onClick={() => setShowTable((v) => !v)}>
-          {showTable ? 'Hide table' : 'View as table'}
+          {showTable ? t('Hide table') : t('View as table')}
         </button>
       </figcaption>
 
@@ -401,9 +401,9 @@ export function WeeklyBars({ points, target, metric = 'calories', unit = 'kcal',
         <table className="chart-table" id={tableId}>
           <thead>
             <tr>
-              <th scope="col">{points[0]?.title?.startsWith('Week') ? 'Week' : 'Day'}</th>
+              <th scope="col">{points[0]?.title ? t('Period') : t('Day')}</th>
               <th scope="col">{unit}</th>
-              <th scope="col">Score</th>
+              <th scope="col">{t('Score')}</th>
             </tr>
           </thead>
           <tbody>
@@ -435,7 +435,7 @@ export function WeightTrend({
 }) {
   const [active, setActive] = useState<number | null>(null);
   if (points.length < 2) {
-    return <p className="empty">Log your weight on a couple of days and the trend will show up here.</p>;
+    return <p className="empty">{t('Log your weight on a couple of days and the trend will show up here.')}</p>;
   }
 
   const w = 320;
@@ -452,7 +452,7 @@ export function WeightTrend({
 
   return (
     <figure className="chart">
-      <svg viewBox={`0 0 ${w} ${h}`} className="trend" role="img" aria-label="Weight trend over time">
+      <svg viewBox={`0 0 ${w} ${h}`} className="trend" role="img" aria-label={t('Weight trend over time')}>
         {goalKg && (
           <line x1={pad} x2={w - pad} y1={y(goalKg)} y2={y(goalKg)} stroke="var(--dv-grid)" strokeWidth="2" strokeDasharray="4 5" />
         )}
@@ -485,7 +485,7 @@ export function WeightTrend({
       <figcaption className="trend-readout">
         <b>{formatWeight(points[current].weightKg, units)}</b>
         <span className="muted"> · {shortDate(points[current].date)}</span>
-        {goalKg && <span className="muted"> · goal {formatWeight(goalKg, units)}</span>}
+        {goalKg && <span className="muted"> · {t('goal {weight}', { weight: formatWeight(goalKg, units) })}</span>}
       </figcaption>
     </figure>
   );
@@ -503,7 +503,7 @@ export function StreakDots({ dates, done }: { dates: string[]; done: boolean[] }
             {done[i] ? '✓' : ''}
           </span>
           <span className="tiny muted">{weekdayLetter(date)}</span>
-          <span className="visually-hidden">{done[i] ? 'logged' : 'not logged'}</span>
+          <span className="visually-hidden">{done[i] ? t('logged') : t('not logged')}</span>
         </div>
       ))}
     </div>
@@ -526,10 +526,10 @@ export function ScoreMeter({ score, size = 44, label = size >= 50 }: { score: nu
       className={`quality-tile quality-tile--${band}`}
       style={{ width: size, height: size, fontSize: size * (label ? 0.36 : 0.4) }}
       role="img"
-      aria-label={scored ? `Food quality ${score} out of 100` : 'No calories to score'}
+      aria-label={scored ? t('Food quality {score} out of 100', { score }) : t('No calories to score')}
     >
       <b>{scored ? score : '–'}</b>
-      {label && <span className="quality-word">quality</span>}
+      {label && <span className="quality-word">{t('quality')}</span>}
     </span>
   );
 }

@@ -14,6 +14,7 @@ import { deviceToken } from './identity';
 import { switchedIdentity } from './autobackup';
 import { refreshPlan } from './plan';
 import { forgetReferral, referral } from './referral';
+import { t } from './i18n';
 
 export interface Who {
   signedIn: boolean;
@@ -34,7 +35,7 @@ export interface Trouble {
 
 export type Done<T> = ({ ok: true } & T) | Trouble;
 
-const SOMETHING = 'Could not reach Squish just now. Try again in a moment.';
+const SOMETHING = t('Could not reach Squish just now. Try again in a moment.');
 
 async function headers(): Promise<Record<string, string>> {
   const token = await deviceToken(apiUrl);
@@ -53,7 +54,7 @@ async function ask<T>(method: string, path: string, body?: unknown): Promise<Don
     });
     const payload = (await response.json().catch(() => null)) as (T & { message?: string }) | null;
 
-    if (!response.ok) return { ok: false, message: payload?.message ?? SOMETHING };
+    if (!response.ok) return { ok: false, message: payload?.message ? t(payload.message) : SOMETHING };
     return { ok: true, ...(payload as T) };
   } catch {
     return { ok: false, message: SOMETHING };

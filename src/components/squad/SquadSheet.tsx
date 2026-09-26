@@ -6,6 +6,8 @@ import { blockInSquad, leaveSquad, loggedToday, memberMood, renameInSquad, sendC
 import { isoDate } from '../../lib/date';
 import type { Outfit } from '../../lib/outfit';
 import './squad.css';
+import { t } from '../../lib/i18n';
+import { richPlural } from '../../lib/i18n-react';
 
 export function MemberSquish({ member, size = 52 }: { member: SquadMember; size?: number }) {
   return (
@@ -15,7 +17,7 @@ export function MemberSquish({ member, size = 52 }: { member: SquadMember; size?
       bob={false}
       look={member.look ?? 'squish'}
       outfit={member.outfit as Outfit}
-      label={`${member.name}'s Squish`}
+      label={t("{name}'s Squish", { name: member.name })}
     />
   );
 }
@@ -42,15 +44,15 @@ export default function SquadSheet({ squad, open, onClose }: { squad: Squad; ope
       return;
     }
     const sent = CHEERS.find((c) => c.id === id)!;
-    toast(`Sent ${member.name} “${sent.words}”`, sent.emoji);
+    toast(t('Sent {name} “{cheer}”', { name: member.name, cheer: sent.words }), sent.emoji);
     setCheering(null);
   };
 
   const invite = async () => {
-    const text = `Join my Squish squad, ${squad.name}! We cheer each other on. Code ${squad.code}:`;
+    const text = t('Join my Squish squad, {squad}! We cheer each other on. Code {code}:', { squad: t(squad.name), code: squad.code });
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Squish squad', text, url: squad.link });
+        await navigator.share({ title: t('Squish squad'), text, url: squad.link });
         return;
       }
     } catch (error) {
@@ -58,24 +60,24 @@ export default function SquadSheet({ squad, open, onClose }: { squad: Squad; ope
     }
     try {
       await navigator.clipboard.writeText(`${text} ${squad.link}`);
-      toast('Squad link copied — paste it to a friend', '🔗');
+      toast(t('Squad link copied — paste it to a friend'), '🔗');
     } catch {
-      toast(`Squad code: ${squad.code}`, '🔗');
+      toast(t('Squad code: {code}', { code: squad.code }), '🔗');
     }
   };
 
   const sentAlready = (member: SquadMember, id: string) => squad.sentToday.some((s) => s.to === member.id && s.cheer === id);
 
   return (
-    <Sheet open={open} onClose={onClose} title={squad.name}>
+    <Sheet open={open} onClose={onClose} title={t(squad.name)}>
       <div className="squad-sheet">
         <div className="squad-goal">
           <p className="small">
             {wonThisWeek
-              ? `🏆 Everybody hit ${squad.goal} days this week. Squad goals!`
-              : `This week, everybody aims to log on ${squad.goal} days — ${onTrack} of ${squad.members.length} there so far.`}
+              ? t('🏆 Everybody hit {goal} days this week. Squad goals!', { goal: squad.goal })
+              : t('This week, everybody aims to log on {goal} days — {done} of {total} there so far.', { goal: squad.goal, done: onTrack, total: squad.members.length })}
           </p>
-          {squad.weeksWon > 0 && <p className="tiny muted">Weeks the whole squad made it: {squad.weeksWon}</p>}
+          {squad.weeksWon > 0 && <p className="tiny muted">{t('Weeks the whole squad made it: {n}', { n: squad.weeksWon })}</p>}
         </div>
 
         <ul className="squad-members">
@@ -86,32 +88,33 @@ export default function SquadSheet({ squad, open, onClose }: { squad: Squad; ope
                 <div className="squad-member-text">
                   <p className="small">
                     <b>{member.name}</b>
-                    {member.isMe ? ' (you)' : ''}
+                    {member.isMe ? ` ${t('(you)')}` : ''}
                   </p>
                   <p className="tiny muted">
-                    {loggedToday(member, today) ? '✓ Logged today' : 'Not yet today'} · 🔥 {member.streak} · {Math.min(member.weekDays, 7)}/{squad.goal} this week
+                    {loggedToday(member, today) ? t('✓ Logged today') : t('Not yet today')} · 🔥 {member.streak} ·{' '}
+                    {t('{done}/{goal} this week', { done: Math.min(member.weekDays, 7), goal: squad.goal })}
                     {member.badges.length ? ` · 🏅 ${member.badges.length}` : ''}
                   </p>
                 </div>
                 {!member.isMe && (
                   <button type="button" className="btn btn--sm btn--soft" onClick={() => setCheering(cheering === member.id ? null : member.id)}>
-                    Cheer
+                    {t('Cheer')}
                   </button>
                 )}
               </div>
               {cheering === member.id && (
-                <div className="cheer-grid" role="group" aria-label={`Cheers for ${member.name}`}>
+                <div className="cheer-grid" role="group" aria-label={t('Cheers for {name}', { name: member.name })}>
                   {CHEERS.map((c) => {
                     const done = sentAlready(member, c.id);
                     return (
                       <button key={c.id} type="button" className="cheer" disabled={done} onClick={() => void cheer(member, c.id)}>
                         <span aria-hidden="true">{c.emoji}</span> {c.words}
-                        {done && <span className="tiny muted"> · sent</span>}
+                        {done && <span className="tiny muted"> · {t('sent')}</span>}
                       </button>
                     );
                   })}
                   <button type="button" className="linkish tiny squad-block-link" onClick={() => setConfirm({ kind: 'block', member })}>
-                    Block {member.name}
+                    {t('Block {name}', { name: member.name })}
                   </button>
                 </div>
               )}
@@ -119,15 +122,15 @@ export default function SquadSheet({ squad, open, onClose }: { squad: Squad; ope
           ))}
         </ul>
 
-        {others.length === 0 && <p className="small muted">Nobody else here yet. Send your squad link to a friend or two.</p>}
+        {others.length === 0 && <p className="small muted">{t('Nobody else here yet. Send your squad link to a friend or two.')}</p>}
 
         {squad.members.length < SQUAD_MAX && (
           <div className="squad-invite">
             <p className="small">
-              Invite friends — {SQUAD_MAX - squad.members.length} {SQUAD_MAX - squad.members.length === 1 ? 'place' : 'places'} left. Code <b className="mono">{squad.code}</b>
+              {richPlural(SQUAD_MAX - squad.members.length, { one: 'Invite friends — {n} place left. Code <b>{code}</b>', other: 'Invite friends — {n} places left. Code <b>{code}</b>' }, { code: squad.code }, { b: (text) => <b className="mono">{text}</b> })}
             </p>
             <button type="button" className="btn btn--block" onClick={() => void invite()}>
-              Send the squad link
+              {t('Send the squad link')}
             </button>
           </div>
         )}
@@ -135,9 +138,9 @@ export default function SquadSheet({ squad, open, onClose }: { squad: Squad; ope
         <div className="squad-me">
           {renaming === null ? (
             <p className="tiny muted">
-              You are “{me?.name}” here.{' '}
+              {t('You are “{name}” here.', { name: me?.name ?? '' })}{' '}
               <button type="button" className="linkish tiny" onClick={() => setRenaming(me?.name ?? '')}>
-                Change
+                {t('Change')}
               </button>
             </p>
           ) : (
@@ -151,31 +154,30 @@ export default function SquadSheet({ squad, open, onClose }: { squad: Squad; ope
                 });
               }}
             >
-              <input aria-label="Your name in the squad" value={renaming} maxLength={20} onChange={(event) => setRenaming(event.target.value)} />
+              <input aria-label={t('Your name in the squad')} value={renaming} maxLength={20} onChange={(event) => setRenaming(event.target.value)} />
               <button type="submit" className="btn btn--sm">
-                Save
+                {t('Save')}
               </button>
             </form>
           )}
           <p className="tiny muted">
-            Your squad sees your first name, streak, whether you logged today, your days this week, your badges and your Squish. Never
-            your food or your weight.
+            {t('Your squad sees your first name, streak, whether you logged today, your days this week, your badges and your Squish. Never your food or your weight.')}
           </p>
           <button type="button" className="btn btn--sm btn--quiet-danger" onClick={() => setConfirm({ kind: 'leave' })}>
-            Leave the squad
+            {t('Leave the squad')}
           </button>
         </div>
 
         {confirm && (
-          <div className="squad-confirm" role="alertdialog" aria-label="Are you sure?">
+          <div className="squad-confirm" role="alertdialog" aria-label={t('Are you sure?')}>
             <p className="small">
               {confirm.kind === 'leave'
-                ? 'Leave the squad? You can join again with the code, if there is room.'
-                : `Block ${confirm.member.name}? You will not see each other or each other's cheers again, in any squad. They are not told.`}
+                ? t('Leave the squad? You can join again with the code, if there is room.')
+                : t("Block {name}? You will not see each other or each other's cheers again, in any squad. They are not told.", { name: confirm.member.name })}
             </p>
             <div className="squad-confirm-actions">
               <button type="button" className="btn btn--sm btn--ghost" onClick={() => setConfirm(null)}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 type="button"
@@ -184,14 +186,14 @@ export default function SquadSheet({ squad, open, onClose }: { squad: Squad; ope
                   const run = confirm.kind === 'leave' ? leaveSquad() : blockInSquad(confirm.member.id);
                   void run.then((done) => {
                     if (!done.ok) toast(done.message, '💜');
-                    else toast(confirm.kind === 'leave' ? 'You have left the squad.' : `${confirm.member.name} is blocked.`, '👋');
+                    else toast(confirm.kind === 'leave' ? t('You have left the squad.') : t('{name} is blocked.', { name: confirm.member.name }), '👋');
                     setConfirm(null);
                     setCheering(null);
                     if (confirm.kind === 'leave') onClose();
                   });
                 }}
               >
-                {confirm.kind === 'leave' ? 'Leave' : 'Block'}
+                {confirm.kind === 'leave' ? t('Leave') : t('Block')}
               </button>
             </div>
           </div>

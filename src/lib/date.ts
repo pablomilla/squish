@@ -1,3 +1,5 @@
+import { t, uiLocale } from './i18n';
+
 export const DAY_MS = 86_400_000;
 
 export function isoDate(d: Date = new Date()): string {
@@ -32,20 +34,21 @@ export function weekOf(iso: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
 }
 
+/** The day's initial in their language: M T W T F S S, L M M J V S D. */
 export function weekdayLetter(iso: string): string {
-  return ['M', 'T', 'W', 'T', 'F', 'S', 'S'][(parseISO(iso).getDay() + 6) % 7];
+  return parseISO(iso).toLocaleDateString(uiLocale(), { weekday: 'narrow' });
 }
 
 export function shortDate(iso: string): string {
-  return parseISO(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return parseISO(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 }
 
 export function friendlyDate(iso: string): string {
   const today = isoDate();
-  if (iso === today) return 'Today';
-  if (iso === addDays(today, -1)) return 'Yesterday';
-  if (iso === addDays(today, 1)) return 'Tomorrow';
-  return parseISO(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  if (iso === today) return t('Today');
+  if (iso === addDays(today, -1)) return t('Yesterday');
+  if (iso === addDays(today, 1)) return t('Tomorrow');
+  return parseISO(iso).toLocaleDateString(uiLocale(), { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 export function nowTime(): string {
@@ -74,12 +77,12 @@ export function partOfDay(date: Date = new Date()): PartOfDay {
 
 export function greeting(date: Date = new Date()): string {
   const part = partOfDay(date);
-  if (part === 'morning') return 'Good morning!';
-  if (part === 'afternoon') return 'Good afternoon!';
-  return 'Good evening!';
+  if (part === 'morning') return t('Good morning!');
+  if (part === 'afternoon') return t('Good afternoon!');
+  return t('Good evening!');
 }
 
-/** "evening, 21:40" — the time as the coach is told it, so it never wishes anybody good morning at ten at night. */
+/** "evening, 21:40" — the time as the coach is told it (in English: it is for the prompt, not the screen), so it never wishes anybody good morning at ten at night. */
 export function timeOfDayWords(date: Date = new Date()): string {
   const hh = String(date.getHours()).padStart(2, '0');
   const mm = String(date.getMinutes()).padStart(2, '0');

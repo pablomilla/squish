@@ -12,6 +12,7 @@ import { ACCESSORIES } from './outfit';
 import { SCENES } from './scenes';
 import { FRAMES, STICKERS } from './shareDecor';
 import { listWords } from './packs';
+import { plural, t } from './i18n';
 
 type Unlockable = { name: string; unlock: { kind: string; id?: string } };
 
@@ -21,11 +22,11 @@ const earnedBy = (achievement: string) => (item: Unlockable) => item.unlock.kind
 export function rewardsFor(achievement: string): string[] {
   const test = earnedBy(achievement);
   return [
-    ...([...LOOKS, ...PLUS_LOOKS] as Unlockable[]).filter(test).map((look) => `the ${look.name} look`),
+    ...([...LOOKS, ...PLUS_LOOKS] as Unlockable[]).filter(test).map((look) => t('the {name} look', { name: look.name })),
     ...ACCESSORIES.filter(test).map((item) => item.name),
-    ...SCENES.filter(test).map((scene) => `the ${scene.name} scene`),
-    ...FRAMES.filter(test).map((frame) => `the ${frame.name} frame`),
-    ...STICKERS.filter(test).map((sticker) => `the ${sticker.name} sticker`),
+    ...SCENES.filter(test).map((scene) => t('the {name} scene', { name: scene.name })),
+    ...FRAMES.filter(test).map((frame) => t('the {name} frame', { name: frame.name })),
+    ...STICKERS.filter(test).map((sticker) => t('the {name} sticker', { name: sticker.name })),
   ];
 }
 
@@ -33,6 +34,6 @@ export function rewardsFor(achievement: string): string[] {
 export function unlocksLine(achievement: string): string {
   const rewards = rewardsFor(achievement);
   if (!rewards.length) return '';
-  const shown = rewards.length > 3 ? [...rewards.slice(0, 2), `${rewards.length - 2} more`] : rewards;
-  return `Unlocks ${listWords(shown)}`;
+  const shown = rewards.length > 3 ? [...rewards.slice(0, 2), plural(rewards.length - 2, { one: '{n} more', other: '{n} more' })] : rewards;
+  return t('Unlocks {things}', { things: listWords(shown) });
 }

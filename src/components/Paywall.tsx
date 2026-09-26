@@ -22,12 +22,32 @@ import { currentRegion, formatPrice, weeklyPrice } from '../lib/region';
 import type { OutOfAllowance } from '../lib/api';
 import NutritionistPitch from './NutritionistPitch';
 import './paywall.css';
+import { plural, t, uiLocale } from '../lib/i18n';
+import { rich } from '../lib/i18n-react';
 
-const WHAT: Record<OutOfAllowance['kind'], string> = {
-  photo: 'AI meal analyses',
-  chat: 'questions for the nutritionist',
-  recipe: 'recipe imports',
-  weekplan: 'weekly plans from the nutritionist',
+/*
+ * Whole sentences for each kind, rather than one sentence with the kind
+ * dropped in: in most languages the words round "questions" change with it.
+ */
+const USED: Record<OutOfAllowance['kind'], () => string> = {
+  photo: () => t("You have used this month's AI meal analyses."),
+  chat: () => t("You have used this month's questions for the nutritionist."),
+  recipe: () => t("You have used this month's recipe imports."),
+  weekplan: () => t("You have used this month's weekly plans from the nutritionist."),
+};
+
+const COME_WITH: Record<OutOfAllowance['kind'], () => string> = {
+  photo: () => t('AI meal analyses come with {plus}.', { plus: PLUS }),
+  chat: () => t('Questions for the nutritionist come with {plus}.', { plus: PLUS }),
+  recipe: () => t('Recipe imports come with {plus}.', { plus: PLUS }),
+  weekplan: () => t('Weekly plans from the nutritionist come with {plus}.', { plus: PLUS }),
+};
+
+const THAT_WAS: Record<OutOfAllowance['kind'], (n: number) => string> = {
+  photo: (n) => plural(n, { one: 'That was your {n} free AI meal analysis. From here, they are part of {plus}.', other: 'That was your {n} free AI meal analyses. From here, they are part of {plus}.' }, { plus: PLUS }),
+  chat: (n) => plural(n, { one: 'That was your {n} free question for the nutritionist. From here, they are part of {plus}.', other: 'That was your {n} free questions for the nutritionist. From here, they are part of {plus}.' }, { plus: PLUS }),
+  recipe: (n) => plural(n, { one: 'That was your {n} free recipe import. From here, they are part of {plus}.', other: 'That was your {n} free recipe imports. From here, they are part of {plus}.' }, { plus: PLUS }),
+  weekplan: (n) => plural(n, { one: 'That was your {n} free weekly plan. From here, they are part of {plus}.', other: 'That was your {n} free weekly plans. From here, they are part of {plus}.' }, { plus: PLUS }),
 };
 
 /** Reached by trying to use the nutritionist: the sheet leads with it. */
@@ -35,10 +55,9 @@ const aboutNutritionist = (kind: OutOfAllowance['kind']) => kind === 'chat' || k
 
 /** The day the month turns over, said the way a person would say it. */
 function comesBack(iso: string | null | undefined): string {
-  if (!iso) return 'next month';
-  const when = new Date(iso);
-  if (Number.isNaN(when.getTime())) return 'next month';
-  return `on ${when.toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}`;
+  const when = iso ? new Date(iso) : null;
+  if (!when || Number.isNaN(when.getTime())) return t('They come back next month.');
+  return t('They come back on {date}.', { date: when.toLocaleDateString(uiLocale(), { day: 'numeric', month: 'long' }) });
 }
 
 export default function Paywall({
@@ -56,25 +75,24 @@ export default function Paywall({
   const signUp = Boolean(standing?.needsAccount);
 
   return (
-    <Sheet open={Boolean(standing)} onClose={onClose} title={paying ? 'That is this month' : signUp ? 'Try it free' : PLUS}>
+    <Sheet open={Boolean(standing)} onClose={onClose} title={paying ? t('That is this month') : signUp ? t('Try it free') : PLUS}>
       {standing && signUp && (
         <div className="stack paywall">
           <Squish mood="excited" size={84} />
           <p className="small">
             {aboutNutritionist(standing.kind)
-              ? `Make a free account and ask the nutritionist ${standing.taste ?? 3} questions on us — it reads your diary before it answers.`
-              : `Make a free account and your first ${standing.taste ?? 5} AI meal analyses are on us — snap the plate, or just say what you ate.`}
+              ? t('Make a free account and ask the nutritionist {n} questions on us — it reads your diary before it answers.', { n: standing.taste ?? 3 })
+              : t('Make a free account and your first {n} AI meal analyses are on us — snap the plate, or just say what you ate.', { n: standing.taste ?? 5 })}
           </p>
           {aboutNutritionist(standing.kind) && <NutritionistPitch compact />}
           <p className="tiny muted">
-            An account also keeps a copy of your diary, so a new phone is not a fresh start. Logging by hand, food
-            search and everything else stay free without one.
+            {t('An account also keeps a copy of your diary, so a new phone is not a fresh start. Logging by hand, food search and everything else stay free without one.')}
           </p>
           <button type="button" className="btn btn--block" onClick={onCreateAccount}>
-            Make a free account
+            {t('Make a free account')}
           </button>
           <button type="button" className="btn btn--quiet btn--block" onClick={onClose}>
-            Not now
+            {t('Not now')}
           </button>
         </div>
       )}
@@ -85,12 +103,10 @@ export default function Paywall({
           {paying ? (
             <>
               <p className="small">
-                You have used this month's {WHAT[standing.kind]}. They come back {comesBack(standing.resets)}.
+                {USED[standing.kind]()} {comesBack(standing.resets)}
               </p>
               <p className="tiny muted">
-                There is a limit even on {PLUS} because the analysis costs real money to run, and a plan with no
-                ceiling would have to cost more for everybody. Logging by hand, food search and everything already in
-                your diary carry on as normal.
+                {t('There is a limit even on {plus} because the analysis costs real money to run, and a plan with no ceiling would have to cost more for everybody. Logging by hand, food search and everything already in your diary carry on as normal.', { plus: PLUS })}
               </p>
             </>
           ) : (
@@ -100,35 +116,35 @@ export default function Paywall({
                 they never had one. "You have used your 0 free questions" is
                 the sort of sentence that makes an app feel written by nobody.
               */}
-              {aboutNutritionist(standing.kind) && <h3 className="paywall-headline">Your own nutritionist</h3>}
+              {aboutNutritionist(standing.kind) && <h3 className="paywall-headline">{t('Your own nutritionist')}</h3>}
               <p className="small">
-                {standing.allowance === 0
-                  ? `${WHAT[standing.kind][0].toUpperCase()}${WHAT[standing.kind].slice(1)} come with ${PLUS}.`
-                  : `That was your ${standing.allowance} free ${WHAT[standing.kind]}. From here, they are part of ${PLUS}.`}
+                {standing.allowance === 0 ? COME_WITH[standing.kind]() : THAT_WAS[standing.kind](standing.allowance)}
               </p>
 
               {aboutNutritionist(standing.kind) && <NutritionistPitch />}
 
               <ul className="paywall-list">
                 <li className="paywall-star">
-                  <b>The nutritionist</b> — 30 questions a month about your own diary, and a weekly meal plan with its
-                  shopping list
+                  {rich('<b>The nutritionist</b> — {n} questions a month about your own diary, and a weekly meal plan with its shopping list', { n: 30 }, { b: (text) => <b>{text}</b> })}
                 </li>
                 <li>
-                  <b>60 AI meal analyses a month</b> — snap the plate, or say or type what you ate
+                  {rich('<b>{n} AI meal analyses a month</b> — snap the plate, or say or type what you ate', { n: 60 }, { b: (text) => <b>{text}</b> })}
                 </li>
                 <li>
-                  <b>10 recipe imports a month</b> — paste a link, get a portion's nutrition
+                  {rich("<b>{n} recipe imports a month</b> — paste a link, get a portion's nutrition", { n: 10 }, { b: (text) => <b>{text}</b> })}
                 </li>
                 <li>
-                  <b>Wild finishes</b> for Squish — rainbow, gold, holographic and more
+                  {rich('<b>Wild finishes</b> for Squish — rainbow, gold, holographic and more', {}, { b: (text) => <b>{text}</b> })}
                 </li>
               </ul>
 
               <p className="paywall-price">
-                <b>{formatPrice(currentRegion().price.monthly)}</b> a month, or <b>{formatPrice(currentRegion().price.yearly)}</b> a year
+                {rich('<b>{monthly}</b> a month, or <b>{yearly}</b> a year', {
+                  monthly: formatPrice(currentRegion().price.monthly),
+                  yearly: formatPrice(currentRegion().price.yearly),
+                }, { b: (text) => <b>{text}</b> })}
               </p>
-              <p className="tiny muted">A year works out at {weeklyPrice()} a week — less than a coffee, for a nutritionist who has read your diary.</p>
+              <p className="tiny muted">{t('A year works out at {price} a week — less than a coffee, for a nutritionist who has read your diary.', { price: weeklyPrice() })}</p>
 
               {/*
                 Honest rather than aspirational. There is no way to take money
@@ -138,18 +154,17 @@ export default function Paywall({
                 than no button.
               */}
               <p className="tiny muted paywall-soon">
-                Not on sale yet. Squish is being tested, and payment arrives with the phone app — so for now this is
-                here to be told whether it is worth it. If you would pay for this, or would not, please say.
+                {t('Not on sale yet. Squish is being tested, and payment arrives with the phone app — so for now this is here to be told whether it is worth it. If you would pay for this, or would not, please say.')}
               </p>
             </>
           )}
 
           <p className="tiny muted">
-            Free for ever, either way: logging by hand, food search, your whole diary, the charts, streaks and export.
+            {t('Free for ever, either way: logging by hand, food search, your whole diary, the charts, streaks and export.')}
           </p>
 
           <button type="button" className="btn btn--block" onClick={onClose}>
-            {paying ? 'Right you are' : 'Carry on without it'}
+            {paying ? t('Right you are') : t('Carry on without it')}
           </button>
         </div>
       )}

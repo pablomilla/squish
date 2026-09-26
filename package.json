@@ -21,6 +21,7 @@
     "preview": "vite preview",
     "lint": "oxlint src server test scripts eval",
     "typecheck": "tsc -b",
+    "i18n": "tsx scripts/i18n-extract.ts",
     "test": "tsx --test test/*.test.ts",
     "build:mascot": "tsx scripts/build-mascot.ts",
     "build:site-art": "tsx scripts/build-site-art.ts",

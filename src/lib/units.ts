@@ -9,6 +9,10 @@
  */
 import { round1 } from './nutrition';
 import { currentRegion } from './region';
+import { t, uiLocale } from './i18n';
+
+/** One decimal place, written the way their language writes one: 71.7, 71,7. */
+const num = (n: number) => round1(n).toLocaleString(uiLocale());
 
 /**
  * Stored weights keep two decimal places of a kilogram.
@@ -102,20 +106,20 @@ export function sodiumMg(salt: number): number {
  * milligrams of sodium everywhere else. Stored as sodium throughout.
  */
 export const showsSodium = () => currentRegion().salt === 'sodium';
-export const saltLabel = () => (showsSodium() ? 'Sodium' : 'Salt');
+export const saltLabel = () => (showsSodium() ? t('Sodium') : t('Salt'));
 export const saltUnit = () => (showsSodium() ? 'mg' : 'g');
 /** The number to show for this much sodium: salt grams to one place, or sodium to the nearest 10 mg. */
 export const saltShown = (sodium: number) => (showsSodium() ? Math.round(sodium / 10) * 10 : saltGrams(sodium));
 /** The same, from a figure already in grams of salt. */
 export const saltShownFromSalt = (salt: number) => (showsSodium() ? Math.round((salt * 1000) / SALT_PER_SODIUM / 10) * 10 : salt);
-export const formatSalt = (sodium: number) => `${saltShown(sodium).toLocaleString(currentRegion().locale)} ${saltUnit()}`;
+export const formatSalt = (sodium: number) => `${saltShown(sodium).toLocaleString(uiLocale())} ${saltUnit()}`;
 /** A limit typed in the shown unit, back to stored sodium. */
 export const sodiumFromShown = (value: number) => (showsSodium() ? Math.round(value) : sodiumMg(value));
 
 export function formatFoodWeight(grams: number): string {
   const ounces = grams / GRAMS_PER_OUNCE;
   const shown = ounces < 10 ? Math.round(ounces * 10) / 10 : Math.round(ounces);
-  return `${Math.round(grams)} g (${shown} oz)`;
+  return `${Math.round(grams).toLocaleString(uiLocale())} g (${shown.toLocaleString(uiLocale())} oz)`;
 }
 
 /**
@@ -126,7 +130,7 @@ export function formatFoodWeight(grams: number): string {
 export function formatDrinkVolume(ml: number): string {
   const ounces = ml / currentRegion().fluidOunceMl;
   const shown = ounces < 10 ? Math.round(ounces * 10) / 10 : Math.round(ounces);
-  return `${Math.round(ml)} ml (${shown} fl oz)`;
+  return `${Math.round(ml).toLocaleString(uiLocale())} ml (${shown.toLocaleString(uiLocale())} fl oz)`;
 }
 
 /** A weight the description already carries, so it is not said twice. */
@@ -159,17 +163,17 @@ export function formatHeight(cm: number, units: Units): string {
 export const inPounds = () => currentRegion().weight === 'pounds';
 
 export function formatWeight(kg: number, units: Units): string {
-  if (units === 'metric') return `${round1(kg)} kg`;
-  if (inPounds()) return `${round1(kg / KG_PER_POUND)} lb`;
+  if (units === 'metric') return `${num(kg)} kg`;
+  if (inPounds()) return `${num(kg / KG_PER_POUND)} lb`;
   const { stone, pounds } = kgToStonePounds(kg);
-  return pounds ? `${stone} st ${round1(pounds)} lb` : `${stone} st`;
+  return pounds ? `${stone} st ${num(pounds)} lb` : `${stone} st`;
 }
 
 /** A weight difference — always signed, so "lost 2 kg" reads as -2. */
 export function formatWeightDelta(kgDelta: number, units: Units): string {
   const sign = kgDelta > 0 ? '+' : '';
-  if (units === 'metric') return `${sign}${round1(kgDelta)} kg`;
-  return `${sign}${round1(kgDelta / KG_PER_POUND)} lb`;
+  if (units === 'metric') return `${sign}${num(kgDelta)} kg`;
+  return `${sign}${num(kgDelta / KG_PER_POUND)} lb`;
 }
 
 export const weightUnitLabel = (units: Units) => (units === 'metric' ? 'kg' : 'lb');
@@ -226,7 +230,7 @@ export function paceToKg(value: number, units: Units): number {
 }
 
 export function formatPace(kgPerWeek: number, units: Units): string {
-  return `${paceIn(kgPerWeek, units)} ${weightUnitLabel(units)}`;
+  return `${paceIn(kgPerWeek, units).toLocaleString(uiLocale())} ${weightUnitLabel(units)}`;
 }
 
 const isStartingWeight = (kg: number, which: 'weightKg' | 'targetWeightKg') =>

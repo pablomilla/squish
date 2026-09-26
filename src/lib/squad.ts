@@ -14,6 +14,7 @@ import { addToInbox, type CheerInbox, type InboxCheer } from './cheerInbox';
 
 export { inboxFor, type CheerInbox, type InboxCheer } from './cheerInbox';
 import type { MealEntry, Mood } from '../types';
+import { t } from './i18n';
 
 export interface SquadMember {
   id: string;
@@ -68,12 +69,12 @@ async function ask(method: 'GET' | 'POST', path: string, body?: unknown): Promis
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const payload = (await response.json().catch(() => null)) as { squad?: Squad | null; message?: string } | null;
-    if (!response.ok) return { ok: false, message: payload?.message ?? 'Could not reach your squad just now.' };
+    if (!response.ok) return { ok: false, message: payload?.message ? t(payload.message) : t('Could not reach your squad just now.') };
     const squad = payload?.squad ?? null;
     announce(squad ? { kind: 'in', squad } : { kind: 'none' });
     return { ok: true, squad };
   } catch {
-    return { ok: false, message: 'Could not reach your squad just now.' };
+    return { ok: false, message: t('Could not reach your squad just now.') };
   }
 }
 

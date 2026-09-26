@@ -8,6 +8,7 @@ import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 import { currentEnergyUnit, currentRegion } from './region';
 import { currentLanguage } from './language';
+import { t } from './i18n';
 
 const TIMEOUT_MS = 45_000;
 
@@ -67,11 +68,12 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
     // gets the throw and can say its own thing as well.
     showPaywall(standing);
     void refreshPlan();
-    throw new SquishApiError('out_of_allowance', payload.message ?? "That is this month's allowance.", standing);
+    throw new SquishApiError('out_of_allowance', payload.message ? t(payload.message) : t("That is this month's allowance."), standing);
   }
   if (response.status === 429) {
     const payload = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
-    throw new SquishApiError('rate_limited', payload.error ?? payload.message ?? 'Too many in one hour — try again shortly.');
+    const said = payload.error ?? payload.message;
+    throw new SquishApiError('rate_limited', said ? t(said) : t('Too many in one hour — try again shortly.'));
   }
   if (!response.ok) {
     // The server explains itself in `error`, in words written to be read —
@@ -79,7 +81,8 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
     // nothing, the status code is all there is, and that is not for showing:
     // it stays an ordinary Error and each screen says its own thing instead.
     const payload = (await response.json().catch(() => ({}))) as { error?: string };
-    if (payload.error) throw new SquishApiError('server', payload.error);
+    // Translated on arrival: the server's messages are in the catalog too (marked with msg()).
+    if (payload.error) throw new SquishApiError('server', t(payload.error));
     throw new Error(`${path} responded ${response.status}`);
   }
   return (await response.json()) as T;

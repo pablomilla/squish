@@ -30,16 +30,18 @@ import {
 } from '../lib/account';
 import { planNow } from '../lib/plan';
 import './account-card.css';
+import { plural, t } from '../lib/i18n';
+import { rich } from '../lib/i18n-react';
 
 type Form = 'in' | 'up' | 'forgot' | 'password' | 'devices' | 'delete' | null;
 
 const TITLES: Record<Exclude<Form, null>, string> = {
-  in: 'Sign in',
-  up: 'Create an account',
-  forgot: 'Forgotten password',
-  password: 'Change your password',
-  devices: 'Sign out your other devices',
-  delete: 'Delete your account',
+  in: t('Sign in'),
+  up: t('Create an account'),
+  forgot: t('Forgotten password'),
+  password: t('Change your password'),
+  devices: t('Sign out your other devices'),
+  delete: t('Delete your account'),
 };
 
 export default function AccountCard({ enabled }: { enabled: boolean }) {
@@ -77,7 +79,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
         if (!live) return;
         const before = seen.current;
         // Confirmed in another tab, or in the email app's browser, while this one waited.
-        if (before?.signedIn && before.verified === false && found.verified === true) toast('Email confirmed. Thank you!', '✅');
+        if (before?.signedIn && before.verified === false && found.verified === true) toast(t('Email confirmed. Thank you!'), '✅');
         seen.current = found;
         setWho(found);
       });
@@ -102,15 +104,14 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
   return (
     <section className="card card--quiet account-card">
       <div className="card-title">
-        <h3>Account</h3>
-        {who.signedIn && <span className="badge badge--good">Signed in</span>}
+        <h3>{t('Account')}</h3>
+        {who.signedIn && <span className="badge badge--good">{t('Signed in')}</span>}
       </div>
 
       {who.signedIn ? (
         <>
           <p className="tiny muted">
-            Signed in as <b>{who.email}</b>. Your diary follows this address, so a new phone is a sign-in rather than a
-            fresh start.
+            {rich('Signed in as <b>{email}</b>. Your diary follows this address, so a new phone is a sign-in rather than a fresh start.', { email: who.email }, { b: (text) => <b>{text}</b> })}
           </p>
           {who.mailReady && who.verified === false && (
             <Unconfirmed
@@ -120,11 +121,11 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
           )}
           <div className="account-actions">
             <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('password')}>
-              Change password
+              {t('Change password')}
             </button>
             {Boolean(who.otherDevices) && (
               <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('devices')}>
-                Sign out {who.otherDevices} other {who.otherDevices === 1 ? 'device' : 'devices'}
+                {plural(who.otherDevices ?? 0, { one: 'Sign out {n} other device', other: 'Sign out {n} other devices' })}
               </button>
             )}
             <button
@@ -137,36 +138,37 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
                   return;
                 }
                 setWho({ signedIn: false });
-                toast('Signed out. Your diary is still here.', '👋');
+                toast(t('Signed out. Your diary is still here.'), '👋');
               }}
             >
-              Sign out
+              {t('Sign out')}
             </button>
           </div>
           <div className="account-danger">
             <button type="button" className="btn btn--sm btn--quiet-danger" onClick={() => setForm('delete')}>
-              Delete account
+              {t('Delete account')}
             </button>
           </div>
         </>
       ) : (
         <>
           <p className="tiny muted">
-            You do not need one. It is for two things: moving to a new phone without starting again, and getting your
-            diary back if this one is lost.
+            {t('You do not need one. It is for two things: moving to a new phone without starting again, and getting your diary back if this one is lost.')}
           </p>
           {offer && (
             <p className="small account-offer">
-              🎁 A friend invited you: make an account, use Squish on {offer.qualifyDays} different days, and you both get{' '}
-              {periodWords(offer.rewardDays)} of Squish Plus.
+              {t('🎁 A friend invited you: make an account, use Squish on {days} different days, and you both get {period} of Squish Plus.', {
+                days: offer.qualifyDays,
+                period: periodWords(offer.rewardDays),
+              })}
             </p>
           )}
           <div className="account-actions">
             <button type="button" className="btn btn--sm" onClick={() => setForm('up')}>
-              Create an account
+              {t('Create an account')}
             </button>
             <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('in')}>
-              Sign in
+              {t('Sign in')}
             </button>
           </div>
         </>
@@ -175,7 +177,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
       <Sheet open={form !== null} onClose={() => setForm(null)} title={form ? TITLES[form] : undefined}>
         {form === 'in' && (
           <Credentials
-            submit="Sign in"
+            submit={t('Sign in')}
             onSubmit={signIn}
             onDone={(arrived) => {
               setWho({ signedIn: true, email: arrived.email });
@@ -183,14 +185,14 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
               setForm(null);
               toast(
                 arrived.broughtDiary === false
-                  ? 'Signed in. That account already has a diary — Backup will ask which to keep.'
-                  : 'Signed in.',
+                  ? t('Signed in. That account already has a diary — Backup will ask which to keep.')
+                  : t('Signed in.'),
                 '🫧',
               );
             }}
             footer={
               <button type="button" className="linkish tiny" onClick={() => setForm('forgot')}>
-                I have forgotten my password
+                {t('I have forgotten my password')}
               </button>
             }
           />
@@ -198,8 +200,8 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
 
         {form === 'up' && (
           <Credentials
-            submit="Create account"
-            hint="Four words you will remember beats one word with a number on the end."
+            submit={t('Create account')}
+            hint={t('Four words you will remember beats one word with a number on the end.')}
             onSubmit={signUp}
             onDone={(arrived) => {
               setForm(null);
@@ -207,9 +209,9 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
               const taste = planNow().plan === 'free' ? planNow().left.photo : 0;
               toast(
                 [
-                  'Account made.',
-                  taste > 0 ? `Your ${taste} free AI analyses are ready.` : 'Your diary came with you.',
-                  arrived.verificationSent ? 'Check your email to confirm the address.' : '',
+                  t('Account made.'),
+                  taste > 0 ? t('Your {n} free AI analyses are ready.', { n: taste }) : t('Your diary came with you.'),
+                  arrived.verificationSent ? t('Check your email to confirm the address.') : '',
                 ]
                   .filter(Boolean)
                   .join(' '),
@@ -223,7 +225,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
           <Forgot
             onDone={() => {
               setForm(null);
-              toast('If that address has an account, a link is on its way.', '📮');
+              toast(t('If that address has an account, a link is on its way.'), '📮');
             }}
           />
         )}
@@ -232,7 +234,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
           <NewPassword
             onDone={() => {
               setForm(null);
-              toast('Password changed.', '🔒');
+              toast(t('Password changed.'), '🔒');
             }}
           />
         )}
@@ -243,7 +245,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             onDone={() => {
               setWho({ ...who, otherDevices: 0 });
               setForm(null);
-              toast('Signed out everywhere else.', '🔒');
+              toast(t('Signed out everywhere else.'), '🔒');
             }}
           />
         )}
@@ -254,7 +256,7 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             onDone={() => {
               setWho({ signedIn: false });
               setForm(null);
-              toast('Account deleted. Your diary is still on this device.', '🧼');
+              toast(t('Account deleted. Your diary is still on this device.'), '🧼');
             }}
           />
         )}
@@ -320,7 +322,7 @@ export function Credentials({
       }}
     >
       <div className="field">
-        <label htmlFor="account-email">Email</label>
+        <label htmlFor="account-email">{t('Email')}</label>
         <input
           id="account-email"
           className="input"
@@ -335,15 +337,15 @@ export function Credentials({
       </div>
       <PasswordField
         id="account-password"
-        label="Password"
+        label={t('Password')}
         value={password}
         onChange={setPassword}
-        autoComplete={submit === 'Sign in' ? 'current-password' : 'new-password'}
+        autoComplete={submit === t('Sign in') ? 'current-password' : 'new-password'}
         hint={hint}
       />
       <Trouble says={trouble} />
       <button type="submit" className="btn" disabled={busy || !email || !password}>
-        {busy ? 'One moment…' : submit}
+        {busy ? t('One moment…') : submit}
       </button>
       {footer && <div className="account-form-footer">{footer}</div>}
     </form>
@@ -363,11 +365,10 @@ export function Forgot({ onDone }: { onDone: () => void }) {
       }}
     >
       <p className="tiny muted">
-        We will send a link that works for two hours. It says the same thing whether or not that address has an account
-        here, which is deliberate.
+        {t('We will send a link that works for two hours. It says the same thing whether or not that address has an account here, which is deliberate.')}
       </p>
       <div className="field">
-        <label htmlFor="forgot-email">Email</label>
+        <label htmlFor="forgot-email">{t('Email')}</label>
         <input
           id="forgot-email"
           className="input"
@@ -381,7 +382,7 @@ export function Forgot({ onDone }: { onDone: () => void }) {
       </div>
       <Trouble says={trouble} />
       <button type="submit" className="btn" disabled={busy || !email}>
-        {busy ? 'One moment…' : 'Send me a link'}
+        {busy ? t('One moment…') : t('Send me a link')}
       </button>
     </form>
   );
@@ -402,21 +403,21 @@ function NewPassword({ onDone }: { onDone: () => void }) {
     >
       <PasswordField
         id="old-password"
-        label="Current password"
+        label={t('Current password')}
         value={current}
         onChange={setCurrent}
         autoComplete="current-password"
       />
       <PasswordField
         id="new-password"
-        label="New password"
+        label={t('New password')}
         value={next}
         onChange={setNext}
         autoComplete="new-password"
       />
       <Trouble says={trouble} />
       <button type="submit" className="btn" disabled={busy || !current || !next}>
-        {busy ? 'One moment…' : 'Change password'}
+        {busy ? t('One moment…') : t('Change password')}
       </button>
     </form>
   );
@@ -443,19 +444,18 @@ function DeleteAccount({ email, onDone }: { email: string; onDone: () => void })
       }}
     >
       <p className="tiny muted">
-        This deletes the account on <b>{email}</b> and the copy of your diary kept with it. Your diary stays on this
-        device — this is the spare going, not the original. It cannot be undone.
+        {rich('This deletes the account on <b>{email}</b> and the copy of your diary kept with it. Your diary stays on this device — this is the spare going, not the original. It cannot be undone.', { email }, { b: (text) => <b>{text}</b> })}
       </p>
       <PasswordField
         id="delete-password"
-        label="Your password"
+        label={t('Your password')}
         value={password}
         onChange={setPassword}
         autoComplete="current-password"
       />
       <Trouble says={trouble} />
       <button type="submit" className="btn btn--danger" disabled={busy || !password}>
-        {busy ? 'One moment…' : 'Delete my account'}
+        {busy ? t('One moment…') : t('Delete my account')}
       </button>
     </form>
   );
@@ -485,14 +485,15 @@ function ForgetDevices({ count, onDone }: { count: number; onDone: () => void })
       }}
     >
       <p className="tiny muted">
-        {count === 1 ? 'One other device is' : `${count} other devices are`} signed in. This signs{' '}
-        {count === 1 ? 'it' : 'them'} out — use it if you have lost a phone, or used somebody else's computer. This
-        device stays signed in, and nothing in anybody's diary is deleted.
+        {plural(count, {
+          one: "One other device is signed in. This signs it out — use it if you have lost a phone, or used somebody else's computer. This device stays signed in, and nothing in anybody's diary is deleted.",
+          other: "{n} other devices are signed in. This signs them out — use it if you have lost a phone, or used somebody else's computer. This device stays signed in, and nothing in anybody's diary is deleted.",
+        })}
       </p>
-      <PasswordField label="Your password" value={password} onChange={setPassword} autoComplete="current-password" />
+      <PasswordField label={t('Your password')} value={password} onChange={setPassword} autoComplete="current-password" />
       <Trouble says={trouble} />
       <button type="submit" className="btn" disabled={busy || !password}>
-        {busy ? 'One moment…' : `Sign ${count === 1 ? 'it' : 'them'} out`}
+        {busy ? t('One moment…') : plural(count, { one: 'Sign it out', other: 'Sign them out' })}
       </button>
     </form>
   );
@@ -530,14 +531,14 @@ function Unconfirmed({ email, onConfirmed }: { email: string; onConfirmed: () =>
   return (
     <div className="account-unconfirmed">
       <p className="tiny">
-        <b>Confirm your email.</b>{' '}
+        <b>{t('Confirm your email.')}</b>{' '}
         {state === 'sent'
-          ? `Sent — look for it at ${email}, and in spam if it is not there.`
-          : "Until you do, Squish won't email you if somebody signs into your account."}
+          ? t('Sent — look for it at {email}, and in spam if it is not there.', { email })
+          : t("Until you do, Squish won't email you if somebody signs into your account.")}
       </p>
       {state !== 'sent' && (
         <button type="button" className="linkish tiny" disabled={state === 'sending'} onClick={() => void again()}>
-          {state === 'sending' ? 'Sending…' : 'Send the link again'}
+          {state === 'sending' ? t('Sending…') : t('Send the link again')}
         </button>
       )}
       <Trouble says={trouble} />

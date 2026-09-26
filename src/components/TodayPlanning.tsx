@@ -5,6 +5,7 @@ import { isoDate, slotForNow } from '../lib/date';
 import { asAnalysis, ideasFor, remainingToday } from '../lib/planner';
 import './plan-card.css';
 import { formatEnergy } from '../lib/region';
+import { t } from '../lib/i18n';
 
 /** After this hour the day is for winding down, not for being handed dinner ideas. */
 const IDEAS_UNTIL_HOUR = 21;
@@ -36,11 +37,12 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
       {ideas.length > 0 && (
         <section className="card card--quiet home-ideas">
           <div className="card-title">
-            <h3>Ideas for the rest of today</h3>
+            <h3>{t('Ideas for the rest of today')}</h3>
           </div>
           <p className="tiny muted">
-            About {formatEnergy(left.calories)}{left.protein >= 10 ? ` and ${left.protein} g of protein` : ''} left. A few of
-            your own that fit:
+            {left.protein >= 10
+              ? t('About {energy} and {grams} g of protein left. A few of your own that fit:', { energy: formatEnergy(left.calories), grams: left.protein })
+              : t('About {energy} left. A few of your own that fit:', { energy: formatEnergy(left.calories) })}
           </p>
           <div className="stack">
             {ideas.map((idea) => (
@@ -53,14 +55,15 @@ export default function TodayPlanning({ go }: { go: (route: Route) => void }) {
                 <span className="idea-body">
                   <span className="idea-title" dir="auto">{idea.title}</span>
                   <span className="tiny muted">
-                    {formatEnergy(idea.nutrients.calories)} · P{Math.round(idea.nutrients.protein)} · {idea.from === 'saved' ? 'saved' : 'you’ve had it before'}
+                    {formatEnergy(idea.nutrients.calories)} · {t('P{protein}', { protein: Math.round(idea.nutrients.protein) })} ·{' '}
+                    {idea.from === 'saved' ? t('saved') : t('you’ve had it before')}
                   </span>
                 </span>
                 <span className="badge">{idea.why}</span>
               </button>
             ))}
           </div>
-          <p className="tiny muted home-ideas-foot">Tap one to log it now or plan it for later.</p>
+          <p className="tiny muted home-ideas-foot">{t('Tap one to log it now or plan it for later.')}</p>
         </section>
       )}
     </>

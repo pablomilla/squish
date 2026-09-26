@@ -12,6 +12,7 @@
  * translated. Kept free of the DOM, like lib/region.ts.
  */
 import type { Region } from './region';
+import { msg } from './i18n';
 
 export type Language =
   | 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'nl' | 'pl' | 'ro' | 'el' | 'tr'
@@ -38,30 +39,30 @@ export interface LanguageInfo {
  * Irish and te reo Māori.
  */
 export const LANGUAGES: Record<Language, LanguageInfo> = {
-  en: { id: 'en', name: 'English', native: 'English', speech: 'en-GB' },
-  es: { id: 'es', name: 'Spanish', native: 'Español', speech: 'es-ES' },
-  fr: { id: 'fr', name: 'French', native: 'Français', speech: 'fr-FR' },
-  de: { id: 'de', name: 'German', native: 'Deutsch', speech: 'de-DE' },
-  it: { id: 'it', name: 'Italian', native: 'Italiano', speech: 'it-IT' },
-  pt: { id: 'pt', name: 'Portuguese', native: 'Português', speech: 'pt-PT' },
-  nl: { id: 'nl', name: 'Dutch', native: 'Nederlands', speech: 'nl-NL' },
-  pl: { id: 'pl', name: 'Polish', native: 'Polski', speech: 'pl-PL' },
-  ro: { id: 'ro', name: 'Romanian', native: 'Română', speech: 'ro-RO' },
-  el: { id: 'el', name: 'Greek', native: 'Ελληνικά', speech: 'el-GR' },
-  tr: { id: 'tr', name: 'Turkish', native: 'Türkçe', speech: 'tr-TR' },
-  cy: { id: 'cy', name: 'Welsh', native: 'Cymraeg', speech: 'cy-GB' },
-  ga: { id: 'ga', name: 'Irish', native: 'Gaeilge', speech: 'ga-IE' },
-  mi: { id: 'mi', name: 'Māori', native: 'Te reo Māori', speech: 'mi-NZ' },
-  ar: { id: 'ar', name: 'Arabic', native: 'العربية', rtl: true, speech: 'ar-SA' },
-  ur: { id: 'ur', name: 'Urdu', native: 'اردو', rtl: true, speech: 'ur-PK' },
-  hi: { id: 'hi', name: 'Hindi', native: 'हिन्दी', speech: 'hi-IN' },
-  pa: { id: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ', speech: 'pa-IN' },
-  bn: { id: 'bn', name: 'Bengali', native: 'বাংলা', speech: 'bn-IN' },
-  zh: { id: 'zh', name: 'Chinese (Simplified)', native: '中文（简体）', speech: 'zh-CN' },
-  ja: { id: 'ja', name: 'Japanese', native: '日本語', speech: 'ja-JP' },
-  ko: { id: 'ko', name: 'Korean', native: '한국어', speech: 'ko-KR' },
-  vi: { id: 'vi', name: 'Vietnamese', native: 'Tiếng Việt', speech: 'vi-VN' },
-  tl: { id: 'tl', name: 'Tagalog (Filipino)', native: 'Tagalog', speech: 'fil-PH' },
+  en: { id: 'en', name: msg('English'), native: 'English', speech: 'en-GB' },
+  es: { id: 'es', name: msg('Spanish'), native: 'Español', speech: 'es-ES' },
+  fr: { id: 'fr', name: msg('French'), native: 'Français', speech: 'fr-FR' },
+  de: { id: 'de', name: msg('German'), native: 'Deutsch', speech: 'de-DE' },
+  it: { id: 'it', name: msg('Italian'), native: 'Italiano', speech: 'it-IT' },
+  pt: { id: 'pt', name: msg('Portuguese'), native: 'Português', speech: 'pt-PT' },
+  nl: { id: 'nl', name: msg('Dutch'), native: 'Nederlands', speech: 'nl-NL' },
+  pl: { id: 'pl', name: msg('Polish'), native: 'Polski', speech: 'pl-PL' },
+  ro: { id: 'ro', name: msg('Romanian'), native: 'Română', speech: 'ro-RO' },
+  el: { id: 'el', name: msg('Greek'), native: 'Ελληνικά', speech: 'el-GR' },
+  tr: { id: 'tr', name: msg('Turkish'), native: 'Türkçe', speech: 'tr-TR' },
+  cy: { id: 'cy', name: msg('Welsh'), native: 'Cymraeg', speech: 'cy-GB' },
+  ga: { id: 'ga', name: msg('Irish'), native: 'Gaeilge', speech: 'ga-IE' },
+  mi: { id: 'mi', name: msg('Māori'), native: 'Te reo Māori', speech: 'mi-NZ' },
+  ar: { id: 'ar', name: msg('Arabic'), native: 'العربية', rtl: true, speech: 'ar-SA' },
+  ur: { id: 'ur', name: msg('Urdu'), native: 'اردو', rtl: true, speech: 'ur-PK' },
+  hi: { id: 'hi', name: msg('Hindi'), native: 'हिन्दी', speech: 'hi-IN' },
+  pa: { id: 'pa', name: msg('Punjabi'), native: 'ਪੰਜਾਬੀ', speech: 'pa-IN' },
+  bn: { id: 'bn', name: msg('Bengali'), native: 'বাংলা', speech: 'bn-IN' },
+  zh: { id: 'zh', name: msg('Chinese (Simplified)'), native: '中文（简体）', speech: 'zh-CN' },
+  ja: { id: 'ja', name: msg('Japanese'), native: '日本語', speech: 'ja-JP' },
+  ko: { id: 'ko', name: msg('Korean'), native: '한국어', speech: 'ko-KR' },
+  vi: { id: 'vi', name: msg('Vietnamese'), native: 'Tiếng Việt', speech: 'vi-VN' },
+  tl: { id: 'tl', name: msg('Tagalog (Filipino)'), native: 'Tagalog', speech: 'fil-PH' },
 };
 
 /** English first, then the rest by their own names. */

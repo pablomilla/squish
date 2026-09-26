@@ -10,6 +10,8 @@ import { scanner } from '../lib/barcode';
 import { useSquish } from '../store/useSquish';
 import { slotForNow } from '../lib/date';
 import './capture.css';
+import { t } from '../lib/i18n';
+import { slotName } from '../lib/words';
 
 interface Props {
   slot?: MealSlot;
@@ -66,38 +68,38 @@ const applyTorch = (track: MediaStreamTrack, on: boolean): Promise<void> =>
   track.applyConstraints({ advanced: [{ torch: on }] } as unknown as MediaTrackConstraints);
 
 const CAMERA_MESSAGE: Record<Exclude<CameraState, 'ready'>, string> = {
-  requesting: 'Just checking I can use the camera…',
+  requesting: t('Just checking I can use the camera…'),
   denied:
-    'The camera is blocked for this site. Allow it in your browser settings, or pick a photo from your library instead.',
-  unavailable: 'I could not open the camera. Pick a photo from your library, or describe the meal and I will work it out.',
-  unsupported: 'This browser will not give me a camera. Pick a photo from your library, or describe the meal instead.',
+    t('The camera is blocked for this site. Allow it in your browser settings, or pick a photo from your library instead.'),
+  unavailable: t('I could not open the camera. Pick a photo from your library, or describe the meal and I will work it out.'),
+  unsupported: t('This browser will not give me a camera. Pick a photo from your library, or describe the meal instead.'),
 };
 
 const THINKING_LINES: Record<Shot, string[]> = {
-  plate: ['Looking at your plate…', 'Spotting the ingredients…', 'Sizing up the portions…', 'Adding up the good stuff…'],
-  label: ['Finding the label…', 'Reading the numbers…', 'Checking the serving size…', 'Adding it up…'],
-  barcode: ['Looking it up…', 'Checking the database…'],
+  plate: [t('Looking at your plate…'), t('Spotting the ingredients…'), t('Sizing up the portions…'), t('Adding up the good stuff…')],
+  label: [t('Finding the label…'), t('Reading the numbers…'), t('Checking the serving size…'), t('Adding it up…')],
+  barcode: [t('Looking it up…'), t('Checking the database…')],
 };
 
 const GUIDE: Record<Shot, string> = {
-  plate: 'Whole plate in the frame — the rim is what Squish measures against.',
-  label: 'Fill the frame with the nutrition table.',
-  barcode: 'Hold the barcode steady in the frame.',
+  plate: t('Whole plate in the frame — the rim is what Squish measures against.'),
+  label: t('Fill the frame with the nutrition table.'),
+  barcode: t('Hold the barcode steady in the frame.'),
 };
 
 const LABEL_TIPS = [
-  ['🔍', 'Fill the frame with the nutrition table itself — not the whole packet.'],
-  ['📐', 'Straight on, not at an angle. A curved tin or bag bends the rows out of line.'],
-  ['💡', 'Watch for glare on shiny packaging. Tilt it away from the light rather than using the flash.'],
-  ['🥄', 'Squish reads the per-serving column when there is one, so check the serving it picked.'],
+  ['🔍', t('Fill the frame with the nutrition table itself — not the whole packet.')],
+  ['📐', t('Straight on, not at an angle. A curved tin or bag bends the rows out of line.')],
+  ['💡', t('Watch for glare on shiny packaging. Tilt it away from the light rather than using the flash.')],
+  ['🥄', t('Squish reads the per-serving column when there is one, so check the serving it picked.')],
 ];
 
 const TIPS = [
-  ['🔆', 'Good light beats a good camera. Near a window is ideal; overhead kitchen light is fine.'],
-  ['🍽️', 'Get the whole plate in frame. Anything cropped out is nutrition I cannot count.'],
-  ['📐', 'Shoot from slightly above, at an angle — straight down hides how deep a bowl is.'],
-  ['🥄', 'Leave a fork or hand in shot. It tells me the scale, and portions are half the answer.'],
-  ['🫙', 'Dressings, oil and sauces are invisible. Mention them after, and I will add them in.'],
+  ['🔆', t('Good light beats a good camera. Near a window is ideal; overhead kitchen light is fine.')],
+  ['🍽️', t('Get the whole plate in frame. Anything cropped out is nutrition I cannot count.')],
+  ['📐', t('Shoot from slightly above, at an angle — straight down hides how deep a bowl is.')],
+  ['🥄', t('Leave a fork or hand in shot. It tells me the scale, and portions are half the answer.')],
+  ['🫙', t('Dressings, oil and sauces are invisible. Mention them after, and I will add them in.')],
 ];
 
 export default function Capture({ slot, date, shot: initialShot = 'plate', onCancel, onAnalysed, go }: Props) {
@@ -188,7 +190,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
       await applyTorch(track, next);
       setTorchOn(next);
     } catch {
-      toast('This camera will not turn its light on.', '💡');
+      toast(t('This camera will not turn its light on.'), '💡');
     }
   }, [track, torchOn, toast]);
 
@@ -214,7 +216,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
       } catch (error) {
         if (!isPaywalled(error)) {
           toast(
-            error instanceof Error ? error.message : 'I could not read that photo — try again or describe it instead.',
+            error instanceof Error ? error.message : t('I could not read that photo — try again or describe it instead.'),
             '😅',
           );
         }
@@ -234,7 +236,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         streamRef.current?.getTracks().forEach((t) => t.stop());
         onAnalysed(analysis, { slot: analysis.slot ?? mealSlot, date });
       } catch (error) {
-        toast(error instanceof Error ? error.message : 'That lookup did not work.', '😕');
+        toast(error instanceof Error ? error.message : t('That lookup did not work.'), '😕');
         setBusy(false);
       }
     },
@@ -274,7 +276,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
       try {
         detector = await scanner();
       } catch {
-        if (live) toast('This browser will not scan barcodes. Try the label instead.', '😕');
+        if (live) toast(t('This browser will not scan barcodes. Try the label instead.'), '😕');
         return;
       }
       if (!live) return;
@@ -310,7 +312,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
           if (found && live) {
             live = false;
             navigator.vibrate?.(60);
-            toast(`Found ${found.value}`, '🏷️');
+            toast(t('Found {code}', { code: found.value }), '🏷️');
             void lookUp(found.value);
             return;
           }
@@ -348,7 +350,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
       try {
         void run(await shrinkImage(file));
       } catch {
-        toast('That file would not open.', '😕');
+        toast(t('That file would not open.'), '😕');
       }
     },
     [run, toast],
@@ -362,8 +364,8 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         <h2>{THINKING_LINES[shot][line]}</h2>
         <p className="muted small center">
           {shot === 'label'
-            ? 'Squish is reading the figures straight off the packet.'
-            : 'Squish is working out the calories, macros and fibre for you.'}
+            ? t('Squish is reading the figures straight off the packet.')
+            : t('Squish is working out the calories, macros and fibre for you.')}
         </p>
         <div className="capture-skeletons">
           {[0, 1, 2].map((i) => (
@@ -394,11 +396,11 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         )}
 
         <div className="capture-top">
-          <button type="button" className="capture-round" onClick={onCancel} aria-label="Close">
+          <button type="button" className="capture-round" onClick={onCancel} aria-label={t('Close')}>
             <CloseIcon />
           </button>
           <Wordmark width={84} className="capture-wordmark" />
-          <button type="button" className="capture-round" onClick={() => setTips(true)} aria-label="Photo tips">
+          <button type="button" className="capture-round" onClick={() => setTips(true)} aria-label={t('Photo tips')}>
             <HelpIcon />
           </button>
         </div>
@@ -411,27 +413,27 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
 
         <div className="capture-shot">
           <Segmented<Shot>
-            label="What are you photographing?"
+            label={t('What are you photographing?')}
             value={shot}
             onChange={setShot}
             options={[
-              { value: 'plate', label: 'Food' },
-              { value: 'label', label: 'Label' },
-              { value: 'barcode', label: 'Barcode' },
+              { value: 'plate', label: t('Food') },
+              { value: 'label', label: t('Label') },
+              { value: 'barcode', label: t('Barcode') },
             ]}
           />
         </div>
 
         <div className="capture-slot">
           <Segmented<MealSlot>
-            label="Meal"
+            label={t('Meal')}
             value={mealSlot}
             onChange={setMealSlot}
             options={[
-              { value: 'breakfast', label: 'Breakfast' },
-              { value: 'lunch', label: 'Lunch' },
-              { value: 'dinner', label: 'Dinner' },
-              { value: 'snack', label: 'Snack' },
+              { value: 'breakfast', label: slotName('breakfast') },
+              { value: 'lunch', label: slotName('lunch') },
+              { value: 'dinner', label: slotName('dinner') },
+              { value: 'snack', label: slotName('snack') },
             ]}
           />
         </div>
@@ -440,18 +442,18 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
       <div className="capture-controls">
         <button type="button" className="capture-side" onClick={() => fileRef.current?.click()}>
           <ImageIcon size={24} />
-          <span className="tiny">Library</span>
+          <span className="tiny">{t('Library')}</span>
         </button>
 
         {shot === 'barcode' ? (
           <div className="capture-watching" aria-live="polite">
             <span className="capture-watching-dot" aria-hidden="true" />
             <span className="tiny">
-              {!scanning ? 'Getting the scanner ready…' : struggling ? 'Still looking — more light, or try Label' : 'Watching for a barcode…'}
+              {!scanning ? t('Getting the scanner ready…') : struggling ? t('Still looking — more light, or try Label') : t('Watching for a barcode…')}
             </span>
           </div>
         ) : (
-          <button type="button" className="capture-shutter" onClick={shoot} disabled={!cameraReady} aria-label="Take photo">
+          <button type="button" className="capture-shutter" onClick={shoot} disabled={!cameraReady} aria-label={t('Take photo')}>
             <span />
           </button>
         )}
@@ -461,7 +463,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         {torchSupported ? (
           <button type="button" className={`capture-side ${torchOn ? 'is-on' : ''}`} onClick={() => void toggleTorch()} aria-pressed={torchOn}>
             <FlashIcon size={24} />
-            <span className="tiny">Flash</span>
+            <span className="tiny">{t('Flash')}</span>
           </button>
         ) : canFlip ? (
           <button
@@ -470,7 +472,7 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
             onClick={() => setFacing((f) => (f === 'environment' ? 'user' : 'environment'))}
           >
             <FlipIcon size={24} />
-            <span className="tiny">Flip</span>
+            <span className="tiny">{t('Flip')}</span>
           </button>
         ) : (
           <span className="capture-side capture-side--empty" aria-hidden="true" />
@@ -492,10 +494,10 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
         className="capture-describe"
         onClick={() => go({ name: 'add', tab: 'describe', slot: mealSlot, date })}
       >
-        <PenIcon size={16} /> Describe it instead
+        <PenIcon size={16} /> {t('Describe it instead')}
       </button>
 
-      <Sheet open={tips} onClose={() => setTips(false)} title={shot === 'label' ? 'A good label photo' : 'A good food photo'}>
+      <Sheet open={tips} onClose={() => setTips(false)} title={shot === 'label' ? t('A good label photo') : t('A good food photo')}>
         <div className="stack">
           {(shot === 'label' ? LABEL_TIPS : TIPS).map(([emoji, text]) => (
             <div className="row" key={text} style={{ alignItems: 'flex-start', gap: 12 }}>
@@ -506,12 +508,11 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
           <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
             <CameraIcon size={22} />
             <p className="small">
-              Nothing is stored. The photo goes to Squish for a few seconds to be read, and is kept only on this device
-              with the meal.
+              {t('Nothing is stored. The photo goes to Squish for a few seconds to be read, and is kept only on this device with the meal.')}
             </p>
           </div>
           <button type="button" className="btn btn--block" onClick={() => setTips(false)}>
-            Got it
+            {t('Got it')}
           </button>
         </div>
       </Sheet>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Squish from '../components/Squish';
 import './waking.css';
+import { t } from '../lib/i18n';
 
 /**
  * Shown while the app is waiting for the server's first answer.
@@ -40,7 +41,7 @@ export default function Waking() {
 
   return (
     <div className="app waking">
-      <div className="waking-body" role="status" aria-live="polite" aria-label={napping ? 'Squish is waking up' : 'Squish is loading'}>
+      <div className="waking-body" role="status" aria-live="polite" aria-label={napping ? t('Squish is waking up') : t('Squish is loading')}>
         <div className="waking-stack">
           <div className="waking-stage">
             {napping && (
@@ -56,7 +57,7 @@ export default function Waking() {
             )}
             {napping ? (
               <div className="waking-nap" key="nap">
-                <Squish mood="sleepy" size={176} bob={false} label="Squish, asleep" />
+                <Squish mood="sleepy" size={176} bob={false} label={t('Squish, asleep')} />
               </div>
             ) : (
               <div className="waking-hop" key="hop">
@@ -73,12 +74,12 @@ export default function Waking() {
 
           {/* Below the stack rather than in it, so words arriving do not move Squish. */}
           <div className="waking-words">
-            {phase === 'waiting' && <h1>Just a moment…</h1>}
+            {phase === 'waiting' && <h1>{t('Just a moment…')}</h1>}
             {napping && (
               <>
-                <h1>Squish is waking up…</h1>
+                <h1>{t('Squish is waking up…')}</h1>
                 <p className="muted center waking-note">
-                  Squish has been napping. The first visit of the day takes up to a minute — after that it’s quick.
+                  {t('Squish has been napping. The first visit of the day takes up to a minute — after that it’s quick.')}
                 </p>
               </>
             )}

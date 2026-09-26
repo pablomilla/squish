@@ -19,12 +19,14 @@ import { planDays } from '../lib/planner';
 import './review.css';
 import { describePortion } from '../lib/units';
 import { currentEnergyUnit, energyValue, formatEnergy } from '../lib/region';
+import { plural, t } from '../lib/i18n';
+import { slotName, slotWord } from '../lib/words';
 
 /** The corrections people actually make to a scan, one tap each. */
 const HOW_MUCH = [
-  { label: 'Half', factor: 0.5 },
-  { label: 'As scanned', factor: 1 },
-  { label: 'Double', factor: 2 },
+  { label: t('Half'), factor: 0.5 },
+  { label: t('As scanned'), factor: 1 },
+  { label: t('Double'), factor: 2 },
 ];
 
 interface Row {
@@ -124,9 +126,9 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       if (corrected.title?.trim()) setTitle(corrected.title.trim());
       setOpenRow(null);
       setFix('');
-      toast('Sorted — have a look', '✨');
+      toast(t('Sorted — have a look'), '✨');
     } catch (error) {
-      if (!isPaywalled(error)) toast(error instanceof Error ? error.message : 'I could not work that out.', '😅');
+      if (!isPaywalled(error)) toast(error instanceof Error ? error.message : t('I could not work that out.'), '😅');
     } finally {
       setFixing(false);
     }
@@ -142,12 +144,12 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
   const save = () => {
     if (!items.length) {
-      toast('Add at least one food first.', '🥄');
+      toast(t('Add at least one food first.'), '🥄');
       return;
     }
     const payload = {
       slot,
-      title: title.trim() || 'Meal',
+      title: title.trim() || t('Meal'),
       items,
       nutrients: totals,
       score,
@@ -165,8 +167,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
     if (planning) {
       addPlan({ ...payload, date: planDate });
-      const when = planDate === today ? 'today' : planDate === planDays(today)[1] ? 'tomorrow' : `on ${friendlyDate(planDate)}`;
-      toast(`Planned for ${slot === 'snack' ? 'a snack' : slot} ${when}. Tap “I ate this” when you do.`, '🗓️');
+      const when = planDate === today ? t('today') : planDate === planDays(today)[1] ? t('tomorrow') : t('on {date}', { date: friendlyDate(planDate) });
+      toast(t('Planned for {meal} {when}. Tap “I ate this” when you do.', { meal: slot === 'snack' ? t('a snack') : slotWord(slot), when }), '🗓️');
       onDone();
       return;
     }
@@ -176,7 +178,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       // Only when this edit brought a new photograph with it. Editing the
       // title of a meal photographed last week must not wipe its picture.
       if (draft.photoFull) void savePhoto(draft.editingId, draft.photoFull);
-      toast('Meal updated', '✏️');
+      toast(t('Meal updated'), '✏️');
     } else {
       const saved = addMeal(payload);
       // The diary keeps the thumbnail; the photograph goes beside it, under
@@ -190,7 +192,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
        * belongs in Squish's voice, never on the control somebody has to press
        * to keep their dinner.
        */
-      toast(`Squished it — ${formatEnergy(totals.calories)} logged.`, '🎉');
+      toast(t('Squished it — {energy} logged.', { energy: formatEnergy(totals.calories) }), '🎉');
     }
     onDone();
   };
@@ -212,25 +214,25 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   return (
     <div className="screen review">
       <header className="review-top">
-        <button type="button" className="btn--quiet" onClick={leave} aria-label="Cancel">
+        <button type="button" className="btn--quiet" onClick={leave} aria-label={t('Cancel')}>
           <CloseIcon />
         </button>
-        <span className="tiny muted">{planning ? `Planned · ${friendlyDate(shownDate)}` : friendlyDate(shownDate)}</span>
+        <span className="tiny muted">{planning ? t('Planned · {date}', { date: friendlyDate(shownDate) }) : friendlyDate(shownDate)}</span>
         {/* A real button, and it stays put while the rest of the screen
             scrolls under it. Meals were being lost to a save that was one
             scroll below wherever anybody had got to. */}
         <button type="button" className="btn btn--sm" onClick={save}>
-          {draft.editingId ? 'Update meal' : planning ? 'Plan it' : 'Save meal'}
+          {draft.editingId ? t('Update meal') : planning ? t('Plan it') : t('Save meal')}
         </button>
       </header>
 
       {/* The full one while it is in hand; the thumbnail for a recovered draft. */}
       {(draft.photoFull ?? draft.photo) && (
-        <img className="review-photo" src={draft.photoFull ?? draft.photo} alt="The meal you logged" />
+        <img className="review-photo" src={draft.photoFull ?? draft.photo} alt={t('The meal you logged')} />
       )}
 
       <div className="review-title-row">
-        <input className="input review-title" dir="auto" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Meal name" />
+        <input className="input review-title" dir="auto" value={title} onChange={(e) => setTitle(e.target.value)} aria-label={t('Meal name')} />
         <ScoreMeter score={score} size={52} />
       </div>
 
@@ -239,17 +241,18 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         {/* Stated, not scolded. It is the one thing the numbers below cannot
             show, and without it a lower score has no visible reason. */}
         {upfShare >= 0.5 && (
-          <span className="badge" title="Made in a factory from refined ingredients rather than cooked from food. It counts against the score.">
-            {upfShare >= 0.95 ? 'Ultra-processed' : 'Mostly ultra-processed'}
+          <span className="badge" title={t('Made in a factory from refined ingredients rather than cooked from food. It counts against the score.')}>
+            {upfShare >= 0.95 ? t('Ultra-processed') : t('Mostly ultra-processed')}
           </span>
         )}
         {analysis.offline ? (
-          <span className="badge badge--warn" title="No model was reachable, so these numbers come from the offline estimator">
-            Offline estimate
+          <span className="badge badge--warn" title={t('No model was reachable, so these numbers come from the offline estimator')}>
+            {t('Offline estimate')}
           </span>
         ) : (
           <span className="badge">
-            <SparkIcon size={13} /> AI · {analysis.confidence} confidence
+            <SparkIcon size={13} />{' '}
+            {analysis.confidence === 'high' ? t('AI · high confidence') : analysis.confidence === 'low' ? t('AI · low confidence') : t('AI · medium confidence')}
           </span>
         )}
       </div>
@@ -268,7 +271,9 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       <div className="card review-totals">
         <div className="review-kcal">
           <b>{energyValue(totals.calories).toLocaleString()}</b>
-          <span className="muted small">{currentEnergyUnit()} · {Math.round((totals.calories / targets.calories) * 100)}% of today</span>
+          <span className="muted small">
+            {currentEnergyUnit()} · {t('{percent}% of today', { percent: Math.round((totals.calories / targets.calories) * 100) })}
+          </span>
         </div>
         <MacroBars totals={totals} targets={targets} compact />
         <Comparison equivalent={mealEquivalent(totals, targets, comparisonSeed)} />
@@ -279,19 +284,19 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       <section className="card">
         <div className="card-title">
-          <h3>Items</h3>
+          <h3>{t('Items')}</h3>
           <button type="button" className="btn--quiet small row" onClick={() => setPicker({})}>
-            <PlusIcon size={16} /> Add
+            <PlusIcon size={16} /> {t('Add')}
           </button>
         </div>
 
         {items.length > 0 && (
           <p className="tiny muted" style={{ marginTop: -6, marginBottom: 6 }}>
-            Squish guessed these. Tap any one to change the amount or swap it for something else.
+            {t('Squish guessed these. Tap any one to change the amount or swap it for something else.')}
           </p>
         )}
 
-        {items.length === 0 && <p className="empty">Nothing here yet — add the foods you ate.</p>}
+        {items.length === 0 && <p className="empty">{t('Nothing here yet — add the foods you ate.')}</p>}
 
         <div>
           {rows.map((row) => {
@@ -308,14 +313,18 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                     </span>
                   </span>
                   <span className="tiny muted item-macros">
-                    {Math.round(item.nutrients.protein)}P · {Math.round(item.nutrients.carbs)}C · {Math.round(item.nutrients.fat)}F
+                    {t('P{protein} C{carbs} F{fat}', {
+                      protein: Math.round(item.nutrients.protein),
+                      carbs: Math.round(item.nutrients.carbs),
+                      fat: Math.round(item.nutrients.fat),
+                    })}
                   </span>
                   <ChevronIcon size={16} className={`item-chevron ${open ? 'is-open' : ''}`} />
                 </button>
 
                 {open && (
                   <div className="item-edit">
-                    <p className="tiny muted">How much was it?</p>
+                    <p className="tiny muted">{t('How much was it?')}</p>
                     <div className="amount-chips">
                       {HOW_MUCH.map((choice) => (
                         <button
@@ -332,7 +341,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
                     {row.baseGrams ? (
                       <NumberField
-                        label={`Or set it exactly${item.liquid ? ' (ml)' : ' (g)'}`}
+                        label={item.liquid ? t('Or set it exactly (ml)') : t('Or set it exactly (g)')}
                         value={Math.round(row.baseGrams * row.factor)}
                         suffix={item.liquid ? 'ml' : 'g'}
                         min={1}
@@ -341,7 +350,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                       />
                     ) : (
                       <div className="row-between" style={{ marginTop: 10 }}>
-                        <span className="small muted">Portions</span>
+                        <span className="small muted">{t('Portions')}</span>
                         <Stepper value={row.factor} step={0.25} min={0.25} max={12} onChange={(factor) => setFactor(row.item.id, factor)} suffix="×" />
                       </div>
                     )}
@@ -355,7 +364,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                           setPicker({ replacing: row.item.id });
                         }}
                       >
-                        <SearchIcon size={15} /> Not this — swap it
+                        <SearchIcon size={15} /> {t('Not this — swap it')}
                       </button>
                       <button
                         type="button"
@@ -363,7 +372,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                         onClick={() => toggleFavourite(item)}
                         aria-pressed={isFavourite(item.name)}
                       >
-                        <HeartIcon size={15} /> {isFavourite(item.name) ? 'Saved' : 'Favourite'}
+                        <HeartIcon size={15} /> {isFavourite(item.name) ? t('Saved') : t('Favourite')}
                       </button>
                       <button
                         type="button"
@@ -373,7 +382,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                           setOpenRow(null);
                         }}
                       >
-                        <TrashIcon size={15} /> Remove
+                        <TrashIcon size={15} /> {t('Remove')}
                       </button>
                     </div>
                   </div>
@@ -386,10 +395,10 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       <section className="card fix-card">
         <label htmlFor="fix" className="small">
-          <SparkIcon size={16} /> Something not right?
+          <SparkIcon size={16} /> {t('Something not right?')}
         </label>
         <p className="tiny muted">
-          Tell Squish in your own words — "two eggs, not one", "no cheese", "grilled not fried".
+          {t('Tell Squish in your own words — “two eggs, not one”, “no cheese”, “grilled not fried”.')}
         </p>
         <div className="fix-row">
           <input
@@ -397,7 +406,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
             className="input"
             value={fix}
             disabled={fixing}
-            placeholder="There were two eggs, not one"
+            placeholder={t('There were two eggs, not one')}
             onChange={(e) => setFix(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -407,13 +416,13 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
             }}
           />
           <button type="button" className="btn btn--soft" disabled={!fix.trim() || fixing} onClick={() => void applyFix()}>
-            {fixing ? 'Thinking…' : 'Fix it'}
+            {fixing ? t('Thinking…') : t('Fix it')}
           </button>
         </div>
         {/* Corrections are short and said out loud faster than typed, and this
             is the screen someone is on with a plate in front of them. */}
         <DictateButton
-          label="your correction"
+          label={t('your correction')}
           onText={(text) => setFix((current) => (current ? `${current.trim()} ${text}` : text))}
           onError={(message) => toast(message, '🎤')}
         />
@@ -421,18 +430,18 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       {canPlan && (
         <div className="field">
-          <label htmlFor="meal-when">When</label>
+          <label htmlFor="meal-when">{t('When')}</label>
           <Segmented<'eaten' | 'planned'>
-            label="Eaten or planned"
+            label={t('Eaten or planned')}
             value={planning ? 'planned' : 'eaten'}
             onChange={(value) => setPlanning(value === 'planned')}
             options={[
-              { value: 'eaten', label: draft.date > today ? 'Eaten today' : 'Eaten' },
-              { value: 'planned', label: 'Plan for later' },
+              { value: 'eaten', label: draft.date > today ? t('Eaten today') : t('Eaten') },
+              { value: 'planned', label: t('Plan for later') },
             ]}
           />
           {planning && (
-            <select id="meal-when" className="input review-plan-day" value={planDate} onChange={(e) => setPlanDate(e.target.value)} aria-label="Which day">
+            <select id="meal-when" className="input review-plan-day" value={planDate} onChange={(e) => setPlanDate(e.target.value)} aria-label={t('Which day')}>
               {planDays(today).map((day) => (
                 <option key={day} value={day}>
                   {friendlyDate(day)}
@@ -440,51 +449,53 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
               ))}
             </select>
           )}
-          {planning && <p className="tiny muted">A plan counts for nothing until you tap “I ate this” — on Home, or in your diary.</p>}
+          {planning && <p className="tiny muted">{t('A plan counts for nothing until you tap “I ate this” — on Home, or in your diary.')}</p>}
         </div>
       )}
 
       <div className="field">
-        <label htmlFor="meal-slot">Meal</label>
+        <label htmlFor="meal-slot">{t('Meal')}</label>
         <Segmented<MealSlot>
-          label="Meal"
+          label={t('Meal')}
           value={slot}
           onChange={setSlot}
           options={[
-            { value: 'breakfast', label: 'Breakfast' },
-            { value: 'lunch', label: 'Lunch' },
-            { value: 'dinner', label: 'Dinner' },
-            { value: 'snack', label: 'Snack' },
+            { value: 'breakfast', label: slotName('breakfast') },
+            { value: 'lunch', label: slotName('lunch') },
+            { value: 'dinner', label: slotName('dinner') },
+            { value: 'snack', label: slotName('snack') },
           ]}
         />
       </div>
 
       <div className="field">
-        <label htmlFor="note">Note (optional)</label>
+        <label htmlFor="note">{t('Note (optional)')}</label>
         <textarea
           id="note"
           className="textarea"
           value={note}
-          placeholder="How did it feel? Anything worth remembering?"
+          placeholder={t('How did it feel? Anything worth remembering?')}
           onChange={(e) => setNote(e.target.value)}
         />
       </div>
 
       <button type="button" className="btn btn--block" onClick={save}>
-        {draft.editingId ? 'Update meal' : planning ? 'Plan it' : 'Save meal'}
+        {draft.editingId ? t('Update meal') : planning ? t('Plan it') : t('Save meal')}
       </button>
 
-      <Sheet open={leaving} onClose={() => setLeaving(false)} title="Save this meal?">
+      <Sheet open={leaving} onClose={() => setLeaving(false)} title={t('Save this meal?')}>
         <p className="small muted">
-          {formatEnergy(totals.calories)} across {items.length} food{items.length === 1 ? '' : 's'}. Throw it away and
-          you will have to log it again.
+          {plural(items.length, {
+            one: '{energy} across {n} food. Throw it away and you will have to log it again.',
+            other: '{energy} across {n} foods. Throw it away and you will have to log it again.',
+          }, { energy: formatEnergy(totals.calories) })}
         </p>
         <div className="stack" style={{ marginTop: 16 }}>
           <button type="button" className="btn btn--block" onClick={save}>
-            Save it
+            {t('Save it')}
           </button>
           <button type="button" className="btn btn--block btn--danger" onClick={throwAway}>
-            Throw it away
+            {t('Throw it away')}
           </button>
         </div>
       </Sheet>
@@ -495,10 +506,10 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
           setPicker(null);
           setQuery('');
         }}
-        title={picker?.replacing ? 'Swap this for…' : 'Add a food'}
+        title={picker?.replacing ? t('Swap this for…') : t('Add a food')}
       >
         <div className="field">
-          <label htmlFor="add-search" className="visually-hidden">Search foods</label>
+          <label htmlFor="add-search" className="visually-hidden">{t('Search foods')}</label>
           <div className="search-wrap">
             <SearchIcon />
             <input
@@ -506,7 +517,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
               className="input"
               value={query}
               autoFocus
-              placeholder="Search 80+ everyday foods"
+              placeholder={t('Search {n}+ everyday foods', { n: 80 })}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
@@ -530,7 +541,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
               <PlusIcon size={18} />
             </button>
           ))}
-          {results.length === 0 && <p className="empty">No match — try a simpler word like "rice".</p>}
+          {results.length === 0 && <p className="empty">{t('No match — try a simpler word like “rice”.')}</p>}
         </div>
       </Sheet>
     </div>

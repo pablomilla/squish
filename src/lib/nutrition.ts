@@ -1,16 +1,17 @@
 import type { Activity, FoodItem, MacroKey, MicroKey, Micros, Nutrients, Profile, Targets } from '../types';
 import { MICROS } from '../types';
 import { REGIONS, fibreWord, regionOf, saltWord, type Guidance } from './region';
+import { t } from './i18n';
 
 export const EMPTY: Nutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0, sodium: 0 };
 
 export const MICRO_LABEL: Record<MicroKey, string> = {
-  iron: 'Iron',
-  calcium: 'Calcium',
-  vitaminD: 'Vitamin D',
-  vitaminB12: 'Vitamin B12',
-  folate: 'Folate',
-  vitaminC: 'Vitamin C',
+  iron: t('Iron'),
+  calcium: t('Calcium'),
+  vitaminD: t('Vitamin D'),
+  vitaminB12: t('Vitamin B12'),
+  folate: t('Folate'),
+  vitaminC: t('Vitamin C'),
 };
 
 /** Milligrams for the minerals, micrograms for the vitamins that need them. */
@@ -65,17 +66,17 @@ const ACTIVITY_FACTOR: Record<Activity, number> = {
 };
 
 export const ACTIVITY_LABEL: Record<Activity, string> = {
-  sedentary: 'Mostly sitting',
-  light: 'Lightly active',
-  moderate: 'Moderately active',
-  active: 'Very active',
-  athlete: 'Athlete',
+  sedentary: t('Mostly sitting'),
+  light: t('Lightly active'),
+  moderate: t('Moderately active'),
+  active: t('Very active'),
+  athlete: t('Athlete'),
 };
 
 export const MACRO_LABEL: Record<MacroKey, string> = {
-  protein: 'Protein',
-  carbs: 'Carbs',
-  fat: 'Fat',
+  protein: t('Protein'),
+  carbs: t('Carbs'),
+  fat: t('Fat'),
   // A getter, so the label follows their region's spelling (fiber in the US).
   get fibre() {
     return fibreWord();
@@ -119,7 +120,7 @@ export const GLASS_ML = 250;
 /** Glasses as a volume, for the people who think in litres rather than count. */
 export function waterVolume(glasses: number): string {
   const ml = glasses * GLASS_ML;
-  return ml >= 1000 ? `${round1(ml / 1000)} L` : `${ml} ml`;
+  return ml >= 1000 ? `${round1(ml / 1000).toLocaleString()} L` : `${ml.toLocaleString()} ml`;
 }
 
 /**
@@ -481,19 +482,20 @@ export function scoreBreakdown(n: Nutrients, ultraProcessed = 0): ScoreBreakdown
 export type Tone = 'good' | 'warn' | 'bad' | 'none';
 
 export function scoreLabel(score: number): { label: string; tone: Tone } {
-  if (score <= UNSCORED) return { label: 'Nothing to score', tone: 'none' };
-  if (score >= 75) return { label: 'Brilliant', tone: 'good' };
-  if (score >= 55) return { label: 'Balanced', tone: 'good' };
-  if (score >= 38) return { label: 'So-so', tone: 'warn' };
+  if (score <= UNSCORED) return { label: t('Nothing to score'), tone: 'none' };
+  if (score >= 75) return { label: t('Brilliant'), tone: 'good' };
+  if (score >= 55) return { label: t('Balanced'), tone: 'good' };
+  if (score >= 38) return { label: t('So-so'), tone: 'warn' };
   // Not "Heavy": that read as the amount, or the person, when the score is
   // only ever about what the food was made of. A 90 kcal bar is not heavy.
-  return { label: 'Room to improve', tone: 'bad' };
+  return { label: t('Room to improve'), tone: 'bad' };
 }
 
 /** The label as it reads about one meal: "Balanced meal", but plain "Room to improve". */
 export const mealLabel = (score: number): string => {
   const { label, tone } = scoreLabel(score);
-  return tone === 'none' || tone === 'bad' ? label : `${label} meal`;
+  if (tone === 'none' || tone === 'bad') return label;
+  return score >= 75 ? t('Brilliant meal') : t('Balanced meal');
 };
 
 /* ------------------------------------------------------------------ *
@@ -572,11 +574,11 @@ export function isCeiling(key: string): key is CeilingKey {
 }
 
 export const CEILING_LABEL: Record<CeilingKey, string> = {
-  satFat: 'Saturates',
-  freeSugar: 'Free sugars',
-  fat: 'Fat',
-  carbs: 'Carbs',
-  sugar: 'Sugar',
+  satFat: t('Saturates'),
+  freeSugar: t('Free sugars'),
+  fat: t('Fat'),
+  carbs: t('Carbs'),
+  sugar: t('Sugar'),
   get sodium() {
     return saltWord();
   },
@@ -591,12 +593,12 @@ export const CEILING_LABEL: Record<CeilingKey, string> = {
 export function dayVerdict(
   score: number,
   n: Nutrients,
-  t: Targets,
+  targets: Targets,
 ): { label: string; tone: Tone; over: OverTarget[] } {
-  const over = overTargets(n, t);
+  const over = overTargets(n, targets);
   const worst = over.find((o) => o.level === 'way-over');
   if (score > UNSCORED && worst) {
-    return { label: `Over on ${CEILING_LABEL[worst.key].toLowerCase()}`, tone: 'bad', over };
+    return { label: t('Over on {nutrient}', { nutrient: CEILING_LABEL[worst.key].toLocaleLowerCase() }), tone: 'bad', over };
   }
   return { ...scoreLabel(score), over };
 }
@@ -633,10 +635,10 @@ export function overPenalty(over: OverTarget[]): number {
  * end a percentage is the honest way to put it.
  */
 export function overPhrase(o: OverTarget): string {
-  if (o.ratio < 1.9) return `${Math.round((o.ratio - 1) * 100)}% over`;
+  if (o.ratio < 1.9) return t('{percent}% over', { percent: Math.round((o.ratio - 1) * 100) });
   const whole = Math.round(o.ratio);
   if (Math.abs(o.ratio - whole) < 0.03) return `${whole}×`;
-  return o.ratio > whole ? `over ${whole}×` : `nearly ${whole}×`;
+  return o.ratio > whole ? t('over {times}×', { times: whole }) : t('nearly {times}×', { times: whole });
 }
 
 export function itemsTotal(items: FoodItem[]): Nutrients {

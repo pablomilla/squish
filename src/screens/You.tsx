@@ -17,7 +17,7 @@ import { LOOKS, PLUS_LOOKS, isUnlocked } from '../lib/looks';
 import { ACCESSORIES, SLOTS, accessoryById, lockedNote, onShow, shelves, toggle, wearable, whyLocked } from '../lib/outfit';
 import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
-import { packLocked, packsAmong } from '../lib/packs';
+import { listWords, packLocked, packsAmong } from '../lib/packs';
 import { explainPlan } from '../lib/planExplained';
 import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
@@ -33,6 +33,9 @@ import { shareStory } from '../lib/shareStory';
 import ShareSheet from '../components/ShareSheet';
 import type { Activity, Goal, Route, Sex } from '../types';
 import './you.css';
+import { plural, t } from '../lib/i18n';
+import { rich } from '../lib/i18n-react';
+import { slotName } from '../lib/words';
 
 export default function You({ go }: { go: (route: Route) => void }) {
   const toast = useToast();
@@ -75,7 +78,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
       if (reminders.on) {
         await disableReminders();
         setReminders({ on: false });
-        toast('Reminders off', '🔕');
+        toast(t('Reminders off'), '🔕');
         return;
       }
       const result = await enableReminders({
@@ -85,9 +88,9 @@ export default function You({ go }: { go: (route: Route) => void }) {
       });
       if (result.ok) {
         setReminders({ on: true });
-        toast('Reminders on', '🔔');
+        toast(t('Reminders on'), '🔔');
       } else {
-        toast(result.message ?? 'Reminders could not be turned on.', '🔕');
+        toast(result.message ?? t('Reminders could not be turned on.'), '🔕');
       }
     } finally {
       setSavingReminders(false);
@@ -114,7 +117,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
     link.download = `squish-export-${isoDate()}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    toast('Exported your data', '📦');
+    toast(t('Exported your data'), '📦');
   };
 
   return (
@@ -122,33 +125,34 @@ export default function You({ go }: { go: (route: Route) => void }) {
       <header className="you-head">
         <Squish mood="proud" size={104} />
         <div>
-          <h1>{profile.name || 'You'}</h1>
+          <h1>{profile.name || t('You')}</h1>
           <p className="muted small">
-            {streak} day streak · {meals.length} meals · {Object.keys(unlocked).length} badges
+            {plural(streak, { one: '{n} day streak', other: '{n} day streak' })} · {plural(meals.length, { one: '{n} meal', other: '{n} meals' })} ·{' '}
+            {plural(Object.keys(unlocked).length, { one: '{n} badge', other: '{n} badges' })}
           </p>
         </div>
       </header>
 
       <section className="card card--hero">
         <div className="card-title">
-          <h3>Your plan</h3>
+          <h3>{t('Your plan')}</h3>
           <button type="button" className="btn--quiet small" onClick={() => setEditingTargets(true)}>
-            Adjust
+            {t('Adjust')}
           </button>
         </div>
         <div className="you-plan">
           <div className="pill-stat">
-            <span className="tiny muted">Daily target</span>
+            <span className="tiny muted">{t('Daily target')}</span>
             <b>{formatEnergy(targets.calories)}</b>
-            <span className="tiny muted">to eat</span>
+            <span className="tiny muted">{t('to eat')}</span>
           </div>
           <div className="pill-stat">
-            <span className="tiny muted">Maintenance</span>
+            <span className="tiny muted">{t('Maintenance')}</span>
             <b>{formatEnergy(maintenance)}</b>
-            <span className="tiny muted">your body burns</span>
+            <span className="tiny muted">{t('your body burns')}</span>
           </div>
           <div className="pill-stat">
-            <span className="tiny muted">Protein</span>
+            <span className="tiny muted">{t('Protein')}</span>
             <b>{targets.protein} g</b>
           </div>
           <div className="pill-stat">
@@ -158,7 +162,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
         </div>
         <p className="small plan-summary">{plan.summary}</p>
         <details className="plan-how">
-          <summary className="small">How these are worked out</summary>
+          <summary className="small">{t('How these are worked out')}</summary>
           <dl>
             {plan.how.map((line) => (
               <div key={line.label}>
@@ -169,27 +173,28 @@ export default function You({ go }: { go: (route: Route) => void }) {
           </dl>
         </details>
         {customised && (
-          <button type="button" className="btn--quiet small" style={{ marginTop: 8 }} onClick={() => { recalcTargets(); toast('Back to the suggested plan', '↩️'); }}>
-            Reset to suggested ({formatEnergy(suggested.calories)})
+          <button type="button" className="btn--quiet small" style={{ marginTop: 8 }} onClick={() => { recalcTargets(); toast(t('Back to the suggested plan'), '↩️'); }}>
+            {t('Reset to suggested ({energy})', { energy: formatEnergy(suggested.calories) })}
           </button>
         )}
 
         {learned && (
           <div className="learned">
             <p className="small">
-              <b>Your logs disagree with the textbook.</b>
+              <b>{t('Your logs disagree with the textbook.')}</b>
             </p>
             <p className="tiny muted">
-              Over {learned.observation.spanDays} days you averaged{' '}
-              <b>{formatEnergy(learned.observation.meanIntake)}</b> a day and your weight moved{' '}
-              <b>{formatWeightDelta(learned.observation.weeklyChangeKg, profile.units)}</b> a week. That puts what you
-              actually burn nearer <b>{formatEnergy(learned.applied)}</b> than the {formatEnergy(learned.formula)}{' '}
-              the formula assumed.
+              {rich('Over {days} days you averaged <b>{intake}</b> a day and your weight moved <b>{change}</b> a week. That puts what you actually burn nearer <b>{burn}</b> than the {formula} the formula assumed.', {
+                days: learned.observation.spanDays,
+                intake: formatEnergy(learned.observation.meanIntake),
+                change: formatWeightDelta(learned.observation.weeklyChangeKg, profile.units),
+                burn: formatEnergy(learned.applied),
+                formula: formatEnergy(learned.formula),
+              }, { b: (text) => <b>{text}</b> })}
             </p>
             {learned.capped && learned.factor < 1 && (
               <p className="tiny muted">
-                Worth saying: a reading this low is more often a few unlogged snacks than a slow metabolism. I have only
-                gone part of the way, and it is your call.
+                {t('Worth saying: a reading this low is more often a few unlogged snacks than a slow metabolism. I have only gone part of the way, and it is your call.')}
               </p>
             )}
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
@@ -198,13 +203,13 @@ export default function You({ go }: { go: (route: Route) => void }) {
                 className="btn btn--soft btn--sm"
                 onClick={() => {
                   applyBurnFactor(learned.factor);
-                  toast(`Plan redone — ${formatEnergy(computeTargets({ ...profile, burnFactor: learned.factor }).calories)} a day`, '🎯');
+                  toast(t('Plan redone — {energy} a day', { energy: formatEnergy(computeTargets({ ...profile, burnFactor: learned.factor }).calories) }), '🎯');
                 }}
               >
-                Use {formatEnergy(computeTargets({ ...profile, burnFactor: learned.factor }).calories)} instead
+                {t('Use {energy} instead', { energy: formatEnergy(computeTargets({ ...profile, burnFactor: learned.factor }).calories) })}
               </button>
               <button type="button" className="btn--quiet small" onClick={() => setIgnoredLearning(true)}>
-                Leave it
+                {t('Leave it')}
               </button>
             </div>
           </div>
@@ -212,10 +217,11 @@ export default function You({ go }: { go: (route: Route) => void }) {
 
         {profile.burnFactor && profile.burnFactor !== 1 && !learned && (
           <p className="tiny muted" style={{ marginTop: 10 }}>
-            Tuned to your own logs: {Math.round((profile.burnFactor - 1) * 100) > 0 ? '+' : ''}
-            {Math.round((profile.burnFactor - 1) * 100)}% on the textbook estimate.{' '}
-            <button type="button" className="link-button" onClick={() => { applyBurnFactor(1); toast('Back to the textbook estimate', '↩️'); }}>
-              Undo
+            {t('Tuned to your own logs: {percent}% on the textbook estimate.', {
+              percent: `${Math.round((profile.burnFactor - 1) * 100) > 0 ? '+' : ''}${Math.round((profile.burnFactor - 1) * 100)}`,
+            })}{' '}
+            <button type="button" className="link-button" onClick={() => { applyBurnFactor(1); toast(t('Back to the textbook estimate'), '↩️'); }}>
+              {t('Undo')}
             </button>
           </p>
         )}
@@ -223,81 +229,81 @@ export default function You({ go }: { go: (route: Route) => void }) {
 
       <section className="card">
         <div className="card-title">
-          <h3>About you</h3>
+          <h3>{t('About you')}</h3>
           <button type="button" className="btn--quiet small" onClick={() => setEditing(true)}>
-            Edit
+            {t('Edit')}
           </button>
         </div>
-        <Row label="Goal" value={profile.goal === 'lose' ? 'Lose weight' : profile.goal === 'gain' ? 'Build up' : 'Stay steady'} />
-        <Row label="Pace" value={profile.goal === 'maintain' ? '—' : `${formatPace(profile.pace, profile.units)} / week`} />
-        <Row label="Weight" value={formatWeight(profile.weightKg, profile.units)} />
-        <Row label="Goal weight" value={formatWeight(profile.targetWeightKg, profile.units)} />
-        <Row label="Height" value={formatHeight(profile.heightCm, profile.units)} />
-        <Row label="Country" value={`${REGIONS[regionOf(profile)].flag} ${REGIONS[regionOf(profile)].name}`} />
-        <Row label="AI language" value={LANGUAGES[languageOf(profile)].native} />
-        <Row label="Age" value={`${profile.age}`} />
-        <Row label="Activity" value={ACTIVITY_LABEL[profile.activity]} />
+        <Row label={t('Goal')} value={profile.goal === 'lose' ? t('Lose weight') : profile.goal === 'gain' ? t('Build up') : t('Stay steady')} />
+        <Row label={t('Pace')} value={profile.goal === 'maintain' ? '—' : t('{pace} / week', { pace: formatPace(profile.pace, profile.units) })} />
+        <Row label={t('Weight')} value={formatWeight(profile.weightKg, profile.units)} />
+        <Row label={t('Goal weight')} value={formatWeight(profile.targetWeightKg, profile.units)} />
+        <Row label={t('Height')} value={formatHeight(profile.heightCm, profile.units)} />
+        <Row label={t('Country')} value={`${REGIONS[regionOf(profile)].flag} ${t(REGIONS[regionOf(profile)].name)}`} />
+        <Row label={t('Language')} value={LANGUAGES[languageOf(profile)].native} />
+        <Row label={t('Age')} value={`${profile.age}`} />
+        <Row label={t('Activity')} value={ACTIVITY_LABEL[profile.activity]} />
       </section>
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>Squish AI</h3>
+          <h3>{t('Squish AI')}</h3>
           <span className={`badge ${status?.ai ? 'badge--good' : 'badge--warn'}`}>
-            <SparkIcon size={13} /> {status?.ai ? 'Connected' : 'Offline mode'}
+            <SparkIcon size={13} /> {status?.ai ? t('Connected') : t('Offline mode')}
           </span>
         </div>
         <p className="small muted">
           {status?.ai
-            ? `Photo analysis and coaching run on ${status.model}. Your photos go to the Squish API server and are not stored.`
-            : 'No API key on the server, so meals are estimated from the built-in food table. Add ANTHROPIC_API_KEY to the server environment for real photo analysis.'}
+            ? t('Photo analysis and coaching run on {model}. Your photos go to the Squish API server and are not stored.', { model: status.model })
+            : t('No API key on the server, so meals are estimated from the built-in food table. Add ANTHROPIC_API_KEY to the server environment for real photo analysis.')}
         </p>
       </section>
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>Appearance</h3>
+          <h3>{t('Appearance')}</h3>
         </div>
         <Segmented
-          label="Theme"
+          label={t('Theme')}
           value={theme}
           onChange={(value) => useSquish.getState().setTheme(value)}
           options={[
-            { value: 'light' as const, label: 'Light' },
-            { value: 'dark' as const, label: 'Dark' },
-            { value: 'system' as const, label: 'Auto' },
+            { value: 'light' as const, label: t('Light') },
+            { value: 'dark' as const, label: t('Dark') },
+            { value: 'system' as const, label: t('Auto') },
           ]}
         />
         {theme === 'system' && (
           <p className="tiny muted" style={{ marginTop: 8 }}>
-            Your browser is asking for <b>{prefersDark ? 'dark' : 'light'}</b>, so that is what Auto gives you. On
-            Android that comes from the phone's dark theme <em>or</em> from Chrome's own, under Settings → Theme — they
-            are two separate switches.
+            {rich(prefersDark
+              ? "Your browser is asking for <b>dark</b>, so that is what Auto gives you. On Android that comes from the phone's dark theme <em>or</em> from Chrome's own, under Settings → Theme — they are two separate switches."
+              : "Your browser is asking for <b>light</b>, so that is what Auto gives you. On Android that comes from the phone's dark theme <em>or</em> from Chrome's own, under Settings → Theme — they are two separate switches.", {}, { b: (text) => <b>{text}</b>, em: (text) => <em>{text}</em> })}
           </p>
         )}
 
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
         <h4 className="small" style={{ marginBottom: 8 }}>
-          Food comparisons
+          {t('Food comparisons')}
         </h4>
         <Segmented
-          label="Food comparisons"
+          label={t('Food comparisons')}
           value={comparisons === false ? 'off' : 'on'}
           onChange={(value) => useSquish.getState().setComparisons(value === 'on')}
           options={[
-            { value: 'on' as const, label: 'On' },
-            { value: 'off' as const, label: 'Off' },
+            { value: 'on' as const, label: t('On') },
+            { value: 'off' as const, label: t('Off') },
           ]}
         />
         <p className="tiny muted" style={{ marginTop: 8 }}>
-          Lines like “the protein of 3 eggs” on your meals and your day — for the good stuff, never calories.
+          {t('Lines like “the protein of 3 eggs” on your meals and your day — for the good stuff, never calories.')}
         </p>
 
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
-        <h4 className="small">How Squish looks</h4>
-        <p className="tiny muted">Earned by using the app.</p>
-        <div className="looks" role="radiogroup" aria-label="How Squish looks">
+        <h4 className="small">{t('How Squish looks')}</h4>
+        <p className="tiny muted">{t('Earned by using the app.')}</p>
+        <div className="looks" role="radiogroup" aria-label={t('How Squish looks')}>
           {LOOKS.map((entry) => {
             const earned = isUnlocked(entry, unlocked, subscribed);
             const chosen = entry.id === look;
@@ -311,13 +317,13 @@ export default function You({ go }: { go: (route: Route) => void }) {
                 // A locked one is not disabled: pressing it should say how to
                 // get it, which is the only thing somebody wants to know.
                 onClick={() => (earned ? setLook(entry.id) : toast(entry.how, '🔒'))}
-                aria-label={earned ? entry.name : `${entry.name}, locked — ${entry.how}`}
+                aria-label={earned ? entry.name : t('{name}, locked — {how}', { name: entry.name, how: entry.how })}
               >
                 {/* Squish in the colour, like the finishes below: a dot of peach
                     says less about how Squish will look than Squish in peach. */}
                 <Squish mood="excited" size={58} bob={false} look={entry.id} className="look-preview" label="" />
                 <span className="tile-name">{entry.name}</span>
-                {chosen ? <span className="tile-note">Wearing</span> : !earned && <span className="tile-note">{entry.how}</span>}
+                {chosen ? <span className="tile-note">{t('Wearing')}</span> : !earned && <span className="tile-note">{entry.how}</span>}
               </button>
             );
           })}
@@ -325,12 +331,12 @@ export default function You({ go }: { go: (route: Route) => void }) {
 
         <div className="row-between" style={{ marginTop: 16 }}>
           <h4 className="small">{PLUS}</h4>
-          {!subscribed && <span className="badge">Not yet</span>}
+          {!subscribed && <span className="badge">{t('Not yet')}</span>}
         </div>
         <p className="tiny muted">
           {subscribed
-            ? 'Yours while your subscription is running.'
-            : 'Rainbow, holographic, gold, chrome and more — coming when Squish Plus does. Nothing to buy yet.'}
+            ? t('Yours while your subscription is running.')
+            : t('Rainbow, holographic, gold, chrome and more — coming when Squish Plus does. Nothing to buy yet.')}
         </p>
         <div className="looks" role="radiogroup" aria-label={PLUS}>
           {PLUS_LOOKS.map((entry) => {
@@ -343,11 +349,11 @@ export default function You({ go }: { go: (route: Route) => void }) {
                 role="radio"
                 aria-checked={chosen}
                 className={`look look--plus${chosen ? ' look--on' : ''}${earned ? '' : ' look--locked'}`}
-                onClick={() => (earned ? setLook(entry.id) : toast(`${entry.name} comes with ${PLUS}, which is not on sale yet.`, '✨'))}
-                aria-label={earned ? entry.name : `${entry.name}, part of ${PLUS}`}
+                onClick={() => (earned ? setLook(entry.id) : toast(t('{item} comes with {plus}, which is not on sale yet.', { item: entry.name, plus: PLUS }), '✨'))}
+                aria-label={earned ? entry.name : t('{name}, part of {plus}', { name: entry.name, plus: PLUS })}
               >
                 {/* Squish wearing it, rather than a dot: a finish is the point, and a dot cannot show one. */}
-                <Squish mood="excited" size={58} bob={false} look={entry.id} className="look-preview" label={`Squish in ${entry.name}`} />
+                <Squish mood="excited" size={58} bob={false} look={entry.id} className="look-preview" label={t('Squish in {look}', { look: entry.name })} />
                 <span className="tiny">{entry.name}</span>
               </button>
             );
@@ -369,7 +375,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>Your plates</h3>
+          <h3>{t('Your plates')}</h3>
         </div>
         {/* The single cheapest thing anyone can do for portion accuracy. A
             phone with a depth sensor measures the food; a photo has to measure
@@ -379,26 +385,25 @@ export default function You({ go }: { go: (route: Route) => void }) {
             the food gets scaled by the ratio, so a 27 cm guess about a 20 cm
             plate makes the portion almost twice what it was. */}
         <p className="tiny muted">
-          Measure a dinner plate across and tell Squish once. Most meals are eaten off the same few things, and a plate
-          of known size is a ruler lying in every photo.
+          {t('Measure a dinner plate across and tell Squish once. Most meals are eaten off the same few things, and a plate of known size is a ruler lying in every photo.')}
         </p>
 
         {measured ? (
           <>
             <div className="stack" style={{ marginTop: 10 }}>
               <div className="row-between">
-                <span className="small">Dinner plate</span>
+                <span className="small">{t('Dinner plate')}</span>
                 <Stepper
                   value={profile.plateCm ?? 27}
                   step={1}
                   min={15}
                   max={40}
                   onChange={(plateCm) => setProfile({ plateCm })}
-                  suffix="cm across"
+                  suffix={t('cm across')}
                 />
               </div>
               <div className="row-between">
-                <span className="small">Usual bowl</span>
+                <span className="small">{t('Usual bowl')}</span>
                 <Stepper
                   value={profile.bowlMl ?? 400}
                   step={50}
@@ -415,16 +420,16 @@ export default function You({ go }: { go: (route: Route) => void }) {
               style={{ marginTop: 10 }}
               onClick={() => {
                 setProfile({ plateCm: undefined, bowlMl: undefined });
-                toast('Squish will judge portions on its own', '🍽️');
+                toast(t('Squish will judge portions on its own'), '🍽️');
               }}
             >
-              Forget my plate sizes
+              {t('Forget my plate sizes')}
             </button>
           </>
         ) : (
           <>
             <p className="tiny muted" style={{ marginTop: 10 }}>
-              <b>Not set.</b> Squish is judging portions from the photo alone, which is what it has always done.
+              {rich('<b>Not set.</b> Squish is judging portions from the photo alone, which is what it has always done.', {}, { b: (text) => <b>{text}</b> })}
             </p>
             <button
               type="button"
@@ -432,35 +437,34 @@ export default function You({ go }: { go: (route: Route) => void }) {
               style={{ marginTop: 10 }}
               onClick={() => setProfile({ plateCm: 27, bowlMl: 400 })}
             >
-              Measure and set them
+              {t('Measure and set them')}
             </button>
           </>
         )}
 
         <p className="tiny muted" style={{ marginTop: 8 }}>
-          A standard British dinner plate is about 27 cm; a side plate 20 cm. Only tell Squish a size you have actually
-          measured — a wrong one makes portions worse, not better.
+          {t('A standard dinner plate is about 27 cm; a side plate 20 cm. Only tell Squish a size you have actually measured — a wrong one makes portions worse, not better.')}
         </p>
       </section>
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>Meal reminders</h3>
-          {reminders.on && <span className="badge badge--good">On</span>}
+          <h3>{t('Meal reminders')}</h3>
+          {reminders.on && <span className="badge badge--good">{t('On')}</span>}
         </div>
 
         {blocker === null ? (
-          <p className="tiny muted">Checking…</p>
+          <p className="tiny muted">{t('Checking…')}</p>
         ) : blocker !== 'ok' ? (
           <p className="tiny muted">{explainBlocker(blocker)}</p>
         ) : (
           <>
-            <p className="tiny muted">A nudge at each mealtime, so a day does not quietly go unlogged.</p>
+            <p className="tiny muted">{t('A nudge at each mealtime, so a day does not quietly go unlogged.')}</p>
             <div className="stack" style={{ marginTop: 10 }}>
               {(['breakfast', 'lunch', 'dinner'] as const).map((meal) => (
                 <div className="row-between" key={meal}>
-                  <label className="small" htmlFor={`remind-${meal}`} style={{ textTransform: 'capitalize' }}>
-                    {meal}
+                  <label className="small" htmlFor={`remind-${meal}`}>
+                    {slotName(meal)}
                   </label>
                   <input
                     id={`remind-${meal}`}
@@ -483,12 +487,12 @@ export default function You({ go }: { go: (route: Route) => void }) {
               disabled={savingReminders}
               onClick={() => void toggleReminders()}
             >
-              {savingReminders ? 'Just a moment…' : reminders.on ? 'Turn reminders off' : 'Turn reminders on'}
+              {savingReminders ? t('Just a moment…') : reminders.on ? t('Turn reminders off') : t('Turn reminders on')}
             </button>
 
             {reminders.on && (
               <p className="tiny muted" style={{ marginTop: 8 }}>
-                Changed a time? Press the button twice to send the new times over.
+                {t('Changed a time? Press the button twice to send the new times over.')}
               </p>
             )}
           </>
@@ -497,18 +501,17 @@ export default function You({ go }: { go: (route: Route) => void }) {
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>What the nutritionist remembers</h3>
+          <h3>{t('What the nutritionist remembers')}</h3>
           {nutritionistNotes.length > 0 && <span className="badge">{nutritionistNotes.length}</span>}
         </div>
 
         {nutritionistNotes.length === 0 ? (
           <p className="tiny muted">
-            Nothing yet. Tell it something worth keeping — an allergy, a food you will not eat, what you are training
-            for — and it will note it down and remember next time.
+            {t('Nothing yet. Tell it something worth keeping — an allergy, a food you will not eat, what you are training for — and it will note it down and remember next time.')}
           </p>
         ) : (
           <>
-            <p className="tiny muted">Its own notes, kept in this browser with everything else. Delete any of them.</p>
+            <p className="tiny muted">{t('Its own notes, kept in this browser with everything else. Delete any of them.')}</p>
             <div className="stack" style={{ marginTop: 10 }}>
               {nutritionistNotes.map((note) => (
                 <div className="row-between" key={note.id}>
@@ -516,7 +519,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
                   <button
                     type="button"
                     className="btn btn--sm btn--ghost"
-                    aria-label={`Forget: ${note.note}`}
+                    aria-label={t('Forget: {note}', { note: note.note })}
                     onClick={() => forgetNote(note.id)}
                   >
                     <TrashIcon size={15} />
@@ -535,11 +538,11 @@ export default function You({ go }: { go: (route: Route) => void }) {
       {standing.admin && (
         <section className="card card--quiet">
           <div className="card-title">
-            <h3>Dashboard</h3>
+            <h3>{t('Dashboard')}</h3>
           </div>
-          <p className="tiny muted">Who is signed up, what they are on, and what it is costing.</p>
+          <p className="tiny muted">{t('Who is signed up, what they are on, and what it is costing.')}</p>
           <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={() => go({ name: 'admin' })}>
-            Open the dashboard
+            {t('Open the dashboard')}
           </button>
         </section>
       )}
@@ -556,19 +559,19 @@ export default function You({ go }: { go: (route: Route) => void }) {
 
       <section className="card card--quiet">
         <div className="card-title">
-          <h3>Your data</h3>
+          <h3>{t('Your data')}</h3>
         </div>
         <p className="small muted">
           {backup.kind === 'off'
-            ? 'Everything lives in this browser. Nothing is uploaded except the photo you choose to analyse.'
-            : 'Your diary lives in this browser. A copy is kept on the Squish server so you can get it back, along with any photo you choose to analyse. Nothing else leaves this device.'}
+            ? t('Everything lives in this browser. Nothing is uploaded except the photo you choose to analyse.')
+            : t('Your diary lives in this browser. A copy is kept on the Squish server so you can get it back, along with any photo you choose to analyse. Nothing else leaves this device.')}
         </p>
         <div className="row" style={{ gap: 10, marginTop: 12 }}>
           <button type="button" className="btn btn--ghost grow" onClick={exportData}>
-            Export JSON
+            {t('Export JSON')}
           </button>
           <button type="button" className="btn btn--danger grow" onClick={() => setConfirmReset(true)}>
-            Reset
+            {t('Reset')}
           </button>
         </div>
         {/*
@@ -577,36 +580,39 @@ export default function You({ go }: { go: (route: Route) => void }) {
           which is the whole point of publishing a policy.
         */}
         <p className="tiny muted" style={{ marginTop: 12 }}>
-          <a href={apiUrl('/privacy')} target="_blank" rel="noopener noreferrer">
-            Privacy policy
-          </a>{' '}
-          — what is kept, where it goes, and how to get rid of it.
+          {rich('<link>Privacy policy</link> — what is kept, where it goes, and how to get rid of it.', {}, {
+            link: (text) => (
+              <a href={apiUrl('/privacy')} target="_blank" rel="noopener noreferrer">
+                {text}
+              </a>
+            ),
+          })}
         </p>
       </section>
 
-      <p className="script center you-footer">Small steps. Big progress. ♡</p>
+      <p className="script center you-footer">{t('Small steps. Big progress. ♡')}</p>
 
-      <Sheet open={editing} onClose={() => setEditing(false)} title="About you">
+      <Sheet open={editing} onClose={() => setEditing(false)} title={t('About you')}>
         <div className="stack">
           <div className="field">
-            <label htmlFor="you-name">Name</label>
+            <label htmlFor="you-name">{t('Name')}</label>
             <input id="you-name" className="input" value={profile.name} onChange={(e) => setProfile({ name: e.target.value })} />
           </div>
           <div className="field">
-            <label>Goal</label>
+            <label>{t('Goal')}</label>
             <Segmented<Goal>
               value={profile.goal}
               onChange={(goal) => setProfile({ goal })}
               options={[
-                { value: 'lose', label: 'Lose' },
-                { value: 'maintain', label: 'Eat healthy' },
-                { value: 'gain', label: 'Gain' },
+                { value: 'lose', label: t('Lose') },
+                { value: 'maintain', label: t('Eat healthy') },
+                { value: 'gain', label: t('Gain') },
               ]}
             />
           </div>
           {profile.goal !== 'maintain' && (
             <div className="row-between">
-              <span className="small">Pace ({weightUnitLabel(profile.units)}/week)</span>
+              <span className="small">{t('Pace ({unit}/week)', { unit: weightUnitLabel(profile.units) })}</span>
               <Stepper
                 value={paceIn(profile.pace, profile.units)}
                 step={PACE_CHOICES[profile.units].step}
@@ -617,9 +623,17 @@ export default function You({ go }: { go: (route: Route) => void }) {
             </div>
           )}
           <RegionField value={regionOf(profile)} onChange={(region) => setProfile({ region, energy: undefined })} />
-          <LanguageField value={languageOf(profile)} onChange={(language) => setProfile({ language })} hint="Meal names, notes, the nutritionist and meal plans. The app’s own buttons are in English for now." />
+          <LanguageField
+            value={languageOf(profile)}
+            onChange={(language) => {
+              // The words are loaded before the app is drawn, so a new language starts it again.
+              setProfile({ language });
+              location.reload();
+            }}
+            hint={t('The whole app, and everything its AI writes. Changing it restarts Squish.')}
+          />
           <div className="field">
-            <label>Units</label>
+            <label>{t('Units')}</label>
             <Segmented
               value={profile.units}
               onChange={(units) => setProfile(retuneForUnits(profile, units))}
@@ -630,47 +644,47 @@ export default function You({ go }: { go: (route: Route) => void }) {
             />
           </div>
           <div className="field">
-            <label>Energy</label>
+            <label>{t('Energy')}</label>
             <Segmented<EnergyUnit>
               value={energyUnitOf(profile)}
               onChange={(energy) => setProfile({ energy: energy === REGIONS[regionOf(profile)].energy ? undefined : energy })}
               options={[
-                { value: 'kcal', label: 'Calories (kcal)' },
-                { value: 'kJ', label: 'Kilojoules (kJ)' },
+                { value: 'kcal', label: t('Calories (kcal)') },
+                { value: 'kJ', label: t('Kilojoules (kJ)') },
               ]}
             />
           </div>
-          <WeightField label="Weight" kg={profile.weightKg} units={profile.units} onChange={(weightKg) => setProfile({ weightKg })} />
+          <WeightField label={t('Weight')} kg={profile.weightKg} units={profile.units} onChange={(weightKg) => setProfile({ weightKg })} />
           <WeightField
-            label="Goal weight"
+            label={t('Goal weight')}
             kg={profile.targetWeightKg}
             units={profile.units}
             onChange={(targetWeightKg) => setProfile({ targetWeightKg })}
           />
           <HeightField cm={profile.heightCm} units={profile.units} onChange={(heightCm) => setProfile({ heightCm })} />
           <NumberField
-            label="Age"
+            label={t('Age')}
             value={profile.age}
-            suffix="yrs"
+            suffix={t('yrs')}
             min={MIN_AGE}
             max={100}
             onChange={(age) => setProfile({ age })}
-            onBelowMin={() => toast(`Squish is for people aged ${MIN_AGE} and over, so your age has not been changed.`, '🫧')}
+            onBelowMin={() => toast(t('Squish is for people aged {age} and over, so your age has not been changed.', { age: MIN_AGE }), '🫧')}
           />
           <div className="field">
-            <label>Sex (for the energy formula)</label>
+            <label>{t('Sex (for the energy formula)')}</label>
             <Segmented<Sex>
               value={profile.sex}
               onChange={(sex) => setProfile({ sex })}
               options={[
-                { value: 'female', label: 'Female' },
-                { value: 'male', label: 'Male' },
-                { value: 'other', label: 'Other' },
+                { value: 'female', label: t('Female') },
+                { value: 'male', label: t('Male') },
+                { value: 'other', label: t('Other') },
               ]}
             />
           </div>
           <div className="field">
-            <label>Activity</label>
+            <label>{t('Activity')}</label>
             <div className="row wrap" style={{ gap: 8 }}>
               {(Object.keys(ACTIVITY_LABEL) as Activity[]).map((activity) => (
                 <button
@@ -685,17 +699,17 @@ export default function You({ go }: { go: (route: Route) => void }) {
               ))}
             </div>
           </div>
-          <button type="button" className="btn btn--block" onClick={() => { setEditing(false); toast('Plan updated', '✅'); }}>
-            Done
+          <button type="button" className="btn btn--block" onClick={() => { setEditing(false); toast(t('Plan updated'), '✅'); }}>
+            {t('Done')}
           </button>
         </div>
       </Sheet>
 
-      <Sheet open={editingTargets} onClose={() => setEditingTargets(false)} title="Adjust targets">
+      <Sheet open={editingTargets} onClose={() => setEditingTargets(false)} title={t('Adjust targets')}>
         <div className="stack">
-          <p className="small muted">Override anything Squish suggested — handy if a coach or dietitian set your numbers.</p>
+          <p className="small muted">{t('Override anything Squish suggested — handy if a coach or dietitian set your numbers.')}</p>
           <div className="row-between">
-            <span className="small">{energyUnitOf(profile) === 'kJ' ? 'Energy' : 'Calories'}</span>
+            <span className="small">{energyUnitOf(profile) === 'kJ' ? t('Energy') : t('Calories')}</span>
             {energyUnitOf(profile) === 'kJ' ? (
               <Stepper
                 value={energyValue(targets.calories, 'kJ')}
@@ -710,19 +724,22 @@ export default function You({ go }: { go: (route: Route) => void }) {
             )}
           </div>
           <div className="row-between">
-            <span className="small">Protein</span>
+            <span className="small">{t('Protein')}</span>
             <Stepper value={targets.protein} step={5} min={30} max={300} onChange={(protein) => setTargets({ protein })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Carbs</span>
+            <span className="small">{t('Carbs')}</span>
             <Stepper value={targets.carbs} step={10} min={40} max={600} onChange={(carbs) => setTargets({ carbs })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Fat</span>
+            <span className="small">{t('Fat')}</span>
             <Stepper value={targets.fat} step={5} min={20} max={200} onChange={(fat) => setTargets({ fat })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Saturates<span className="tiny muted"> · a daily limit</span></span>
+            <span className="small">
+              {t('Saturates')}
+              <span className="tiny muted"> · {t('a daily limit')}</span>
+            </span>
             <Stepper value={targets.satFat ?? 0} step={1} min={0} max={80} onChange={(satFat) => setTargets({ satFat })} suffix="g" />
           </div>
           <div className="row-between">
@@ -730,15 +747,24 @@ export default function You({ go }: { go: (route: Route) => void }) {
             <Stepper value={targets.fibre} step={1} min={10} max={60} onChange={(fibre) => setTargets({ fibre })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Sugar<span className="tiny muted"> · a daily limit</span></span>
+            <span className="small">
+              {t('Sugar')}
+              <span className="tiny muted"> · {t('a daily limit')}</span>
+            </span>
             <Stepper value={targets.sugar ?? 0} step={5} min={0} max={200} onChange={(sugar) => setTargets({ sugar })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">Free sugars<span className="tiny muted"> · added, honey and juice</span></span>
+            <span className="small">
+              {t('Free sugars')}
+              <span className="tiny muted"> · {t('added, honey and juice')}</span>
+            </span>
             <Stepper value={targets.freeSugar ?? 0} step={5} min={0} max={200} onChange={(freeSugar) => setTargets({ freeSugar })} suffix="g" />
           </div>
           <div className="row-between">
-            <span className="small">{saltLabel()}<span className="tiny muted"> · a daily limit</span></span>
+            <span className="small">
+              {saltLabel()}
+              <span className="tiny muted"> · {t('a daily limit')}</span>
+            </span>
             {showsSodium() ? (
               <Stepper
                 value={saltShown(targets.sodium ?? 0)}
@@ -761,29 +787,30 @@ export default function You({ go }: { go: (route: Route) => void }) {
           </div>
           <div className="row-between">
             <span className="small">
-              Water<span className="tiny muted"> · {GLASS_ML} ml a glass</span>
+              {t('Water')}
+              <span className="tiny muted"> · {t('{ml} ml a glass', { ml: GLASS_ML })}</span>
             </span>
-            <Stepper value={targets.water} min={4} max={20} onChange={(water) => setTargets({ water })} suffix="glasses" />
+            <Stepper value={targets.water} min={4} max={20} onChange={(water) => setTargets({ water })} suffix={t('glasses')} />
           </div>
           <div className="row-between">
-            <span className="small">Steps</span>
+            <span className="small">{t('Steps')}</span>
             <Stepper value={targets.steps} step={500} min={2000} max={30000} onChange={(steps) => setTargets({ steps })} />
           </div>
           <button type="button" className="btn btn--block" onClick={() => setEditingTargets(false)}>
-            Done
+            {t('Done')}
           </button>
         </div>
       </Sheet>
 
-      <Sheet open={confirmReset} onClose={() => setConfirmReset(false)} title="Start over?">
+      <Sheet open={confirmReset} onClose={() => setConfirmReset(false)} title={t('Start over?')}>
         <p className="small muted">
           {backup.kind === 'off'
-            ? 'This clears every meal, day log and badge on this device. It cannot be undone.'
-            : 'This clears every meal, day log and badge on this device, and deletes the backup too. It cannot be undone.'}
+            ? t('This clears every meal, day log and badge on this device. It cannot be undone.')
+            : t('This clears every meal, day log and badge on this device, and deletes the backup too. It cannot be undone.')}
         </p>
         <div className="row" style={{ gap: 10, marginTop: 16 }}>
           <button type="button" className="btn btn--ghost grow" onClick={() => setConfirmReset(false)}>
-            Keep my data
+            {t('Keep my data')}
           </button>
           <button
             type="button"
@@ -794,10 +821,10 @@ export default function You({ go }: { go: (route: Route) => void }) {
               // place by accident rather than because anybody asked.
               void forgetBackup().finally(() => resetAll());
               setConfirmReset(false);
-              toast('All cleared', '🧼');
+              toast(t('All cleared'), '🧼');
             }}
           >
-            Delete everything
+            {t('Delete everything')}
           </button>
         </div>
       </Sheet>
@@ -863,61 +890,60 @@ function BackupCard() {
   const restore = async () => {
     const found = remote ?? (await pullDiary());
     if (!found?.state) {
-      toast('There is no backup to restore.', '📦');
+      toast(t('There is no backup to restore.'), '📦');
       return;
     }
     setBusy(true);
     adoptBackup(found);
     setBusy(false);
-    toast('Restored from your backup.', '📦');
+    toast(t('Restored from your backup.'), '📦');
   };
 
   return (
     <section className="card card--quiet">
       <div className="card-title">
-        <h3>Backup</h3>
-        {state.kind === 'saving' && <span className="badge">Saving…</span>}
-        {state.kind === 'conflict' && <span className="badge badge--warn">Paused</span>}
-        {state.kind === 'failed' && <span className="badge badge--warn">Offline</span>}
-        {state.kind === 'too_big' && <span className="badge badge--bad">Too large</span>}
+        <h3>{t('Backup')}</h3>
+        {state.kind === 'saving' && <span className="badge">{t('Saving…')}</span>}
+        {state.kind === 'conflict' && <span className="badge badge--warn">{t('Paused')}</span>}
+        {state.kind === 'failed' && <span className="badge badge--warn">{t('Offline')}</span>}
+        {state.kind === 'too_big' && <span className="badge badge--bad">{t('Too large')}</span>}
       </div>
 
       {state.kind === 'too_big' ? (
         <p className="tiny muted">
-          Your diary has grown past what the backup will hold, so it has stopped. Nothing on this device has been lost
-          and nothing is wrong with your connection — the copy on the server is simply older than your diary now.
-          Deleting some older meals, particularly photographed ones, will let it start again.
+          {t('Your diary has grown past what the backup will hold, so it has stopped. Nothing on this device has been lost and nothing is wrong with your connection — the copy on the server is simply older than your diary now. Deleting some older meals, particularly photographed ones, will let it start again.')}
         </p>
       ) : state.kind === 'conflict' ? (
         <>
           <p className="tiny muted">
-            Another device has backed up something this one has not seen. Squish will not merge two diaries — that means
-            guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say
-            which to keep.
+            {t('Another device has backed up something this one has not seen. Squish will not merge two diaries — that means guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say which to keep.')}
           </p>
           {remote && <Choices here={here} backup={summariseDiary(remote.state)} savedAt={remote.updatedAt} />}
         </>
       ) : (
         <p className="tiny muted">
-          A copy of your diary is kept so a cleared browser or a lost phone is an inconvenience rather than the end of
-          it. Your diary still lives on this device; this is the spare.
+          {t('A copy of your diary is kept so a cleared browser or a lost phone is an inconvenience rather than the end of it. Your diary still lives on this device; this is the spare.')}
         </p>
       )}
 
       {remote?.updatedAt && state.kind !== 'conflict' && (
         <p className="tiny muted" style={{ marginTop: 8 }}>
-          Last kept {friendlyDate(remote.updatedAt.slice(0, 10)).toLowerCase()}.
+          {t('Last kept {date}.', { date: friendlyDate(remote.updatedAt.slice(0, 10)).toLocaleLowerCase() })}
         </p>
       )}
 
       {/* Two equal buttons for a choice between two diaries: neither is the one Squish would pick. */}
       <div className={state.kind === 'conflict' ? 'backup-actions backup-actions--choose' : 'row'} style={{ gap: 10, marginTop: 12 }}>
         <button type="button" className="btn btn--sm btn--ghost grow" disabled={busy || !remote} onClick={() => void restore()}>
-          {state.kind === 'conflict' ? `Use the backup${remote ? ` (${mealCount(summariseDiary(remote.state).meals)})` : ''}` : 'Restore from backup'}
+          {state.kind === 'conflict'
+            ? remote
+              ? t('Use the backup ({meals})', { meals: mealCount(summariseDiary(remote.state).meals) })
+              : t('Use the backup')
+            : t('Restore from backup')}
         </button>
         {state.kind === 'conflict' && (
-          <button type="button" className="btn btn--sm btn--ghost" onClick={() => { resumeBackup(remote?.version ?? null); toast('Keeping this one.', '📦'); }}>
-            Keep this device's ({mealCount(here.meals)})
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => { resumeBackup(remote?.version ?? null); toast(t('Keeping this one.'), '📦'); }}>
+            {t("Keep this device's ({meals})", { meals: mealCount(here.meals) })}
           </button>
         )}
       </div>
@@ -925,10 +951,10 @@ function BackupCard() {
   );
 }
 
-const mealCount = (n: number) => `${n.toLocaleString('en-GB')} meal${n === 1 ? '' : 's'}`;
+const mealCount = (n: number) => plural(n, { one: '{n} meal', other: '{n} meals' });
 
 const lastLogged = (summary: DiarySummary) =>
-  summary.latest ? `, the latest ${friendlyDate(summary.latest).toLowerCase()}` : '';
+  summary.latest ? t(', the latest {date}', { date: friendlyDate(summary.latest).toLocaleLowerCase() }) : '';
 
 /**
  * The two diaries side by side, so choosing between them is a matter of
@@ -938,22 +964,24 @@ const lastLogged = (summary: DiarySummary) =>
 function Choices({ here, backup, savedAt }: { here: DiarySummary; backup: DiarySummary; savedAt: string | null }) {
   const hint =
     here.meals === 0 && backup.meals > 0
-      ? 'This device has no meals in it, so the backup is almost certainly the one to keep.'
+      ? t('This device has no meals in it, so the backup is almost certainly the one to keep.')
       : backup.meals === 0 && here.meals > 0
-        ? 'The backup has no meals in it, so this device’s diary is almost certainly the one to keep.'
-        : 'Keep the one with your meals in it. The other is replaced, so anything only in that one is lost.';
+        ? t('The backup has no meals in it, so this device’s diary is almost certainly the one to keep.')
+        : t('Keep the one with your meals in it. The other is replaced, so anything only in that one is lost.');
   return (
     <div className="backup-choices">
       <dl>
         <div>
-          <dt className="tiny muted">The backup{savedAt ? `, saved ${friendlyDate(savedAt.slice(0, 10)).toLowerCase()}` : ''}</dt>
+          <dt className="tiny muted">
+            {savedAt ? t('The backup, saved {date}', { date: friendlyDate(savedAt.slice(0, 10)).toLocaleLowerCase() }) : t('The backup')}
+          </dt>
           <dd className="small">
             <b>{mealCount(backup.meals)}</b>
             {lastLogged(backup)}
           </dd>
         </div>
         <div>
-          <dt className="tiny muted">This device</dt>
+          <dt className="tiny muted">{t('This device')}</dt>
           <dd className="small">
             <b>{mealCount(here.meals)}</b>
             {lastLogged(here)}
@@ -980,17 +1008,17 @@ function PlanCard({ standing }: { standing: Standing }) {
 
   const plus = standing.plan === 'plus';
   const rows: { label: string; kind: 'photo' | 'chat' | 'recipe' }[] = [
-    { label: 'AI meal analyses', kind: 'photo' },
-    { label: 'Nutritionist questions', kind: 'chat' },
-    { label: 'Recipe imports', kind: 'recipe' },
+    { label: t('AI meal analyses'), kind: 'photo' },
+    { label: t('Nutritionist questions'), kind: 'chat' },
+    { label: t('Recipe imports'), kind: 'recipe' },
   ];
 
   return (
     <section className="card card--quiet">
       <div className="card-title">
         {/* Not "Your plan" — the targets card above already is. */}
-        <h3>Plan and usage</h3>
-        <span className={`badge ${plus ? 'badge--good' : ''}`}>{plus ? PLUS : 'Free'}</span>
+        <h3>{t('Plan and usage')}</h3>
+        <span className={`badge ${plus ? 'badge--good' : ''}`}>{plus ? PLUS : t('Free')}</span>
       </div>
 
       <div className="plan-rows">
@@ -999,13 +1027,13 @@ function PlanCard({ standing }: { standing: Standing }) {
             <span className="tiny">{row.label}</span>
             <b className="small">
               {row.kind === 'photo' && standing.needsAccount ? (
-                <span className="muted">{standing.taste} free with an account</span>
+                <span className="muted">{t('{n} free with an account', { n: standing.taste })}</span>
               ) : standing.allowance[row.kind] === 0 ? (
                 <span className="muted">{PLUS}</span>
               ) : plus ? (
-                `${standing.left[row.kind]} of ${standing.allowance[row.kind]} left`
+                t('{left} of {total} left', { left: standing.left[row.kind], total: standing.allowance[row.kind] })
               ) : (
-                `${standing.left[row.kind]} of ${standing.allowance[row.kind]} free left`
+                t('{left} of {total} free left', { left: standing.left[row.kind], total: standing.allowance[row.kind] })
               )}
             </b>
           </div>
@@ -1014,11 +1042,11 @@ function PlanCard({ standing }: { standing: Standing }) {
 
       <p className="tiny muted" style={{ marginTop: 10 }}>
         {plus && standing.resets
-          ? `The month starts again on ${friendlyDate(standing.resets.slice(0, 10)).toLowerCase()}. `
+          ? t('The month starts again on {date}.', { date: friendlyDate(standing.resets.slice(0, 10)).toLocaleLowerCase() })
           : standing.needsAccount
-            ? `Make a free account below to try ${standing.taste} AI meal analyses. `
-            : 'The free analyses are a one-off taste of the AI; they do not reset. '}
-        Logging by hand, food search, your diary and the charts are free and always will be.
+            ? t('Make a free account below to try {n} AI meal analyses.', { n: standing.taste })
+            : t('The free analyses are a one-off taste of the AI; they do not reset.')}{' '}
+        {t('Logging by hand, food search, your diary and the charts are free and always will be.')}
       </p>
 
       {standing.invites && <InviteBox signedIn={standing.account} />}
@@ -1044,7 +1072,7 @@ function InviteBox({ signedIn }: { signedIn: boolean }) {
   if (!open) {
     return (
       <button type="button" className="linkish tiny plan-invite-open" onClick={() => setOpen(true)}>
-        I have a code
+        {t('I have a code')}
       </button>
     );
   }
@@ -1052,8 +1080,7 @@ function InviteBox({ signedIn }: { signedIn: boolean }) {
   if (!signedIn) {
     return (
       <p className="tiny muted plan-invite">
-        Make an account first — that is where {PLUS} lives, so it follows you to a new phone instead of vanishing with
-        this browser.
+        {t('Make an account first — that is where {plus} lives, so it follows you to a new phone instead of vanishing with this browser.', { plus: PLUS })}
       </p>
     );
   }
@@ -1069,7 +1096,7 @@ function InviteBox({ signedIn }: { signedIn: boolean }) {
     }
     setOpen(false);
     setCode('');
-    toast(`That is ${PLUS} switched on. Enjoy.`, '🎉');
+    toast(t('That is {plus} switched on. Enjoy.', { plus: PLUS }), '🎉');
   };
 
   return (
@@ -1085,14 +1112,14 @@ function InviteBox({ signedIn }: { signedIn: boolean }) {
           className="input grow"
           value={code}
           onChange={(event) => setCode(event.target.value)}
-          placeholder="Your code"
-          aria-label="Invite code"
+          placeholder={t('Your code')}
+          aria-label={t('Invite code')}
           autoCapitalize="characters"
           autoCorrect="off"
           spellCheck={false}
         />
         <button type="submit" className="btn btn--sm" disabled={busy || !code.trim()}>
-          {busy ? '…' : 'Use it'}
+          {busy ? '…' : t('Use it')}
         </button>
       </div>
       {trouble && (
@@ -1125,12 +1152,12 @@ function Wardrobe({ subscribed, dark }: { subscribed: boolean; dark: boolean }) 
 
   return (
     <>
-      <h4 className="small">What Squish wears</h4>
+      <h4 className="small">{t('What Squish wears')}</h4>
       <div className="wardrobe-now">
-        <Squish mood="excited" size={84} bob={false} label="Squish in what it is wearing now" />
+        <Squish mood="excited" size={84} bob={false} label={t('Squish in what it is wearing now')} />
         <div>
-          <p className="small">{wearing.length ? wearing.join(', ') : 'Nothing on yet'}</p>
-          <p className="tiny muted">One thing each on the head, face and neck. Tap something you have to put it on; tap it again to take it off.</p>
+          <p className="small">{wearing.length ? listWords(wearing as string[]) : t('Nothing on yet')}</p>
+          <p className="tiny muted">{t('One thing each on the head, face and neck. Tap something you have to put it on; tap it again to take it off.')}</p>
         </div>
       </div>
       {shelves(items, entitlement).map((shelf) => (
@@ -1146,7 +1173,7 @@ function Wardrobe({ subscribed, dark }: { subscribed: boolean; dark: boolean }) 
               {shelf.items.map((item) => {
                 const mine = shelf.kind === 'yours';
                 const on = mine && worn[item.slot] === item.id;
-                const note = on ? 'Wearing' : shelf.kind === 'earn' ? item.how : lockedNote(item.unlock);
+                const note = on ? t('Wearing') : shelf.kind === 'earn' ? item.how : lockedNote(item.unlock);
                 return (
                   <button
                     key={item.id}
@@ -1154,7 +1181,7 @@ function Wardrobe({ subscribed, dark }: { subscribed: boolean; dark: boolean }) 
                     aria-pressed={mine ? on : undefined}
                     className={`look look--wear${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
                     onClick={() => (mine ? setOutfit(toggle(outfit, item)) : toast(whyLocked(item, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
-                    aria-label={mine ? item.name : `${item.name}, locked — ${item.how}`}
+                    aria-label={mine ? item.name : t('{name}, locked — {how}', { name: item.name, how: item.how })}
                   >
                     <Squish mood="excited" size={58} bob={false} outfit={{ [item.slot]: item.id }} className="look-preview" label="" />
                     <span className="tile-name">{item.name}</span>
@@ -1186,20 +1213,20 @@ function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean 
   const current = shown.find((scene) => scene.id === chosen && canUseScene(scene, entitlement))?.id ?? '';
   // The plain card is always theirs, so there is always a Yours shelf to put it on.
   const groups = shelves(shown, entitlement);
-  if (groups[0]?.kind !== 'yours') groups.unshift({ key: 'yours', kind: 'yours', title: 'Yours', items: [] });
+  if (groups[0]?.kind !== 'yours') groups.unshift({ key: 'yours', kind: 'yours', title: t('Yours'), items: [] });
 
   const plain = (
     <button key="plain" type="button" aria-pressed={current === ''} className={`scene-tile${current === '' ? ' look--on' : ''}`} onClick={() => setScene('')}>
       <span className="scene-thumb scene-thumb--plain" aria-hidden="true" />
-      <span className="tile-name">Plain</span>
-      {current === '' && <span className="tile-note">Showing</span>}
+      <span className="tile-name">{t('Plain')}</span>
+      {current === '' && <span className="tile-note">{t('Showing')}</span>}
     </button>
   );
 
   return (
     <>
-      <h4 className="small">Home scene</h4>
-      <p className="tiny muted">The place behind Squish on Home.</p>
+      <h4 className="small">{t('Home scene')}</h4>
+      <p className="tiny muted">{t('The place behind Squish on Home.')}</p>
       {groups.map((shelf) => (
         <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
           {shelf.kind === 'pack' ? (
@@ -1214,7 +1241,7 @@ function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean 
               {shelf.items.map((scene) => {
                 const mine = shelf.kind === 'yours';
                 const on = current === scene.id;
-                const note = on ? 'Showing' : shelf.kind === 'earn' ? scene.how : lockedNote(scene.unlock);
+                const note = on ? t('Showing') : shelf.kind === 'earn' ? scene.how : lockedNote(scene.unlock);
                 return (
                   <button
                     key={scene.id}
@@ -1222,7 +1249,7 @@ function ScenePicker({ subscribed, dark }: { subscribed: boolean; dark: boolean 
                     aria-pressed={mine ? on : undefined}
                     className={`scene-tile${on ? ' look--on' : ''}${mine ? '' : ' look--locked'}`}
                     onClick={() => (mine ? setScene(scene.id) : toast(whyLocked(scene, PLUS), shelf.kind === 'earn' ? '🔒' : '✨'))}
-                    aria-label={mine ? scene.name : `${scene.name}, locked — ${scene.how}`}
+                    aria-label={mine ? scene.name : t('{name}, locked — {how}', { name: scene.name, how: scene.how })}
                   >
                     <img className="scene-thumb" src={sceneUrl(scene.id, dark ? 'dark' : 'light')} alt="" />
                     <span className="tile-name">{scene.name}</span>
@@ -1264,11 +1291,11 @@ function ShareCardLink() {
     <>
       <div className="row-between share-link">
         <div>
-          <h4 className="small">Frames and stickers</h4>
-          <p className="tiny muted">They go on the card you share — pick them there.</p>
+          <h4 className="small">{t('Frames and stickers')}</h4>
+          <p className="tiny muted">{t('They go on the card you share — pick them there.')}</p>
         </div>
         <button type="button" className="btn btn--soft" onClick={() => setOpen(true)}>
-          <ShareIcon size={18} /> Share a card
+          <ShareIcon size={18} /> {t('Share a card')}
         </button>
       </div>
       <ShareSheet open={open} onClose={() => setOpen(false)} data={data} />

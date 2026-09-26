@@ -1,3 +1,4 @@
+import { t, uiLocale } from './i18n';
 /**
  * When a goal weight would be reached at the chosen pace — a date, because
  * "around March" means something and "17 weeks" mostly does not.
@@ -34,7 +35,7 @@ export function goalProjection(
 /** "March 2027", or "next month" / "this month" when it is that close. */
 export function aroundWhen(date: Date, today: Date = new Date()): string {
   const months = (date.getFullYear() - today.getFullYear()) * 12 + date.getMonth() - today.getMonth();
-  if (months <= 0) return 'this month';
-  if (months === 1) return 'next month';
-  return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  if (months <= 0) return t('this month');
+  if (months === 1) return t('next month');
+  return date.toLocaleDateString(uiLocale(), { month: 'long', year: 'numeric' });
 }

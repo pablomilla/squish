@@ -22,6 +22,7 @@ import { addDays, daysBetween, isoDate, parseISO } from './date';
 import { mealsOn, dayScore, totalsOn } from './selectors';
 import { CEILING_LABEL, MICRO_LABEL, MICRO_UNIT, ceilingLimit, dayVerdict, microTargets } from './nutrition';
 import { saltGrams } from './units';
+import { t, uiLocale } from './i18n';
 
 /** Something the nutritionist decided to keep. */
 export interface NutritionistNote {
@@ -357,23 +358,25 @@ export function runTool(call: ToolCall, diary: Diary, actions: DiaryActions): To
 export function toolLabel(call: ToolCall): string {
   const from = asDate(call.input.from);
   const to = asDate(call.input.to);
-  const range = from && to ? ` ${sayDate(from)} to ${sayDate(to)}` : '';
+  // Shown to the person, so in their language — unlike sayDate, which is for the model.
+  const say = (iso: string) => parseISO(iso).toLocaleDateString(uiLocale(), { weekday: 'short', day: 'numeric', month: 'short' });
+  const range = from && to ? { from: say(from), to: say(to) } : null;
 
   switch (call.name) {
     case 'look_up_days':
-      return `Reading your diary${range}`;
+      return range ? t('Reading your diary {from} to {to}', range) : t('Reading your diary');
     case 'find_meals': {
       const query = str(call.input.query);
-      return query ? `Looking for ${query}` : 'Looking through your meals';
+      return query ? t('Looking for {query}', { query }) : t('Looking through your meals');
     }
     case 'nutrient_report':
-      return `Checking your nutrients${range}`;
+      return range ? t('Checking your nutrients {from} to {to}', range) : t('Checking your nutrients');
     case 'remember':
-      return 'Making a note';
+      return t('Making a note');
     case 'forget':
-      return 'Forgetting that';
+      return t('Forgetting that');
     default:
-      return 'Looking something up';
+      return t('Looking something up');
   }
 }
 

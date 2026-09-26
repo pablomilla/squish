@@ -13,6 +13,7 @@ import { overPenalty, overTargets, scoreBreakdown, ultraProcessedShare, CEILING_
 import { mealsOn, totalsOn, dayScore } from './selectors';
 import type { MealEntry, Targets } from '../types';
 import { fibreWord, saltWord } from './region';
+import { t } from './i18n';
 
 /**
  * Below this, today is too early to judge: one 90 kcal snack at breakfast
@@ -22,18 +23,18 @@ import { fibreWord, saltWord } from './region';
 export const EARLY_KCAL = 400;
 
 const WORDS: Record<ScoreFactorKey, string> = {
-  protein: 'Protein',
+  protein: t('Protein'),
   get fibre() {
     return fibreWord();
   },
   get salt() {
     return saltWord();
   },
-  sugar: 'Sugar',
-  freeSugar: 'Added sugar',
-  satFat: 'Saturated fat',
-  fat: 'Fat',
-  processed: 'Ultra-processed food',
+  sugar: t('Sugar'),
+  freeSugar: t('Added sugar'),
+  satFat: t('Saturated fat'),
+  fat: t('Fat'),
+  processed: t('Ultra-processed food'),
 };
 
 export interface Reason {
@@ -78,7 +79,7 @@ export function explainDay(meals: MealEntry[], date: string, targets: Targets, t
   }));
   const over = overTargets(totals, targets);
   const penalty = overPenalty(over);
-  if (penalty > 0 && over[0]) reasons.push({ key: 'over', words: `Well over your ${CEILING_LABEL[over[0].key].toLowerCase()} for the day`, points: -penalty });
+  if (penalty > 0 && over[0]) reasons.push({ key: 'over', words: t('Well over your {nutrient} for the day', { nutrient: CEILING_LABEL[over[0].key].toLocaleLowerCase() }), points: -penalty });
 
   const shown = reasons.filter((r) => Math.abs(r.points) >= 1).sort((a, b) => Math.abs(b.points) - Math.abs(a.points)).slice(0, 5);
 
@@ -90,16 +91,16 @@ export function explainDay(meals: MealEntry[], date: string, targets: Targets, t
   if (list.length && score < 55) {
     tip =
       lift < 15
-        ? 'Something with protein or fibre — eggs, beans, yoghurt, veg or wholegrains — lifts the score most.'
+        ? t('Something with protein or fibre — eggs, beans, yoghurt, veg or wholegrains — lifts the score most.')
         : worst === 'freeSugar' || worst === 'sugar'
-          ? 'Fancy something sweet? Fruit, yoghurt or a few nuts score far higher than sweets and bars.'
+          ? t('Fancy something sweet? Fruit, yoghurt or a few nuts score far higher than sweets and bars.')
           : worst === 'processed'
-            ? 'Simple, home-cooked food lifts the score more than packaged food does.'
+            ? t('Simple, home-cooked food lifts the score more than packaged food does.')
             : worst === 'satFat' || worst === 'fat'
-              ? 'Veg, beans, fish or lean meat alongside richer food balance the day out.'
+              ? t('Veg, beans, fish or lean meat alongside richer food balance the day out.')
               : worst === 'salt'
-                ? 'Fresh food rather than salty packaged food lifts the score.'
-                : 'A meal built round veg and some protein would lift it.';
+                ? t('Fresh food rather than salty packaged food lifts the score.')
+                : t('A meal built round veg and some protein would lift it.');
   }
 
   return { score, early, calories: Math.round(totals.calories), reasons: shown, tip };

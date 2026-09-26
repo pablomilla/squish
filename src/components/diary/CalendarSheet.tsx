@@ -4,8 +4,10 @@ import { ChevronIcon } from '../icons';
 import { isoDate, parseISO } from '../../lib/date';
 import { firstLogged, monthGrid, monthMarks, stepMonth } from '../../lib/diaryNav';
 import { useSquish } from '../../store/useSquish';
+import { plural, t, uiLocale } from '../../lib/i18n';
 
-const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+/** Monday to Sunday, as their language writes each day's initial: 5 Jan 2026 was a Monday. */
+const weekdays = () => Array.from({ length: 7 }, (_, i) => new Date(2026, 0, 5 + i).toLocaleDateString(uiLocale(), { weekday: 'narrow' }));
 
 /**
  * Any day in the diary, a month at a time: a dot on each day something was
@@ -28,7 +30,7 @@ export default function CalendarSheet({ open, date, onClose, onPick }: { open: b
   const canBack = monthKey(year, month) > monthKey(firstDate.getFullYear(), firstDate.getMonth());
   const canForward = monthKey(year, month) < monthKey(new Date().getFullYear(), new Date().getMonth());
   const years = Array.from({ length: new Date().getFullYear() - firstDate.getFullYear() + 1 }, (_, i) => firstDate.getFullYear() + i);
-  const label = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const label = new Date(year, month, 1).toLocaleDateString(uiLocale(), { month: 'long', year: 'numeric' });
   const logged = marks.size;
 
   const pick = (d: string) => {
@@ -37,20 +39,20 @@ export default function CalendarSheet({ open, date, onClose, onPick }: { open: b
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title="Go to a day">
+    <Sheet open={open} onClose={onClose} title={t('Go to a day')}>
       <div className="calendar">
         <div className="calendar-head">
-          <button type="button" className="icon-btn" disabled={!canBack} onClick={() => setMonth(stepMonth(year, month, -1))} aria-label="Previous month">
+          <button type="button" className="icon-btn" disabled={!canBack} onClick={() => setMonth(stepMonth(year, month, -1))} aria-label={t('Previous month')}>
             <ChevronIcon size={20} className="flip" />
           </button>
           <b aria-live="polite">{label}</b>
-          <button type="button" className="icon-btn" disabled={!canForward} onClick={() => setMonth(stepMonth(year, month, 1))} aria-label="Next month">
+          <button type="button" className="icon-btn" disabled={!canForward} onClick={() => setMonth(stepMonth(year, month, 1))} aria-label={t('Next month')}>
             <ChevronIcon size={20} />
           </button>
         </div>
 
         {years.length > 1 && (
-          <div className="calendar-years" role="group" aria-label="Year">
+          <div className="calendar-years" role="group" aria-label={t('Year')}>
             {years.map((y) => (
               <button
                 key={y}
@@ -70,7 +72,7 @@ export default function CalendarSheet({ open, date, onClose, onPick }: { open: b
         )}
 
         <div className="calendar-grid" role="grid" aria-label={label}>
-          {WEEKDAYS.map((d, i) => (
+          {weekdays().map((d, i) => (
             <span key={i} className="calendar-weekday tiny muted" aria-hidden="true">
               {d}
             </span>
@@ -86,7 +88,13 @@ export default function CalendarSheet({ open, date, onClose, onPick }: { open: b
                 disabled={out}
                 className={`calendar-day${d === date ? ' is-on' : ''}${d === today ? ' is-today' : ''}`}
                 onClick={() => pick(d)}
-                aria-label={`${parseISO(d).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}${mark ? ', logged' : ''}${mark === 'great' ? ', a 75+ day' : ''}`}
+                aria-label={
+                  mark === 'great'
+                    ? t('{date}, logged, a 75+ day', { date: parseISO(d).toLocaleDateString(uiLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) })
+                    : mark
+                      ? t('{date}, logged', { date: parseISO(d).toLocaleDateString(uiLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) })
+                      : parseISO(d).toLocaleDateString(uiLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
+                }
               >
                 {Number(d.slice(-2))}
                 <span className={`calendar-mark${mark ? ` calendar-mark--${mark}` : ''}`} aria-hidden="true">
@@ -99,10 +107,12 @@ export default function CalendarSheet({ open, date, onClose, onPick }: { open: b
 
         <div className="calendar-foot">
           <span className="tiny muted">
-            {logged ? `Logged on ${logged} day${logged === 1 ? '' : 's'} this month · ★ a 75+ day` : 'Nothing logged this month.'}
+            {logged
+              ? plural(logged, { one: 'Logged on {n} day this month · ★ a 75+ day', other: 'Logged on {n} days this month · ★ a 75+ day' })
+              : t('Nothing logged this month.')}
           </span>
           <button type="button" className="btn btn--sm btn--soft" onClick={() => pick(today)}>
-            Today
+            {t('Today')}
           </button>
         </div>
       </div>

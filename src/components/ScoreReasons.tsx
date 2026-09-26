@@ -1,5 +1,6 @@
 import type { Reason } from '../lib/dayExplained';
 import './score-reasons.css';
+import { t } from '../lib/i18n';
 
 /**
  * What moved a food-quality score, biggest first, each with a small bar:
@@ -10,7 +11,7 @@ export default function ScoreReasons({ reasons, base = true }: { reasons: Reason
   const biggest = Math.max(1, ...reasons.map((r) => Math.abs(r.points)));
   return (
     <div className="score-reasons">
-      {base && <p className="tiny muted">Every meal starts at 52. Then:</p>}
+      {base && <p className="tiny muted">{t('Every meal starts at {base}. Then:', { base: 52 })}</p>}
       <ul>
         {reasons.map((r) => (
           <li key={r.key} className={r.points > 0 ? 'up' : 'down'}>

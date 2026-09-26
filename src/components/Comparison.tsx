@@ -8,8 +8,15 @@ import { useSquish } from '../store/useSquish';
 import type { Equivalent } from '../lib/equivalents';
 import './comparison.css';
 import { localWords } from '../lib/region';
+import { t } from '../lib/i18n';
+import { rich } from '../lib/i18n-react';
 
-export default function Comparison({ equivalent, lead = 'About the', tail = '' }: { equivalent: Equivalent | null; lead?: string; tail?: string }) {
+/**
+ * `meal` reads "About the protein of 3 eggs"; `day` reads "The protein of 3
+ * eggs so far", with `tail` after it. Whole sentences, so each language can
+ * order them its own way.
+ */
+export default function Comparison({ equivalent, variant = 'meal', tail = '' }: { equivalent: Equivalent | null; variant?: 'meal' | 'day'; tail?: string }) {
   // Only an explicit "off" hides it: a diary saved before the setting existed has none, and means on.
   const on = useSquish((s) => s.comparisons !== false);
   if (!on || !equivalent) return null;
@@ -19,7 +26,10 @@ export default function Comparison({ equivalent, lead = 'About the', tail = '' }
         {equivalent.emoji}
       </span>
       <span>
-        {lead} {localWords(equivalent.nutrient)} of <b>{equivalent.amount}</b>
+        {rich(variant === 'day' ? 'The {nutrient} of <b>{amount}</b> so far' : 'About the {nutrient} of <b>{amount}</b>', {
+          nutrient: equivalent.nutrient === 'protein' ? t('protein') : localWords(t('fibre')),
+          amount: equivalent.amount,
+        }, { b: (text) => <b>{text}</b> })}
         {tail}
       </span>
     </p>

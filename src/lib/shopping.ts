@@ -12,6 +12,7 @@
  * shop.
  */
 import type { MealEntry } from '../types';
+import { plural, t, uiLocale } from './i18n';
 
 export type Aisle = 'fruit-veg' | 'meat-fish' | 'dairy-eggs' | 'bakery' | 'cupboard' | 'frozen' | 'drinks' | 'other';
 
@@ -19,14 +20,14 @@ export const isAisle = (value: unknown): value is Aisle =>
   typeof value === 'string' && ['fruit-veg', 'meat-fish', 'dairy-eggs', 'bakery', 'cupboard', 'frozen', 'drinks', 'other'].includes(value);
 
 export const AISLES: { id: Aisle; title: string }[] = [
-  { id: 'fruit-veg', title: 'Fruit & veg' },
-  { id: 'meat-fish', title: 'Meat & fish' },
-  { id: 'dairy-eggs', title: 'Dairy & eggs' },
-  { id: 'bakery', title: 'Bakery' },
-  { id: 'cupboard', title: 'Cupboard' },
-  { id: 'frozen', title: 'Frozen' },
-  { id: 'drinks', title: 'Drinks' },
-  { id: 'other', title: 'Other' },
+  { id: 'fruit-veg', title: t('Fruit & veg') },
+  { id: 'meat-fish', title: t('Meat & fish') },
+  { id: 'dairy-eggs', title: t('Dairy & eggs') },
+  { id: 'bakery', title: t('Bakery') },
+  { id: 'cupboard', title: t('Cupboard') },
+  { id: 'frozen', title: t('Frozen') },
+  { id: 'drinks', title: t('Drinks') },
+  { id: 'other', title: t('Other') },
 ];
 
 /** Checked in this order, so "chicken stock" is found in the cupboard before "chicken" puts it with the meat. */
@@ -62,10 +63,12 @@ const keyOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
 /** A shop's sort of number: to the nearest 10 g (5 g when small), kilograms past a thousand. */
 export function shopAmount(total: number, liquid: boolean): string {
-  const unit = liquid ? ['ml', 'litres'] : ['g', 'kg'];
-  if (total >= 1000) return `${Math.round(total / 100) / 10} ${unit[1]}`;
+  if (total >= 1000) {
+    const big = Math.round(total / 100) / 10;
+    return liquid ? t('{amount} litres', { amount: big }) : `${big.toLocaleString(uiLocale())} kg`;
+  }
   const step = total < 100 ? 5 : 10;
-  return `${Math.max(step, Math.round(total / step) * step)} ${unit[0]}`;
+  return `${Math.max(step, Math.round(total / step) * step).toLocaleString(uiLocale())} ${liquid ? 'ml' : 'g'}`;
 }
 
 /** Every food in the plans for `from`..`to` (inclusive), added up and in aisle order. */
@@ -93,7 +96,7 @@ export function shoppingList(plans: MealEntry[], from: string, to: string): Shop
       if (line.weighed && line.grams > 0) amount = shopAmount(line.grams, line.liquid);
       else if (line.portions.length === 1) amount = line.portions[0];
       else if (new Set(line.portions).size === 1) amount = `${line.portions.length} × ${line.portions[0]}`;
-      else amount = `${line.portions.length} portions`;
+      else amount = plural(line.portions.length, { one: '{n} portion', other: '{n} portions' });
       return { key, name: line.name, amount, aisle: line.aisle ?? aisleOf(line.name), meals: [...line.meals] };
     })
     .sort((a, b) => order.indexOf(a.aisle) - order.indexOf(b.aisle) || a.name.localeCompare(b.name));
@@ -105,7 +108,7 @@ export interface Extra {
 }
 
 /** The list as plain text, for a message or a notes app. Ticked lines are left off: they are in the basket. */
-export function listAsText(lines: ShoppingLine[], extras: Extra[], ticked: Set<string>, heading = 'Shopping list'): string {
+export function listAsText(lines: ShoppingLine[], extras: Extra[], ticked: Set<string>, heading = t('Shopping list')): string {
   const out = [heading];
   for (const aisle of AISLES) {
     const here = lines.filter((line) => line.aisle === aisle.id && !ticked.has(line.key));
@@ -115,7 +118,7 @@ export function listAsText(lines: ShoppingLine[], extras: Extra[], ticked: Set<s
   }
   const own = extras.filter((extra) => !ticked.has(`extra:${extra.id}`));
   if (own.length) {
-    out.push('', 'Also');
+    out.push('', t('Also'));
     for (const extra of own) out.push(`- ${extra.name}`);
   }
   return out.join('\n');

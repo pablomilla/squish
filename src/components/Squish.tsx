@@ -7,6 +7,7 @@ import { useSquish } from '../store/useSquish';
 import { useAccessoryArt } from './accessories';
 import { useSubscribed } from './useSubscribed';
 import './squish.css';
+import { t } from '../lib/i18n';
 
 interface Props {
   mood?: Mood;
@@ -116,7 +117,7 @@ export function Squish({ mood = 'excited', size = 140, heart = false, bob = true
       viewBox={MASCOT_VIEWBOX}
       data-rise={layers.head ? riseOf(worn) || undefined : undefined}
       role="img"
-      aria-label={label ?? `Squish looking ${mood}`}
+      aria-label={label ?? t('Squish, the Squish mascot')}
       dangerouslySetInnerHTML={{ __html: markup }}
     />
   );

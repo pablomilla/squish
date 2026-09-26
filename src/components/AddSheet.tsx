@@ -3,6 +3,7 @@ import type { Route } from '../types';
 import { Sheet } from './ui';
 import { BarcodeIcon, CameraIcon, HeartIcon, LinkIcon, PenIcon, SearchIcon } from './icons';
 import './add-sheet.css';
+import { t } from '../lib/i18n';
 
 /**
  * Every way into the diary, in one place.
@@ -17,12 +18,12 @@ import './add-sheet.css';
  * first and given its own weight to keep that tap cheap and obvious.
  */
 const WAYS: { label: string; hint: string; Icon: typeof CameraIcon; route: Route; primary?: boolean }[] = [
-  { label: 'Snap a meal', hint: 'Point the camera at your plate', Icon: CameraIcon, route: { name: 'capture' }, primary: true },
-  { label: 'Describe it', hint: 'In your own words, or out loud', Icon: PenIcon, route: { name: 'add', tab: 'describe' } },
-  { label: 'Search foods', hint: 'Everyday foods and portions', Icon: SearchIcon, route: { name: 'add', tab: 'search' } },
-  { label: 'Saved', hint: 'The meals you eat every week', Icon: HeartIcon, route: { name: 'add', tab: 'favourites' } },
-  { label: 'Scan a barcode', hint: 'Straight off the packet', Icon: BarcodeIcon, route: { name: 'capture', shot: 'barcode' } },
-  { label: 'Recipe from a link', hint: 'A page you cooked from', Icon: LinkIcon, route: { name: 'add', tab: 'recipe' } },
+  { label: t('Snap a meal'), hint: t('Point the camera at your plate'), Icon: CameraIcon, route: { name: 'capture' }, primary: true },
+  { label: t('Describe it'), hint: t('In your own words, or out loud'), Icon: PenIcon, route: { name: 'add', tab: 'describe' } },
+  { label: t('Search foods'), hint: t('Everyday foods and portions'), Icon: SearchIcon, route: { name: 'add', tab: 'search' } },
+  { label: t('Saved'), hint: t('The meals you eat every week'), Icon: HeartIcon, route: { name: 'add', tab: 'favourites' } },
+  { label: t('Scan a barcode'), hint: t('Straight off the packet'), Icon: BarcodeIcon, route: { name: 'capture', shot: 'barcode' } },
+  { label: t('Recipe from a link'), hint: t('A page you cooked from'), Icon: LinkIcon, route: { name: 'add', tab: 'recipe' } },
 ];
 
 export default function AddSheet({ open, onClose, go }: { open: boolean; onClose: () => void; go: (route: Route) => void }) {
@@ -35,7 +36,7 @@ export default function AddSheet({ open, onClose, go }: { open: boolean; onClose
   }, [open]);
 
   return (
-    <Sheet open={open} onClose={onClose} title="Add food">
+    <Sheet open={open} onClose={onClose} title={t('Add food')}>
       <div className="add-ways">
         {WAYS.map(({ label, hint, Icon, route, primary }, i) => (
           <button

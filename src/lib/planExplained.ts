@@ -11,6 +11,7 @@
 import { ACTIVITY_LABEL, computeTargets, tdee } from './nutrition';
 import { formatPace, formatWeightDelta } from './units';
 import { aboutEnergy, fibreWord, formatEnergy } from './region';
+import { t } from './i18n';
 import type { Profile, Targets } from '../types';
 
 /** A kilogram of body fat, near enough, in kcal. The same figure the targets use. */
@@ -34,14 +35,14 @@ export function explainPlan(profile: Profile, targets: Targets): PlanExplained {
   // The target is rounded to tens, so the gap is too: "550 less", not "549".
   const diff = (n: number) => kcal(Math.round(n / 10) * 10);
 
-  const opening = `Your body burns about ${kcal(burns)} a day. That's your maintenance: eat that much and your weight stays where it is.`;
+  const opening = t("Your body burns about {energy} a day. That's your maintenance: eat that much and your weight stays where it is.", { energy: kcal(burns) });
   let summary: string;
   if (Math.abs(gap) < 50 || weekly < 0.05) {
-    summary = `${opening} Your target is the same, so your weight should hold steady.`;
+    summary = `${opening} ${t('Your target is the same, so your weight should hold steady.')}`;
   } else if (gap > 0) {
-    summary = `${opening} Your target is ${diff(gap)} less, which should mean losing about ${amount} a week.`;
+    summary = `${opening} ${t('Your target is {energy} less, which should mean losing about {weight} a week.', { energy: diff(gap), weight: amount })}`;
   } else {
-    summary = `${opening} Your target is ${diff(-gap)} more, which should mean gaining about ${amount} a week.`;
+    summary = `${opening} ${t('Your target is {energy} more, which should mean gaining about {weight} a week.', { energy: diff(-gap), weight: amount })}`;
   }
 
   const suggested = computeTargets(profile);
@@ -49,32 +50,47 @@ export function explainPlan(profile: Profile, targets: Targets): PlanExplained {
   // The floor held the target up, so it is slower than the pace they chose.
   const floor = profile.sex === 'male' ? 1500 : 1200;
   if (!customised && profile.goal === 'lose' && suggested.calories === floor && gap * 7 < profile.pace * KCAL_PER_KG - 1) {
-    summary += ` Squish won't suggest less than ${kcal(floor)} a day, so that's slower than the ${formatPace(profile.pace, profile.units)} a week you picked.`;
+    summary += ` ${t("Squish won't suggest less than {energy} a day, so that's slower than the {pace} a week you picked.", { energy: kcal(floor), pace: formatPace(profile.pace, profile.units) })}`;
   }
-  if (customised) summary += ' You set this target yourself.';
+  if (customised) summary += ` ${t('You set this target yourself.')}`;
 
   const tuned = profile.burnFactor && Math.abs(profile.burnFactor - 1) >= 0.005 ? Math.round((profile.burnFactor - 1) * 100) : 0;
   const perKg = profile.goal === 'lose' ? 1.8 : profile.goal === 'gain' ? 1.9 : 1.6;
 
   const how = [
     {
-      label: 'Maintenance',
+      label: t('Maintenance'),
       words:
-        `Worked out from your age, height, weight and sex (the Mifflin–St Jeor formula), then raised for being ${ACTIVITY_LABEL[profile.activity].toLowerCase()}.` +
-        (tuned ? ` Then adjusted ${tuned > 0 ? '+' : ''}${tuned}% to match what your own logs and weigh-ins show.` : ''),
+        t('Worked out from your age, height, weight and sex (the Mifflin–St Jeor formula), then raised for being {activity}.', {
+          activity: ACTIVITY_LABEL[profile.activity].toLocaleLowerCase(),
+        }) + (tuned ? ` ${t('Then adjusted {percent}% to match what your own logs and weigh-ins show.', { percent: `${tuned > 0 ? '+' : ''}${tuned}` })}` : ''),
     },
     {
-      label: 'Daily target',
+      label: t('Daily target'),
       words:
         profile.goal === 'maintain'
-          ? 'The same as maintenance, because your goal is to stay steady.'
-          : `Maintenance ${profile.goal === 'lose' ? 'minus' : 'plus'} what your pace needs. A kilogram of body fat is roughly ${aboutEnergy(KCAL_PER_KG)}, so ${formatPace(profile.pace, profile.units)} a week is about ${kcal(Math.round((Math.min(profile.pace, 1) * KCAL_PER_KG) / 7))} a day.`,
+          ? t('The same as maintenance, because your goal is to stay steady.')
+          : t(
+              profile.goal === 'lose'
+                ? 'Maintenance minus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.'
+                : 'Maintenance plus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.',
+              {
+                fat: aboutEnergy(KCAL_PER_KG),
+                pace: formatPace(profile.pace, profile.units),
+                energy: kcal(Math.round((Math.min(profile.pace, 1) * KCAL_PER_KG) / 7)),
+              },
+            ),
     },
     {
-      label: 'Protein',
-      words: `${perKg} g for each kg you weigh${profile.goal === 'lose' ? ' — higher while losing, to help keep muscle' : profile.goal === 'gain' ? ', to help build muscle' : ''}.`,
+      label: t('Protein'),
+      words:
+        profile.goal === 'lose'
+          ? t('{grams} g for each kg you weigh — higher while losing, to help keep muscle.', { grams: perKg })
+          : profile.goal === 'gain'
+            ? t('{grams} g for each kg you weigh, to help build muscle.', { grams: perKg })
+            : t('{grams} g for each kg you weigh.', { grams: perKg }),
     },
-    { label: fibreWord(), words: `14 g for every ${aboutEnergy(1000)} you eat: the usual guide for a healthy gut and heart.` },
+    { label: fibreWord(), words: t('14 g for every {energy} you eat: the usual guide for a healthy gut and heart.', { energy: aboutEnergy(1000) }) },
   ];
 
   return { summary, how };

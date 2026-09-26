@@ -15,6 +15,7 @@
 import { useId, useState } from 'react';
 import { EyeIcon, EyeOffIcon } from './icons';
 import './password-field.css';
+import { t } from '../lib/i18n';
 
 export default function PasswordField({
   label,
@@ -61,7 +62,7 @@ export default function PasswordField({
           // Both, deliberately: the label says what pressing it will do, and
           // the pressed state says how things stand. A screen reader user
           // should not have to press it to find out.
-          aria-label={shown ? 'Hide password' : 'Show password'}
+          aria-label={shown ? t('Hide password') : t('Show password')}
           aria-pressed={shown}
           aria-controls={inputId}
         >

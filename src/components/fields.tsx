@@ -17,6 +17,7 @@ import {
   STONE_RANGE,
   WEIGHT_KG_RANGE,
 } from '../lib/units';
+import { t } from '../lib/i18n';
 
 /**
  * Shown at the field's own precision, which is not the store's. Weights are
@@ -137,7 +138,7 @@ export function HeightField({
   if (units === 'metric') {
     return (
       <NumberField
-        label="Height"
+        label={t('Height')}
         value={Math.round(cm)}
         suffix="cm"
         min={HEIGHT_CM_RANGE.min}
@@ -150,10 +151,10 @@ export function HeightField({
   const { feet, inches } = cmToFeetInches(cm);
   return (
     <div className="field">
-      <label>Height</label>
+      <label>{t('Height')}</label>
       <div className="field-pair">
         <NumberField
-          label="Feet"
+          label={t('Feet')}
           hideLabel
           value={feet}
           suffix="ft"
@@ -162,7 +163,7 @@ export function HeightField({
           onChange={(nextFeet) => onChange(feetInchesToCm(nextFeet, inches))}
         />
         <NumberField
-          label="Inches"
+          label={t('Inches')}
           hideLabel
           value={inches}
           suffix="in"
@@ -221,7 +222,7 @@ export function WeightField({
       <label>{label}</label>
       <div className="field-pair">
         <NumberField
-          label={`${label} in stone`}
+          label={t('{field} in stone', { field: label })}
           hideLabel
           value={stone}
           suffix="st"
@@ -230,7 +231,7 @@ export function WeightField({
           onChange={(nextStone) => onChange(stonePoundsToKg(nextStone, pounds))}
         />
         <NumberField
-          label={`${label} in pounds`}
+          label={t('{field} in pounds', { field: label })}
           hideLabel
           value={pounds}
           suffix="lb"
@@ -254,11 +255,11 @@ export function RegionField({ value, onChange, hint }: { value: Region; onChange
   const id = useId();
   return (
     <div className="field">
-      <label htmlFor={id}>Where you live</label>
+      <label htmlFor={id}>{t('Where you live')}</label>
       <select id={id} className="input input--select" value={value} onChange={(event) => isRegion(event.target.value) && onChange(event.target.value)}>
         {REGION_LIST.map((region) => (
           <option key={region.id} value={region.id}>
-            {region.flag} {region.name}
+            {region.flag} {t(region.name)}
           </option>
         ))}
       </select>
@@ -267,17 +268,17 @@ export function RegionField({ value, onChange, hint }: { value: Region; onChange
   );
 }
 
-/** Which language the AI writes in, listed by each language's own name. */
+/** The language of the app and its AI, listed by each language's own name. */
 export function LanguageField({ value, onChange, hint }: { value: Language; onChange: (language: Language) => void; hint?: string }) {
   const id = useId();
   return (
     <div className="field">
-      <label htmlFor={id}>Squish’s AI writes in</label>
+      <label htmlFor={id}>{t('Language')}</label>
       <select id={id} className="input input--select" value={value} onChange={(event) => isLanguage(event.target.value) && onChange(event.target.value)}>
         {LANGUAGE_LIST.map((language) => (
           <option key={language.id} value={language.id} lang={language.id}>
             {language.native}
-            {language.native === language.name ? '' : ` — ${language.name}`}
+            {language.native === t(language.name) ? '' : ` — ${t(language.name)}`}
           </option>
         ))}
       </select>

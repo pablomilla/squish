@@ -10,6 +10,7 @@
 import type { Mood } from '../types';
 import type { RangeSummary } from './selectors';
 import { formatEnergy } from './region';
+import { plural, t } from './i18n';
 
 /** What a card says. Kept here, away from the canvas code, so tests can use it. */
 export interface ShareCardData {
@@ -31,33 +32,33 @@ export interface ShareStory {
 export function shareStory({ streak, best, mealCount, summary }: ShareStory): ShareCardData {
   const logged =
     summary.loggedDays > 0
-      ? `${summary.loggedDays} of the last ${summary.days} days logged, averaging ${formatEnergy(summary.avgCalories)}.`
-      : 'Every day counts.';
+      ? t('{logged} of the last {days} days logged, averaging {energy}.', { logged: summary.loggedDays, days: summary.days, energy: formatEnergy(summary.avgCalories) })
+      : t('Every day counts.');
 
   if (streak >= 2) {
     return {
-      headline: `${streak} day streak`,
+      headline: plural(streak, { one: '{n} day streak', other: '{n} day streak' }),
       subline: logged,
       stats: [
-        { label: 'best streak', value: `${best}` },
-        { label: 'avg quality', value: `${summary.avgScore}` },
-        { label: 'meals logged', value: `${mealCount}` },
+        { label: t('best streak'), value: `${best}` },
+        { label: t('avg quality'), value: `${summary.avgScore}` },
+        { label: plural(mealCount, { one: 'meal logged', other: 'meals logged' }), value: `${mealCount}` },
       ],
       mood: 'cheering',
     };
   }
 
   if (mealCount === 0) {
-    return { headline: 'Starting with Squish', subline: 'Me and my little health buddy, from today.', stats: [], mood: 'excited' };
+    return { headline: t('Starting with Squish'), subline: t('Me and my little health buddy, from today.'), stats: [], mood: 'excited' };
   }
 
   if (streak === 1) {
     return {
-      headline: 'Day one',
-      subline: 'Every streak starts with a single day.',
+      headline: t('Day one'),
+      subline: t('Every streak starts with a single day.'),
       stats: [
-        { label: mealCount === 1 ? 'meal logged' : 'meals logged', value: `${mealCount}` },
-        ...(summary.avgScore > 0 ? [{ label: 'avg quality', value: `${summary.avgScore}` }] : []),
+        { label: plural(mealCount, { one: 'meal logged', other: 'meals logged' }), value: `${mealCount}` },
+        ...(summary.avgScore > 0 ? [{ label: t('avg quality'), value: `${summary.avgScore}` }] : []),
       ],
       mood: 'excited',
     };
@@ -65,11 +66,11 @@ export function shareStory({ streak, best, mealCount, summary }: ShareStory): Sh
 
   // Meals in the diary, but no streak running: back for another go.
   return {
-    headline: 'Back with Squish',
+    headline: t('Back with Squish'),
     subline: logged,
     stats: [
-      { label: 'best streak', value: `${best}` },
-      { label: 'meals logged', value: `${mealCount}` },
+      { label: t('best streak'), value: `${best}` },
+      { label: plural(mealCount, { one: 'meal logged', other: 'meals logged' }), value: `${mealCount}` },
     ],
     mood: 'excited',
   };

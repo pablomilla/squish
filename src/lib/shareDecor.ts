@@ -15,6 +15,7 @@
  * everybody while it lasts, as a treat. Its frame comes with Plus.
  */
 import { entitled, onShow, SEASONS, type Entitlement, type ItemUnlock, type Season } from './outfit';
+import { t } from './i18n';
 
 export interface Decoration {
   id: string;
@@ -32,22 +33,22 @@ export interface ShareDecor {
 export const MAX_STICKERS = 2;
 
 const earned = (id: string, how: string) => ({ unlock: { kind: 'achievement', id } as const, how });
-const plus = { unlock: { kind: 'subscriber' } as const, how: 'Comes with Squish Plus' };
-const seasonPlus = (s: Season) => ({ unlock: { kind: 'season', season: s } as const, how: `${SEASONS[s].name}, with Squish Plus` });
-const seasonFree = (s: Season) => ({ unlock: { kind: 'season', season: s, free: true } as const, how: `${SEASONS[s].name} only` });
+const plus = { unlock: { kind: 'subscriber' } as const, how: t('Comes with Squish Plus') };
+const seasonPlus = (s: Season) => ({ unlock: { kind: 'season', season: s } as const, how: t('{season}, with Squish Plus', { season: SEASONS[s].name }) });
+const seasonFree = (s: Season) => ({ unlock: { kind: 'season', season: s, free: true } as const, how: t('{season} only', { season: SEASONS[s].name }) });
 
 export const FRAMES: Decoration[] = [
-  { id: 'scallop', name: 'Scallop', ...earned('first-share', 'Share a card once') },
-  { id: 'confetti', name: 'Confetti', ...earned('streak-7', 'A full week of logging') },
-  { id: 'squad', name: 'Squad', ...earned('squad', 'Invite a friend who gets going') },
-  { id: 'botanical', name: 'Botanical', ...plus },
-  { id: 'gold-foil', name: 'Gold foil', ...plus },
-  { id: 'snowflake', name: 'Snowflakes', ...seasonPlus('winter') },
-  { id: 'starburst', name: 'Starburst', ...seasonPlus('new-year') },
-  { id: 'hearts', name: 'Hearts', ...seasonPlus('valentines') },
-  { id: 'blossom', name: 'Blossom', ...seasonPlus('spring') },
-  { id: 'citrus', name: 'Citrus', ...seasonPlus('summer') },
-  { id: 'bats', name: 'Bats', ...seasonPlus('halloween') },
+  { id: 'scallop', name: t('Scallop'), ...earned('first-share', t('Share a card once')) },
+  { id: 'confetti', name: t('Confetti'), ...earned('streak-7', t('A full week of logging')) },
+  { id: 'squad', name: t('Squad'), ...earned('squad', t('Invite a friend who gets going')) },
+  { id: 'botanical', name: t('Botanical'), ...plus },
+  { id: 'gold-foil', name: t('Gold foil'), ...plus },
+  { id: 'snowflake', name: t('Snowflakes'), ...seasonPlus('winter') },
+  { id: 'starburst', name: t('Starburst'), ...seasonPlus('new-year') },
+  { id: 'hearts', name: t('Hearts'), ...seasonPlus('valentines') },
+  { id: 'blossom', name: t('Blossom'), ...seasonPlus('spring') },
+  { id: 'citrus', name: t('Citrus'), ...seasonPlus('summer') },
+  { id: 'bats', name: t('Bats'), ...seasonPlus('halloween') },
 ];
 
 /**
@@ -56,41 +57,41 @@ export const FRAMES: Decoration[] = [
  * else earned, none of them rewards eating more.
  */
 export const STICKERS: Decoration[] = [
-  { id: 'strawberry', name: 'Strawberry', ...earned('first-meal', 'Log your first meal') },
-  { id: 'avocado', name: 'Avocado', ...earned('first-meal', 'Log your first meal') },
-  { id: 'carrot', name: 'Carrot', ...earned('first-meal', 'Log your first meal') },
-  { id: 'heart', name: 'Heart', ...earned('streak-3', 'Three days running') },
-  { id: 'water-glass', name: 'Water', ...earned('hydrated', 'Reach your water goal') },
-  { id: 'sun', name: 'Sunshine', ...earned('fibre-hit', 'Hit your fibre target') },
-  { id: 'star', name: 'Star', ...earned('balanced-day', 'A day scoring 75+') },
-  { id: 'thumbs-up', name: 'Thumbs up', ...earned('streak-7', 'A full week of logging') },
-  { id: 'sparkles', name: 'Sparkles', ...plus },
-  { id: 'rainbow', name: 'Rainbow', ...plus },
-  { id: 'go-me', name: '“Go me!”', ...plus },
-  { id: 'squished-it', name: '“Squished it!”', ...plus },
-  { id: 'streak-7', name: '7-day badge', ...earned('streak-7', 'A full week of logging') },
-  { id: 'streak-30', name: '30-day badge', ...earned('streak-30', 'Thirty days of logging') },
-  { id: 'streak-100', name: '100-day badge', ...earned('streak-100', 'A hundred days of logging') },
-  { id: 'streak-365', name: '365-day badge', ...earned('streak-365', 'A year of logging') },
-  { id: 'squad-badge', name: 'Squad badge', ...earned('squad', 'Invite a friend who gets going') },
-  { id: 'mug', name: 'Hot chocolate', ...seasonFree('winter') },
-  { id: 'gingerbread', name: 'Gingerbread', ...seasonFree('winter') },
-  { id: 'snowflake', name: 'Snowflake', ...seasonFree('winter') },
-  { id: 'party-popper', name: 'Party popper', ...seasonFree('new-year') },
-  { id: 'midnight-clock', name: 'Midnight', ...seasonFree('new-year') },
-  { id: 'new-me-same-me', name: '“New me? Same me!”', ...seasonFree('new-year') },
-  { id: 'love-letter', name: 'Love letter', ...seasonFree('valentines') },
-  { id: 'strawberry-heart', name: 'Strawberry heart', ...seasonFree('valentines') },
-  { id: 'youre-a-treat', name: '“You’re a treat”', ...seasonFree('valentines') },
-  { id: 'chick', name: 'Chick', ...seasonFree('spring') },
-  { id: 'tulip', name: 'Tulip', ...seasonFree('spring') },
-  { id: 'egg', name: 'Egg', ...seasonFree('spring') },
-  { id: 'ice-lolly', name: 'Ice lolly', ...seasonFree('summer') },
-  { id: 'watermelon-slice', name: 'Watermelon', ...seasonFree('summer') },
-  { id: 'sunglasses', name: 'Sunglasses', ...seasonFree('summer') },
-  { id: 'friendly-ghost', name: 'Friendly ghost', ...seasonFree('halloween') },
-  { id: 'pumpkin', name: 'Pumpkin', ...seasonFree('halloween') },
-  { id: 'sweets', name: 'Sweets', ...seasonFree('halloween') },
+  { id: 'strawberry', name: t('Strawberry'), ...earned('first-meal', t('Log your first meal')) },
+  { id: 'avocado', name: t('Avocado'), ...earned('first-meal', t('Log your first meal')) },
+  { id: 'carrot', name: t('Carrot'), ...earned('first-meal', t('Log your first meal')) },
+  { id: 'heart', name: t('Heart'), ...earned('streak-3', t('Three days running')) },
+  { id: 'water-glass', name: t('Water'), ...earned('hydrated', t('Reach your water goal')) },
+  { id: 'sun', name: t('Sunshine'), ...earned('fibre-hit', t('Hit your fibre target')) },
+  { id: 'star', name: t('Star'), ...earned('balanced-day', t('A day scoring 75+')) },
+  { id: 'thumbs-up', name: t('Thumbs up'), ...earned('streak-7', t('A full week of logging')) },
+  { id: 'sparkles', name: t('Sparkles'), ...plus },
+  { id: 'rainbow', name: t('Rainbow'), ...plus },
+  { id: 'go-me', name: t('“Go me!”'), ...plus },
+  { id: 'squished-it', name: t('“Squished it!”'), ...plus },
+  { id: 'streak-7', name: t('7-day badge'), ...earned('streak-7', t('A full week of logging')) },
+  { id: 'streak-30', name: t('30-day badge'), ...earned('streak-30', t('Thirty days of logging')) },
+  { id: 'streak-100', name: t('100-day badge'), ...earned('streak-100', t('A hundred days of logging')) },
+  { id: 'streak-365', name: t('365-day badge'), ...earned('streak-365', t('A year of logging')) },
+  { id: 'squad-badge', name: t('Squad badge'), ...earned('squad', t('Invite a friend who gets going')) },
+  { id: 'mug', name: t('Hot chocolate'), ...seasonFree('winter') },
+  { id: 'gingerbread', name: t('Gingerbread'), ...seasonFree('winter') },
+  { id: 'snowflake', name: t('Snowflake'), ...seasonFree('winter') },
+  { id: 'party-popper', name: t('Party popper'), ...seasonFree('new-year') },
+  { id: 'midnight-clock', name: t('Midnight'), ...seasonFree('new-year') },
+  { id: 'new-me-same-me', name: t('“New me? Same me!”'), ...seasonFree('new-year') },
+  { id: 'love-letter', name: t('Love letter'), ...seasonFree('valentines') },
+  { id: 'strawberry-heart', name: t('Strawberry heart'), ...seasonFree('valentines') },
+  { id: 'youre-a-treat', name: t('“You’re a treat”'), ...seasonFree('valentines') },
+  { id: 'chick', name: t('Chick'), ...seasonFree('spring') },
+  { id: 'tulip', name: t('Tulip'), ...seasonFree('spring') },
+  { id: 'egg', name: t('Egg'), ...seasonFree('spring') },
+  { id: 'ice-lolly', name: t('Ice lolly'), ...seasonFree('summer') },
+  { id: 'watermelon-slice', name: t('Watermelon'), ...seasonFree('summer') },
+  { id: 'sunglasses', name: t('Sunglasses'), ...seasonFree('summer') },
+  { id: 'friendly-ghost', name: t('Friendly ghost'), ...seasonFree('halloween') },
+  { id: 'pumpkin', name: t('Pumpkin'), ...seasonFree('halloween') },
+  { id: 'sweets', name: t('Sweets'), ...seasonFree('halloween') },
 ];
 
 /** Streak badges live with the stickers but are drawn from their own folder. */

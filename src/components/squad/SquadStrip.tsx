@@ -8,6 +8,8 @@ import { useCheerInbox, useSquad } from './useSquad';
 import SquadSheet, { MemberSquish } from './SquadSheet';
 import SquadForms from './SquadForms';
 import './squad.css';
+import { t } from '../../lib/i18n';
+import { rich } from '../../lib/i18n-react';
 
 /**
  * On Home: the squad at a glance — everybody's Squish, who has logged today,
@@ -38,11 +40,11 @@ export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
               // Seen now: the strip can go back to its place further down Home.
               clearCheerInbox();
             }}
-            aria-label={`${s.name}: open your squad`}
+            aria-label={t('{squad}: open your squad', { squad: t(s.name) })}
           >
             <div className="squad-strip-head">
-              <h3>{s.name}</h3>
-              <span className="tiny muted">{wonThisWeek ? '🏆 Week done!' : inbox.length ? 'Cheer back ›' : `Cheer ›`}</span>
+              <h3>{t(s.name)}</h3>
+              <span className="tiny muted">{wonThisWeek ? t('🏆 Week done!') : inbox.length ? t('Cheer back ›') : t('Cheer ›')}</span>
             </div>
             {inbox.length > 0 && (
               <div className="squad-inbox" role="status">
@@ -50,11 +52,11 @@ export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
                   const cheer = cheerById(c.cheer);
                   return (
                     <p key={c.id} className="small">
-                      <span aria-hidden="true">{cheer?.emoji ?? '💜'}</span> <b>{c.from}</b>: {cheer?.words ?? 'sent you a cheer'}
+                      <span aria-hidden="true">{cheer?.emoji ?? '💜'}</span> <b>{c.from}</b>: {cheer?.words ?? t('sent you a cheer')}
                     </p>
                   );
                 })}
-                {inbox.length > 2 && <p className="tiny muted">and {inbox.length - 2} more today</p>}
+                {inbox.length > 2 && <p className="tiny muted">{t('and {n} more today', { n: inbox.length - 2 })}</p>}
               </div>
             )}
             <div className="squad-row">
@@ -62,7 +64,12 @@ export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
                 <div key={member.id} className="squad-face">
                   <MemberSquish member={member} size={48} />
                   <span className="tiny">
-                    {member.isMe ? 'You' : member.name} {loggedToday(member, today) && <span className="squad-tick" aria-label="logged today">✓</span>}
+                    {member.isMe ? t('You') : member.name}{' '}
+                    {loggedToday(member, today) && (
+                      <span className="squad-tick" aria-label={t('logged today')}>
+                        ✓
+                      </span>
+                    )}
                   </span>
                   <span className="tiny muted">🔥 {member.streak}</span>
                 </div>
@@ -70,7 +77,7 @@ export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
             </div>
             <div className="squad-strip-foot">
               <span className="tiny muted">
-                {s.members.length < 2 ? 'Invite a friend to get going' : `Everybody aiming for ${s.goal} days this week`}
+                {s.members.length < 2 ? t('Invite a friend to get going') : t('Everybody aiming for {goal} days this week', { goal: s.goal })}
               </span>
               <span className="squad-dots" aria-hidden="true">
                 {s.members.map((m) => (
@@ -92,7 +99,7 @@ export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
       <>
         <section className="card invite-nudge squad-invited">
           <p className="small">
-            <b>💜 You have been invited to a squad.</b> Friends who cheer each other on — no food, no weight, just encouragement.
+            {rich('<b>💜 You have been invited to a squad.</b> Friends who cheer each other on — no food, no weight, just encouragement.', {}, { b: (text) => <b>{text}</b> })}
           </p>
           <button
             type="button"
@@ -105,7 +112,7 @@ export default function SquadStrip({ onOpenYou }: { onOpenYou: () => void }) {
               }
             }}
           >
-            {standing.account ? 'Join the squad' : 'Make an account to join'}
+            {standing.account ? t('Join the squad') : t('Make an account to join')}
           </button>
         </section>
         <SquadForms key={`join-${invite}`} mode={joining ? 'join' : null} code={invite} onClose={() => setJoining(false)} />

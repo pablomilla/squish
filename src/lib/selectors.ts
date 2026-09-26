@@ -2,6 +2,7 @@ import type { DayLog, FoodItem, MealEntry, MacroKey, Mood, Nutrients, Targets } 
 import { EMPTY, UNSCORED, addNutrients, overPenalty, overTargets, pct, qualityScore, sumNutrients, ultraProcessedShare } from './nutrition';
 import { addDays, isoDate, lastDays } from './date';
 import { saltGrams } from './units';
+import { t } from './i18n';
 
 export function mealsOn(meals: MealEntry[], date: string): MealEntry[] {
   return meals.filter((m) => m.date === date).sort((a, b) => a.time.localeCompare(b.time));
@@ -265,13 +266,13 @@ export function statusLine(options: {
   hour: number;
 }): string {
   const { mealsToday, caloriesPct, habits, streak, hour } = options;
-  if (habits >= 4) return "Every habit ticked off. You've got this!";
-  if (caloriesPct >= 0.9 && caloriesPct <= 1.08 && mealsToday >= 3) return 'Right on target today!';
-  if (caloriesPct > 1.15) return 'Over today — tomorrow is a fresh start.';
-  if (mealsToday === 0) return hour >= 20 ? 'Nothing logged yet today.' : 'Ready when you are.';
-  if (streak >= 3) return `Day ${streak} of your streak — nice going!`;
-  if (mealsToday >= 3) return 'Three meals in. Lovely.';
-  return "You're doing great.";
+  if (habits >= 4) return t("Every habit ticked off. You've got this!");
+  if (caloriesPct >= 0.9 && caloriesPct <= 1.08 && mealsToday >= 3) return t('Right on target today!');
+  if (caloriesPct > 1.15) return t('Over today — tomorrow is a fresh start.');
+  if (mealsToday === 0) return hour >= 20 ? t('Nothing logged yet today.') : t('Ready when you are.');
+  if (streak >= 3) return t('Day {n} of your streak — nice going!', { n: streak });
+  if (mealsToday >= 3) return t('Three meals in. Lovely.');
+  return t("You're doing great.");
 }
 
 export function scoreOfItems(items: FoodItem[]): number {

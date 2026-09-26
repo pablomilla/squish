@@ -15,6 +15,7 @@ import NutritionistPitch from '../components/NutritionistPitch';
 import MealPlanPanel from '../components/MealPlanPanel';
 import { Segmented, useToast } from '../components/ui';
 import './ask.css';
+import { t } from '../lib/i18n';
 
 /**
  * A stand-in for what the server would have said, so the explainer can open
@@ -139,7 +140,7 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
       setWire(wire);
       setBubbles((current) => current.filter((b, i) => !(i === current.length - 1 && b.role === 'user')));
       setDraft(text);
-      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : 'I could not answer just then.', '💭');
+      if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : t('I could not answer just then.'), '💭');
     } finally {
       setThinking(false);
       setLookups([]);
@@ -160,23 +161,24 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
     <div className="screen ask">
       <header className="screen-head">
         <div>
-          <h1>Your nutritionist</h1>
+          <h1>{t('Your nutritionist')}</h1>
           <p>
-            Reads your diary before it answers{access.label ? ` · ${access.label}` : ''}
+            {t('Reads your diary before it answers')}
+            {access.label ? ` · ${access.label}` : ''}
           </p>
         </div>
-        <button type="button" className="btn btn--sm btn--ghost" onClick={onClose} aria-label="Close">
+        <button type="button" className="btn btn--sm btn--ghost" onClick={onClose} aria-label={t('Close')}>
           <CloseIcon size={18} />
         </button>
       </header>
 
       <Segmented<'ask' | 'plan'>
-        label="Ask or meal plan"
+        label={t('Ask or meal plan')}
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'ask', label: 'Ask' },
-          { value: 'plan', label: 'Meal plan' },
+          { value: 'ask', label: t('Ask') },
+          { value: 'plan', label: t('Meal plan') },
         ]}
       />
 
@@ -192,20 +194,20 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
         <div className="ask-locked">
           <Squish mood="thinking" size={88} />
           {question ? (
-            <h2>“{question}” — I can answer that from your diary.</h2>
+            <h2>{t('“{question}” — I can answer that from your diary.', { question })}</h2>
           ) : (
-            <h2>{access.needsAccount ? 'Ask me three questions, free' : 'Your own nutritionist'}</h2>
+            <h2>{access.needsAccount ? t('Ask me three questions, free') : t('Your own nutritionist')}</h2>
           )}
           <p className="small muted">
             {access.needsAccount
-              ? 'Make a free account and your first three questions are on us.'
-              : `You have used your free questions. With ${PLUS} it is 30 a month, and a meal plan for your week.`}
+              ? t('Make a free account and your first three questions are on us.')
+              : t('You have used your free questions. With {plus} it is {n} a month, and a meal plan for your week.', { plus: PLUS, n: 30 })}
           </p>
           <NutritionistPitch />
           <button type="button" className="btn btn--block" onClick={unlock}>
-            {access.needsAccount ? 'Try it free' : `See ${PLUS}`}
+            {access.needsAccount ? t('Try it free') : t('See {plus}', { plus: PLUS })}
           </button>
-          <p className="tiny muted">Your diary, charts, streaks and food search do not need it.</p>
+          <p className="tiny muted">{t('Your diary, charts, streaks and food search do not need it.')}</p>
         </div>
       )}
 
@@ -214,8 +216,7 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
           <div className="ask-empty">
             <Squish mood="calm" size={104} />
             <p className="speech">
-              Ask me anything about what you have been eating. I can look up any day, any meal and every vitamin
-              Squish tracks — but I am an app, so for anything medical see a GP or a dietitian.
+              {t('Ask me anything about what you have been eating. I can look up any day, any meal and every vitamin Squish tracks — but I am an app, so for anything medical see a doctor or a dietitian.')}
             </p>
             <div className="ask-openers">
               {openers.map((opener) => (
@@ -225,11 +226,12 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
               ))}
             </div>
             <button type="button" className="btn btn--soft btn--block ask-week" onClick={() => setTab('plan')}>
-              <SparkIcon size={16} /> Plan my week{access.standing.plan === 'plus' || access.standing.off ? '' : ` · ${PLUS}`}
+              <SparkIcon size={16} /> {t('Plan my week')}
+              {access.standing.plan === 'plus' || access.standing.off ? '' : ` · ${PLUS}`}
             </button>
             {nutritionistNotes.length > 0 && (
               <div className="ask-memory">
-                <h2>What I remember about you</h2>
+                <h2>{t('What I remember about you')}</h2>
                 <ul>
                   {nutritionistNotes.map((note) => (
                     <li key={note.id}>
@@ -237,10 +239,10 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
                       <button
                         type="button"
                         className="btn btn--sm btn--ghost"
-                        aria-label={`Forget: ${note.note}`}
+                        aria-label={t('Forget: {note}', { note: note.note })}
                         onClick={() => {
                           useSquish.getState().forgetNote(note.id);
-                          toast('Forgotten.', '🧠');
+                          toast(t('Forgotten.'), '🧠');
                         }}
                       >
                         <TrashIcon size={15} />
@@ -284,7 +286,7 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
                 <span className="ask-dot" />
                 <span className="ask-dot" />
                 <span className="ask-dot" />
-                <span className="visually-hidden">Squish is thinking</span>
+                <span className="visually-hidden">{t('Squish is thinking')}</span>
               </>
             )}
           </div>
@@ -299,8 +301,8 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
             className="input"
             value={draft}
             disabled={thinking}
-            placeholder="Ask about your diary…"
-            aria-label="Your question"
+            placeholder={t('Ask about your diary…')}
+            aria-label={t('Your question')}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -314,7 +316,7 @@ export default function Ask({ onClose, question, tab: startTab }: { onClose: () 
           </button>
         </div>
         <DictateButton
-          label="your question"
+          label={t('your question')}
           onText={(text) => setDraft((current) => (current ? `${current.trim()} ${text}` : text))}
           onError={(message) => toast(message, '🎤')}
         />

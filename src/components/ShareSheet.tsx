@@ -11,6 +11,7 @@ import { useStanding, useSubscribed } from './useSubscribed';
 import { friendsThisVisit, inviteText, periodWords, type Friends } from '../lib/friends';
 import { frameMarkup, frameUrl, stickerMarkup, stickerUrl } from './shareArt';
 import './sharesheet.css';
+import { t } from '../lib/i18n';
 
 /**
  * Shows the card before it goes anywhere, and lets it be dressed up: a frame
@@ -82,10 +83,10 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
 
   const send = async () => {
     if (!card) return;
-    const words = `${data.headline} — tracked with Squish.`;
+    const words = t('{headline} — tracked with Squish.', { headline: data.headline });
     const outcome = await shareCard(card.blob, friends ? `${words} ${inviteText(friends)} ${friends.link}` : words);
     if (outcome !== 'cancelled') unlock('first-share');
-    if (outcome === 'downloaded') toast('Saved to your downloads', '📥');
+    if (outcome === 'downloaded') toast(t('Saved to your downloads'), '📥');
     if (outcome === 'shared') onClose();
   };
 
@@ -93,49 +94,49 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
   // Grouped like the wardrobe: yours, earn these, Plus. "None" is always
   // theirs, so there is always a Yours shelf of frames to put it on.
   const frameShelves = shelves(FRAMES.filter((f) => decorOnShow(f, today)), entitlement);
-  if (frameShelves[0]?.kind !== 'yours') frameShelves.unshift({ key: 'yours', kind: 'yours', title: 'Yours', items: [] });
+  if (frameShelves[0]?.kind !== 'yours') frameShelves.unshift({ key: 'yours', kind: 'yours', title: t('Yours'), items: [] });
   const stickerShelves = shelves(STICKERS.filter((s) => decorOnShow(s, today)), entitlement);
   const noteFor = (kind: ShelfKind, item: Decoration) => (kind === 'earn' ? item.how : lockedNote(item.unlock));
 
   return (
-    <Sheet open={open} onClose={onClose} title="Share your progress">
+    <Sheet open={open} onClose={onClose} title={t('Share your progress')}>
       <div className="share-body">
         {/* Off-canvas source artwork for the card, not decoration. */}
         <Squish ref={mascotRef} mood={data.mood} size={200} bob={false} className="share-source" />
 
         {card ? (
-          <img className="share-preview" src={card.url} alt={`${data.headline}. ${data.subline}`} />
+          <img className="share-preview" src={card.url} alt={t('{headline}. {subline}', { headline: data.headline, subline: data.subline })} />
         ) : failed ? (
-          <p className="empty">The card would not draw on this browser. Everything else still works.</p>
+          <p className="empty">{t('The card would not draw on this browser. Everything else still works.')}</p>
         ) : (
           <div className="skeleton share-preview" />
         )}
 
         <button type="button" className="btn btn--block" disabled={!card} onClick={() => void send()}>
-          Share
+          {t('Share')}
         </button>
         <p className="tiny muted center">
           {friends
-            ? `Your invite link goes with it: a friend who joins gets ${periodWords(friends.rewardDays)} of Squish Plus, and so do you.`
-            : 'Made on your phone. Nothing is uploaded.'}
+            ? t('Your invite link goes with it: a friend who joins gets {period} of Squish Plus, and so do you.', { period: periodWords(friends.rewardDays) })
+            : t('Made on your phone. Nothing is uploaded.')}
         </p>
 
         <div>
-          <h4 className="small">Frame</h4>
+          <h4 className="small">{t('Frame')}</h4>
           {frameShelves.map((shelf) => (
             <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
-              <div className="decor-grid decor-grid--frames" role="group" aria-label={`Frames: ${shelf.title}`}>
+              <div className="decor-grid decor-grid--frames" role="group" aria-label={t('Frames: {shelf}', { shelf: shelf.title })}>
                 {shelf.kind === 'yours' && (
                   <button type="button" aria-pressed={decor.frame === ''} className={`decor decor--frame${decor.frame === '' ? ' decor--on' : ''}`} onClick={() => setShareDecor({ ...chosen, frame: '' })}>
                     <span className="decor-card" aria-hidden="true" />
-                    <span className="tile-name">None</span>
-                    {decor.frame === '' && <span className="tile-note">On</span>}
+                    <span className="tile-name">{t('None')}</span>
+                    {decor.frame === '' && <span className="tile-note">{t('On')}</span>}
                   </button>
                 )}
                 {shelf.items.map((frame) => {
                   const mine = shelf.kind === 'yours';
                   const on = decor.frame === frame.id;
-                  const note = on ? 'On' : noteFor(shelf.kind, frame);
+                  const note = on ? t('On') : noteFor(shelf.kind, frame);
                   return (
                     <button
                       key={frame.id}
@@ -143,7 +144,7 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
                       aria-pressed={mine ? on : undefined}
                       className={`decor decor--frame${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
                       onClick={() => (mine ? setShareDecor({ ...chosen, frame: frame.id }) : locked(frame))}
-                      aria-label={mine ? `${frame.name} frame` : `${frame.name} frame, locked — ${frame.how}`}
+                      aria-label={mine ? t('{name} frame', { name: frame.name }) : t('{name} frame, locked — {how}', { name: frame.name, how: frame.how })}
                     >
                       <span className="decor-card" aria-hidden="true">
                         <img src={frameUrl(frame.id)} alt="" />
@@ -159,15 +160,15 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
         </div>
 
         <div>
-          <h4 className="small">Stickers</h4>
-          <p className="tiny muted">Up to two, either side of Squish.</p>
+          <h4 className="small">{t('Stickers')}</h4>
+          <p className="tiny muted">{t('Up to two, either side of Squish.')}</p>
           {stickerShelves.map((shelf) => (
             <Shelf key={shelf.key} title={shelf.title} kind={shelf.kind} subscribed={subscribed}>
-              <div className="decor-grid" role="group" aria-label={`Stickers: ${shelf.title}`}>
+              <div className="decor-grid" role="group" aria-label={t('Stickers: {shelf}', { shelf: shelf.title })}>
                 {shelf.items.map((sticker) => {
                   const mine = shelf.kind === 'yours';
                   const on = decor.stickers.includes(sticker.id);
-                  const note = on ? 'On' : noteFor(shelf.kind, sticker);
+                  const note = on ? t('On') : noteFor(shelf.kind, sticker);
                   return (
                     <button
                       key={sticker.id}
@@ -175,7 +176,7 @@ export function ShareSheet({ open, onClose, data }: { open: boolean; onClose: ()
                       aria-pressed={mine ? on : undefined}
                       className={`decor decor--sticker${on ? ' decor--on' : ''}${mine ? '' : ' decor--locked'}`}
                       onClick={() => (mine ? setShareDecor({ ...chosen, stickers: toggleSticker(decor.stickers, sticker.id) }) : locked(sticker))}
-                      aria-label={mine ? sticker.name : `${sticker.name}, locked — ${sticker.how}`}
+                      aria-label={mine ? sticker.name : t('{name}, locked — {how}', { name: sticker.name, how: sticker.how })}
                     >
                       <img src={stickerUrl(sticker.id)} alt="" />
                       <span className="tile-name">{sticker.name}</span>

@@ -26,6 +26,8 @@
  * profile through.
  */
 
+import { msg, t, uiLanguage, uiLocale } from './i18n';
+
 export type Region = 'GB' | 'IE' | 'US' | 'CA' | 'AU' | 'NZ';
 export type EnergyUnit = 'kcal' | 'kJ';
 /** Which nutrition guidance a region's targets follow. */
@@ -62,7 +64,7 @@ export interface RegionInfo {
 export const REGIONS: Record<Region, RegionInfo> = {
   GB: {
     id: 'GB',
-    name: 'United Kingdom',
+    name: msg('United Kingdom'),
     flag: '🇬🇧',
     locale: 'en-GB',
     currency: 'GBP',
@@ -78,7 +80,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
   },
   IE: {
     id: 'IE',
-    name: 'Ireland',
+    name: msg('Ireland'),
     flag: '🇮🇪',
     locale: 'en-IE',
     currency: 'EUR',
@@ -94,7 +96,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
   },
   US: {
     id: 'US',
-    name: 'United States',
+    name: msg('United States'),
     flag: '🇺🇸',
     locale: 'en-US',
     currency: 'USD',
@@ -110,7 +112,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
   },
   CA: {
     id: 'CA',
-    name: 'Canada',
+    name: msg('Canada'),
     flag: '🇨🇦',
     locale: 'en-CA',
     currency: 'CAD',
@@ -126,7 +128,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
   },
   AU: {
     id: 'AU',
-    name: 'Australia',
+    name: msg('Australia'),
     flag: '🇦🇺',
     locale: 'en-AU',
     currency: 'AUD',
@@ -142,7 +144,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
   },
   NZ: {
     id: 'NZ',
-    name: 'New Zealand',
+    name: msg('New Zealand'),
     flag: '🇳🇿',
     locale: 'en-NZ',
     currency: 'NZD',
@@ -217,7 +219,9 @@ export const currentEnergyUnit = (): EnergyUnit => current.energy;
 
 export function formatPrice(amount: number, region: Region = current.region): string {
   const info = REGIONS[region];
-  return new Intl.NumberFormat(info.locale, { style: 'currency', currency: info.currency }).format(amount);
+  // Their own language's way of writing it where this is their region; the region's English otherwise.
+  const locale = region === current.region ? uiLocale() : info.locale;
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: info.currency }).format(amount);
 }
 
 /** What a year of Plus comes to each week, for "less than a coffee". */
@@ -235,7 +239,7 @@ export function energyValue(kcal: number, unit: EnergyUnit = current.energy): nu
 }
 
 /** "1,850 kcal" or "7,740 kJ". */
-export function formatEnergy(kcal: number, unit: EnergyUnit = current.energy, locale = currentRegion().locale): string {
+export function formatEnergy(kcal: number, unit: EnergyUnit = current.energy, locale = uiLocale()): string {
   return `${energyValue(kcal, unit).toLocaleString(locale)} ${unit}`;
 }
 
@@ -243,7 +247,7 @@ export function formatEnergy(kcal: number, unit: EnergyUnit = current.energy, lo
  * A round figure for a line of prose — "about 400 kJ" rather than "about
  * 418 kJ", which reads as more precise than any rule of thumb is.
  */
-export function aboutEnergy(kcal: number, unit: EnergyUnit = current.energy, locale = currentRegion().locale): string {
+export function aboutEnergy(kcal: number, unit: EnergyUnit = current.energy, locale = uiLocale()): string {
   const value = energyValue(kcal, unit);
   const step = unit === 'kJ' ? (value >= 1000 ? 100 : 50) : 1;
   return `${(Math.round(value / step) * step).toLocaleString(locale)} ${unit}`;
@@ -305,7 +309,8 @@ const matchCase = (original: string, word: string) =>
  * "chips" for an American without that "chips" then becoming "fries".
  */
 export function localWords(text: string, region: Region = current.region): string {
-  if (region === 'GB' || region === 'IE') return text;
+  // Only English has British words to swap; a translation already uses its own.
+  if (region === 'GB' || region === 'IE' || uiLanguage() !== 'en') return text;
   return text.replace(WORD_PATTERN, (found) => {
     const local = WORDS[found.toLowerCase().replace(/\s+/g, ' ')]?.[region];
     return local ? matchCase(found, local) : found;
@@ -313,10 +318,11 @@ export function localWords(text: string, region: Region = current.region): strin
 }
 
 /** "Salt" or "Sodium", as their packets put it. */
-export const saltWord = (region: Region = current.region): string => (REGIONS[region].salt === 'sodium' ? 'Sodium' : 'Salt');
+export const saltWord = (region: Region = current.region): string =>
+  REGIONS[region].salt === 'sodium' ? t('Sodium') : t('Salt');
 
 /** "Fibre", spelt their way, for a label. */
-export const fibreWord = (region: Region = current.region): string => (region === 'US' ? 'Fiber' : 'Fibre');
+export const fibreWord = (region: Region = current.region): string => (uiLanguage() !== 'en' ? t('Fibre') : region === 'US' ? 'Fiber' : 'Fibre');
 
 // ---- Foods --------------------------------------------------------------------------------
 
@@ -333,72 +339,72 @@ export interface LocalFood {
  */
 export const LOCAL_FOODS: Partial<Record<Region, Record<string, LocalFood>>> = {
   US: {
-    oats: { name: 'Rolled oats (oatmeal), dry' },
-    'greek-yog': { name: 'Greek yogurt, 2%' },
-    milk: { name: '2% milk', serving: '1 cup', servingG: 240 },
-    bread: { name: 'Whole wheat bread' },
-    chips: { name: 'French fries', serving: '1 medium order', servingG: 117 },
-    'beef-mince': { name: 'Ground beef, 95% lean', serving: '4 oz', servingG: 113 },
-    tuna: { name: 'Tuna, canned in water', serving: '1 can', servingG: 142 },
-    prawns: { name: 'Shrimp, cooked' },
-    salad: { name: 'Mixed salad greens' },
-    peas: { name: 'Green peas' },
-    corn: { name: 'Corn' },
-    pizza: { name: 'Cheese pizza' },
-    sandwich: { name: 'Chicken salad sandwich' },
-    'orange-juice': { serving: '1 cup', servingG: 240 },
-    cola: { serving: '1 can', servingG: 355 },
-    'diet-cola': { serving: '1 can', servingG: 355 },
-    beer: { serving: '1 bottle', servingG: 355 },
-    wine: { serving: '1 glass', servingG: 150 },
-    biscuit: { name: 'Digestive cookie' },
-    crisps: { name: 'Potato chips', serving: '1 small bag', servingG: 28 },
+    oats: { name: msg('Rolled oats (oatmeal), dry') },
+    'greek-yog': { name: msg('Greek yogurt, 2%') },
+    milk: { name: msg('2% milk'), serving: msg('1 cup'), servingG: 240 },
+    bread: { name: msg('Whole wheat bread') },
+    chips: { name: msg('French fries'), serving: msg('1 medium order'), servingG: 117 },
+    'beef-mince': { name: msg('Ground beef, 95% lean'), serving: msg('4 oz'), servingG: 113 },
+    tuna: { name: msg('Tuna, canned in water'), serving: msg('1 can'), servingG: 142 },
+    prawns: { name: msg('Shrimp, cooked') },
+    salad: { name: msg('Mixed salad greens') },
+    peas: { name: msg('Green peas') },
+    corn: { name: msg('Corn') },
+    pizza: { name: msg('Cheese pizza') },
+    sandwich: { name: msg('Chicken salad sandwich') },
+    'orange-juice': { serving: msg('1 cup'), servingG: 240 },
+    cola: { serving: msg('1 can'), servingG: 355 },
+    'diet-cola': { serving: msg('1 can'), servingG: 355 },
+    beer: { serving: msg('1 bottle'), servingG: 355 },
+    wine: { serving: msg('1 glass'), servingG: 150 },
+    biscuit: { name: msg('Digestive cookie') },
+    crisps: { name: msg('Potato chips'), serving: msg('1 small bag'), servingG: 28 },
   },
   CA: {
-    oats: { name: 'Rolled oats (oatmeal), dry' },
-    'greek-yog': { name: 'Greek yogurt, 2%' },
-    milk: { name: '2% milk', serving: '1 cup', servingG: 250 },
-    bread: { name: 'Whole wheat bread' },
-    chips: { name: 'French fries' },
-    'beef-mince': { name: 'Extra-lean ground beef' },
-    tuna: { name: 'Tuna, canned in water', serving: '1 can', servingG: 120 },
-    prawns: { name: 'Shrimp, cooked' },
-    salad: { name: 'Mixed salad greens' },
-    peas: { name: 'Green peas' },
-    corn: { name: 'Corn' },
-    pizza: { name: 'Cheese pizza' },
-    cola: { serving: '1 can', servingG: 355 },
-    'diet-cola': { serving: '1 can', servingG: 355 },
-    beer: { serving: '1 bottle', servingG: 341 },
-    biscuit: { name: 'Digestive cookie' },
-    crisps: { name: 'Potato chips' },
+    oats: { name: msg('Rolled oats (oatmeal), dry') },
+    'greek-yog': { name: msg('Greek yogurt, 2%') },
+    milk: { name: msg('2% milk'), serving: msg('1 cup'), servingG: 250 },
+    bread: { name: msg('Whole wheat bread') },
+    chips: { name: msg('French fries') },
+    'beef-mince': { name: msg('Extra-lean ground beef') },
+    tuna: { name: msg('Tuna, canned in water'), serving: msg('1 can'), servingG: 120 },
+    prawns: { name: msg('Shrimp, cooked') },
+    salad: { name: msg('Mixed salad greens') },
+    peas: { name: msg('Green peas') },
+    corn: { name: msg('Corn') },
+    pizza: { name: msg('Cheese pizza') },
+    cola: { serving: msg('1 can'), servingG: 355 },
+    'diet-cola': { serving: msg('1 can'), servingG: 355 },
+    beer: { serving: msg('1 bottle'), servingG: 341 },
+    biscuit: { name: msg('Digestive cookie') },
+    crisps: { name: msg('Potato chips') },
   },
   AU: {
-    oats: { name: 'Rolled oats, dry' },
-    milk: { name: 'Reduced-fat milk' },
-    chips: { name: 'Hot chips' },
-    crisps: { name: 'Potato chips', serving: '1 small packet', servingG: 45 },
-    'granola-bar': { name: 'Muesli bar', serving: '1 bar', servingG: 32 },
-    tuna: { name: 'Tuna in springwater', serving: '1 tin', servingG: 95 },
-    cola: { serving: '1 can', servingG: 375 },
-    'diet-cola': { serving: '1 can', servingG: 375 },
-    beer: { serving: '1 schooner', servingG: 425 },
-    wine: { serving: '1 glass', servingG: 150 },
-    corn: { name: 'Corn kernels' },
-    pizza: { name: 'Margherita pizza' },
+    oats: { name: msg('Rolled oats, dry') },
+    milk: { name: msg('Reduced-fat milk') },
+    chips: { name: msg('Hot chips') },
+    crisps: { name: msg('Potato chips'), serving: msg('1 small packet'), servingG: 45 },
+    'granola-bar': { name: msg('Muesli bar'), serving: msg('1 bar'), servingG: 32 },
+    tuna: { name: msg('Tuna in springwater'), serving: msg('1 tin'), servingG: 95 },
+    cola: { serving: msg('1 can'), servingG: 375 },
+    'diet-cola': { serving: msg('1 can'), servingG: 375 },
+    beer: { serving: msg('1 schooner'), servingG: 425 },
+    wine: { serving: msg('1 glass'), servingG: 150 },
+    corn: { name: msg('Corn kernels') },
+    pizza: { name: msg('Margherita pizza') },
   },
   NZ: {
-    oats: { name: 'Rolled oats, dry' },
-    milk: { name: 'Light blue-top milk' },
-    chips: { name: 'Hot chips' },
-    crisps: { name: 'Potato chips', serving: '1 small bag', servingG: 40 },
-    'granola-bar': { name: 'Muesli bar', serving: '1 bar', servingG: 30 },
-    'sweet-potato': { name: 'Kūmara, baked' },
-    tuna: { name: 'Tuna in springwater', serving: '1 tin', servingG: 95 },
-    beer: { serving: '1 bottle', servingG: 330 },
-    wine: { serving: '1 glass', servingG: 150 },
-    corn: { name: 'Corn kernels' },
-    pizza: { name: 'Margherita pizza' },
+    oats: { name: msg('Rolled oats, dry') },
+    milk: { name: msg('Light blue-top milk') },
+    chips: { name: msg('Hot chips') },
+    crisps: { name: msg('Potato chips'), serving: msg('1 small bag'), servingG: 40 },
+    'granola-bar': { name: msg('Muesli bar'), serving: msg('1 bar'), servingG: 30 },
+    'sweet-potato': { name: msg('Kūmara, baked') },
+    tuna: { name: msg('Tuna in springwater'), serving: msg('1 tin'), servingG: 95 },
+    beer: { serving: msg('1 bottle'), servingG: 330 },
+    wine: { serving: msg('1 glass'), servingG: 150 },
+    corn: { name: msg('Corn kernels') },
+    pizza: { name: msg('Margherita pizza') },
   },
 };
 

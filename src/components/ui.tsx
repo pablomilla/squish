@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { matchStatusBar } from '../lib/native';
 import { DEFAULT_LOOK, lookById, lookVars } from '../lib/looks';
 import { CloseIcon } from './icons';
+import { t } from '../lib/i18n';
 
 /* ---------------- Bottom sheet ---------------- */
 export function Sheet({
@@ -43,7 +44,7 @@ export function Sheet({
         {title && (
           <div className="row-between" style={{ marginBottom: 12 }}>
             <h2>{title}</h2>
-            <button type="button" className="btn--quiet" onClick={onClose} aria-label="Close">
+            <button type="button" className="btn--quiet" onClick={onClose} aria-label={t('Close')}>
               <CloseIcon />
             </button>
           </div>
@@ -144,12 +145,12 @@ export function Stepper({
   const clamp = (v: number) => Math.max(min, Math.min(max, Math.round(v * 100) / 100));
   return (
     <div className="stepper">
-      <button type="button" onClick={() => onChange(clamp(value - step))} aria-label="Decrease">−</button>
+      <button type="button" onClick={() => onChange(clamp(value - step))} aria-label={t('Decrease')}>−</button>
       <span>
-        {value}
+        {value.toLocaleString()}
         {suffix ? ` ${suffix}` : ''}
       </span>
-      <button type="button" onClick={() => onChange(clamp(value + step))} aria-label="Increase">+</button>
+      <button type="button" onClick={() => onChange(clamp(value + step))} aria-label={t('Increase')}>+</button>
     </div>
   );
 }

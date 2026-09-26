@@ -19,6 +19,7 @@ import { mealsOn, series, streakOf, summarise, totalsOn } from './selectors';
 import { saltGrams } from './units';
 import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { toolLabel } from './nutritionist-tools';
+import { t } from './i18n';
 
 /** The outline of their diary that rides along with every question. */
 export interface ChatContext {
@@ -119,5 +120,5 @@ export async function runConversation(options: {
   }
 
   // Unreachable in practice: the server withholds the tools at the same count.
-  return { reply: 'I got lost looking things up. Ask me again?', messages, lookups };
+  return { reply: t('I got lost looking things up. Ask me again?'), messages, lookups };
 }

@@ -15,6 +15,7 @@
  */
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
+import { t } from './i18n';
 
 export type Plan = 'free' | 'plus';
 export type Billable = 'photo' | 'chat' | 'recipe';
@@ -158,10 +159,10 @@ export async function redeemInvite(code: string): Promise<RedeemResult> {
     });
     const body = (await response.json().catch(() => ({}))) as { until?: string; message?: string };
 
-    if (!response.ok) return { ok: false, message: body.message ?? 'That did not work. Try again in a moment.' };
+    if (!response.ok) return { ok: false, message: body.message ? t(body.message) : t('That did not work. Try again in a moment.') };
     await refreshPlan();
     return { ok: true, until: body.until ?? '' };
   } catch {
-    return { ok: false, message: 'Could not reach Squish just now.' };
+    return { ok: false, message: t('Could not reach Squish just now.') };
   }
 }

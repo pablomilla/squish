@@ -1,6 +1,7 @@
 import Squish from './Squish';
 import { useNutritionistAccess } from './useSubscribed';
 import './nutritionist-card.css';
+import { t } from '../lib/i18n';
 
 /**
  * "Ask the nutritionist" beside the thing somebody is looking at — the day's
@@ -8,7 +9,7 @@ import './nutritionist-card.css';
  * somebody wonders why is the moment the nutritionist is worth most, and the
  * easiest moment to find out it exists.
  */
-export default function AskLink({ question, onAsk, label = 'Ask the nutritionist' }: { question: string; onAsk: (question: string) => void; label?: string }) {
+export default function AskLink({ question, onAsk, label = t('Ask the nutritionist') }: { question: string; onAsk: (question: string) => void; label?: string }) {
   const access = useNutritionistAccess();
   return (
     <button type="button" className="ask-link" onClick={() => onAsk(question)}>

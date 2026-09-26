@@ -46,6 +46,10 @@ services:
         sync: false
       - key: SQUISH_WEEKPLAN_MODEL
         sync: false
+      # "off" stops the server translating new interface strings into every
+      # language after a deploy; they are then translated when first asked for.
+      - key: SQUISH_I18N_WARM
+        sync: false
       # Turns on the device token, the diary backup and accounts. Filled in by
       # Render from the database below, so there is nothing to type.
       #

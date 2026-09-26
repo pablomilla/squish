@@ -20,13 +20,14 @@
  * localStorage, so it waits for purchases to exist.
  */
 import type { Mood } from '../types';
+import { t } from './i18n';
 
 export type Slot = 'head' | 'face' | 'neck';
 
 export const SLOTS: { id: Slot; name: string }[] = [
-  { id: 'head', name: 'Head' },
-  { id: 'face', name: 'Face' },
-  { id: 'neck', name: 'Neck' },
+  { id: 'head', name: t('Head') },
+  { id: 'face', name: t('Face') },
+  { id: 'neck', name: t('Neck') },
 ];
 
 /** One layer per pose, as SVG markup in the pose's own 512 space. */
@@ -62,9 +63,9 @@ export interface Accessory {
 }
 
 export const PACKS: Record<Pack, string> = {
-  chef: 'Chef pack',
-  sporty: 'Sporty pack',
-  cosy: 'Cosy pack',
+  chef: t('Chef pack'),
+  sporty: t('Sporty pack'),
+  cosy: t('Cosy pack'),
 };
 
 /**
@@ -72,42 +73,42 @@ export const PACKS: Record<Pack, string> = {
  * New Year runs over the turn of the year, which `inSeason` handles.
  */
 export const SEASONS: Record<Season, { name: string; from: [number, number]; to: [number, number] }> = {
-  winter: { name: 'Winter', from: [12, 1], to: [12, 31] },
-  'new-year': { name: 'New Year', from: [12, 26], to: [1, 7] },
-  valentines: { name: 'Valentine’s', from: [2, 1], to: [2, 14] },
-  spring: { name: 'Spring', from: [3, 20], to: [4, 30] },
-  summer: { name: 'Summer', from: [6, 21], to: [8, 31] },
-  halloween: { name: 'Halloween', from: [10, 15], to: [10, 31] },
+  winter: { name: t('Winter'), from: [12, 1], to: [12, 31] },
+  'new-year': { name: t('New Year'), from: [12, 26], to: [1, 7] },
+  valentines: { name: t('Valentine’s'), from: [2, 1], to: [2, 14] },
+  spring: { name: t('Spring'), from: [3, 20], to: [4, 30] },
+  summer: { name: t('Summer'), from: [6, 21], to: [8, 31] },
+  halloween: { name: t('Halloween'), from: [10, 15], to: [10, 31] },
 };
 
 const earned = (id: string, how: string) => ({ unlock: { kind: 'achievement', id } as const, how });
-const plus = { unlock: { kind: 'subscriber' } as const, how: 'Comes with Squish Plus' };
+const plus = { unlock: { kind: 'subscriber' } as const, how: t('Comes with Squish Plus') };
 const pack = (p: Pack) => ({ unlock: { kind: 'pack', pack: p } as const, how: PACKS[p] });
-const season = (s: Season) => ({ unlock: { kind: 'season', season: s } as const, how: `${SEASONS[s].name}, with Squish Plus` });
+const season = (s: Season) => ({ unlock: { kind: 'season', season: s } as const, how: t('{season}, with Squish Plus', { season: SEASONS[s].name }) });
 
 /** In the order the picker shows them: earned first, then Plus, then packs. */
 export const ACCESSORIES: Accessory[] = [
-  { id: 'party-hat', name: 'Party hat', slot: 'head', ...earned('first-meal', 'Log your first meal'), rise: 53 },
-  { id: 'round-specs', name: 'Round glasses', slot: 'face', ...earned('streak-3', 'Three days running') },
-  { id: 'knit-scarf', name: 'Knitted scarf', slot: 'neck', ...earned('streak-7', 'A full week of logging') },
+  { id: 'party-hat', name: t('Party hat'), slot: 'head', ...earned('first-meal', t('Log your first meal')), rise: 53 },
+  { id: 'round-specs', name: t('Round glasses'), slot: 'face', ...earned('streak-3', t('Three days running')) },
+  { id: 'knit-scarf', name: t('Knitted scarf'), slot: 'neck', ...earned('streak-7', t('A full week of logging')) },
   // Only ever earned, never sold: the thank-you for inviting a friend who got going.
-  { id: 'squad-cap', name: 'Squad cap', slot: 'head', ...earned('squad', 'Invite a friend who gets going'), rise: 11 },
-  { id: 'crown', name: 'Little crown', slot: 'head', ...plus, rise: 29 },
-  { id: 'heart-shades', name: 'Heart sunglasses', slot: 'face', ...plus },
-  { id: 'headphones', name: 'Headphones', slot: 'head', ...earned('days-50', 'Log on fifty days, any fifty') },
-  { id: 'chef-hat', name: 'Chef’s hat', slot: 'head', ...pack('chef'), rise: 61 },
-  { id: 'neckerchief', name: 'Neckerchief', slot: 'neck', ...pack('chef') },
-  { id: 'sweatband', name: 'Sweatband', slot: 'head', ...pack('sporty') },
-  { id: 'medal', name: 'Medal', slot: 'neck', ...pack('sporty') },
-  { id: 'beanie', name: 'Bobble beanie', slot: 'head', ...pack('cosy'), rise: 5 },
-  { id: 'earmuffs', name: 'Earmuffs', slot: 'head', ...pack('cosy') },
-  { id: 'santa-hat', name: 'Santa hat', slot: 'head', ...season('winter'), rise: 43 },
-  { id: 'reindeer-antlers', name: 'Reindeer antlers', slot: 'head', ...season('winter'), rise: 51 },
-  { id: 'glitter-glasses', name: 'Glitter glasses', slot: 'face', ...season('new-year') },
-  { id: 'heart-antennae', name: 'Heart antennae', slot: 'head', ...season('valentines'), rise: 43 },
-  { id: 'bunny-ears', name: 'Bunny ears', slot: 'head', ...season('spring'), rise: 50 },
-  { id: 'straw-sun-hat', name: 'Straw sun hat', slot: 'head', ...season('summer') },
-  { id: 'pumpkin-hat', name: 'Pumpkin hat', slot: 'head', ...season('halloween'), rise: 12 },
+  { id: 'squad-cap', name: t('Squad cap'), slot: 'head', ...earned('squad', t('Invite a friend who gets going')), rise: 11 },
+  { id: 'crown', name: t('Little crown'), slot: 'head', ...plus, rise: 29 },
+  { id: 'heart-shades', name: t('Heart sunglasses'), slot: 'face', ...plus },
+  { id: 'headphones', name: t('Headphones'), slot: 'head', ...earned('days-50', t('Log on fifty days, any fifty')) },
+  { id: 'chef-hat', name: t('Chef’s hat'), slot: 'head', ...pack('chef'), rise: 61 },
+  { id: 'neckerchief', name: t('Neckerchief'), slot: 'neck', ...pack('chef') },
+  { id: 'sweatband', name: t('Sweatband'), slot: 'head', ...pack('sporty') },
+  { id: 'medal', name: t('Medal'), slot: 'neck', ...pack('sporty') },
+  { id: 'beanie', name: t('Bobble beanie'), slot: 'head', ...pack('cosy'), rise: 5 },
+  { id: 'earmuffs', name: t('Earmuffs'), slot: 'head', ...pack('cosy') },
+  { id: 'santa-hat', name: t('Santa hat'), slot: 'head', ...season('winter'), rise: 43 },
+  { id: 'reindeer-antlers', name: t('Reindeer antlers'), slot: 'head', ...season('winter'), rise: 51 },
+  { id: 'glitter-glasses', name: t('Glitter glasses'), slot: 'face', ...season('new-year') },
+  { id: 'heart-antennae', name: t('Heart antennae'), slot: 'head', ...season('valentines'), rise: 43 },
+  { id: 'bunny-ears', name: t('Bunny ears'), slot: 'head', ...season('spring'), rise: 50 },
+  { id: 'straw-sun-hat', name: t('Straw sun hat'), slot: 'head', ...season('summer') },
+  { id: 'pumpkin-hat', name: t('Pumpkin hat'), slot: 'head', ...season('halloween'), rise: 12 },
 ];
 
 export const accessoryById = (id: string | undefined): Accessory | undefined =>
@@ -165,9 +166,9 @@ export function whyLocked(item: { name: string; how: string; unlock: ItemUnlock 
     case 'achievement':
       return item.how;
     case 'pack':
-      return `${item.name} is in the ${PACKS[item.unlock.pack]}, which is not on sale yet.`;
+      return t('{item} is in the {pack}, which is not on sale yet.', { item: item.name, pack: PACKS[item.unlock.pack] });
     default:
-      return `${item.name} comes with ${plus}, which is not on sale yet.`;
+      return t('{item} comes with {plus}, which is not on sale yet.', { item: item.name, plus });
   }
 }
 
@@ -264,10 +265,10 @@ export function shelves<T extends { unlock: ItemUnlock }>(items: T[], entitlemen
   packs.sort((a, b) => packOf(a) - packOf(b));
 
   const all: Shelf<T>[] = [
-    { key: 'yours', kind: 'yours', title: 'Yours', items: yours },
-    { key: 'earn', kind: 'earn', title: 'Earn these', items: earn },
-    { key: 'plus', kind: 'plus', title: 'With Squish Plus', items: plus },
-    { key: 'packs', kind: 'pack', title: 'Packs', items: packs },
+    { key: 'yours', kind: 'yours', title: t('Yours'), items: yours },
+    { key: 'earn', kind: 'earn', title: t('Earn these'), items: earn },
+    { key: 'plus', kind: 'plus', title: t('With Squish Plus'), items: plus },
+    { key: 'packs', kind: 'pack', title: t('Packs'), items: packs },
   ];
   return all.filter((shelf) => shelf.items.length > 0);
 }
@@ -278,7 +279,7 @@ export function shelves<T extends { unlock: ItemUnlock }>(items: T[], entitlemen
  * than their heading, and earned ones say what to do (their `how`).
  */
 export function lockedNote(unlock: ItemUnlock): string {
-  if (unlock.kind === 'season') return `${SEASONS[unlock.season].name} only`;
+  if (unlock.kind === 'season') return t('{season} only', { season: SEASONS[unlock.season].name });
   if (unlock.kind === 'pack') return PACKS[unlock.pack];
   return '';
 }

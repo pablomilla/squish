@@ -8,6 +8,7 @@ import { suggestedQuestions } from '../lib/askSuggestions';
 import { NUTRITIONIST_PLAN_NOTE } from '../lib/planner';
 import { addDays, isoDate } from '../lib/date';
 import './nutritionist-card.css';
+import { t } from '../lib/i18n';
 
 /**
  * The nutritionist, on Home, where it can be seen.
@@ -35,8 +36,8 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
       <div className="nutri-head">
         <Squish mood="thinking" size={58} bob={false} label="" />
         <div className="nutri-head-text">
-          <h3 id="nutri-title">Your nutritionist</h3>
-          <p className="tiny">Reads your diary before it answers</p>
+          <h3 id="nutri-title">{t('Your nutritionist')}</h3>
+          <p className="tiny">{t('Reads your diary before it answers')}</p>
         </div>
         {access.label && <span className="badge nutri-badge">{access.label}</span>}
       </div>
@@ -49,10 +50,10 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
       </div>
       <div className="nutri-actions">
         <button type="button" className="nutri-ask" onClick={() => go({ name: 'ask' })}>
-          <SparkIcon size={16} /> Ask anything…
+          <SparkIcon size={16} /> {t('Ask anything…')}
         </button>
         <button type="button" className="nutri-plan" onClick={() => go({ name: 'ask', tab: 'plan' })}>
-          <CalendarIcon size={16} /> {planned ? 'My meal plan' : 'Plan my week'}
+          <CalendarIcon size={16} /> {planned ? t('My meal plan') : t('Plan my week')}
         </button>
       </div>
     </section>

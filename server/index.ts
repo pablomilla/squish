@@ -102,11 +102,14 @@ import {
   hasCredentials,
   planWeek,
   refineAnalysis,
+  translateBatch,
   WeekPlanError,
   type CoachContext,
 } from './claude';
 import { cleanWeekRequest } from './weekplan';
 import { withPlace } from './region';
+import { msg } from '../src/lib/i18n';
+import { isTranslatable, languagePack, useTranslator, warmAll } from './translate';
 
 const app = express();
 app.use(cors());
@@ -383,11 +386,11 @@ app.set('trust proxy', 1);
 /** Needs a device — an anonymous request has no diary of its own to fetch. */
 function requireDevice(req: Request, res: Response, next: NextFunction): void {
   if (!hasDatabase()) {
-    res.status(503).json({ error: 'no_database', message: 'This Squish keeps nothing on the server.' });
+    res.status(503).json({ error: 'no_database', message: msg('This Squish keeps nothing on the server.') });
     return;
   }
   if (!req.device) {
-    res.status(401).json({ error: 'no_device', message: 'This browser has not introduced itself yet.' });
+    res.status(401).json({ error: 'no_device', message: msg('This browser has not introduced itself yet.') });
     return;
   }
   next();
@@ -402,7 +405,7 @@ app.post('/api/device/handoff', requireDevice, meter('signin'), async (req, res)
     res.json({ code: await startHandoff(req.device!.id) });
   } catch (error) {
     logFailure('handoff', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not do that just now.') });
   }
 });
 
@@ -415,13 +418,13 @@ app.post('/api/device/claim', rateLimit, async (req, res) => {
   try {
     const claimed = await claimHandoff(code);
     if (!claimed) {
-      res.status(404).json({ error: 'expired', message: 'That link has already been used, or is too old.' });
+      res.status(404).json({ error: 'expired', message: msg('That link has already been used, or is too old.') });
       return;
     }
     res.json(claimed);
   } catch (error) {
     logFailure('claim', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not do that just now.') });
   }
 });
 
@@ -431,21 +434,21 @@ app.get('/api/diary', requireDevice, async (req, res) => {
     res.json(found ?? { state: null, version: 0, updatedAt: null });
   } catch (error) {
     logFailure('diary read', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not fetch your backup just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not fetch your backup just now.') });
   }
 });
 
 app.put('/api/diary', requireDevice, async (req, res) => {
   const { state, version } = req.body ?? {};
   if (state === undefined || state === null) {
-    res.status(400).json({ error: 'empty', message: 'Nothing to back up.' });
+    res.status(400).json({ error: 'empty', message: msg('Nothing to back up.') });
     return;
   }
   // `null` means "I believe there is nothing there yet"; a number means "I
   // last saw this one". Anything else is a client that has lost track, and
   // guessing on its behalf is how somebody's afternoon gets overwritten.
   if (version !== null && !Number.isInteger(version)) {
-    res.status(400).json({ error: 'bad_version', message: 'A backup needs to say which version it last saw.' });
+    res.status(400).json({ error: 'bad_version', message: msg('A backup needs to say which version it last saw.') });
     return;
   }
 
@@ -461,7 +464,7 @@ app.put('/api/diary', requireDevice, async (req, res) => {
       res.status(413).json({
         ...result,
         error: 'too_big',
-        message: 'This diary is too large to back up.',
+        message: msg('This diary is too large to back up.'),
       });
       return;
     }
@@ -470,7 +473,7 @@ app.put('/api/diary', requireDevice, async (req, res) => {
     res.status(409).json(result);
   } catch (error) {
     logFailure('diary write', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save your backup just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save your backup just now.') });
   }
 });
 
@@ -488,7 +491,7 @@ app.delete('/api/diary', requireDevice, async (req, res) => {
     res.json({ deleted: true });
   } catch (error) {
     logFailure('diary delete', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not delete your backup just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not delete your backup just now.') });
   }
 });
 
@@ -501,14 +504,14 @@ app.post('/api/device', async (_req, res) => {
   if (!hasDatabase()) {
     // Not an error. It is how Squish runs on a laptop, and the client is
     // written to carry on without one.
-    res.status(503).json({ error: 'no_database', message: 'This Squish keeps nothing on the server.' });
+    res.status(503).json({ error: 'no_database', message: msg('This Squish keeps nothing on the server.') });
     return;
   }
   try {
     res.json(await registerDevice());
   } catch (error) {
     logFailure('device registration', error);
-    res.status(503).json({ error: 'no_database', message: 'Could not set this device up just now.' });
+    res.status(503).json({ error: 'no_database', message: msg('Could not set this device up just now.') });
   }
 });
 
@@ -586,14 +589,14 @@ app.get('/api/account', requireDevice, async (req, res) => {
     });
   } catch (error) {
     logFailure('account read', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not check that just now.') });
   }
 });
 
 app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
   const { email, password, ref } = req.body ?? {};
   if (typeof email !== 'string' || typeof password !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'An address and a password, please.' });
+    res.status(400).json({ error: 'missing', message: msg('An address and a password, please.') });
     return;
   }
 
@@ -628,7 +631,7 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
     res.status(409).json({ error: made.reason, message: made.message ?? SIGNUP_TROUBLE[made.reason] });
   } catch (error) {
     logFailure('sign up', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not make that account just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not make that account just now.') });
   }
 });
 
@@ -642,7 +645,7 @@ const SIGNUP_TROUBLE: Record<'taken' | 'bad_email' | 'weak_password' | 'breached
 app.post('/api/session', requireDevice, meter('signin'), async (req, res) => {
   const { email, password } = req.body ?? {};
   if (typeof email !== 'string' || typeof password !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'An address and a password, please.' });
+    res.status(400).json({ error: 'missing', message: msg('An address and a password, please.') });
     return;
   }
 
@@ -657,10 +660,10 @@ app.post('/api/session', requireDevice, meter('signin'), async (req, res) => {
     }
     // One message for both a wrong password and an address with no account.
     // Telling them apart is a way of finding out who has an account here.
-    res.status(401).json({ error: 'wrong', message: 'That address and password do not go together.' });
+    res.status(401).json({ error: 'wrong', message: msg('That address and password do not go together.') });
   } catch (error) {
     logFailure('sign in', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not sign in just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not sign in just now.') });
   }
 });
 
@@ -670,7 +673,7 @@ app.delete('/api/session', requireDevice, async (req, res) => {
     res.json({ signedIn: false });
   } catch (error) {
     logFailure('sign out', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not sign out just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not sign out just now.') });
   }
 });
 
@@ -684,20 +687,20 @@ app.delete('/api/session', requireDevice, async (req, res) => {
 app.post('/api/account/devices/forget', requireAccount, meter('signin'), async (req, res) => {
   const { password } = req.body ?? {};
   if (typeof password !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'Your password, to be sure it is you.' });
+    res.status(400).json({ error: 'missing', message: msg('Your password, to be sure it is you.') });
     return;
   }
 
   try {
     const id = req.device!.accountId!;
     if (!(await verifyPassword(id, password))) {
-      res.status(401).json({ error: 'wrong', message: 'That is not your password.' });
+      res.status(401).json({ error: 'wrong', message: msg('That is not your password.') });
       return;
     }
     res.json({ signedOut: await signOutEverywhere(id, req.device!.id) });
   } catch (error) {
     logFailure('sign out everywhere', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not do that just now.') });
   }
 });
 
@@ -714,11 +717,11 @@ const verifyLink = (req: Request, token: string): string =>
 app.post('/api/account/verify', requireDevice, meter('verify'), async (req, res) => {
   const id = req.device!.accountId;
   if (!id) {
-    res.status(401).json({ error: 'no_account', message: 'Sign in first.' });
+    res.status(401).json({ error: 'no_account', message: msg('Sign in first.') });
     return;
   }
   if (!canSendMail()) {
-    res.status(503).json({ error: 'no_mail', message: 'This Squish cannot send email yet.' });
+    res.status(503).json({ error: 'no_mail', message: msg('This Squish cannot send email yet.') });
     return;
   }
   try {
@@ -726,7 +729,7 @@ app.post('/api/account/verify', requireDevice, meter('verify'), async (req, res)
     res.json({ result });
   } catch (error) {
     logFailure('verification email', error);
-    res.status(502).json({ error: 'not_sent', message: 'That email did not go. Try again in a few minutes.' });
+    res.status(502).json({ error: 'not_sent', message: msg('That email did not go. Try again in a few minutes.') });
   }
 });
 
@@ -771,7 +774,7 @@ const escapeHtml = (text: string): string =>
 function requireAccount(req: Request, res: Response, next: NextFunction): void {
   requireDevice(req, res, () => {
     if (!req.device?.accountId) {
-      res.status(401).json({ error: 'no_account', message: 'Sign in first.' });
+      res.status(401).json({ error: 'no_account', message: msg('Sign in first.') });
       return;
     }
     next();
@@ -781,7 +784,7 @@ function requireAccount(req: Request, res: Response, next: NextFunction): void {
 app.post('/api/account/password', requireAccount, meter('signin'), async (req, res) => {
   const { current, next: replacement } = req.body ?? {};
   if (typeof current !== 'string' || typeof replacement !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'The old password and the new one, please.' });
+    res.status(400).json({ error: 'missing', message: msg('The old password and the new one, please.') });
     return;
   }
 
@@ -806,7 +809,7 @@ app.post('/api/account/password', requireAccount, meter('signin'), async (req, r
     });
   } catch (error) {
     logFailure('password change', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not change that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not change that just now.') });
   }
 });
 
@@ -820,7 +823,7 @@ app.post('/api/account/password', requireAccount, meter('signin'), async (req, r
 app.delete('/api/account', requireAccount, meter('signin'), async (req, res) => {
   const { password } = req.body ?? {};
   if (typeof password !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'Your password, to be sure it is you.' });
+    res.status(400).json({ error: 'missing', message: msg('Your password, to be sure it is you.') });
     return;
   }
 
@@ -830,14 +833,14 @@ app.delete('/api/account', requireAccount, meter('signin'), async (req, res) => 
     // what happens to the diary on this device, and moving one onto an account
     // that is about to be deleted would delete it too.
     if (!(await verifyPassword(id, password))) {
-      res.status(401).json({ error: 'wrong', message: 'That is not your password.' });
+      res.status(401).json({ error: 'wrong', message: msg('That is not your password.') });
       return;
     }
     await deleteAccount(id);
     res.json({ deleted: true });
   } catch (error) {
     logFailure('account deletion', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not delete that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not delete that just now.') });
   }
 });
 
@@ -898,13 +901,13 @@ app.post('/api/admin/2fa/setup', requireAdminIdentity, async (req, res) => {
   try {
     const setup = await beginSetup(req.device!.accountId!, await adminEmail(req.device!));
     if (!setup) {
-      res.status(409).json({ error: 'already_on', message: 'Two-step sign-in is already on for this account.' });
+      res.status(409).json({ error: 'already_on', message: msg('Two-step sign-in is already on for this account.') });
       return;
     }
     res.json(setup);
   } catch (error) {
     logFailure('2fa setup', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not start that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not start that just now.') });
   }
 });
 
@@ -929,13 +932,13 @@ function refuseCode(res: Response, done: { reason: string; minutes?: number }): 
 app.post('/api/admin/2fa/enable', requireAdminIdentity, meter('signin'), async (req, res) => {
   const { password, code } = req.body ?? {};
   if (typeof password !== 'string' || typeof code !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'Your password and a code from the app, please.' });
+    res.status(400).json({ error: 'missing', message: msg('Your password and a code from the app, please.') });
     return;
   }
   try {
     const accountId = req.device!.accountId!;
     if (!(await verifyPassword(accountId, password))) {
-      res.status(400).json({ error: 'wrong_password', message: "That isn't your password." });
+      res.status(400).json({ error: 'wrong_password', message: msg("That isn't your password.") });
       return;
     }
     const done = await finishSetup(accountId, req.device!.id, code);
@@ -947,14 +950,14 @@ app.post('/api/admin/2fa/enable', requireAdminIdentity, meter('signin'), async (
     res.json({ recoveryCodes: done.recoveryCodes });
   } catch (error) {
     logFailure('2fa enable', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not do that just now.') });
   }
 });
 
 app.post('/api/admin/2fa/verify', requireAdminIdentity, meter('signin'), async (req, res) => {
   const { code } = req.body ?? {};
   if (typeof code !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'A code, please.' });
+    res.status(400).json({ error: 'missing', message: msg('A code, please.') });
     return;
   }
   try {
@@ -969,7 +972,7 @@ app.post('/api/admin/2fa/verify', requireAdminIdentity, meter('signin'), async (
     res.json({ passed: true, usedRecovery: done.usedRecovery, recoveryLeft: done.recoveryLeft });
   } catch (error) {
     logFailure('2fa verify', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not check that just now.') });
   }
 });
 
@@ -978,7 +981,7 @@ app.post('/api/admin/2fa/recovery', requireAdmin, meter('signin'), async (req, r
   const { password } = req.body ?? {};
   try {
     if (typeof password !== 'string' || !(await verifyPassword(req.device!.accountId!, password))) {
-      res.status(400).json({ error: 'wrong_password', message: "That isn't your password." });
+      res.status(400).json({ error: 'wrong_password', message: msg("That isn't your password.") });
       return;
     }
     const recoveryCodes = await replaceRecoveryCodes(req.device!.accountId!);
@@ -986,7 +989,7 @@ app.post('/api/admin/2fa/recovery', requireAdmin, meter('signin'), async (req, r
     res.json({ recoveryCodes });
   } catch (error) {
     logFailure('2fa recovery', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not do that just now.') });
   }
 });
 
@@ -1011,13 +1014,13 @@ app.get('/api/admin/overview', requireAdmin, async (_req, res) => {
     });
   } catch (error) {
     logFailure('admin overview', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read that just now.') });
   }
 });
 
 app.post('/api/admin/test-mail', requireAdmin, async (req, res) => {
   if (!mailReady()) {
-    res.status(503).json({ error: 'no_mail', message: 'SQUISH_MAIL_WEBHOOK is not set, so there is nothing to test yet.' });
+    res.status(503).json({ error: 'no_mail', message: msg('SQUISH_MAIL_WEBHOOK is not set, so there is nothing to test yet.') });
     return;
   }
   const to = await adminEmail(req.device!);
@@ -1049,7 +1052,7 @@ app.get('/api/admin/emails', requireAdmin, async (_req, res) => {
     res.json({ emails: await listWording() });
   } catch (error) {
     logFailure('admin emails', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not read those just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read those just now.') });
   }
 });
 
@@ -1075,7 +1078,7 @@ app.put('/api/admin/emails/:key', requireAdmin, async (req, res) => {
   const key = String(req.params.key);
   const wording = wordingFrom(req.body);
   if (!isEmailKey(key) || !wording) {
-    res.status(400).json({ error: 'missing', message: 'A subject and a body, please.' });
+    res.status(400).json({ error: 'missing', message: msg('A subject and a body, please.') });
     return;
   }
   try {
@@ -1087,7 +1090,7 @@ app.put('/api/admin/emails/:key', requireAdmin, async (req, res) => {
     res.json({ saved: true });
   } catch (error) {
     logFailure('admin email save', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
 
@@ -1102,7 +1105,7 @@ app.delete('/api/admin/emails/:key', requireAdmin, async (req, res) => {
     res.json({ reset: true });
   } catch (error) {
     logFailure('admin email reset', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not do that just now.') });
   }
 });
 
@@ -1119,7 +1122,7 @@ app.post('/api/admin/emails/:key/test', requireAdmin, async (req, res) => {
     return;
   }
   if (!mailReady()) {
-    res.status(503).json({ error: 'no_mail', message: 'Email is not set up yet, so there is nothing to send with.' });
+    res.status(503).json({ error: 'no_mail', message: msg('Email is not set up yet, so there is nothing to send with.') });
     return;
   }
   const definition = EMAILS[key];
@@ -1145,18 +1148,18 @@ app.get('/api/admin/people', requireAdmin, async (req, res) => {
     res.json({ people: await people(search), actions: await actions() });
   } catch (error) {
     logFailure('admin people', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read that just now.') });
   }
 });
 
 app.post('/api/admin/plan', requireAdmin, async (req, res) => {
   const { email, days } = req.body ?? {};
   if (typeof email !== 'string' || typeof days !== 'number' || !Number.isFinite(days)) {
-    res.status(400).json({ error: 'missing', message: 'An address and a number of days, please.' });
+    res.status(400).json({ error: 'missing', message: msg('An address and a number of days, please.') });
     return;
   }
   if (days > 3650) {
-    res.status(400).json({ error: 'too_long', message: 'Ten years is not a grant, it is a mistake.' });
+    res.status(400).json({ error: 'too_long', message: msg('Ten years is not a grant, it is a mistake.') });
     return;
   }
 
@@ -1166,10 +1169,10 @@ app.post('/api/admin/plan', requireAdmin, async (req, res) => {
       res.json(done);
       return;
     }
-    res.status(404).json({ error: 'no_account', message: 'No account on that address.' });
+    res.status(404).json({ error: 'no_account', message: msg('No account on that address.') });
   } catch (error) {
     logFailure('admin plan', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not change that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not change that just now.') });
   }
 });
 
@@ -1178,14 +1181,14 @@ app.get('/api/admin/invites', requireAdmin, async (_req, res) => {
     res.json({ invites: await listInvites(), redemptions: await redemptions(), suggestion: suggestCode() });
   } catch (error) {
     logFailure('admin invites', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not read those just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read those just now.') });
   }
 });
 
 app.post('/api/admin/invites', requireAdmin, async (req, res) => {
   const { code, days, uses, note } = req.body ?? {};
   if (typeof code !== 'string' || typeof days !== 'number') {
-    res.status(400).json({ error: 'missing', message: 'A code and a number of days, please.' });
+    res.status(400).json({ error: 'missing', message: msg('A code and a number of days, please.') });
     return;
   }
 
@@ -1208,7 +1211,7 @@ app.post('/api/admin/invites', requireAdmin, async (req, res) => {
     res.status(409).json({ error: made.reason, message: WHY[made.reason] });
   } catch (error) {
     logFailure('admin invite create', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not make that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not make that just now.') });
   }
 });
 
@@ -1216,7 +1219,7 @@ app.patch('/api/admin/invites/:code', requireAdmin, async (req, res) => {
   const code = String(req.params.code);
   const { disabled } = req.body ?? {};
   if (typeof disabled !== 'boolean') {
-    res.status(400).json({ error: 'missing', message: 'On or off?' });
+    res.status(400).json({ error: 'missing', message: msg('On or off?') });
     return;
   }
   try {
@@ -1246,21 +1249,21 @@ app.get('/api/admin/metrics', requireAdmin, async (req, res) => {
     res.json(await metrics(Number.isFinite(days) ? days : 30));
   } catch (error) {
     logFailure('admin metrics', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read that just now.') });
   }
 });
 
 app.get('/api/admin/finance', requireAdmin, async (req, res) => {
   const month = req.query.month === undefined ? thisMonth() : req.query.month;
   if (!isMonth(month)) {
-    res.status(400).json({ error: 'bad_month', message: 'A month, as 2026-09.' });
+    res.status(400).json({ error: 'bad_month', message: msg('A month, as 2026-09.') });
     return;
   }
   try {
     res.json(await finance(month));
   } catch (error) {
     logFailure('admin finance', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not read that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read that just now.') });
   }
 });
 
@@ -1284,7 +1287,7 @@ app.put('/api/admin/settings', requireAdmin, async (req, res) => {
     res.json(saved.settings);
   } catch (error) {
     logFailure('admin settings save', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
 
@@ -1305,7 +1308,7 @@ app.post('/api/admin/fixed-costs', requireAdmin, async (req, res) => {
     res.json({ saved: true });
   } catch (error) {
     logFailure('admin cost add', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
 
@@ -1324,7 +1327,7 @@ app.patch('/api/admin/fixed-costs/:id', requireAdmin, async (req, res) => {
     res.status(found ? 200 : 404).json(found ? { saved: true } : { error: 'not_found' });
   } catch (error) {
     logFailure('admin cost update', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
 
@@ -1381,7 +1384,7 @@ const squadRoute =
       await answerSquad(req, res);
     } catch (error) {
       logFailure('squad', error);
-      res.status(503).json({ error: 'unavailable', message: 'Could not reach your squad just now.' });
+      res.status(503).json({ error: 'unavailable', message: msg('Could not reach your squad just now.') });
     }
   };
 
@@ -1390,7 +1393,7 @@ app.get('/api/squad', requireAccount, async (req, res) => {
     await answerSquad(req, res);
   } catch (error) {
     logFailure('squad', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not reach your squad just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not reach your squad just now.') });
   }
 });
 app.post('/api/squad', requireAccount, meter('signin'), squadRoute((id, body) => createSquad(id, body.name, body.displayName)));
@@ -1416,7 +1419,7 @@ app.get('/api/friends', requireAccount, async (req, res) => {
     res.set('Cache-Control', 'no-store').json({ ...view, link: `${referralBase(req)}${view.code}` });
   } catch (error) {
     logFailure('friends', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not fetch your invites just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not fetch your invites just now.') });
   }
 });
 
@@ -1446,7 +1449,7 @@ app.get('/api/admin/affiliates', requireAdmin, async (req, res) => {
     res.json({ affiliates: await listAffiliates(), payouts: await payouts(), linkBase: referralBase(req) });
   } catch (error) {
     logFailure('admin affiliates', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not read those just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read those just now.') });
   }
 });
 
@@ -1458,7 +1461,7 @@ app.post('/api/admin/affiliates', requireAdmin, async (req, res) => {
   }
   try {
     if (await emailTaken(input.email)) {
-      res.status(409).json({ error: 'taken', message: 'Another partner already has that email address — each one signs in to one page.' });
+      res.status(409).json({ error: 'taken', message: msg('Another partner already has that email address — each one signs in to one page.') });
       return;
     }
     const made = await createAffiliate(input);
@@ -1470,7 +1473,7 @@ app.post('/api/admin/affiliates', requireAdmin, async (req, res) => {
     res.json({ id: made.id });
   } catch (error) {
     logFailure('admin affiliate create', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
 
@@ -1490,7 +1493,7 @@ app.patch('/api/admin/affiliates/:id', requireAdmin, async (req, res) => {
   try {
     const id = String(req.params.id);
     if ('email' in changes && (await emailTaken(changes.email ?? null, id))) {
-      res.status(409).json({ error: 'taken', message: 'Another partner already has that email address — each one signs in to one page.' });
+      res.status(409).json({ error: 'taken', message: msg('Another partner already has that email address — each one signs in to one page.') });
       return;
     }
     const before = (await listAffiliates(id))[0];
@@ -1511,7 +1514,7 @@ app.patch('/api/admin/affiliates/:id', requireAdmin, async (req, res) => {
     res.status(found ? 200 : 404).json(found ? { saved: true } : { error: 'not_found' });
   } catch (error) {
     logFailure('admin affiliate update', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
 
@@ -1519,7 +1522,7 @@ app.post('/api/admin/affiliates/:id/payouts', requireAdmin, async (req, res) => 
   const { pounds, note } = req.body ?? {};
   const pence = Math.round(Number(pounds) * 100);
   if (!Number.isFinite(pence) || pence <= 0 || pence > 10_000_000) {
-    res.status(400).json({ error: 'bad_amount', message: 'How much was paid, in pounds?' });
+    res.status(400).json({ error: 'bad_amount', message: msg('How much was paid, in pounds?') });
     return;
   }
   try {
@@ -1529,7 +1532,7 @@ app.post('/api/admin/affiliates/:id/payouts', requireAdmin, async (req, res) => 
     res.status(done ? 200 : 404).json(done ? { saved: true } : { error: 'not_found' });
   } catch (error) {
     logFailure('admin payout', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not save that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
 
@@ -1553,7 +1556,7 @@ app.post('/api/admin/affiliates/:id/portal-link', requireAdmin, async (req, res)
     res.json(done);
   } catch (error) {
     logFailure('partner link', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not make a link just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not make a link just now.') });
   }
 });
 
@@ -1575,7 +1578,7 @@ function partnerLimit(req: Request, res: Response, next: NextFunction): void {
   }
   entry.count += 1;
   if (entry.count > 20) {
-    res.status(429).json({ error: 'rate_limited', message: 'That is a lot of tries. Give it an hour.' });
+    res.status(429).json({ error: 'rate_limited', message: msg('That is a lot of tries. Give it an hour.') });
     return;
   }
   next();
@@ -1589,11 +1592,11 @@ const partnerSession = (req: Request): string | undefined => {
 app.post('/api/partner/link', partnerLimit, async (req, res) => {
   const { email } = req.body ?? {};
   if (typeof email !== 'string' || !email.includes('@')) {
-    res.status(400).json({ error: 'missing', message: 'Your email address, please.' });
+    res.status(400).json({ error: 'missing', message: msg('Your email address, please.') });
     return;
   }
   if (!hasDatabase()) {
-    res.status(503).json({ error: 'unavailable', message: 'Partner pages are not available here.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Partner pages are not available here.') });
     return;
   }
   try {
@@ -1609,13 +1612,13 @@ app.post('/api/partner/claim', partnerLimit, async (req, res) => {
   try {
     const session = await claimPartnerLink(req.body?.token);
     if (!session) {
-      res.status(401).json({ error: 'bad_link', message: 'That link has been used or has run out. Ask for a new one below.' });
+      res.status(401).json({ error: 'bad_link', message: msg('That link has been used or has run out. Ask for a new one below.') });
       return;
     }
     res.json({ session });
   } catch (error) {
     logFailure('partner claim', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not sign you in just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not sign you in just now.') });
   }
 });
 
@@ -1630,7 +1633,7 @@ app.get('/api/partner/me', async (req, res) => {
     res.set('Cache-Control', 'no-store').json({ ...view, link: `${referralBase(req)}${view.code}` });
   } catch (error) {
     logFailure('partner page', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not load your figures just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not load your figures just now.') });
   }
 });
 
@@ -1653,7 +1656,7 @@ app.post('/api/partner/signout', async (req, res) => {
 app.post('/api/invite', requireAccount, meter('invite'), async (req, res) => {
   const { code } = req.body ?? {};
   if (typeof code !== 'string' || !code.trim()) {
-    res.status(400).json({ error: 'missing', message: 'Which code?' });
+    res.status(400).json({ error: 'missing', message: msg('Which code?') });
     return;
   }
 
@@ -1674,7 +1677,7 @@ app.post('/api/invite', requireAccount, meter('invite'), async (req, res) => {
     });
   } catch (error) {
     logFailure('invite', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not check that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not check that just now.') });
   }
 });
 
@@ -1687,7 +1690,7 @@ app.post('/api/invite', requireAccount, meter('invite'), async (req, res) => {
 app.post('/api/account/reset', requireDevice, meter('reset'), async (req, res) => {
   const { email } = req.body ?? {};
   if (typeof email !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'Which address?' });
+    res.status(400).json({ error: 'missing', message: msg('Which address?') });
     return;
   }
 
@@ -1704,7 +1707,7 @@ app.post('/api/account/reset', requireDevice, meter('reset'), async (req, res) =
 app.post('/api/account/reset/confirm', requireDevice, meter('reset'), async (req, res) => {
   const { token, password } = req.body ?? {};
   if (typeof token !== 'string' || typeof password !== 'string') {
-    res.status(400).json({ error: 'missing', message: 'The link and a new password, please.' });
+    res.status(400).json({ error: 'missing', message: msg('The link and a new password, please.') });
     return;
   }
 
@@ -1727,7 +1730,7 @@ app.post('/api/account/reset/confirm', requireDevice, meter('reset'), async (req
     });
   } catch (error) {
     logFailure('reset', error);
-    res.status(503).json({ error: 'unavailable', message: 'Could not do that just now.' });
+    res.status(503).json({ error: 'unavailable', message: msg('Could not do that just now.') });
   }
 });
 
@@ -1744,6 +1747,27 @@ function publicOrigin(req?: Request): string {
   if (configured) return configured.replace(/\/$/, '');
   return req ? `${req.protocol}://${req.get('host') ?? 'localhost'}` : 'https://app.squish.online';
 }
+
+/*
+ * The interface in another language: everything translated so far, and a
+ * nudge to translate the rest. No device needed — the words of the app are
+ * the same for everybody and say nothing about anyone. Cached briefly by the
+ * browser; the app keeps its own copy too.
+ */
+if (hasCredentials()) useTranslator(translateBatch);
+app.get('/api/i18n/:language', async (req, res) => {
+  const { language } = req.params;
+  if (!isTranslatable(language)) {
+    res.status(404).json({ error: msg('Not a language Squish speaks.') });
+    return;
+  }
+  try {
+    const pack = await languagePack(language);
+    res.set('Cache-Control', pack.complete ? 'public, max-age=300' : 'no-store').json(pack);
+  } catch {
+    res.status(503).json({ error: msg('Translations are not available right now.') });
+  }
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -1767,7 +1791,7 @@ const inRange = (value: unknown, min: number, max: number): number | undefined =
 app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
   const { image, mediaType, slot, hint, mode, crockery } = req.body ?? {};
   if (typeof image !== 'string' || image.length < 32) {
-    res.status(400).json({ error: 'An image is required.' });
+    res.status(400).json({ error: msg('An image is required.') });
     return;
   }
 
@@ -1781,7 +1805,7 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
   if (!hasCredentials()) {
     // A made-up plate is a passable demo; made-up figures off a packet are a lie.
     if (label) {
-      res.status(503).json({ error: 'Squish is offline, so a label cannot be read. Search for it or add it by hand.' });
+      res.status(503).json({ error: msg('Squish is offline, so a label cannot be read. Search for it or add it by hand.') });
       return;
     }
     res.json(demoEstimateFromPhoto(data.slice(0, 256), mealSlot));
@@ -1808,7 +1832,7 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
 app.post('/api/analyse/text', meter('photo'), async (req, res) => {
   const { description, slot } = req.body ?? {};
   if (typeof description !== 'string' || !description.trim()) {
-    res.status(400).json({ error: 'A description is required.' });
+    res.status(400).json({ error: msg('A description is required.') });
     return;
   }
   const mealSlot = asSlot(slot);
@@ -1840,7 +1864,7 @@ app.get('/api/barcode/:code', async (req, res) => {
       return;
     }
     logFailure('barcode lookup', error);
-    res.status(502).json({ error: 'The food database is having a moment. Try again shortly.' });
+    res.status(502).json({ error: msg('The food database is having a moment. Try again shortly.') });
   }
 });
 
@@ -1871,7 +1895,7 @@ async function meterQuestion(req: Request, res: Response, next: NextFunction): P
     return;
   }
   if (rounds > MAX_TOOL_ROUNDS + 1) {
-    res.status(400).json({ error: 'That is a lot of looking. Ask again from the start.' });
+    res.status(400).json({ error: msg('That is a lot of looking. Ask again from the start.') });
     return;
   }
   if (!req.device) {
@@ -1897,11 +1921,11 @@ app.post('/api/chat', meterQuestion, async (req, res) => {
 
   const messages = cleanMessages(turns);
   if (!messages) {
-    res.status(400).json({ error: 'Ask me something.' });
+    res.status(400).json({ error: msg('Ask me something.') });
     return;
   }
   if (!hasCredentials()) {
-    res.status(503).json({ error: 'Squish needs the AI to answer questions, and no key is configured here.' });
+    res.status(503).json({ error: msg('Squish needs the AI to answer questions, and no key is configured here.') });
     return;
   }
 
@@ -1931,7 +1955,7 @@ app.post('/api/chat', meterQuestion, async (req, res) => {
     res.json(wire);
   } catch (error) {
     logFailure('chat', error);
-    res.status(502).json({ error: 'I could not think of an answer just then. Try again in a moment.' });
+    res.status(502).json({ error: msg('I could not think of an answer just then. Try again in a moment.') });
   }
 });
 
@@ -1946,11 +1970,11 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
   const { url, slot } = req.body ?? {};
 
   if (typeof url !== 'string' || !url.trim()) {
-    res.status(400).json({ error: 'Paste the address of a recipe page.' });
+    res.status(400).json({ error: msg('Paste the address of a recipe page.') });
     return;
   }
   if (!hasCredentials()) {
-    res.status(503).json({ error: 'Reading a recipe needs the AI, and no key is configured on this server.' });
+    res.status(503).json({ error: msg('Reading a recipe needs the AI, and no key is configured on this server.') });
     return;
   }
 
@@ -1963,7 +1987,7 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
       return;
     }
     logFailure('recipe import', error);
-    res.status(502).json({ error: 'That recipe could not be read. Try another page.' });
+    res.status(502).json({ error: msg('That recipe could not be read. Try another page.') });
   }
 });
 
@@ -2006,11 +2030,11 @@ async function weekPlanCap(req: Request, res: Response, next: NextFunction): Pro
 app.post('/api/weekplan', weekPlanCap, meter('chat'), async (req, res) => {
   const request = cleanWeekRequest(req.body);
   if (!request) {
-    res.status(400).json({ error: 'Your targets are needed to plan a week.' });
+    res.status(400).json({ error: msg('Your targets are needed to plan a week.') });
     return;
   }
   if (!hasCredentials()) {
-    res.status(503).json({ error: 'Planning a week needs the AI, and no key is configured on this server.' });
+    res.status(503).json({ error: msg('Planning a week needs the AI, and no key is configured on this server.') });
     return;
   }
   try {
@@ -2023,7 +2047,7 @@ app.post('/api/weekplan', weekPlanCap, meter('chat'), async (req, res) => {
       return;
     }
     logFailure('weekplan', error);
-    res.status(502).json({ error: 'The nutritionist could not plan that just now. Try again in a moment.' });
+    res.status(502).json({ error: msg('The nutritionist could not plan that just now. Try again in a moment.') });
   }
 });
 
@@ -2032,17 +2056,17 @@ app.post('/api/analyse/refine', meter('photo'), async (req, res) => {
   const { analysis, instruction, slot } = req.body ?? {};
 
   if (typeof instruction !== 'string' || !instruction.trim()) {
-    res.status(400).json({ error: 'Tell me what to change.' });
+    res.status(400).json({ error: msg('Tell me what to change.') });
     return;
   }
   if (!analysis || !Array.isArray(analysis.items)) {
-    res.status(400).json({ error: 'There is no meal to correct.' });
+    res.status(400).json({ error: msg('There is no meal to correct.') });
     return;
   }
   // Without a key there is nothing to re-read the meal with, and silently
   // handing back the same analysis would look like the correction was ignored.
   if (!hasCredentials()) {
-    res.status(503).json({ error: 'Squish is offline, so this one needs editing by hand.' });
+    res.status(503).json({ error: msg('Squish is offline, so this one needs editing by hand.') });
     return;
   }
 
@@ -2050,7 +2074,7 @@ app.post('/api/analyse/refine', meter('photo'), async (req, res) => {
     res.json(await refineAnalysis(analysis as AnalysisResult, instruction.trim(), asSlot(slot)));
   } catch (error) {
     logFailure('refinement', error);
-    res.status(502).json({ error: 'I could not work that out — try editing it by hand.' });
+    res.status(502).json({ error: msg('I could not work that out — try editing it by hand.') });
   }
 });
 
@@ -2131,6 +2155,8 @@ if (SERVE_APP) {
 
 app.listen(PORT, () => {
   console.log(`🫧  Squish on http://localhost:${PORT}`);
+  // New interface strings, into every language, before most people open the app.
+  if (hasCredentials() && process.env.SQUISH_I18N_WARM !== 'off') setTimeout(() => void warmAll(), 5000);
   const source = credentialSource();
   console.log(
     hasCredentials()

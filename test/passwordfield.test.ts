@@ -22,7 +22,7 @@ test('the toggle cannot submit the form it sits in', () => {
 });
 
 test('it says which state it is in, not just which picture it shows', () => {
-  assert.match(field, /aria-label=\{shown \? 'Hide password' : 'Show password'\}/);
+  assert.match(field, /aria-label=\{shown \? t\('Hide password'\) : t\('Show password'\)\}/);
   assert.match(field, /aria-pressed=\{shown\}/, 'a screen reader should not have to press it to find out');
 });
 

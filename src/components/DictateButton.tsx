@@ -4,6 +4,7 @@ import { speechSupported, startDictation } from '../lib/speech';
 import { currentRegion } from '../lib/region';
 import { currentLanguage, speechLocale } from '../lib/language';
 import './dictate.css';
+import { t } from '../lib/i18n';
 
 interface Props {
   /** Given the dictated words, to append or replace as the caller sees fit. */
@@ -24,7 +25,7 @@ interface Props {
  * It renders nothing at all where the browser has no speech recognition, so
  * the caller can drop it in beside a text box without a fallback of its own.
  */
-export default function DictateButton({ onText, onError, label = 'your meal' }: Props) {
+export default function DictateButton({ onText, onError, label = t('your meal') }: Props) {
   const [supported] = useState(speechSupported);
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState('');
@@ -60,7 +61,7 @@ export default function DictateButton({ onText, onError, label = 'your meal' }: 
     }, speechLocale(currentLanguage().id, currentRegion().id, currentRegion().locale));
 
     if (!started) {
-      onError?.('Dictation would not start. Typing still works.');
+      onError?.(t('Dictation would not start. Typing still works.'));
       return;
     }
     session.current = started;
@@ -74,22 +75,22 @@ export default function DictateButton({ onText, onError, label = 'your meal' }: 
         className={`btn btn--soft dictate-btn ${listening ? 'is-live' : ''}`}
         onClick={listening ? stop : start}
         aria-pressed={listening}
-        aria-label={listening ? 'Stop dictating' : `Dictate ${label}`}
+        aria-label={listening ? t('Stop dictating') : t('Dictate {what}', { what: label })}
         title={
           listening
-            ? 'Stop dictating'
-            : 'Say it instead of typing. Your browser handles the speech, and some browsers send it to their own servers to do it.'
+            ? t('Stop dictating')
+            : t('Say it instead of typing. Your browser handles the speech, and some browsers send it to their own servers to do it.')
         }
       >
         {listening ? <StopIcon size={18} /> : <MicIcon size={18} />}
-        {listening ? 'Stop' : 'Say it'}
+        {listening ? t('Stop') : t('Say it')}
       </button>
 
       {listening && (
         // aria-live, because the whole point is that they are not looking at
         // the screen while they talk.
         <p className="tiny muted dictate-heard" aria-live="polite">
-          {heard || 'Listening…'}
+          {heard || t('Listening…')}
         </p>
       )}
     </div>

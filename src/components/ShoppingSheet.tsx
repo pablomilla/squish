@@ -5,6 +5,7 @@ import { useSquish } from '../store/useSquish';
 import { addDays, isoDate } from '../lib/date';
 import { AISLES, listAsText, shoppingList } from '../lib/shopping';
 import './shopping.css';
+import { plural, t } from '../lib/i18n';
 
 type Range = '3' | '7';
 
@@ -36,7 +37,7 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
     const text = listAsText(lines, shopping.extras, ticked);
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Shopping list', text });
+        await navigator.share({ title: t('Shopping list'), text });
         return;
       }
     } catch (error) {
@@ -44,28 +45,31 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
     }
     try {
       await navigator.clipboard.writeText(text);
-      toast('Shopping list copied', '📋');
+      toast(t('Shopping list copied'), '📋');
     } catch {
-      toast('Could not copy the list on this device', '😕');
+      toast(t('Could not copy the list on this device'), '😕');
     }
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title="Shopping list">
+    <Sheet open={open} onClose={onClose} title={t('Shopping list')}>
       <div className="shopping">
         <Segmented<Range>
-          label="How far ahead"
+          label={t('How far ahead')}
           value={range}
           onChange={setRange}
           options={[
-            { value: '3', label: 'Next 3 days' },
-            { value: '7', label: 'Next 7 days' },
+            { value: '3', label: t('Next {n} days', { n: 3 }) },
+            { value: '7', label: t('Next {n} days', { n: 7 }) },
           ]}
         />
         <p className="tiny muted">
           {planned
-            ? `From ${planned} planned meal${planned === 1 ? '' : 's'}. Amounts are what the plans add up to — check the cupboard first.`
-            : 'Nothing planned for these days yet. Plan meals in your diary and their food appears here.'}
+            ? plural(planned, {
+                one: 'From {n} planned meal. Amounts are what the plans add up to — check the cupboard first.',
+                other: 'From {n} planned meals. Amounts are what the plans add up to — check the cupboard first.',
+              })
+            : t('Nothing planned for these days yet. Plan meals in your diary and their food appears here.')}
         </p>
 
         {AISLES.map((aisle) => {
@@ -97,7 +101,7 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
         })}
 
         <div className="shopping-aisle">
-          <h4 className="tiny">Also</h4>
+          <h4 className="tiny">{t('Also')}</h4>
           {shopping.extras.length > 0 && (
             <ul>
               {shopping.extras.map((extra) => {
@@ -109,7 +113,7 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
                       <input type="checkbox" checked={done} onChange={() => toggleShoppingTick(key)} />
                       <span className="shopping-name">{extra.name}</span>
                     </label>
-                    <button type="button" className="icon-btn" aria-label={`Remove ${extra.name}`} onClick={() => removeShoppingExtra(extra.id)}>
+                    <button type="button" className="icon-btn" aria-label={t('Remove {item}', { item: extra.name })} onClick={() => removeShoppingExtra(extra.id)}>
                       <CloseIcon size={15} />
                     </button>
                   </li>
@@ -125,16 +129,16 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
               setAdding('');
             }}
           >
-            <input className="input" value={adding} maxLength={60} placeholder="Add something else…" aria-label="Add to the list" onChange={(e) => setAdding(e.target.value)} />
+            <input className="input" value={adding} maxLength={60} placeholder={t('Add something else…')} aria-label={t('Add to the list')} onChange={(e) => setAdding(e.target.value)} />
             <button type="submit" className="btn btn--sm btn--soft" disabled={!adding.trim()}>
-              Add
+              {t('Add')}
             </button>
           </form>
         </div>
 
         <div className="shopping-actions">
           <button type="button" className="btn btn--block" disabled={left === 0} onClick={() => void share()}>
-            Share the list{left ? ` (${left})` : ''}
+            {left ? t('Share the list ({n})', { n: left }) : t('Share the list')}
           </button>
           {shopping.ticked.length > 0 && (
             <button
@@ -142,10 +146,10 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
               className="btn--quiet small"
               onClick={() => {
                 clearShoppingTicked();
-                toast('Ticked items cleared', '🧺');
+                toast(t('Ticked items cleared'), '🧺');
               }}
             >
-              Done shopping — clear ticked
+              {t('Done shopping — clear ticked')}
             </button>
           )}
         </div>

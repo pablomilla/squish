@@ -12,6 +12,8 @@
  *
  * Shared by the app (to show them) and the server (to accept only these).
  */
+import { msg, t } from './i18n';
+
 export interface Cheer {
   id: string;
   emoji: string;
@@ -19,44 +21,46 @@ export interface Cheer {
 }
 
 export const CHEERS: Cheer[] = [
-  { id: 'streak', emoji: '🎉', words: 'Nice streak!' },
-  { id: 'got-this', emoji: '💪', words: "You've got this" },
-  { id: 'proud', emoji: '🌟', words: 'Proud of you' },
-  { id: 'keep-going', emoji: '🙌', words: 'Keep it up' },
-  { id: 'veg', emoji: '🥦', words: 'Veg hero' },
-  { id: 'fuelled', emoji: '🥗', words: 'Fuelled up today' },
-  { id: 'water', emoji: '💧', words: "Don't forget your water" },
-  { id: 'on-fire', emoji: '🔥', words: 'On fire this week' },
-  { id: 'smashed', emoji: '🥳', words: 'Goal smashed!' },
-  { id: 'small-steps', emoji: '🌱', words: 'Small steps count' },
-  { id: 'missed-you', emoji: '👋', words: 'Missed you today' },
-  { id: 'new-day', emoji: '🌅', words: "Tomorrow's a fresh start" },
-  { id: 'hug', emoji: '🤗', words: 'Sending a hug' },
-  { id: 'great-day', emoji: '☀️', words: 'Have a great day' },
-  { id: 'rest', emoji: '🌙', words: 'Rest well' },
-  { id: 'squad-love', emoji: '💜', words: 'Squad love' },
+  { id: 'streak', emoji: '🎉', words: t('Nice streak!') },
+  { id: 'got-this', emoji: '💪', words: t("You've got this") },
+  { id: 'proud', emoji: '🌟', words: t('Proud of you') },
+  { id: 'keep-going', emoji: '🙌', words: t('Keep it up') },
+  { id: 'veg', emoji: '🥦', words: t('Veg hero') },
+  { id: 'fuelled', emoji: '🥗', words: t('Fuelled up today') },
+  { id: 'water', emoji: '💧', words: t("Don't forget your water") },
+  { id: 'on-fire', emoji: '🔥', words: t('On fire this week') },
+  { id: 'smashed', emoji: '🥳', words: t('Goal smashed!') },
+  { id: 'small-steps', emoji: '🌱', words: t('Small steps count') },
+  { id: 'missed-you', emoji: '👋', words: t('Missed you today') },
+  { id: 'new-day', emoji: '🌅', words: t("Tomorrow's a fresh start") },
+  { id: 'hug', emoji: '🤗', words: t('Sending a hug') },
+  { id: 'great-day', emoji: '☀️', words: t('Have a great day') },
+  { id: 'rest', emoji: '🌙', words: t('Rest well') },
+  { id: 'squad-love', emoji: '💜', words: t('Squad love') },
 ];
 
 export const cheerById = (id: string): Cheer | undefined => CHEERS.find((cheer) => cheer.id === id);
 
 /**
  * Squad names, picked rather than typed, for the same reason. Friendly,
- * food-ish, and never about bodies.
+ * food-ish, and never about bodies. Stored and checked in English, so a
+ * squad keeps its name whatever language each member reads it in: shown with
+ * `t(name)`.
  */
 export const SQUAD_NAMES = [
-  'The Avocados',
-  'Team Broccoli',
-  'The Blueberries',
-  'Sweet Peas',
-  'The Crunchy Carrots',
-  'Lentil Legends',
-  'The Smoothie Crew',
-  'Team Sunshine',
-  'The Porridge Club',
-  'Salad Days',
-  'The Chickpeas',
-  'Team Tangerine',
-] as const;
+  msg('The Avocados'),
+  msg('Team Broccoli'),
+  msg('The Blueberries'),
+  msg('Sweet Peas'),
+  msg('The Crunchy Carrots'),
+  msg('Lentil Legends'),
+  msg('The Smoothie Crew'),
+  msg('Team Sunshine'),
+  msg('The Porridge Club'),
+  msg('Salad Days'),
+  msg('The Chickpeas'),
+  msg('Team Tangerine'),
+];
 
 /** How many days each member aims to log in a week, for the squad goal. */
 export const SQUAD_WEEK_GOAL = 5;

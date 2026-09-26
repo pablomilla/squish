@@ -281,3 +281,11 @@ a { color: var(--brand-ink); }
 
 /* Holds the space while a screen arrives, so nothing jumps when it does. */
 .screen-loading { min-height: 60vh; }
+
+/* ---------- Right to left (Arabic, Urdu) ----------
+   The page's dir flips the flow of every flex row and the alignment of text on
+   its own; these are the few things placed by left and right that must follow. */
+[dir='rtl'] .input-suffix span { right: auto; left: 14px; }
+[dir='rtl'] .input--select { padding-right: 14px; padding-left: 38px; background-position: 15px 50%, 20px 50%; }
+[dir='rtl'] .speech::after { left: auto; right: 26px; }
+[dir='rtl'] .speech--right::after { right: auto; left: -9px; transform: rotate(135deg); }
