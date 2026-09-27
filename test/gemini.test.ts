@@ -97,6 +97,11 @@ test('a refusal, a cut-off answer or an error is a failed attempt, with the reas
   answer = { status: 400, body: { error: { message: 'API key not valid.' } } };
   await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /Gemini 400: API key not valid/);
   assert.equal(priceGemini('gemini-9-imaginary', { promptTokenCount: 1 }), null, 'no price on file: no made-up cost');
+  const usage = { promptTokenCount: 2000, candidatesTokenCount: 600, thoughtsTokenCount: 400 };
+  const cost = (at: string) => priceGemini('gemini-3.8-flash', usage, new Date(at));
+  assert.ok(Math.abs(cost('2026-09-27T12:00:00Z')! - (2000 * 0.75 + 1000 * 3.75) / 1e6) < 1e-12, '3.8 Flash at its introductory price');
+  assert.ok(Math.abs(cost('2026-12-31T23:59:00Z')! - (2000 * 0.75 + 1000 * 3.75) / 1e6) < 1e-12, 'up to the last day of 2026');
+  assert.ok(Math.abs(cost('2027-01-01T00:00:00Z')! - (2000 * 1.5 + 1000 * 7.5) / 1e6) < 1e-12, 'and the standard price from New Year, by itself');
 });
 
 test('nothing in the app sends a photo to Google except an admin’s own, through the trial switch', () => {

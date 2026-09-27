@@ -54,19 +54,40 @@ export const isGeminiModel = (model: string): boolean => model.startsWith('gemin
  */
 export const DEFAULT_GEMINI = 'gemini-3.8-flash';
 
+/** USD per million tokens. Images count as input; thinking is billed as output. */
+export interface GeminiRate {
+  input: number;
+  output: number;
+  /** The last day (UTC) this rate applies; absent for the one that runs on. */
+  until?: string;
+}
+
 /**
- * USD per million tokens, as Google published them in 2025 — prices move,
- * so check https://ai.google.dev/pricing before trusting the cost column.
- * The newer models are not here yet: add them from that page, and until
- * then they are measured and logged with no cost.
- * Images are billed as input tokens; thinking is billed as output. A model
- * missing from here is benchmarked but shows no cost.
+ * Prices, oldest first within a model, so a price that changes on a known
+ * date changes here by itself. Prices move: check
+ * https://ai.google.dev/pricing, and a model missing from here is measured
+ * and logged with no cost rather than a guessed one.
+ *
+ * - gemini-2.5-*: as Google published them in 2025.
+ * - gemini-3.8-flash: an introductory $0.75 / $3.75 until 31 December 2026,
+ *   then $1.50 / $7.50 — as reported in September 2026 (OpenRouter and
+ *   others); confirm against Google's own page.
  */
-export const GEMINI_PRICING: Record<string, { input: number; output: number }> = {
-  'gemini-2.5-flash': { input: 0.3, output: 2.5 },
-  'gemini-2.5-flash-lite': { input: 0.1, output: 0.4 },
-  'gemini-2.5-pro': { input: 1.25, output: 10 },
+export const GEMINI_PRICING: Record<string, GeminiRate[]> = {
+  'gemini-3.8-flash': [
+    { input: 0.75, output: 3.75, until: '2026-12-31' },
+    { input: 1.5, output: 7.5 },
+  ],
+  'gemini-2.5-flash': [{ input: 0.3, output: 2.5 }],
+  'gemini-2.5-flash-lite': [{ input: 0.1, output: 0.4 }],
+  'gemini-2.5-pro': [{ input: 1.25, output: 10 }],
 };
+
+/** The rate for a model on a day: the first whose `until` has not passed, or none on file. */
+export function geminiRate(model: string, at = new Date()): GeminiRate | null {
+  const day = at.toISOString().slice(0, 10);
+  return GEMINI_PRICING[model]?.find((rate) => !rate.until || day <= rate.until) ?? null;
+}
 
 /**
  * MEAL_SCHEMA in Gemini's dialect: an OpenAPI subset with upper-case type
@@ -102,8 +123,8 @@ interface GeminiResponse {
 }
 
 /** What a call cost, in dollars: thinking counted with the answer, as it is billed. */
-export function priceGemini(model: string, usage: GeminiResponse['usageMetadata']): number | null {
-  const rate = GEMINI_PRICING[model];
+export function priceGemini(model: string, usage: GeminiResponse['usageMetadata'], at = new Date()): number | null {
+  const rate = geminiRate(model, at);
   if (!rate || !usage) return null;
   const input = usage.promptTokenCount ?? 0;
   const output = (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0);

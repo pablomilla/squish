@@ -433,7 +433,7 @@ async function main(): Promise<void> {
     console.log(dim(`  No price on file for ${unpriced.join(', ')}: accuracy is measured, cost shows as $0.`));
   }
   if (models.some(isGeminiModel)) {
-    console.log(dim('  Gemini costs use Google\'s 2025 prices (server/gemini.ts) — check ai.google.dev/pricing.'));
+    console.log(dim('  Gemini costs use the prices in server/gemini.ts (3.8 Flash at its 2026 introductory rate) — check ai.google.dev/pricing.'));
   }
   const runs = Math.max(1, Number(arg('runs') ?? 1));
   const subscription = Number(arg('sub') ?? 6.99);

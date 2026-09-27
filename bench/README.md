@@ -99,8 +99,9 @@ table is the model.
    `--models claude-opus-5,claude-sonnet-5,gemini-3.8-flash`, and check Google's model
    list for anything newer.
 
-The cost column uses Google's prices as published in 2025 (`GEMINI_PRICING` in `server/gemini.ts`);
-check ai.google.dev/pricing and update them if they have moved. A Gemini model with no price there is
+The cost column uses the prices in `GEMINI_PRICING` (`server/gemini.ts`): `gemini-3.8-flash` at its
+introductory $0.75 / $3.75 per million tokens until the end of 2026, and $1.50 / $7.50 from 1 January
+2027, switching by itself. Check ai.google.dev/pricing and update them if they have moved. A Gemini model with no price there is
 still measured for accuracy, and its cost shows as $0.
 
 **This is the benchmark only.** Nothing in the app sends anything to Google, and a test makes sure it
