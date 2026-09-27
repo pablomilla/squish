@@ -52,8 +52,12 @@ export const DEAD_MS = 60_000;
 const SWEEP_MS = 15_000;
 /** Tries in all, the first included: enough for a deploy or two, not a loop. */
 export const MAX_ATTEMPTS = 3;
-/** However it is going, a plan still not made after this is given up on. */
-export const STALE_MS = 20 * 60_000;
+/**
+ * However it is going, a plan still not made after this is given up on. Room
+ * for a slow model cut off at its ten minutes (server/routing.ts) and its
+ * backup, or for a deploy restarting a plan part-way.
+ */
+export const STALE_MS = 35 * 60_000;
 const KEEP_MS = 24 * 60 * 60_000;
 
 type Row = {

@@ -288,9 +288,9 @@ type WeekPlanJob = { status: 'working' } | { status: 'done'; plan: WeekPlan } | 
 
 const JOB_KEY = 'squish-weekplan-job';
 /** How long a remembered job is worth picking up: the server keeps it a day, but a plan is stale sooner. */
-const JOB_KEEP_MS = 30 * 60_000;
+const JOB_KEEP_MS = 40 * 60_000;
 /** How long one wait lasts before the app stops watching (the plan still arrives, for next time). */
-const JOB_WAIT_MS = 15 * 60_000;
+const JOB_WAIT_MS = 35 * 60_000;
 const JOB_POLL_MS = 3000;
 
 function rememberJob(job: string): void {

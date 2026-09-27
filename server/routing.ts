@@ -81,12 +81,13 @@ export const FEATURES: FeatureInfo[] = [
     personal: true,
     defaults: chain(TEXT, MAIN),
     // A week's worth of foods can be a long answer.
-    limit: 120,
+    limit: 240,
   },
   { id: 'recipe', label: 'Recipe imports', detail: 'One serving of a recipe from a web page.', personal: true, defaults: chain(MAIN, TEXT), limit: 75 },
   { id: 'chat', label: 'Nutritionist', detail: 'Questions to the nutritionist, and its lookups in the diary.', personal: true, defaults: chain(CHAT, TEXT), limit: 60 },
-  // A week of meals takes minutes, and nobody is watching it: generous.
-  { id: 'weekplan', label: 'Meal plans', detail: 'A week of meals from the nutritionist.', personal: true, defaults: chain(WEEK, TEXT), limit: 300 },
+  // A week of meals with reasoning can take Sonnet or Opus well over five minutes, and nobody is
+  // watching it: ten, so a slow good plan is never thrown away for a backup to start again from nothing.
+  { id: 'weekplan', label: 'Meal plans', detail: 'A week of meals from the nutritionist.', personal: true, defaults: chain(WEEK, TEXT), limit: 600 },
   { id: 'coach', label: 'Daily nudge', detail: 'The one-line note on Home.', personal: true, defaults: chain(MAIN, TEXT), limit: 20 },
   {
     id: 'translate',
