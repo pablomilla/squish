@@ -162,9 +162,12 @@ export function registerSiteStrings(): number {
 function localLinks(html: string, language: Language): string {
   return html
     .replace(/href="\/(support|404)?"/g, (_whole, page: string | undefined) => `href="/${language}/${page ?? ''}"`)
-    .replace(/href="\/privacy"/g, `href="/privacy?lang=${language}"`)
     .replace(new RegExp(`href="${APP_PLACEHOLDER.replace(/[.]/g, '\\.')}"`, 'g'), `href="${APP_PLACEHOLDER}/?lang=${language}"`);
 }
+
+/** The privacy policy's address for a page: its language, and in English its country. */
+export const privacyHref = (language: Language, region: Region): string =>
+  language === 'en' ? `/privacy?lang=en&amp;country=${region}` : `/privacy?lang=${language}`;
 
 /** The switcher in the footer: every language, each in its own name. */
 function languageLinks(current: Language, page: string): string {
@@ -311,6 +314,9 @@ async function page(
       .replace('<!--languages-->', languageLinks(language, pagePath));
     if (name !== '404') html = html.replace('</head>', `  ${alternates(pagePath)}\n</head>`);
     if (prefixed || language !== 'en') html = localLinks(html, language);
+    // The policy in the page's language, and in English its country's spelling —
+    // said outright, since the policy cannot guess from the clock as the page can.
+    html = html.replace(/href="\/privacy"/g, `href="${privacyHref(language, region)}"`);
     if (prefixed) {
       html = html.replace(/<link rel="canonical" href="([^"]*)" \/>/, (_whole, href: string) => {
         const url = new URL(href);

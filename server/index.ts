@@ -23,7 +23,7 @@ import { claimHandoff, deviceFor, registerDevice, spend, startHandoff, type Devi
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
-import { acceptLanguage, readerFromRequest, rememberReader } from './reader';
+import { acceptLanguage, acceptedTags, readerFromRequest, rememberReader } from './reader';
 import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
 import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
@@ -42,7 +42,7 @@ import {
 import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
 import { htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
 import { isLanguage } from '../src/lib/language';
-import { isRegion } from '../src/lib/region';
+import { detectRegion, isRegion } from '../src/lib/region';
 import {
   claimPartnerLink,
   emailTaken,
@@ -2151,11 +2151,15 @@ app.get('/privacy', async (req, res) => {
     res.redirect(301, query < 0 ? elsewhere : `${elsewhere}${req.originalUrl.slice(query)}`);
     return;
   }
-  // `?lang=` where a link said (the website's, an email's); else the browser's first choice.
+  // `?lang=` and `?country=` where a link said (the website's, an email's,
+  // the app's); else the browser's first choice. The country only matters in
+  // English, where the US reads it with American spelling.
   const asked = req.query.lang;
   const language = isLanguage(asked) ? asked : acceptLanguage(req.get('accept-language'));
-  if (!isLanguage(asked)) res.vary('Accept-Language');
-  const html = await privacyPage(language);
+  const country = typeof req.query.country === 'string' ? req.query.country.toUpperCase() : '';
+  const region = isRegion(country) ? country : detectRegion(acceptedTags(req.get('accept-language')));
+  if (!isLanguage(asked) || !isRegion(country)) res.vary('Accept-Language');
+  const html = await privacyPage(language, region);
   if (!html) {
     logFailure('privacy policy', new Error(`could not read docs/privacy.md from ${process.cwd()}`));
     res.status(404).type('text/plain').send('The privacy policy is missing from this deployment.');

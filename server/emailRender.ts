@@ -68,7 +68,9 @@ export function renderEmail(
   const { t } = words;
   const english = words.language === 'en';
   const urls = new Set(definition.placeholders.filter((p) => p.url).map((p) => p.name));
-  const privacy = english ? `${origin}/privacy` : `${origin}/privacy?lang=${words.language}`;
+  // In the reader's language, and in English their country's spelling (American for the US).
+  const country = words.locale.split('-')[1];
+  const privacy = english && country ? `${origin}/privacy?lang=en&country=${country}` : english ? `${origin}/privacy` : `${origin}/privacy?lang=${words.language}`;
   const why = t('You are getting this because of activity on a Squish account using this address.');
   const body = wording.body.replace(/\r\n/g, '\n').replace(/\s+$/, '');
 

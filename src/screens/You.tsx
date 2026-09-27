@@ -582,7 +582,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <p className="tiny muted" style={{ marginTop: 12 }}>
           {rich('<link>Privacy policy</link> — what is kept, where it goes, and how to get rid of it.', {}, {
             link: (text) => (
-              <a href={apiUrl('/privacy')} target="_blank" rel="noopener noreferrer">
+              <a href={apiUrl(`/privacy?lang=${languageOf(profile)}&country=${regionOf(profile)}`)} target="_blank" rel="noopener noreferrer">
                 {text}
               </a>
             ),

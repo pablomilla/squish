@@ -406,3 +406,29 @@ test('the clock is read in the head, before the page is drawn, so a reload never
   assert.match(head, /setTimeout\(function \(\) \{\n\s+root\.style\.visibility = '';/, 'and never left hidden');
   assert.ok(!html.slice(html.indexOf('</head>')).includes('prices-data'), 'once, not again in the body');
 });
+
+test('the privacy policy is American for the US, says the British counts, and is British for Canada', async () => {
+  const us = (await privacyPage('en', 'US'))!;
+  assert.match(us, /<html lang="en-US" dir="ltr">/);
+  assert.match(us, /This is the policy with American spelling\./);
+  assert.match(us, /href="\/privacy\?lang=en&amp;country=GB">British English version/);
+  const canada = (await privacyPage('en', 'CA'))!;
+  assert.match(canada, /<html lang="en-GB"/);
+  assert.doesNotMatch(canada, /This is the policy with American spelling|This is a translation, to make/);
+  assert.equal(canada, await privacyPage('en'), 'British English is the policy as written');
+  assert.doesNotMatch((await privacyPage('ko', 'US'))!, /This is the policy with American spelling/, 'another language is itself in the US');
+});
+
+test('every link to the policy says the language, and in English the country', async () => {
+  const us = await (await fetch(`${base}/`, { headers: { 'Accept-Language': 'en-US' } })).text();
+  assert.match(us, /href="\/privacy\?lang=en&amp;country=US"/);
+  const guessed = await (await fetch(`${base}/support?country=GB&guess`, { headers: { 'Accept-Language': 'en-US' } })).text();
+  assert.match(guessed, /href="\/privacy\?lang=en&amp;country=GB"/, 'the clock’s guess goes along too');
+  assert.match(await (await fetch(`${base}/ko/`)).text(), /href="\/privacy\?lang=ko"/);
+
+  const link = `${ORIGIN}/verify?token=x`;
+  const american = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'US', zone: 'America/Chicago' });
+  assert.match(american.text, /privacy\?lang=en&country=US/);
+  const british = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'GB', zone: 'Europe/London' });
+  assert.match(british.text, /privacy\?lang=en&country=GB/);
+});

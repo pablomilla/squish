@@ -126,7 +126,12 @@ start-up.
   picked from the list cannot. Every page carries the data for this, not
   only those with prices. Another language is the same in every country.
 - The email confirmation page follows the account's country the same way.
-  The privacy policy stays British: it is the text Squish is held to.
+- So does the privacy policy: American for the US, with a note at the top
+  that the British English version is the one that counts. The policy has no
+  script, so it cannot read the clock; every link to it says the language
+  and, in English, the country outright — the website's
+  (`/privacy?lang=en&country=GB`, the clock's guess included), the app's and
+  the emails'. Opened with neither, it goes by the browser's languages.
 - The screenshots are pictures of the English app.
 
 ## What it costs
