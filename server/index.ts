@@ -19,7 +19,8 @@ import { BarcodeError, lookupBarcode } from './barcode';
 import { FetchGuardError, readRecipePage } from './recipe';
 import { MAX_TOOL_ROUNDS, chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
-import { claimHandoff, deviceFor, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
+import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
+import { readJob, startJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
@@ -293,16 +294,20 @@ function meter(kind: Spend) {
       const used = await usedFor(req.device, kind, plan);
 
       if (used <= allowance) {
+        // What this request took, so a failure further on can give back exactly that — and only that.
+        res.locals.counted = kind;
         // Everything downstream of here runs with somewhere to put its bill.
         billedTo(req.device.id, kind, next);
         return;
       }
 
+      // Counted to settle a race, not spent: it is refused, so it comes off again.
+      await refund(req.device.id, kind).catch(() => undefined);
       res.status(402).json({
         error: 'out_of_allowance',
         plan,
         kind,
-        used,
+        used: used - 1,
         allowance,
         period: PERIOD[plan],
         needsAccount: false,
@@ -788,6 +793,22 @@ const richHtml = (text: string): string =>
     .split(/(<\/?strong>)/)
     .map((part, i) => (i % 2 ? part : escapeHtml(part)))
     .join('');
+
+/**
+ * Give back what the meter took, for a request that got nothing from the AI:
+ * a bad request, no key on this server, a page that could not be read, or the
+ * AI failing. A question or a photo is spent on an answer, not an attempt.
+ * Only ever what was taken: nothing for a browser with no device, which the
+ * meter only rate-limits.
+ */
+async function giveBack(req: Request, res: Response, kind: Billable): Promise<void> {
+  // Only what this very request was counted for, and only once: a request the
+  // meter let through uncounted (a follow-up lookup, a rate-limited browser)
+  // must not be a way to wipe out questions really asked.
+  if (!req.device || res.locals.counted !== kind) return;
+  res.locals.counted = undefined;
+  await refund(req.device.id, kind).catch((error: unknown) => logFailure('refund', error));
+}
 
 /** Needs an account, not just a device: there is nothing here for a stranger. */
 function requireAccount(req: Request, res: Response, next: NextFunction): void {
@@ -1813,6 +1834,7 @@ const inRange = (value: unknown, min: number, max: number): number | undefined =
 app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
   const { image, mediaType, slot, hint, mode, crockery } = req.body ?? {};
   if (typeof image !== 'string' || image.length < 32) {
+    await giveBack(req, res, 'photo');
     res.status(400).json({ error: msg('An image is required.') });
     return;
   }
@@ -1825,6 +1847,8 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
   const label = mode === 'label';
 
   if (!hasCredentials()) {
+    // No AI here, so nothing is spent on what comes back.
+    await giveBack(req, res, 'photo');
     // A made-up plate is a passable demo; made-up figures off a packet are a lie.
     if (label) {
       res.status(503).json({ error: msg('Squish is offline, so a label cannot be read. Search for it or add it by hand.') });
@@ -1846,6 +1870,8 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
     );
   } catch (error) {
     logFailure('photo analysis', error);
+    // A rough guess to edit, not the AI's reading: it costs nothing.
+    await giveBack(req, res, 'photo');
     res.json(demoEstimateFromPhoto(data.slice(0, 256), mealSlot));
   }
 });
@@ -1854,12 +1880,14 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
 app.post('/api/analyse/text', meter('photo'), async (req, res) => {
   const { description, slot } = req.body ?? {};
   if (typeof description !== 'string' || !description.trim()) {
+    await giveBack(req, res, 'photo');
     res.status(400).json({ error: msg('A description is required.') });
     return;
   }
   const mealSlot = asSlot(slot);
 
   if (!hasCredentials()) {
+    await giveBack(req, res, 'photo');
     res.json(estimateFromText(description, mealSlot));
     return;
   }
@@ -1868,6 +1896,8 @@ app.post('/api/analyse/text', meter('photo'), async (req, res) => {
     res.json(await analyseText(description.trim(), mealSlot));
   } catch (error) {
     logFailure('text analysis', error);
+    // A rough guess from the food list, not the AI's: it costs nothing.
+    await giveBack(req, res, 'photo');
     res.json(estimateFromText(description, mealSlot));
   }
 });
@@ -1944,10 +1974,12 @@ app.post('/api/chat', meterQuestion, async (req, res) => {
 
   const messages = cleanMessages(turns);
   if (!messages) {
+    await giveBack(req, res, 'chat');
     res.status(400).json({ error: msg('Ask me something.') });
     return;
   }
   if (!hasCredentials()) {
+    await giveBack(req, res, 'chat');
     res.status(503).json({ error: msg('Squish needs the AI to answer questions, and no key is configured here.') });
     return;
   }
@@ -1978,6 +2010,9 @@ app.post('/api/chat', meterQuestion, async (req, res) => {
     res.json(wire);
   } catch (error) {
     logFailure('chat', error);
+    // The question never got its answer. Given back when this was the round that counted it;
+    // a failed lookup round was not counted, so has nothing to give back.
+    await giveBack(req, res, 'chat');
     res.status(502).json({ error: msg('I could not think of an answer just then. Try again in a moment.') });
   }
 });
@@ -1993,10 +2028,12 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
   const { url, slot } = req.body ?? {};
 
   if (typeof url !== 'string' || !url.trim()) {
+    await giveBack(req, res, 'recipe');
     res.status(400).json({ error: msg('Paste the address of a recipe page.') });
     return;
   }
   if (!hasCredentials()) {
+    await giveBack(req, res, 'recipe');
     res.status(503).json({ error: msg('Reading a recipe needs the AI, and no key is configured on this server.') });
     return;
   }
@@ -2005,6 +2042,7 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
     const source = await readRecipePage(url);
     res.json(await analyseRecipe(source, asSlot(slot)));
   } catch (error) {
+    await giveBack(req, res, 'recipe');
     if (error instanceof FetchGuardError) {
       res.status(error.status).json({ error: error.message });
       return;
@@ -2046,11 +2084,10 @@ async function weekPlanCap(req: Request, res: Response, next: NextFunction): Pro
 }
 
 /**
- * The nutritionist plans a few days of meals. Body: WeekPlanRequest (see
- * server/weekplan.ts). Plus only, through the nutritionist's allowance; the
- * answer is days of meals for the app to add as plans, never a logged meal.
+ * Before anything is counted: is this a request a plan can be made from, on a
+ * server that can make one? Checked first so a bad request costs nothing.
  */
-app.post('/api/weekplan', weekPlanCap, meter('chat'), async (req, res) => {
+function weekPlanAsk(req: Request, res: Response, next: NextFunction): void {
   const request = cleanWeekRequest(req.body);
   if (!request) {
     res.status(400).json({ error: msg('Your targets are needed to plan a week.') });
@@ -2060,17 +2097,77 @@ app.post('/api/weekplan', weekPlanCap, meter('chat'), async (req, res) => {
     res.status(503).json({ error: msg('Planning a week needs the AI, and no key is configured on this server.') });
     return;
   }
+  res.locals.weekAsk = request;
+  next();
+}
+
+const WEEKPLAN_FAILED = msg('The nutritionist could not plan that just now. Try again in a moment.');
+const WEEKPLAN_CUT_OFF = msg('That plan was interrupted, so the question has been given back. Try again.');
+
+/** Whoever a plan belongs to: the account, else this browser, else nobody (the id is then the key). */
+const planOwner = (req: Request): string | null => (req.device ? (req.device.accountId ?? req.device.id) : null);
+
+/** A failed plan costs nothing: the question the meter took is given back. */
+const giveBackQuestion = async (deviceId: string | null): Promise<void> => {
+  if (deviceId) await refund(deviceId, 'chat');
+};
+
+/**
+ * The nutritionist plans a few days of meals. Body: WeekPlanRequest (see
+ * server/weekplan.ts). Plus only, through the nutritionist's allowance; the
+ * answer is days of meals for the app to add as plans, never a logged meal.
+ *
+ * Answers at once with a job id (202); the plan is made in the background and
+ * read from GET /api/weekplan/:id, because a week can take the nutritionist
+ * longer than a request should be held open. A plan that fails gives its
+ * question back.
+ */
+app.post('/api/weekplan', weekPlanAsk, weekPlanCap, meter('chat'), async (req, res) => {
+  const request = res.locals.weekAsk as NonNullable<ReturnType<typeof cleanWeekRequest>>;
+  const device = req.device;
+  // The job keeps a device only when this request spent a question, so only a
+  // question really spent is ever given back (now, or when found cut off).
+  const counted = device && res.locals.counted === 'chat' ? device.id : null;
   try {
-    const plan = await planWeek(request);
-    if (req.device) await spend(req.device.id, 'weekplan').catch(() => undefined);
-    res.json(plan);
+    const job = await startJob(
+      { deviceId: counted, owner: planOwner(req) },
+      async () => {
+        const plan = await planWeek(request);
+        if (device) await spend(device.id, 'weekplan').catch(() => undefined);
+        return plan;
+      },
+      giveBackQuestion,
+      (error) => {
+        if (error instanceof WeekPlanError) return error.message;
+        logFailure('weekplan', error);
+        return WEEKPLAN_FAILED;
+      },
+    );
+    res.status(202).json({ job });
   } catch (error) {
-    if (error instanceof WeekPlanError) {
-      res.status(502).json({ error: error.message });
+    logFailure('weekplan start', error);
+    await giveBack(req, res, 'chat');
+    res.status(503).json({ error: WEEKPLAN_FAILED });
+  }
+});
+
+/** How a weekly plan is getting on: `{ status: 'working' }`, the plan, or why there is none. */
+app.get('/api/weekplan/:id', async (req, res) => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  if (typeof id !== 'string' || !/^[\w-]{10,64}$/.test(id)) {
+    res.status(404).json({ error: msg('That plan is not here any more.') });
+    return;
+  }
+  try {
+    const job = await readJob(id, planOwner(req), giveBackQuestion, WEEKPLAN_CUT_OFF);
+    if (!job) {
+      res.status(404).json({ error: msg('That plan is not here any more.') });
       return;
     }
-    logFailure('weekplan', error);
-    res.status(502).json({ error: msg('The nutritionist could not plan that just now. Try again in a moment.') });
+    res.set('Cache-Control', 'no-store').json(job);
+  } catch (error) {
+    logFailure('weekplan read', error);
+    res.status(503).json({ error: msg('Could not do that just now.') });
   }
 });
 
@@ -2079,16 +2176,19 @@ app.post('/api/analyse/refine', meter('photo'), async (req, res) => {
   const { analysis, instruction, slot } = req.body ?? {};
 
   if (typeof instruction !== 'string' || !instruction.trim()) {
+    await giveBack(req, res, 'photo');
     res.status(400).json({ error: msg('Tell me what to change.') });
     return;
   }
   if (!analysis || !Array.isArray(analysis.items)) {
+    await giveBack(req, res, 'photo');
     res.status(400).json({ error: msg('There is no meal to correct.') });
     return;
   }
   // Without a key there is nothing to re-read the meal with, and silently
   // handing back the same analysis would look like the correction was ignored.
   if (!hasCredentials()) {
+    await giveBack(req, res, 'photo');
     res.status(503).json({ error: msg('Squish is offline, so this one needs editing by hand.') });
     return;
   }
@@ -2097,6 +2197,7 @@ app.post('/api/analyse/refine', meter('photo'), async (req, res) => {
     res.json(await refineAnalysis(analysis as AnalysisResult, instruction.trim(), asSlot(slot)));
   } catch (error) {
     logFailure('refinement', error);
+    await giveBack(req, res, 'photo');
     res.status(502).json({ error: msg('I could not work that out — try editing it by hand.') });
   }
 });

@@ -1,5 +1,5 @@
 {
- "version": "0swzi74026lx0n",
+ "version": "13lj7sd-j1pe88",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -862,6 +862,13 @@
    "text": "Dashboard",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0500ssm-yxy3e0",
+   "text": "That plan was interrupted, so the question has been given back. Try again.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -3749,6 +3756,13 @@
    ]
   },
   {
+   "id": "0n1913d0qhwy4q",
+   "text": "That plan is not here any more.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0n645y70t76xfp",
    "text": "The backup, saved {date}",
    "where": [
@@ -4508,6 +4522,13 @@
    "text": "Every day counts.",
    "where": [
     "src/lib/shareStory.ts"
+   ]
+  },
+  {
+   "id": "0rj1v84-wu1dju",
+   "text": "The plan came back empty. Try again in a moment.",
+   "where": [
+    "server/claude.ts"
    ]
   },
   {
@@ -5985,13 +6006,6 @@
    ]
   },
   {
-   "id": "11fi1m20urw8eh",
-   "text": "A week takes a minute or so to think through.",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
-   ]
-  },
-  {
    "id": "11gxs0i-x2xswq",
    "text": "You are getting this because of activity on a Squish account using this address.",
    "where": [
@@ -6024,6 +6038,13 @@
    "text": "A bit about you, {name}",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "11pp9b60gen5k2",
+   "text": "The nutritionist could not plan that week. Try different preferences.",
+   "where": [
+    "server/claude.ts"
    ]
   },
   {
@@ -6067,6 +6088,13 @@
    "text": "Squish won't suggest less than {energy} a day, so that's slower than the {pace} a week you picked.",
    "where": [
     "src/lib/planExplained.ts"
+   ]
+  },
+  {
+   "id": "11ytjp3-ameq5f",
+   "text": "That plan ran long. Try fewer days, or without snacks.",
+   "where": [
+    "server/claude.ts"
    ]
   },
   {
@@ -8697,6 +8725,13 @@
    ]
   },
   {
+   "id": "1i7g5v409r6bz1",
+   "text": "A week takes a minute or two to think through. You can close this — the plan will be here when you come back.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "1i7zrh8-er6frn",
    "text": "Planning a week needs the AI, and no key is configured on this server.",
    "where": [
@@ -11253,6 +11288,13 @@
    "text": "Ask or meal plan",
    "where": [
     "src/screens/Ask.tsx"
+   ]
+  },
+  {
+   "id": "1yiwifz05zqorv",
+   "text": "Your plan is taking a while. It will be here when you open the planner again.",
+   "where": [
+    "src/lib/api.ts"
    ]
   },
   {

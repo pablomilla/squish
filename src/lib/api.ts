@@ -259,9 +259,90 @@ export interface WeekPlanAsk {
   cooking: 'quick' | 'normal' | 'batch';
 }
 
-/** A week takes the nutritionist a while to think through: up to two minutes, not the usual 45 seconds. */
+/*
+ * A week takes the nutritionist a while to think through — sometimes a few
+ * minutes. Rather than hold one request open that long (the app used to give
+ * up at two, after the plan had been paid for), the server starts the plan
+ * and answers with a job, and the app asks after it every few seconds. The
+ * job is remembered here too, so a plan asked for before the app was closed
+ * is picked up when the planner is opened again.
+ */
+
+type WeekPlanJob = { status: 'working' } | { status: 'done'; plan: WeekPlan } | { status: 'failed'; error: string };
+
+const JOB_KEY = 'squish-weekplan-job';
+/** How long a remembered job is worth picking up: the server keeps it a day, but a plan is stale sooner. */
+const JOB_KEEP_MS = 30 * 60_000;
+/** How long one wait lasts before the app stops watching (the plan still arrives, for next time). */
+const JOB_WAIT_MS = 10 * 60_000;
+const JOB_POLL_MS = 3000;
+
+function rememberJob(job: string): void {
+  try {
+    localStorage.setItem(JOB_KEY, JSON.stringify({ job, at: Date.now() }));
+  } catch {
+    /* private mode: the wait still works, it just is not picked up after a restart */
+  }
+}
+
+function forgetJob(): void {
+  try {
+    localStorage.removeItem(JOB_KEY);
+  } catch {
+    /* nothing to forget */
+  }
+}
+
+/** A plan asked for earlier and not yet seen, if there is one worth waiting for. */
+export function pendingWeekPlan(): string | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(JOB_KEY) ?? 'null') as { job?: string; at?: number } | null;
+    if (saved?.job && typeof saved.at === 'number' && Date.now() - saved.at < JOB_KEEP_MS) return saved.job;
+  } catch {
+    /* unreadable: as good as none */
+  }
+  forgetJob();
+  return null;
+}
+
+/**
+ * Wait for a plan being made. A lost connection is waited out; the server
+ * saying the plan failed (its question already given back) or is gone ends
+ * the wait with its reason.
+ */
+export async function waitForWeekPlan(job: string): Promise<WeekPlan> {
+  const until = Date.now() + JOB_WAIT_MS;
+  while (Date.now() < until) {
+    await new Promise((resolve) => setTimeout(resolve, JOB_POLL_MS));
+    let answer: WeekPlanJob;
+    try {
+      answer = await get<WeekPlanJob>(`/api/weekplan/${encodeURIComponent(job)}`);
+    } catch (error) {
+      // The server answered and said no: this plan will not come.
+      if (error instanceof SquishApiError) {
+        forgetJob();
+        throw error;
+      }
+      continue; // A dropped connection or a slow answer: ask again.
+    }
+    if (answer.status === 'done') {
+      forgetJob();
+      return answer.plan;
+    }
+    if (answer.status === 'failed') {
+      forgetJob();
+      throw new SquishApiError('server', t(answer.error));
+    }
+  }
+  throw new Error(t('Your plan is taking a while. It will be here when you open the planner again.'));
+}
+
 export async function requestWeekPlan(ask: WeekPlanAsk): Promise<WeekPlan> {
-  return post<WeekPlan>('/api/weekplan', ask, 150_000);
+  const started = await post<WeekPlan | { job: string }>('/api/weekplan', ask);
+  // A server from before jobs answers with the plan itself.
+  if (!('job' in started)) return started;
+  rememberJob(started.job);
+  return waitForWeekPlan(started.job);
 }
 
 /**

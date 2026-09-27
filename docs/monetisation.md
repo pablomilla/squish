@@ -148,6 +148,28 @@ needing a deploy: `SQUISH_PLUS_WEEKPLANS` sets the monthly cap, and
 is $10 per million tokens against Opus 5's $25) without touching the rest.
 Check the logged costs after the first week and set them from those.
 
+A plan is made in the background (`server/weekplanJobs.ts`): the request
+answers at once with a job id, and the app asks after it every few seconds,
+for up to ten minutes, and again whenever the planner is next opened. Until
+27 September 2026 the app held one request open and gave up after two and a
+half minutes, and a week with thinking could take longer — so the plan was
+finished and paid for on the server, counted against the person, and never
+seen. A plan that fails (or is cut off by a restart, noticed when next asked
+after) now gives its question back, and is not counted as a plan.
+
+### A failed call costs nothing
+
+Every AI allowance is counted before the call, so ten requests at once
+cannot all see the last one free. Since 27 September 2026 anything that then
+gets nothing from the AI gives it back: a bad request, no key on the server,
+a recipe page that could not be read, the AI failing — where the photo and
+description routes hand back a rough offline guess instead, that guess is
+free too. A request refused for being over the allowance is not counted
+either, so "used" never reads more than the allowance. Only what the same
+request was counted for is ever given back, once (`giveBack` in
+`server/index.ts`): a follow-up lookup round, which is not counted, cannot
+be used to wipe out questions really asked.
+
 ### The nutritionist: 3 free questions, and a question counts once
 
 Plus is sold on the nutritionist, and nobody pays for something they have

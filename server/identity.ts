@@ -129,6 +129,19 @@ export async function spend(deviceId: string, kind: Spend): Promise<number> {
   return rows[0]?.count ?? 1;
 }
 
+/**
+ * Give one back: for a call that was counted and then failed, so nobody pays
+ * a question for an answer they never got. Takes it from the most recent day
+ * that has one, in case the call ran across midnight, and never below nought.
+ */
+export async function refund(deviceId: string, kind: Spend): Promise<void> {
+  await query(
+    `update usage set count = count - 1
+      where ctid = (select ctid from usage where device_id = $1 and kind = $2 and count > 0 order by day desc limit 1)`,
+    [deviceId, kind],
+  );
+}
+
 /** What has been spent today, without spending any more. */
 export async function spentToday(deviceId: string, kind: Spend): Promise<number> {
   const rows = await query<{ count: number }>(

@@ -588,6 +588,27 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       update friend_referrals set referrer_emailed_at = rewarded_at where rewarded_at is not null;
     `,
   },
+  {
+    id: 19,
+    sql: `
+      -- A weekly plan being made. A week of meals can take the nutritionist
+      -- a few minutes, longer than a request should be held open, so the app
+      -- is given this row's id at once and asks after it until it is done.
+      -- Kept a day, then swept.
+      create table weekplan_jobs (
+        id          text primary key,
+        -- Null for a browser the server has not met: the id, unguessable, is then the only key.
+        device_id   text references devices(id) on delete cascade,
+        owner       text,
+        status      text not null default 'working' check (status in ('working', 'done', 'failed')),
+        plan        jsonb,
+        error       text,
+        created_at  timestamptz not null default now(),
+        finished_at timestamptz
+      );
+      create index weekplan_jobs_owner on weekplan_jobs(owner, created_at);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

@@ -15,6 +15,7 @@ import { regionNote } from './region';
 import { readTranslation, translateRequest, type CatalogEntry } from './translate';
 import type { Pack } from '../src/lib/language';
 import { AISLES, isAisle } from '../src/lib/shopping';
+import { msg } from '../src/lib/i18n';
 
 const AISLE_IDS = AISLES.map((a) => a.id);
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
@@ -741,15 +742,15 @@ export async function planWeek(req: WeekPlanRequest): Promise<WeekPlan> {
       `${usd === null ? 'unpriced' : `$${usd.toFixed(4)}`} ${((Date.now() - startedAt) / 1000).toFixed(1)}s stop=${response.stop_reason}`,
   );
 
-  if (response.stop_reason === 'refusal') throw new WeekPlanError('The nutritionist could not plan that week. Try different preferences.');
-  if (response.stop_reason === 'max_tokens') throw new WeekPlanError('That plan ran long. Try fewer days, or without snacks.');
+  if (response.stop_reason === 'refusal') throw new WeekPlanError(msg('The nutritionist could not plan that week. Try different preferences.'));
+  if (response.stop_reason === 'max_tokens') throw new WeekPlanError(msg('That plan ran long. Try fewer days, or without snacks.'));
 
   const text = response.content
     .filter((block): block is Anthropic.Beta.BetaTextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('');
   const plan = toWeekPlan(JSON.parse(text) as ModelWeek, req);
-  if (!plan.days.length) throw new WeekPlanError('The plan came back empty. Try again in a moment.');
+  if (!plan.days.length) throw new WeekPlanError(msg('The plan came back empty. Try again in a moment.'));
   return plan;
 }
 
