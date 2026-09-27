@@ -21,7 +21,12 @@ import { speaker } from '../src/lib/i18n';
 const LANGS = ['ko', 'ga', 'en-US'];
 /** American English, as the stand-in makes it: just the spelling, as the real one mostly is. */
 const american = (text: string) =>
-  text.replace(/fibre/g, 'fiber').replace(/Fibre/g, 'Fiber').replace(/colour/g, 'color').replace(/^Confirm your/, 'Confirm (US) your');
+  text
+    .replace(/fibre/g, 'fiber')
+    .replace(/Fibre/g, 'Fiber')
+    .replace(/colour/g, 'color')
+    .replace(/centre/g, 'center')
+    .replace(/^Confirm your/, 'Confirm (US) your');
 /** A stand-in for Claude that marks every string, keeping its tags and placeholders — and spells American for en-US. */
 const korean = async (entries: { id: string; text?: string; one?: string; other?: string }[], pack?: string) =>
   Object.fromEntries(
@@ -412,10 +417,13 @@ test('the privacy policy is American for the US, says the British counts, and is
   assert.match(us, /<html lang="en-US" dir="ltr">/);
   assert.match(us, /This is the policy with American spelling\./);
   assert.match(us, /href="\/privacy\?lang=en&amp;country=GB">British English version/);
+  assert.match(us, /Frankfurt data center/, 'the policy itself is in the American words');
+  assert.doesNotMatch(us, /data centre/);
   const canada = (await privacyPage('en', 'CA'))!;
   assert.match(canada, /<html lang="en-GB"/);
   assert.doesNotMatch(canada, /This is the policy with American spelling|This is a translation, to make/);
   assert.equal(canada, await privacyPage('en'), 'British English is the policy as written');
+  assert.match(canada, /Frankfurt data centre/);
   assert.doesNotMatch((await privacyPage('ko', 'US'))!, /This is the policy with American spelling/, 'another language is itself in the US');
 });
 
