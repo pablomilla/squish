@@ -1,21 +1,18 @@
 /**
- * Google's Gemini, for the benchmark only.
+ * Google's Gemini: the wire, the prices and the schema dialect.
  *
- * **Never for anybody but the people running Squish.** The privacy policy
- * tells people their photos go to Anthropic and nobody else, so a person's
- * photo may only come here if they are an admin trying it on their own meals
- * (server/modelTrial.ts decides, and a test holds the app to it), or through
- * `npm run bench`: the owner's own photos of weighed meals, read by Gemini
- * and by Claude side by side, to find out whether it is as good and what it
- * costs.
+ * **Privacy first.** The privacy policy tells people their meals go to
+ * Anthropic. A person's data may only come here when server/routing.ts sends
+ * it: an admin's own requests, on a route an admin chose, or — once the policy
+ * names Google and SQUISH_GEMINI_FOR_EVERYONE is set — everybody's. The
+ * benchmark (`npm run bench`) uses it on the owner's own photos.
  *
- * Like for like: the same instructions (`mealSystem`), the same words with
- * the photo (`photoPrompt`), the same answer shape (MEAL_SCHEMA, turned into
- * the schema dialect Gemini takes) and the same parsing (`toAnalysis`). The
- * only thing that differs is the model.
+ * Nothing here knows about meals. server/providers.ts turns a request built
+ * for Claude into one for Gemini and the answer back, so every feature asks
+ * both in the same words and reads both answers the same way.
  *
  * Plain HTTPS to the Generative Language API rather than Google's SDK: one
- * request shape, no new dependency for a benchmark.
+ * request shape, no new dependency.
  *
  *   GEMINI_API_KEY    a key from Google AI Studio, on a paid (billed) project
  *                     — as Google's terms stood when this was written, the
@@ -23,23 +20,6 @@
  *                     products; check the current terms before relying on it
  *   GEMINI_BASE_URL   optional, for a proxy or the tests' stand-in
  */
-import type { MealSlot } from '../src/types';
-import { groundMeal } from './grounding';
-import { bill } from './billing';
-import {
-  briefSchema,
-  fillFigures,
-  MEAL_SCHEMA,
-  mealSystem,
-  photoPrompt,
-  SYSTEM,
-  tableFirst,
-  toAnalysis,
-  type Crockery,
-  type DetailedAnalysis,
-  type ModelMeal,
-} from './claude';
-
 const BASE_URL = (): string => (process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com').replace(/\/+$/, '');
 const apiKey = (): string | undefined => process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
 
@@ -50,7 +30,7 @@ export const isGeminiModel = (model: string): boolean => model.startsWith('gemin
  * The model to start with. Google retires models for new accounts as it
  * releases new ones — gemini-2.5-flash answered a new key in September 2026
  * with "no longer available to new users", naming this one instead — so it
- * is only a starting point: the trial's card and --models choose any other.
+ * is only a starting point: the dashboard's models card and --models choose any other.
  */
 export const DEFAULT_GEMINI = 'gemini-3.8-flash';
 
@@ -114,10 +94,19 @@ export function toGeminiSchema(schema: unknown): unknown {
   return out;
 }
 
-interface GeminiResponse {
-  candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] }; finishReason?: string }[];
+export interface GeminiPart {
+  text?: string;
+  thought?: boolean;
+  thoughtSignature?: string;
+  inlineData?: { mimeType: string; data: string };
+  functionCall?: { id?: string; name: string; args?: Record<string, unknown> };
+  functionResponse?: { id?: string; name: string; response: Record<string, unknown> };
+}
+
+export interface GeminiResponse {
+  candidates?: { content?: { parts?: GeminiPart[] }; finishReason?: string }[];
   promptFeedback?: { blockReason?: string };
-  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; cachedContentTokenCount?: number };
   modelVersion?: string;
   error?: { message?: string };
 }
@@ -131,77 +120,18 @@ export function priceGemini(model: string, usage: GeminiResponse['usageMetadata'
   return (input * rate.input + output * rate.output) / 1_000_000;
 }
 
-/** A meal photo, read by Gemini: the same shape `analysePhotoDetailed` returns, for the benchmark. */
-export async function analysePhotoGemini(
-  imageBase64: string,
-  mediaType: string,
-  slot?: MealSlot,
-  hint?: string,
-  model = DEFAULT_GEMINI,
-  crockery?: Crockery,
-): Promise<DetailedAnalysis> {
+/** One generateContent call. A refusal or an error status is thrown with Google's reason. */
+export async function geminiGenerate(model: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<GeminiResponse> {
   const key = apiKey();
   if (!key) throw new Error('No GEMINI_API_KEY set.');
-
-  const startedAt = Date.now();
-  // Table first, as Claude is asked: a food the table can answer carries only calories and free sugar.
-  const brief = await tableFirst(SYSTEM);
+  const timeout = AbortSignal.timeout(300_000);
   const response = await fetch(`${BASE_URL()}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: mealSystem(brief) }] },
-      contents: [
-        {
-          role: 'user',
-          parts: [{ inlineData: { mimeType: mediaType, data: imageBase64 } }, { text: photoPrompt(slot, hint, crockery) }],
-        },
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: toGeminiSchema(brief ? briefSchema(MEAL_SCHEMA) : MEAL_SCHEMA),
-        // Room for thinking and the answer: Gemini's thinking counts against this too.
-        maxOutputTokens: 16000,
-      },
-    }),
-    signal: AbortSignal.timeout(120_000),
+    body: JSON.stringify(body),
+    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
   });
-  const latencyMs = Date.now() - startedAt;
-
   const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
   if (!response.ok) throw new Error(`Gemini ${response.status}: ${payload.error?.message ?? 'no explanation'}`);
-  if (payload.promptFeedback?.blockReason) throw new Error(`Gemini declined the photo (${payload.promptFeedback.blockReason}).`);
-
-  const candidate = payload.candidates?.[0];
-  if (!candidate) throw new Error('Gemini returned no answer.');
-  if (candidate.finishReason && candidate.finishReason !== 'STOP') {
-    throw new Error(`Gemini stopped early (${candidate.finishReason}).`);
-  }
-  const text = (candidate.content?.parts ?? [])
-    .filter((part) => typeof part.text === 'string' && !part.thought)
-    .map((part) => part.text)
-    .join('');
-
-  const usage = payload.usageMetadata ?? {};
-  const costUsd = priceGemini(model, usage);
-  // Counted against whoever asked, as a Claude reading is (nothing outside a request).
-  bill(costUsd, model);
-
-  // Checked against the food table as Claude's readings are, so the two are compared like for like;
-  // named foods the table cannot answer are filled in by the same short text question (no photo).
-  let meal = await groundMeal(JSON.parse(text) as ModelMeal);
-  const fill = brief ? await fillFigures(meal) : null;
-  if (fill) meal = fill.meal;
-
-  return {
-    analysis: toAnalysis(meal, slot),
-    usage: {
-      model: payload.modelVersion ?? model,
-      inputTokens: (usage.promptTokenCount ?? 0) + (fill?.cost?.inputTokens ?? 0),
-      outputTokens: (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0) + (fill?.cost?.outputTokens ?? 0),
-      cacheReadTokens: 0,
-      costUsd: costUsd === null ? null : costUsd + (fill?.cost?.costUsd ?? 0),
-      latencyMs: latencyMs + (fill?.cost?.latencyMs ?? 0),
-    },
-  };
+  return payload;
 }

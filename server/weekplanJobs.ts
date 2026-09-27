@@ -23,6 +23,7 @@
 import { randomBytes } from 'node:crypto';
 import { hasDatabase, migrate, query } from './db';
 import { billedAs } from './billing';
+import { audienceOf, servedAs } from './routing';
 import type { WeekPlan } from './claude';
 import type { WeekPlanRequest } from './weekplan';
 import { currentPlace, inPlace, placeFrom, type Place } from './region';
@@ -155,7 +156,12 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
     try {
       // Made where they are, whichever instance makes it and however long after they asked.
       // And paid for as a weekly plan, whether it started in the request or was picked up after a restart.
-      outcome = { status: 'done', plan: await billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, stop.signal))) };
+      // On the route of whoever asked — an admin's own, or everybody's — even when picked up after a restart.
+      const audience = await audienceOf(deviceId).catch(() => 'everyone' as const);
+      outcome = {
+        status: 'done',
+        plan: await servedAs(audience, () => billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, stop.signal)))),
+      };
     } catch (error) {
       // Stopped on purpose: the job is somebody else's now (or ours to hand over).
       if (stop.signal.aborted) return;

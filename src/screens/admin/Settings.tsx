@@ -7,8 +7,6 @@ import { Sheet, useToast } from '../../components/ui';
 import { TwoFactorStatus } from '../../components/TwoFactor';
 import {
   fetchEmails,
-  fetchGeminiTrial,
-  saveGeminiTrial,
   fetchPeople,
   previewEmail,
   resetEmail,
@@ -19,7 +17,6 @@ import {
   type EmailPreview,
   type EmailTemplate,
   type EmailWording,
-  type GeminiTrial as Trial,
   type TwoFactorState,
 } from '../../lib/admin';
 import { friendlyDate } from '../../lib/date';
@@ -47,7 +44,6 @@ export default function Settings({
         <div className="admin-col">
           <MailStatus ready={mailReady} />
           <TwoFactorStatus recoveryLeft={twoFactor.recoveryLeft} onChanged={onRecheck} />
-          <GeminiTrial />
         </div>
         <div className="admin-col">
           <Emails mailReady={mailReady} />
@@ -78,85 +74,6 @@ export default function Settings({
         )}
       </section>
     </div>
-  );
-}
-
-/**
- * Trying Gemini on your own meals (server/modelTrial.ts).
- *
- * Only admins' meal photos, only with the switch on and a key set; everybody
- * else stays on Claude whatever this says, because the privacy policy names
- * Anthropic and nobody else. The Review screen says which model read each
- * photo, and why Claude did when Gemini failed.
- */
-function GeminiTrial() {
-  const [trial, setTrial] = useState<Trial | null>(null);
-  const [model, setModel] = useState('');
-  const [busy, setBusy] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    void fetchGeminiTrial().then((found) => {
-      if (!found) return;
-      setTrial(found);
-      setModel(found.model);
-    });
-  }, []);
-  if (!trial) return null;
-
-  const save = async (change: { on?: boolean; model?: string }) => {
-    setBusy(true);
-    const done = await saveGeminiTrial(change);
-    setBusy(false);
-    if (!done.ok) {
-      toast(done.message, '⚠️');
-      return;
-    }
-    setTrial(done.trial);
-    setModel(done.trial.model);
-    toast(done.trial.on ? `Your meal photos now go to ${done.trial.model}.` : 'Your meal photos are back on Claude.', done.trial.on ? '🧪' : '↩️');
-  };
-
-  return (
-    <section className="card card--quiet admin-gemini">
-      <div className="card-title">
-        <h3>Try Gemini on your meals</h3>
-        <span className={`badge ${trial.on && trial.keySet ? 'badge--good' : ''}`}>{trial.on && trial.keySet ? 'On' : 'Off'}</span>
-      </div>
-      <p className="tiny muted">
-        Meal photos from admin accounts — yours — are read by Google&rsquo;s Gemini instead of Claude, so you can see what it is
-        like before deciding anything. Everybody else stays on Claude whatever this says: the privacy policy names Anthropic,
-        not Google. Labels and typed meals stay on Claude too.
-      </p>
-      {!trial.keySet && (
-        <p className="tiny account-trouble" role="alert">
-          No Gemini key on the server yet. Add GEMINI_API_KEY in Render, from a Google AI Studio project with billing turned on.
-        </p>
-      )}
-      <form
-        className="row"
-        style={{ gap: 8, flexWrap: 'wrap' }}
-        onSubmit={(event) => {
-          event.preventDefault();
-          void save({ model: model.trim() });
-        }}
-      >
-        <input
-          className="input grow"
-          value={model}
-          onChange={(event) => setModel(event.target.value)}
-          aria-label="Gemini model"
-          spellCheck={false}
-          autoCapitalize="none"
-        />
-        <button type="submit" className="btn btn--sm btn--ghost" disabled={busy || model.trim() === trial.model}>
-          Use this model
-        </button>
-      </form>
-      <button type="button" className="btn btn--sm" disabled={busy || !trial.keySet} onClick={() => void save({ on: !trial.on })}>
-        {trial.on ? 'Back to Claude' : 'Read my photos with Gemini'}
-      </button>
-    </section>
   );
 }
 

@@ -738,6 +738,24 @@ const MIGRATIONS: { id: number; sql: string }[] = [
        group by day, kind;
     `,
   },
+  {
+    id: 27,
+    sql: `
+      -- When a feature's model failed and whether a backup answered instead
+      -- (server/routing.ts), by day, so the dashboard can say how often the
+      -- backups are earning their place and what went wrong.
+      create table ai_fallbacks (
+        day        date not null,
+        feature    text not null,
+        model      text not null,
+        failures   integer not null default 0,
+        rescued    integer not null default 0,
+        last_error text not null default '',
+        updated_at timestamptz not null default now(),
+        primary key (day, feature, model)
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

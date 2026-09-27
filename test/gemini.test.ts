@@ -3,15 +3,19 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
-import { MEAL_SCHEMA } from '../server/claude';
-import { analysePhotoGemini, priceGemini, toGeminiSchema } from '../server/gemini';
+import type Anthropic from '@anthropic-ai/sdk';
+import { MEAL_SCHEMA, analysePhotoDetailed } from '../server/claude';
+import { priceGemini, toGeminiSchema } from '../server/gemini';
+import { fromGemini, geminiRequest } from '../server/providers';
 import { useTableForTests } from '../server/foodTable';
 
 /**
- * Gemini, for the benchmark: asked exactly what Claude is asked, read into
- * exactly the same shape — and never reachable from the app itself, whose
- * privacy policy names Anthropic alone.
+ * Gemini, answering requests built for Claude: asked exactly what Claude is
+ * asked, read into exactly the same shape — and reached only through a route
+ * that allows it (server/routing.ts), never directly.
  */
+const analysePhotoGemini = (image: string, type: string, slot?: 'breakfast', hint?: string, model = 'gemini-2.5-flash', crockery?: { plateCm: number }) =>
+  analysePhotoDetailed(image, type, slot, hint, model, crockery);
 
 let requests: { url: string; key: string | undefined; body: Record<string, unknown> }[] = [];
 let answer: { status: number; body: unknown } = { status: 200, body: {} };
@@ -90,10 +94,12 @@ test('a photo goes with the same instructions as Claude’s, and comes back in t
 
 test('a refusal, a cut-off answer or an error is a failed attempt, with the reason', async () => {
   answer = { status: 200, body: { promptFeedback: { blockReason: 'SAFETY' } } };
-  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /declined the photo \(SAFETY\)/);
+  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /declined to analyse/);
   answer = replyWith(MEAL);
-  (answer.body as { candidates: { finishReason: string }[] }).candidates[0].finishReason = 'MAX_TOKENS';
-  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /stopped early \(MAX_TOKENS\)/);
+  const cut = answer.body as { candidates: { finishReason: string; content: { parts: { text: string }[] } }[] };
+  cut.candidates[0].finishReason = 'MAX_TOKENS';
+  cut.candidates[0].content.parts[0].text = '{"title": "Porri';
+  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), SyntaxError, 'half an answer does not parse, so a backup is asked');
   answer = { status: 400, body: { error: { message: 'API key not valid.' } } };
   await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /Gemini 400: API key not valid/);
   assert.equal(priceGemini('gemini-9-imaginary', { promptTokenCount: 1 }), null, 'no price on file: no made-up cost');
@@ -104,20 +110,72 @@ test('a refusal, a cut-off answer or an error is a failed attempt, with the reas
   assert.ok(Math.abs(cost('2027-01-01T00:00:00Z')! - (2000 * 1.5 + 1000 * 7.5) / 1e6) < 1e-12, 'and the standard price from New Year, by itself');
 });
 
-test('nothing in the app sends a photo to Google except an admin’s own, through the trial switch', () => {
-  // Only the trial's switch and the one photo route may reach Gemini; nothing else in the server.
-  const allowed = new Set(['gemini.ts', 'modelTrial.ts', 'index.ts']);
+test('the nutritionist in Gemini’s shape: tools declared, lookups asked for and answered, Claude’s thinking left out', () => {
+  const tools: Anthropic.Tool[] = [
+    { name: 'look_up_days', description: 'Totals by day.', input_schema: { type: 'object', properties: { from: { type: 'string' } }, required: ['from'] } },
+  ];
+  const request = geminiRequest({
+    model: 'gemini-3.8-flash',
+    max_tokens: 2400,
+    system: [{ type: 'text', text: 'You are Squish.' }, { type: 'text', text: 'Their diary.' }],
+    tools,
+    messages: [
+      { role: 'user', content: 'How was Tuesday?' },
+      {
+        role: 'assistant',
+        content: [
+          { type: 'thinking', thinking: 'Let me look.', signature: 'claude-only' },
+          { type: 'tool_use', id: 'toolu_1', name: 'look_up_days', input: { from: '2026-09-22' } },
+        ],
+      },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: '{"calories":1800}' }] },
+    ],
+  }) as {
+    systemInstruction: { parts: { text: string }[] };
+    contents: { role: string; parts: Record<string, unknown>[] }[];
+    tools: { functionDeclarations: { name: string; parameters: { type: string } }[] }[];
+    generationConfig: Record<string, unknown>;
+  };
+  assert.equal(request.systemInstruction.parts[0].text, 'You are Squish.\n\nTheir diary.');
+  assert.equal(request.tools[0].functionDeclarations[0].name, 'look_up_days');
+  assert.equal(request.tools[0].functionDeclarations[0].parameters.type, 'OBJECT');
+  assert.deepEqual(request.contents.map((c) => c.role), ['user', 'model', 'user']);
+  assert.equal(request.contents[1].parts.length, 1, 'the thinking is Claude’s own and stays behind');
+  assert.deepEqual((request.contents[1].parts[0] as { functionCall: unknown }).functionCall, { id: 'toolu_1', name: 'look_up_days', args: { from: '2026-09-22' } });
+  assert.ok((request.contents[1].parts[0] as { thoughtSignature?: string }).thoughtSignature, 'a call Gemini did not sign goes with the placeholder');
+  assert.deepEqual(request.contents[2].parts[0], { functionResponse: { id: 'toolu_1', name: 'look_up_days', response: { result: '{"calories":1800}' } } });
+  assert.ok(!('responseSchema' in request.generationConfig), 'tools and a fixed answer shape are not asked for together');
+
+  // Gemini asks for a lookup: it comes back as Claude's tool_use, and its signature goes back with it next time.
+  const asked = fromGemini('gemini-3.8-flash', {
+    candidates: [{ content: { parts: [{ functionCall: { name: 'look_up_days', args: { from: '2026-09-23' } }, thoughtSignature: 'sig-1' }] }, finishReason: 'STOP' }],
+    usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 20, thoughtsTokenCount: 80 },
+  });
+  assert.equal(asked.stop_reason, 'tool_use');
+  const call = asked.content[0] as Anthropic.ToolUseBlock;
+  assert.equal(call.name, 'look_up_days');
+  assert.match(call.id, /^gm_[0-9a-f]+$/, 'an id Claude would accept too');
+  assert.equal(asked.usage.output_tokens, 100, 'thinking counted with the answer');
+  const next = geminiRequest({ model: 'gemini-3.8-flash', max_tokens: 100, messages: [{ role: 'assistant', content: asked.content as Anthropic.ContentBlockParam[] }] }) as {
+    contents: { parts: { thoughtSignature?: string }[] }[];
+  };
+  assert.equal(next.contents[0].parts[0].thoughtSignature, 'sig-1');
+  assert.equal(fromGemini('gemini-3.8-flash', { candidates: [{ content: { parts: [{ text: 'No.' }] }, finishReason: 'SAFETY' }] }).stop_reason, 'refusal');
+});
+
+test('only the adapter talks to Google, and every model call goes through it', () => {
+  // gemini.ts is the wire; providers.ts the only caller of it; pricing and routing read its price list.
+  const allowed = new Set(['gemini.ts', 'providers.ts', 'pricing.ts', 'routing.ts', 'index.ts']);
   for (const file of readdirSync('server').filter((f) => f.endsWith('.ts') && !allowed.has(f))) {
     assert.doesNotMatch(readFileSync(`server/${file}`, 'utf8'), /from '\.\/gemini'/, `server/${file} imports gemini`);
   }
-  assert.doesNotMatch(readFileSync('server/modelTrial.ts', 'utf8'), /analysePhotoGemini/, 'the switch decides; it does not send');
-  // In the routes, Gemini is called once, only after photoReader has said so.
-  const routes = readFileSync('server/index.ts', 'utf8');
-  const calls = [...routes.matchAll(/analysePhotoGemini\(/g)];
-  assert.equal(calls.length, 1, 'one call to Gemini in the routes');
-  const gate = routes.lastIndexOf("reader.reader === 'gemini'", calls[0].index);
-  const decided = routes.lastIndexOf('await photoReader(req.device)', gate);
-  assert.ok(decided > 0 && gate > decided && calls[0].index! - decided < 400, 'and only just after photoReader chose Gemini');
+  for (const file of ['pricing.ts', 'routing.ts', 'index.ts']) {
+    assert.doesNotMatch(readFileSync(`server/${file}`, 'utf8'), /geminiGenerate/, `server/${file} calls Google itself`);
+  }
+  // So every one follows a route, with its backups and its privacy rule.
+  for (const file of readdirSync('server').filter((f) => f.endsWith('.ts') && f !== 'providers.ts')) {
+    assert.doesNotMatch(readFileSync(`server/${file}`, 'utf8'), /messages\.(create|stream)\(/, `server/${file} asks Anthropic directly`);
+  }
   assert.match(readFileSync('scripts/bench.ts', 'utf8'), /from '\.\.\/server\/gemini'/);
 });
 

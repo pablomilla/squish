@@ -22,8 +22,11 @@ import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
 import { checkAnswer, signQuestion, withoutQuestion } from './clarify';
 import { ensureFoodTable } from './foodTable';
-import { analysePhotoGemini } from './gemini';
-import { describeGeminiTrial, photoReader, readGeminiTrial, saveGeminiTrial } from './modelTrial';
+import { hasGeminiKey } from './gemini';
+import { PRICED_MODELS, rateFor } from './pricing';
+import {
+  FEATURES, currentAudience, describeRoutes, everyoneMayUseGemini, readRoutes, recentFailures, saveRoutes, servedAs, servedBy, type Feature,
+} from './routing';
 import { handOver, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
@@ -128,6 +131,27 @@ app.use(express.json({ limit: '12mb' }));
 app.use(identify);
 // Which country's words and packets the prompts should use, for this request.
 app.use(withPlace);
+
+/**
+ * Whose model routes an AI request follows: an admin's own, or everybody's
+ * (server/routing.ts). Asked only on the routes that reach a model.
+ */
+app.use(['/api/analyse', '/api/chat', '/api/recipe', '/api/weekplan', '/api/coach'], (req, _res, next) => {
+  void isAdmin(req.device)
+    .catch(() => false)
+    .then((admin) => servedAs(admin ? 'admins' : 'everyone', next));
+});
+
+/**
+ * For an admin, which model answered and what failed before it — shown on
+ * their Review screen, so trying a model on their own meals shows its work.
+ * Nobody else is told, or needs to be.
+ */
+function readBy<T extends object>(result: T, feature: Feature): T {
+  if (currentAudience() !== 'admins') return result;
+  const served = servedBy(feature);
+  return served ? { ...result, readBy: { model: served.model, failed: served.failed } } : result;
+}
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DIST = resolve(process.cwd(), 'dist');
@@ -1456,30 +1480,53 @@ app.post('/api/admin/give-back', requireAdmin, async (req, res) => {
   }
 });
 
-/** The Gemini trial: whether admins' own meal photos go to Gemini, which model, and whether there is a key. */
-app.get('/api/admin/gemini', requireAdmin, async (_req, res) => {
+/**
+ * Every AI feature's route, for admins and for everybody: which model does
+ * the work and which back it up, what each costs, which can be chosen, and
+ * what has been failing (server/routing.ts).
+ */
+app.get('/api/admin/models', requireAdmin, async (_req, res) => {
   try {
-    res.json(await readGeminiTrial());
+    res.json({
+      features: FEATURES.map(({ id, label, detail, personal }) => ({ id, label, detail, personal })),
+      models: PRICED_MODELS.map((id) => ({
+        id,
+        provider: id.startsWith('gemini-') ? 'google' : 'anthropic',
+        price: rateFor(id),
+        ready: id.startsWith('gemini-') ? hasGeminiKey() : hasCredentials(),
+      })),
+      routes: await readRoutes(),
+      everyoneMayUseGemini: everyoneMayUseGemini(),
+      failures: await recentFailures(7),
+    });
   } catch (error) {
-    logFailure('admin gemini', error);
+    logFailure('admin models', error);
     res.status(503).json({ error: 'unavailable' });
   }
 });
 
-/** Body: { on?, model? }. */
-app.put('/api/admin/gemini', requireAdmin, async (req, res) => {
+/** Body: { routes } — every feature, both audiences, saved together. */
+app.put('/api/admin/models', requireAdmin, async (req, res) => {
   try {
-    const saved = await saveGeminiTrial(req.body ?? {});
+    const before = await readRoutes();
+    const saved = await saveRoutes(req.body?.routes);
     if (!saved.ok) {
       res.status(400).json({ error: 'bad_setting', message: saved.message });
       return;
     }
     const who = await adminEmail(req.device!);
-    await recordAdminAction(who, saved.trial.on ? 'gemini trial on' : 'gemini trial off', null, saved.trial.model);
-    console.log(`[squish] gemini trial switched ${saved.trial.on ? 'on' : 'off'} by ${who} — model ${saved.trial.model}${saved.trial.keySet ? '' : ', but no GEMINI_API_KEY is set'}`);
-    res.json(saved.trial);
+    const changed = FEATURES.flatMap((f) =>
+      (['admins', 'everyone'] as const)
+        .filter((audience) => before[f.id][audience].join() !== saved.routes[f.id][audience].join())
+        .map((audience) => `${f.id} for ${audience}: ${saved.routes[f.id][audience].join(' → ')}`),
+    );
+    if (changed.length) {
+      await recordAdminAction(who, 'change AI models', null, changed.join('; ').slice(0, 500));
+      console.log(`[squish] AI models changed by ${who} — ${changed.join('; ')}`);
+    }
+    res.json({ routes: saved.routes });
   } catch (error) {
-    logFailure('admin gemini save', error);
+    logFailure('admin models save', error);
     res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
   }
 });
@@ -2141,29 +2188,10 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
     const plate: Crockery = { plateCm: inRange(crockery?.plateCm, 15, 40), bowlMl: inRange(crockery?.bowlMl, 150, 1500) };
     const note = typeof hint === 'string' ? hint : undefined;
     if (label) {
-      res.json(withoutQuestion(await analyseLabel(data, type, mealSlot)));
+      res.json(readBy(withoutQuestion(await analyseLabel(data, type, mealSlot)), 'label'));
       return;
     }
-    // An admin trying Gemini on their own meals; everybody else, always Claude (server/modelTrial.ts).
-    const reader = await photoReader(req.device);
-    if (reader.reader === 'gemini') {
-      try {
-        const { analysis, usage } = await analysePhotoGemini(data, type, mealSlot, note, reader.model, plate);
-        console.info(
-          `[squish] gemini trial: read by ${usage.model} in ${(usage.latencyMs / 1000).toFixed(1)}s` +
-            ` · ${analysis.items.length} food${analysis.items.length === 1 ? '' : 's'}${usage.costUsd === null ? '' : ` · $${usage.costUsd.toFixed(4)}`}`,
-        );
-        res.json(await signQuestion({ ...analysis, trial: { reader: 'gemini', model: reader.model } }));
-        return;
-      } catch (error) {
-        // The meal still gets read — by Claude — and the admin sees why Gemini did not.
-        console.warn('[squish] gemini trial failed — read by Claude instead:', error instanceof Error ? error.message : error);
-        const analysis = await analysePhoto(data, type, mealSlot, note, plate);
-        res.json(await signQuestion({ ...analysis, trial: { reader: 'claude', geminiError: error instanceof Error ? error.message.slice(0, 400) : 'Gemini failed' } }));
-        return;
-      }
-    }
-    res.json(await signQuestion(await analysePhoto(data, type, mealSlot, note, plate)));
+    res.json(await signQuestion(readBy(await analysePhoto(data, type, mealSlot, note, plate), 'photo')));
   } catch (error) {
     logFailure('photo analysis', error);
     // A rough guess to edit, not the AI's reading: it costs nothing.
@@ -2189,7 +2217,7 @@ app.post('/api/analyse/text', meter('photo'), async (req, res) => {
   }
 
   try {
-    res.json(await signQuestion(await analyseText(description.trim(), mealSlot)));
+    res.json(await signQuestion(readBy(await analyseText(description.trim(), mealSlot), 'words')));
   } catch (error) {
     logFailure('text analysis', error);
     // A rough guess from the food list, not the AI's: it costs nothing.
@@ -2336,7 +2364,7 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
 
   try {
     const source = await readRecipePage(url);
-    res.json(withoutQuestion(await analyseRecipe(source, asSlot(slot))));
+    res.json(readBy(withoutQuestion(await analyseRecipe(source, asSlot(slot))), 'recipe'));
   } catch (error) {
     await giveBack(req, res, 'recipe');
     if (error instanceof FetchGuardError) {
@@ -2518,7 +2546,7 @@ app.post('/api/analyse/refine', meter('photo'), async (req, res) => {
   }
 
   try {
-    res.json(await refineAnalysis(analysis as AnalysisResult, instruction.trim(), asSlot(slot)));
+    res.json(readBy(await refineAnalysis(analysis as AnalysisResult, instruction.trim(), asSlot(slot)), 'words'));
   } catch (error) {
     logFailure('refinement', error);
     await giveBack(req, res, 'photo');
@@ -2551,7 +2579,7 @@ app.post('/api/analyse/clarify', meter('clarify'), async (req, res) => {
   }
   try {
     const instruction = `Asked "${answer.question}", they answered "${answer.choice}".`;
-    res.json(await refineAnalysis(withoutQuestion(analysis as AnalysisResult), instruction, asSlot(slot)));
+    res.json(readBy(await refineAnalysis(withoutQuestion(analysis as AnalysisResult), instruction, asSlot(slot)), 'words'));
   } catch (error) {
     logFailure('clarify', error);
     res.status(502).json({ error: msg('I could not work that out — try editing it by hand.') });
@@ -2647,7 +2675,8 @@ const server = app.listen(PORT, () => {
   console.log(`🫧  Squish on http://localhost:${PORT}`);
   // Weekly plans a previous instance was making when it stopped: pick them up.
   startSweeping();
-  if (hasDatabase()) void describeGeminiTrial().then((line) => console.log(`    ${line}`)).catch(() => {});
+  // Where each AI feature is sent, for everybody and for admins, when either differs from the usual.
+  if (hasDatabase()) void describeRoutes().catch(() => {});
   // The food table, the first time there is none (server/foodTable.ts). In
   // the background: until it is loaded, meals are read exactly as before.
   setTimeout(() => void ensureFoodTable().catch((error: unknown) => logFailure('food table import', error)), 10_000).unref();

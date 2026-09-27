@@ -21,6 +21,7 @@ import { describePortion } from '../lib/units';
 import { currentEnergyUnit, energyValue, formatEnergy } from '../lib/region';
 import { plural, t } from '../lib/i18n';
 import { slotName, slotWord } from '../lib/words';
+import { modelLabel } from '../lib/models';
 
 /** The corrections people actually make to a scan, one tap each. */
 const HOW_MUCH = [
@@ -278,11 +279,11 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
             {upfShare >= 0.95 ? t('Ultra-processed') : t('Mostly ultra-processed')}
           </span>
         )}
-        {/* Only ever on an admin's own photo, during the Gemini trial. */}
-        {analysis.trial?.reader === 'gemini' && <span className="badge">🧪 Read by Gemini · {analysis.trial.model}</span>}
-        {analysis.trial?.reader === 'claude' && (
-          <span className="badge badge--warn" title={analysis.trial.geminiError}>
-            Gemini failed — read by Claude
+        {/* Only ever on an admin's own meal: which model read it, and whether a backup had to. */}
+        {analysis.readBy && (
+          <span className={`badge${analysis.readBy.failed.length ? ' badge--warn' : ''}`}>
+            🧪 {analysis.readBy.failed.length ? 'Backup: ' : ''}
+            {modelLabel(analysis.readBy.model)}
           </span>
         )}
         {analysis.offline ? (
@@ -297,12 +298,12 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         )}
       </div>
 
-      {/* Written out, not only in the badge's tooltip: a phone cannot hover. Admins only, during the trial. */}
-      {analysis.trial?.reader === 'claude' && (
-        <p className="tiny muted review-trial-error" dir="auto">
-          Why Gemini failed: {analysis.trial.geminiError}
+      {/* Written out, not in a tooltip: a phone cannot hover. Admins only. */}
+      {analysis.readBy?.failed.map((failure) => (
+        <p className="tiny muted review-trial-error" dir="auto" key={failure.model}>
+          {modelLabel(failure.model)} failed: {failure.error}
         </p>
-      )}
+      ))}
 
       {/* Why it scores what it does, updating as items change. Folded: the
           meal is the point of this screen, the reasons are for whoever asks. */}

@@ -22,8 +22,10 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { NUTRITIONIST_TOOLS, type ToolCall } from './nutritionist-tools';
-import { priceUsage } from './claude';
+import { priceUsage } from './pricing';
 import { bill } from './billing';
+import { createMessage } from './providers';
+import { withModels } from './routing';
 import { regionNote } from './region';
 
 /** Charge a price to whoever is being served, and hand it straight back. */
@@ -32,10 +34,8 @@ const billed = (usd: number | null, model: string): number | null => {
   return usd;
 };
 
+/** What the request is built with until a route gives it a model (server/routing.ts). */
 const MODEL = process.env.SQUISH_CHAT_MODEL ?? process.env.SQUISH_MODEL ?? 'claude-opus-5';
-
-let client: Anthropic | null = null;
-const getClient = (): Anthropic => (client ??= new Anthropic());
 
 /**
  * A turn on the wire.
@@ -351,14 +351,54 @@ export function chatRequest(
   };
 }
 
+/**
+ * The request made safe for a Claude model that may not have written the
+ * conversation so far.
+ *
+ * Claude signs its thinking, and while a question's lookups are still going
+ * it wants its own last turn back as it was, thinking first. A turn written
+ * by Gemini has none, and a backup Claude cannot vouch for another model's
+ * signatures — so for a backup the thinking is taken out, and whenever the
+ * question in progress has a turn without it, this round goes without
+ * thinking. Everything already answered is unaffected.
+ */
+export function forClaude(params: Anthropic.MessageCreateParamsNonStreaming, backup: boolean): Anthropic.MessageCreateParamsNonStreaming {
+  const unsigned = (block: Anthropic.ContentBlockParam) => block.type !== 'thinking' && block.type !== 'redacted_thinking';
+  const messages = backup
+    ? params.messages
+        .map((m) => (typeof m.content === 'string' ? m : { ...m, content: m.content.filter(unsigned) }))
+        .filter((m) => typeof m.content === 'string' || m.content.length > 0)
+    : params.messages;
+  const asked = messages.findLastIndex((m) => m.role === 'user' && (typeof m.content === 'string' || !m.content.some((b) => b.type === 'tool_result')));
+  const bare = messages
+    .slice(asked + 1)
+    .some((m) => m.role === 'assistant' && Array.isArray(m.content) && m.content.length > 0 && unsigned(m.content[0]));
+  return bare ? { ...params, messages, thinking: { type: 'disabled' } } : { ...params, messages };
+}
+
 export async function chatStep(
   messages: ChatMessage[],
   context: ChatContext,
   notes: Note[] = [],
   tuning: Tuning = {},
 ): Promise<ChatStep> {
+  // The eval names its model; the app asks the 'chat' route, backups and all.
+  return withModels('chat', (model, attempt) => chatStepOn(model, attempt > 0, messages, context, notes, tuning), tuning.model ? { models: [tuning.model] } : {});
+}
+
+async function chatStepOn(
+  model: string,
+  backup: boolean,
+  messages: ChatMessage[],
+  context: ChatContext,
+  notes: Note[],
+  tuning: Tuning,
+): Promise<ChatStep> {
   const startedAt = Date.now();
-  const response = await getClient().messages.create(chatRequest(messages, context, notes, tuning));
+  const request = chatRequest(messages, context, notes, { ...tuning, model });
+  // Haiku has neither adaptive thinking nor an effort setting.
+  const tuned: typeof request = model.startsWith('claude-haiku') ? { ...request, thinking: { type: 'disabled' }, output_config: undefined } : request;
+  const response = await createMessage(model.startsWith('claude-') ? forClaude(tuned, backup) : tuned);
 
   const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
   const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;

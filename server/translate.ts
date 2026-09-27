@@ -379,8 +379,12 @@ export function translateRequest(entries: CatalogEntry[], language: Pack, model:
     model,
     max_tokens: 16000,
     system: TRANSLATE_SYSTEM,
-    thinking: { type: 'disabled' },
-    output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
+    // Claude without thinking, at medium effort where the model takes one; Gemini as it comes.
+    ...(model.startsWith('claude-') ? { thinking: { type: 'disabled' as const } } : {}),
+    output_config: {
+      ...(model.startsWith('claude-') && !model.startsWith('claude-haiku') ? { effort: 'medium' as const } : {}),
+      format: { type: 'json_schema', schema },
+    },
     messages: [
       {
         role: 'user',

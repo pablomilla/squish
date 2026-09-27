@@ -148,25 +148,32 @@ export async function giveBackUse(email: string, kind: 'chat' | 'weekplan'): Pro
   }
 }
 
-export interface GeminiTrial {
-  on: boolean;
-  model: string;
-  keySet: boolean;
+export type ModelFeature = 'photo' | 'label' | 'words' | 'fill' | 'recipe' | 'chat' | 'weekplan' | 'coach' | 'translate';
+export type ModelAudience = 'admins' | 'everyone';
+export type ModelRoutes = Record<ModelFeature, Record<ModelAudience, string[]>>;
+
+/** Every AI feature's route, the models on offer and what has been failing (server/routing.ts). */
+export interface ModelSettings {
+  features: { id: ModelFeature; label: string; detail: string; personal: boolean }[];
+  models: { id: string; provider: 'anthropic' | 'google'; price: { input: number; output: number } | null; ready: boolean }[];
+  routes: ModelRoutes;
+  everyoneMayUseGemini: boolean;
+  failures: { feature: ModelFeature; model: string; failures: number; rescued: number; lastError: string; lastAt: string }[];
 }
 
-export const fetchGeminiTrial = (): Promise<GeminiTrial | null> => ask('/api/admin/gemini');
+export const fetchModelSettings = (): Promise<ModelSettings | null> => ask('/api/admin/models');
 
-export async function saveGeminiTrial(change: { on?: boolean; model?: string }): Promise<{ ok: true; trial: GeminiTrial } | { ok: false; message: string }> {
+export async function saveModelRoutes(routes: ModelRoutes): Promise<{ ok: true; routes: ModelRoutes } | { ok: false; message: string }> {
   try {
     const token = await deviceToken(apiUrl);
-    const response = await fetch(apiUrl('/api/admin/gemini'), {
+    const response = await fetch(apiUrl('/api/admin/models'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify(change),
+      body: JSON.stringify({ routes }),
     });
-    const payload = (await response.json().catch(() => ({}))) as GeminiTrial & { message?: string };
-    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.' };
-    return { ok: true, trial: payload };
+    const payload = (await response.json().catch(() => ({}))) as { routes?: ModelRoutes; message?: string };
+    if (!response.ok || !payload.routes) return { ok: false, message: payload.message ?? 'That did not work.' };
+    return { ok: true, routes: payload.routes };
   } catch {
     return { ok: false, message: 'Could not reach Squish just now.' };
   }

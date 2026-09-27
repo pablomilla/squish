@@ -11,6 +11,11 @@ import { MICROS } from '../src/types';
 import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
+import { priceUsage } from './pricing';
+import { createMessage, streamMessage } from './providers';
+import { withModels, type Feature } from './routing';
+
+export { priceUsage, type TokenCounts } from './pricing';
 import { regionNote } from './region';
 import { groundMeal } from './grounding';
 import { tableFoods } from './foodTable';
@@ -22,25 +27,15 @@ import { msg } from '../src/lib/i18n';
 const AISLE_IDS = AISLES.map((a) => a.id);
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
-const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
 /**
  * Words rather than pictures — a meal typed or spoken, a correction, the
  * answer to a question about one — go to a cheaper model. Reading a photo is
  * the hard part, and stays on MODEL; turning "two slices of toast with
  * butter" into nutrition is well within Sonnet 5, at 40% of the price per
- * token and quicker. SQUISH_TEXT_MODEL changes it without a deploy (set it
- * to the same as SQUISH_MODEL to undo this).
+ * token and quicker. The default for the words routes (server/routing.ts),
+ * where the dashboard can change it; shown in the startup banner.
  */
 export const TEXT_MODEL = process.env.SQUISH_TEXT_MODEL ?? 'claude-sonnet-5';
-
-/** USD per million tokens. Used to price a run, not to bill anyone. */
-const PRICING: Record<string, { input: number; output: number }> = {
-  'claude-opus-5': { input: 5, output: 25 },
-  'claude-opus-4-8': { input: 5, output: 25 },
-  'claude-sonnet-5': { input: 2, output: 10 },
-  'claude-haiku-4-5': { input: 1, output: 5 },
-  'claude-fable-5-1': { input: 10, output: 50 },
-};
 
 export interface ModelUsage {
   model: string;
@@ -58,7 +53,7 @@ export interface DetailedAnalysis {
   usage: ModelUsage;
 }
 
-let client: Anthropic | null = null;
+
 
 /**
  * True when the SDK will be able to authenticate, by any of the routes it
@@ -83,10 +78,6 @@ export function credentialSource(): 'api-key' | 'auth-token' | 'federation' | 'n
   return hasCredentials() ? 'federation' : 'none';
 }
 
-function getClient(): Anthropic {
-  if (!client) client = new Anthropic();
-  return client;
-}
 
 const NUTRIENT_PROPS = {
   calories: { type: 'number', description: 'kcal' },
@@ -368,7 +359,8 @@ const RECIPE_SCHEMA = {
 
 function tuningFor(model: string, schema: Record<string, unknown> = MEAL_SCHEMA): Pick<Anthropic.MessageCreateParamsNonStreaming, 'thinking' | 'output_config'> {
   const format = { type: 'json_schema', schema } as const;
-  if (model.startsWith('claude-haiku')) {
+  // Haiku has no adaptive thinking, and Gemini thinks in its own way: the schema is all either takes.
+  if (model.startsWith('claude-haiku') || model.startsWith('gemini-')) {
     return { output_config: { format } };
   }
   return {
@@ -377,39 +369,10 @@ function tuningFor(model: string, schema: Record<string, unknown> = MEAL_SCHEMA)
   };
 }
 
-/**
- * Cached tokens are not free, and they are not full price either.
- *
- * A read costs a tenth of an ordinary input token and a write costs a quarter
- * more than one, and `input_tokens` counts neither — so a priced run that
- * ignores them under-reports exactly when caching is doing its job, which is
- * the moment you most want the number to be right.
- */
-const CACHE_READ = 0.1;
-const CACHE_WRITE = 1.25;
-
-export interface TokenCounts {
-  inputTokens: number;
-  outputTokens: number;
-  cacheReadTokens?: number;
-  cacheWriteTokens?: number;
-}
-
-/** What a call cost, in dollars, or null for a model with no price on file. */
 /** Charge a price to whoever is being served, against its model, and hand it straight back. */
 function billed(usd: number | null, model: string): number | null {
   bill(usd, model);
   return usd;
-}
-
-export function priceUsage(model: string, counts: TokenCounts): number | null {
-  const rate = PRICING[model];
-  if (!rate) return null;
-  const input =
-    counts.inputTokens +
-    (counts.cacheReadTokens ?? 0) * CACHE_READ +
-    (counts.cacheWriteTokens ?? 0) * CACHE_WRITE;
-  return (input * rate.input + counts.outputTokens * rate.output) / 1_000_000;
 }
 
 /*
@@ -506,8 +469,8 @@ export interface CallCost {
 
 /**
  * The full figures for the named foods the table could not answer: one
- * text-only question to the text model (the main model if that fails), no
- * photo. Nothing to fill, nothing asked.
+ * text-only question, no photo, on the 'fill' route (the cheaper text model
+ * first). Nothing to fill, nothing asked.
  */
 export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ meal: ModelMeal; filled: number; cost: CallCost | null }> {
   const items = meal.items ?? [];
@@ -521,7 +484,7 @@ export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ mea
 
   const ask = async (model: string) => {
     const startedAt = Date.now();
-    const response = await getClient().messages.create({
+    const response = await createMessage({
       model,
       // A week can leave dozens of foods to fill; room for each, and for thinking.
       max_tokens: Math.min(32000, 2000 + 300 * needing.length),
@@ -542,14 +505,7 @@ export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ mea
     return { figures: parsed.items!, cost };
   };
 
-  let answer: Awaited<ReturnType<typeof ask>>;
-  try {
-    answer = await ask(TEXT_MODEL);
-  } catch (error) {
-    if (TEXT_MODEL === MODEL) throw error;
-    console.warn(`[squish] ${TEXT_MODEL} could not fill the figures — asking ${MODEL}:`, error instanceof Error ? error.message : error);
-    answer = await ask(MODEL);
-  }
+  const answer = await withModels('fill', ask);
 
   const next = [...items];
   needing.forEach(({ item, index }, n) => {
@@ -560,16 +516,31 @@ export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ mea
   return { meal: { ...meal, items: next }, filled: needing.length, cost: answer.cost };
 }
 
-async function requestMeal(
+/**
+ * Read a meal on the feature's route — each model in turn until one gives an
+ * answer that parses — or on one model alone when the benchmark names it.
+ */
+function requestMeal(
   content: Anthropic.ContentBlockParam[],
-  fallbackSlot?: MealSlot,
-  model: string = MODEL,
+  fallbackSlot: MealSlot | undefined,
+  feature: Feature,
   system: string = SYSTEM,
   schema: Record<string, unknown> = MEAL_SCHEMA,
+  pinned?: string,
+): Promise<DetailedAnalysis> {
+  return withModels(feature, (model) => requestMealOn(model, content, fallbackSlot, system, schema), pinned ? { models: [pinned] } : {});
+}
+
+async function requestMealOn(
+  model: string,
+  content: Anthropic.ContentBlockParam[],
+  fallbackSlot: MealSlot | undefined,
+  system: string,
+  schema: Record<string, unknown>,
 ): Promise<DetailedAnalysis> {
   const startedAt = Date.now();
   const brief = await tableFirst(system);
-  const response = await getClient().messages.create({
+  const response = await createMessage({
     model,
     max_tokens: 8000,
     // Where they live goes last, after the rules every country shares.
@@ -687,7 +658,8 @@ export async function analysePhotoDetailed(
   mediaType: string,
   slot?: MealSlot,
   hint?: string,
-  model: string = MODEL,
+  /** One model only, for the benchmark; left out, the photo route decides. */
+  model?: string,
   crockery?: Crockery,
 ): Promise<DetailedAnalysis> {
   return requestMeal(
@@ -696,6 +668,9 @@ export async function analysePhotoDetailed(
       { type: 'text', text: photoPrompt(slot, hint, crockery) },
     ],
     slot,
+    'photo',
+    SYSTEM,
+    MEAL_SCHEMA,
     model,
   );
 }
@@ -734,7 +709,7 @@ export async function analyseLabel(
       },
     ],
     slot,
-    MODEL,
+    'label',
     LABEL_SYSTEM,
   );
   return analysis;
@@ -747,28 +722,18 @@ export async function analysePhoto(
   hint?: string,
   crockery?: Crockery,
 ): Promise<AnalysisResult> {
-  const { analysis } = await analysePhotoDetailed(imageBase64, mediaType, slot, hint, MODEL, crockery);
+  const { analysis } = await analysePhotoDetailed(imageBase64, mediaType, slot, hint, undefined, crockery);
   return analysis;
 }
 
 /**
- * Ask the text model, and the main one if that fails — a refusal, an outage,
- * a malformed answer. Words are cheap to ask about twice; a meal logged as a
- * rough offline guess because the cheaper model had a bad moment is not.
+ * A meal in words, on the 'words' route: the cheaper text model first, the
+ * main one behind it — a refusal, an outage, a malformed answer. Words are
+ * cheap to ask about twice; a meal logged as a rough offline guess because
+ * the cheaper model had a bad moment is not.
  */
-async function requestText(
-  content: Anthropic.ContentBlockParam[],
-  slot: MealSlot | undefined,
-  system: string = SYSTEM,
-  schema: Record<string, unknown> = MEAL_SCHEMA,
-): Promise<DetailedAnalysis> {
-  try {
-    return await requestMeal(content, slot, TEXT_MODEL, system, schema);
-  } catch (error) {
-    if (TEXT_MODEL === MODEL) throw error;
-    console.warn(`[squish] ${TEXT_MODEL} could not read that — asking ${MODEL}:`, error instanceof Error ? error.message : error);
-    return requestMeal(content, slot, MODEL, system, schema);
-  }
+function requestText(content: Anthropic.ContentBlockParam[], slot: MealSlot | undefined): Promise<DetailedAnalysis> {
+  return requestMeal(content, slot, 'words');
 }
 
 export async function analyseText(description: string, slot?: MealSlot): Promise<AnalysisResult> {
@@ -794,7 +759,7 @@ export async function analyseRecipe(source: RecipeSource, slot?: MealSlot): Prom
   const { analysis, raw } = await requestMeal(
     [{ type: 'text', text: recipePrompt(source) }],
     slot,
-    MODEL,
+    'recipe',
     RECIPE_SYSTEM,
     RECIPE_SCHEMA,
   );
@@ -864,14 +829,20 @@ export interface CoachContext {
 
 /** Short daily nudge in Squish's voice. */
 export async function coachMessage(ctx: CoachContext): Promise<string> {
-  const response = await getClient().messages.create({
-    model: MODEL,
+  return withModels('coach', (model) => coachOn(model, ctx));
+}
+
+async function coachOn(model: string, ctx: CoachContext): Promise<string> {
+  const response = await createMessage({
+    model,
     max_tokens: 400,
     system:
       "You are Squish, a small round blob mascot who helps someone eat well. You speak in one or two short sentences, warm, playful and specific. Never shame food choices, never mention calories as something to 'burn off', never give medical advice. Reply with the message only — no quotes, no preamble.\n\n" +
       regionNote('coach'),
-    thinking: { type: 'disabled' },
-    output_config: { effort: 'low' },
+    // A line, not a problem to reason about: no thinking, and little effort where the model takes one.
+    ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
+      ? { thinking: { type: 'disabled' as const }, output_config: { effort: 'low' as const } }
+      : {}),
     messages: [
       {
         role: 'user',
@@ -890,19 +861,20 @@ Pick the one thing most worth mentioning right now and say it kindly. Fit it to 
     ],
   });
 
-  return response.content
+  billed(priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model);
+  const nudge = response.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('')
     .trim();
+  if (!nudge) throw new Error('The nudge came back empty.');
+  return nudge;
 }
 
 
 /* ------------------------------------------------------------------ *
  * The nutritionist's weekly plan (server/weekplan.ts has the why).
  * ------------------------------------------------------------------ */
-
-const WEEKPLAN_MODEL = process.env.SQUISH_WEEKPLAN_MODEL ?? MODEL;
 
 export interface PlannedDay {
   date: string;
@@ -956,12 +928,6 @@ export function toWeekPlan(parsed: ModelWeek, req: WeekPlanRequest): WeekPlan {
 }
 
 /**
- * Ask for the week. Streamed, because a week of meals with thinking can run
- * past a minute and a non-streamed request that long risks a timeout; and
- * with the server-side fallback, so a refusal on one model is retried on
- * another rather than handed back as an empty week.
- */
-/**
  * A week's ingredients checked against the food table in one pass, and — in
  * table-first mode — the named ones it could not answer filled in with one
  * question for the whole week, not one per meal.
@@ -997,19 +963,30 @@ async function groundWeek(week: ModelWeek, brief: boolean): Promise<{ week: Mode
   return { week: { ...week, days }, fill };
 }
 
-export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Promise<WeekPlan> {
+/**
+ * Ask for the week, on the 'weekplan' route. Streamed from Claude, because a
+ * week of meals with thinking can run past a minute and a non-streamed
+ * request that long risks a timeout; and on Claude with the server-side
+ * fallback too, so a refusal on one model is retried on another inside the
+ * same call before the route's own backup is asked.
+ */
+export function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Promise<WeekPlan> {
+  return withModels('weekplan', (model) => planWeekOn(model, req, signal), { signal });
+}
+
+async function planWeekOn(model: string, req: WeekPlanRequest, signal?: AbortSignal): Promise<WeekPlan> {
   const startedAt = Date.now();
-  const haiku = WEEKPLAN_MODEL.startsWith('claude-haiku');
+  const plain = model.startsWith('claude-haiku') || model.startsWith('gemini-');
   // Table first, as for meals: an ingredient the table can answer carries only calories and free sugar.
   const brief = await tableFirst(WEEKPLAN_SYSTEM);
   const schema = (brief ? briefSchema(WEEKPLAN_SCHEMA as unknown as Record<string, unknown>) : WEEKPLAN_SCHEMA) as Record<string, unknown>;
   const format = { type: 'json_schema' as const, schema };
-  const stream = getClient().beta.messages.stream({
-    model: WEEKPLAN_MODEL,
+  const response = await streamMessage({
+    model,
     max_tokens: 32000,
     system: `${WEEKPLAN_SYSTEM}${brief ? `\n${TABLE_FIRST_RULE}` : ''}\n\n${regionNote('plan')}`,
     messages: [{ role: 'user', content: weekPlanPrompt(req) }],
-    ...(haiku
+    ...(plain
       ? { output_config: { format } }
       : {
           thinking: { type: 'adaptive' as const },
@@ -1017,8 +994,7 @@ export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Prom
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default' as const,
         }),
-  }, { signal });
-  const response = await stream.finalMessage();
+  }, signal);
 
   const usage = response.usage;
   const usd = billed(
@@ -1039,7 +1015,7 @@ export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Prom
   if (response.stop_reason === 'max_tokens') throw new WeekPlanError(msg('That plan ran long. Try fewer days, or without snacks.'));
 
   const text = response.content
-    .filter((block): block is Anthropic.Beta.BetaTextBlock => block.type === 'text')
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('');
   const { week, fill } = await groundWeek(JSON.parse(text) as ModelWeek, brief);
@@ -1054,8 +1030,13 @@ export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Prom
  * interface is translated once for everyone, so its cost is the business's,
  * and is logged for the record.
  */
-export async function translateBatch(entries: CatalogEntry[], language: Pack): Promise<Record<string, unknown>> {
-  const response = await getClient().messages.create(translateRequest(entries, language, MODEL));
+export function translateBatch(entries: CatalogEntry[], language: Pack): Promise<Record<string, unknown>> {
+  // Too long is too long on any model: the batch is split rather than asked again whole.
+  return withModels('translate', (model) => translateOn(model, entries, language), { final: (error) => error instanceof TranslationTooLong });
+}
+
+async function translateOn(model: string, entries: CatalogEntry[], language: Pack): Promise<Record<string, unknown>> {
+  const response = await createMessage(translateRequest(entries, language, model));
   // Too long for one answer: the caller splits the batch and asks again.
   if (response.stop_reason === 'max_tokens') throw new TranslationTooLong(`translation of ${entries.length} strings into ${language} ran long`);
   if (response.stop_reason === 'refusal') throw new Error('translation stopped: refusal');

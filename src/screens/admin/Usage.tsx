@@ -9,6 +9,7 @@ import { fetchWeekPlans, type Finance, type Metrics, type Overview, type PlanRec
 import { Chart } from './charts';
 import { KINDS, KIND_COLOR, KIND_LABEL, count, isGemini, longDay, modelLabel, monthName, perCall, pounds, shortDay } from './format';
 import { Tile } from './Tiles';
+import Models from './Models';
 
 export default function Usage({ metrics, finance, overview }: { metrics: Metrics | null; finance: Finance | null; overview: Overview | null }) {
   const m = metrics;
@@ -141,6 +142,8 @@ export default function Usage({ metrics, finance, overview }: { metrics: Metrics
       </div>
 
       {f && <ByModel month={f.month} />}
+
+      <Models />
 
       <WeekPlans />
     </div>

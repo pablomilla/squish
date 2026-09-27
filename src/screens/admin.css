@@ -378,6 +378,32 @@
 .admin-plan-who { overflow-wrap: anywhere; }
 
 /* The Gemini trial card: a short explanation, the model, and the switch. */
-.admin-gemini { display: flex; flex-direction: column; gap: 10px; }
-.admin-gemini p { margin: 0; }
-.admin-gemini > .btn { align-self: flex-start; }
+/* AI models: one row per job; its two chains side by side when there is room, stacked on a phone. */
+.admin-models { display: flex; flex-direction: column; gap: var(--s2); }
+.admin-models > p { margin: 0; }
+.admin-models-list { display: flex; flex-direction: column; }
+.admin-model-row { border-top: 1px solid var(--line); }
+.admin-model-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+  padding: 10px 0;
+  cursor: pointer;
+  list-style: none;
+}
+.admin-model-summary::-webkit-details-marker { display: none; }
+.admin-model-summary::before { content: '▸'; color: var(--ink-2); margin-inline-end: -8px; }
+.admin-model-row[open] > .admin-model-summary::before { content: '▾'; }
+.admin-model-summary b { min-width: 11em; }
+.admin-model-edit { display: grid; gap: var(--s2); padding: 0 0 var(--s2); }
+@media (min-width: 900px) {
+  .admin-model-edit { grid-template-columns: minmax(180px, 1fr) minmax(0, 1.3fr) minmax(0, 1.3fr); }
+}
+.admin-model-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.admin-model-failed { color: var(--warn); overflow-wrap: anywhere; }
+.admin-model-chain { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.admin-model-chain legend { padding: 0; margin-bottom: 2px; }
+.admin-model-slot { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); align-items: center; gap: 8px; }
+.admin-model-slot select { width: 100%; min-width: 0; font-size: var(--text-small, 0.9rem); padding-block: 6px; }
+.admin-models-actions { justify-content: space-between; align-items: center; gap: var(--s2); flex-wrap: wrap; }

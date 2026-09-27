@@ -17,7 +17,7 @@ import { createInterface } from 'node:readline/promises';
 import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { analysePhotoDetailed, hasCredentials, type Crockery, type ModelUsage } from '../server/claude';
-import { DEFAULT_GEMINI, GEMINI_PRICING, analysePhotoGemini, hasGeminiKey, isGeminiModel } from '../server/gemini';
+import { DEFAULT_GEMINI, GEMINI_PRICING, hasGeminiKey, isGeminiModel } from '../server/gemini';
 import type { MealSlot } from '../src/types';
 
 const BENCH_DIR = resolve(process.cwd(), 'bench');
@@ -284,9 +284,8 @@ async function runOne(fixture: MealFixture, model: string, run: number, variant:
   const mediaType = MEDIA[extname(fixture.file).toLowerCase()] ?? 'image/jpeg';
 
   try {
-    // Same photo, same instructions, same answer shape; only the provider differs.
-    const analyse = isGeminiModel(model) ? analysePhotoGemini : analysePhotoDetailed;
-    const { analysis, usage } = await analyse(base64, mediaType, fixture.slot, undefined, model, variant.crockery);
+    // Same photo, same instructions, same answer shape; only the model differs (server/providers.ts).
+    const { analysis, usage } = await analysePhotoDetailed(base64, mediaType, fixture.slot, undefined, model, variant.crockery);
     return {
       model,
       meal: fixture.name,
