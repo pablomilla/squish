@@ -365,12 +365,9 @@
 /* The people list scrolls in its own box, so fifty names do not push everything else off the page. */
 .admin--shell .admin-people { max-height: 560px; overflow-y: auto; padding-right: 4px; }
 .admin--shell .admin-person { gap: 4px; padding-bottom: 2px; }
-@media (min-width: 1000px) {
-  .admin--shell .admin-person { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--s3); }
-  .admin--shell .admin-person-head { grid-column: 1; }
-  .admin--shell .admin-person p { grid-column: 1; }
-  .admin--shell .admin-person .row { grid-column: 2; grid-row: 1 / span 2; }
-}
+/* Buttons sit on their own line under each person's details, at every width:
+   beside them, a person with every button squeezed the details into a
+   column one word wide. */
 .affiliate-portal { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: var(--s3); }
 
 /* The weekly plans list: one short block each, readable on a phone. */
