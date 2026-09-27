@@ -318,9 +318,15 @@ async function loadFixtures(): Promise<MealFixture[]> {
   try {
     await access(path);
   } catch {
+    // A set that is downloaded, not made by hand — and gone again after a deploy on Render, whose disk starts fresh each time.
+    if (SET === 'nutrition5k') {
+      throw new Error('No Nutrition5k dishes here yet (a deploy on Render clears them). Run npm run nutrition5k first — the same seed brings back the same dishes.');
+    }
     throw new Error(
-      'No bench/manifest.json yet. Copy bench/manifest.example.json to bench/manifest.json, ' +
-        'put your photos in bench/photos/, and read bench/README.md for how to pick them.',
+      SET
+        ? `No bench/${SET}/manifest.json.`
+        : 'No bench/manifest.json yet. Copy bench/manifest.example.json to bench/manifest.json, ' +
+            'put your photos in bench/photos/, and read bench/README.md for how to pick them.',
     );
   }
   const fixtures = JSON.parse(await readFile(path, 'utf8')) as MealFixture[];

@@ -124,7 +124,9 @@ npm run bench -- --set nutrition5k --parallel 4   # asks before it spends anythi
 - `npm run nutrition5k -- --count 507` takes the whole overhead test split; `--seed 2` a different
   sample. The same seed always picks the same dishes, so runs a month apart compare like with like.
 - Photos and figures download from Google's public bucket into `bench/nutrition5k/`, which git
-  ignores. The data is CC BY 4.0: cite the paper if you publish a result.
+  ignores. On Render that folder is cleared by every deploy (its disk starts fresh), so run
+  `npm run nutrition5k` again first; the same seed brings back the same dishes. Copy
+  `bench/nutrition5k/report.md` somewhere safe if you want to keep a result. The data is CC BY 4.0: cite the paper if you publish a result.
 - The report opens with the paper's own measure — mean absolute error, and that as a share of the
   mean true value — for calories, mass, fat, carbohydrate and protein, beside the paper's results:
   **26.1%** calorie error from the photo alone, **18.8%** with a depth camera, **16.5%** at best.
