@@ -207,9 +207,12 @@
 }
 .admin-note { margin: var(--s2) 0 0; }
 
-/* ---------- The period picker ---------- */
-.segmented { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px; }
-.segmented button {
+/* ---------- The period picker ----------
+ * Its own class, not the app's .segmented: this file stays loaded once the
+ * dashboard has been opened, and a bare .segmented here shrank every pill
+ * control in the app to fit its text — the camera's included. */
+.admin-period { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px; }
+.admin-period button {
   border: 0;
   background: none;
   font: inherit;
@@ -220,12 +223,12 @@
   border-radius: var(--r-pill);
   cursor: pointer;
 }
-.segmented button[aria-pressed='true'] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.admin-period button[aria-pressed='true'] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
 
 /* ---------- Tiles ---------- */
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--s3); }
-@media (min-width: 1300px) { .tiles--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-.tile {
+:is(.admin, .partners) .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--s3); }
+@media (min-width: 1300px) { :is(.admin, .partners) .tiles--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+:is(.admin, .partners) .tile {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -238,11 +241,11 @@
   font: inherit;
   color: inherit;
 }
-.tile--link { cursor: pointer; transition: border-color 0.15s ease, transform 0.15s ease; }
-.tile--link:hover { border-color: var(--line-strong); transform: translateY(-1px); }
-.tile-label { font-size: var(--text-caption); color: var(--ink-2); font-weight: 600; }
-.tile-value { font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.tile-note { font-size: var(--text-caption); color: var(--ink-2); }
+:is(.admin, .partners) .tile--link { cursor: pointer; transition: border-color 0.15s ease, transform 0.15s ease; }
+:is(.admin, .partners) .tile--link:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+:is(.admin, .partners) .tile-label { font-size: var(--text-caption); color: var(--ink-2); font-weight: 600; }
+:is(.admin, .partners) .tile-value { font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+:is(.admin, .partners) .tile-note { font-size: var(--text-caption); color: var(--ink-2); }
 .sparkline { width: 100%; height: 32px; margin-top: 6px; display: block; }
 
 /* ---------- Alerts ---------- */
@@ -256,26 +259,26 @@
 .alert--info { background: var(--brand-soft); }
 
 /* ---------- Charts ---------- */
-.chart { display: flex; flex-direction: column; gap: 6px; }
-.chart-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 24px; }
-.chart-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--text-caption); color: var(--ink-2); }
-.chart-legend li { display: inline-flex; align-items: center; gap: 6px; }
-.chart-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; display: inline-block; margin-right: 6px; vertical-align: -1px; }
-.chart-legend .chart-swatch { margin-right: 0; }
-.chart-toggle { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: var(--r-pill); padding: 3px 10px; cursor: pointer; font: inherit; font-size: var(--text-caption); margin-left: auto; }
-.chart-plot { position: relative; width: 100%; }
-.chart-plot svg { display: block; overflow: visible; touch-action: pan-y; }
-.chart-plot svg:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; border-radius: 6px; }
-.chart-grid { stroke: var(--dv-grid); stroke-width: 1; }
-.chart-zero { stroke: var(--dv-axis); stroke-width: 1; }
-.chart-axis { fill: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
-.chart-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.chart-area { opacity: 0.14; }
-.chart-bar { transition: opacity 0.12s ease; }
-.chart-bar--faded { opacity: 0.35; }
-.chart-cross { stroke: var(--dv-axis); stroke-width: 1; stroke-dasharray: 3 3; }
-.chart-dot { stroke: var(--surface); stroke-width: 2; }
-.chart-tip {
+:is(.admin, .partners) .chart { display: flex; flex-direction: column; gap: 6px; }
+:is(.admin, .partners) .chart-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 24px; }
+:is(.admin, .partners) .chart-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--text-caption); color: var(--ink-2); }
+:is(.admin, .partners) .chart-legend li { display: inline-flex; align-items: center; gap: 6px; }
+:is(.admin, .partners) .chart-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+:is(.admin, .partners) .chart-legend .chart-swatch { margin-right: 0; }
+:is(.admin, .partners) .chart-toggle { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: var(--r-pill); padding: 3px 10px; cursor: pointer; font: inherit; font-size: var(--text-caption); margin-left: auto; }
+:is(.admin, .partners) .chart-plot { position: relative; width: 100%; }
+:is(.admin, .partners) .chart-plot svg { display: block; overflow: visible; touch-action: pan-y; }
+:is(.admin, .partners) .chart-plot svg:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; border-radius: 6px; }
+:is(.admin, .partners) .chart-grid { stroke: var(--dv-grid); stroke-width: 1; }
+:is(.admin, .partners) .chart-zero { stroke: var(--dv-axis); stroke-width: 1; }
+:is(.admin, .partners) .chart-axis { fill: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+:is(.admin, .partners) .chart-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+:is(.admin, .partners) .chart-area { opacity: 0.14; }
+:is(.admin, .partners) .chart-bar { transition: opacity 0.12s ease; }
+:is(.admin, .partners) .chart-bar--faded { opacity: 0.35; }
+:is(.admin, .partners) .chart-cross { stroke: var(--dv-axis); stroke-width: 1; stroke-dasharray: 3 3; }
+:is(.admin, .partners) .chart-dot { stroke: var(--surface); stroke-width: 2; }
+:is(.admin, .partners) .chart-tip {
   position: absolute;
   background: var(--surface);
   border: 1px solid var(--line-strong);
@@ -288,22 +291,22 @@
   z-index: 4;
   min-width: 150px;
 }
-.chart-tip-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
-.chart-tip-row b { margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
-.chart-tip-row .chart-swatch { margin-right: 0; }
-.chart-tip-total { border-top: 1px solid var(--line); padding-top: 3px; }
-.chart-table-wrap { max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r-sm); }
-.chart-table, .data-table { width: 100%; border-collapse: collapse; font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
-.chart-table th, .chart-table td, .data-table th, .data-table td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--line); }
-.chart-table th[scope='row'], .data-table th[scope='row'], .data-table thead th:first-child { text-align: left; font-weight: 500; }
-.chart-table thead th, .data-table thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--ink-2); font-weight: 600; }
+:is(.admin, .partners) .chart-tip-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+:is(.admin, .partners) .chart-tip-row b { margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
+:is(.admin, .partners) .chart-tip-row .chart-swatch { margin-right: 0; }
+:is(.admin, .partners) .chart-tip-total { border-top: 1px solid var(--line); padding-top: 3px; }
+:is(.admin, .partners) .chart-table-wrap { max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r-sm); }
+:is(.admin, .partners) .chart-table, .data-table { width: 100%; border-collapse: collapse; font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+:is(.admin, .partners) .chart-table th, :is(.admin, .partners) .chart-table td, .data-table th, .data-table td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--line); }
+:is(.admin, .partners) .chart-table th[scope='row'], .data-table th[scope='row'], .data-table thead th:first-child { text-align: left; font-weight: 500; }
+:is(.admin, .partners) .chart-table thead th, .data-table thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--ink-2); font-weight: 600; }
 .data-total th, .data-total td { font-weight: 700; border-bottom: 0; }
 
 /* ---------- A share of a whole ---------- */
-.split { display: flex; flex-direction: column; gap: var(--s2); }
-.split-bar { display: flex; gap: 2px; height: 14px; border-radius: var(--r-pill); overflow: hidden; }
-.split-bar span { min-width: 4px; }
-.split-empty { flex: 1; background: var(--line); }
+:is(.admin, .partners) .split { display: flex; flex-direction: column; gap: var(--s2); }
+:is(.admin, .partners) .split-bar { display: flex; gap: 2px; height: 14px; border-radius: var(--r-pill); overflow: hidden; }
+:is(.admin, .partners) .split-bar span { min-width: 4px; }
+:is(.admin, .partners) .split-empty { flex: 1; background: var(--line); }
 
 /* ---------- Funnel ---------- */
 .funnel { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s3); }
@@ -360,8 +363,8 @@
 .affiliate-stats div { display: flex; flex-direction: column; min-width: 0; }
 .affiliate-stats dt { font-size: var(--text-caption); color: var(--ink-2); }
 .affiliate-stats dd { margin: 0; font-variant-numeric: tabular-nums; }
-.how { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
-.segmented button { white-space: nowrap; }
+:is(.admin, .partners) .how { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.admin-period button { white-space: nowrap; }
 
 /* The people list scrolls in its own box, so fifty names do not push everything else off the page. */
 .admin--shell .admin-people { max-height: 560px; overflow-y: auto; padding-right: 4px; }

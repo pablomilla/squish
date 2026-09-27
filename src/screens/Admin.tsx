@@ -183,7 +183,7 @@ function Dashboard({
         }}
       >
         {ranged && (
-          <div className="segmented" role="group" aria-label="Period">
+          <div className="admin-period" role="group" aria-label="Period">
             {RANGES.map((range) => (
               <button key={range} type="button" aria-pressed={days === range} onClick={() => setDays(range)}>
                 {range} days
