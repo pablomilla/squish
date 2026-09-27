@@ -17,10 +17,16 @@ import { createInterface } from 'node:readline/promises';
 import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { analysePhotoDetailed, hasCredentials, type Crockery, type ModelUsage } from '../server/claude';
+import { GEMINI_PRICING, analysePhotoGemini, hasGeminiKey, isGeminiModel } from '../server/gemini';
 import type { MealSlot } from '../src/types';
 
 const BENCH_DIR = resolve(process.cwd(), 'bench');
-const DEFAULT_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
+const CLAUDE_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
+/**
+ * Claude's three, and Gemini 2.5 Flash beside them when there is a key for
+ * it (GEMINI_API_KEY in .env). Any Gemini model can be named with --models.
+ */
+const defaultModels = (): string[] => [...CLAUDE_MODELS, ...(hasGeminiKey() ? ['gemini-2.5-flash'] : [])];
 
 /** Store cut on subscriptions: 15% on the small-business rate, 30% standard. */
 const STORE_CUT = { small: 0.15, standard: 0.3 };
@@ -278,14 +284,9 @@ async function runOne(fixture: MealFixture, model: string, run: number, variant:
   const mediaType = MEDIA[extname(fixture.file).toLowerCase()] ?? 'image/jpeg';
 
   try {
-    const { analysis, usage } = await analysePhotoDetailed(
-      base64,
-      mediaType,
-      fixture.slot,
-      undefined,
-      model,
-      variant.crockery,
-    );
+    // Same photo, same instructions, same answer shape; only the provider differs.
+    const analyse = isGeminiModel(model) ? analysePhotoGemini : analysePhotoDetailed;
+    const { analysis, usage } = await analyse(base64, mediaType, fixture.slot, undefined, model, variant.crockery);
     return {
       model,
       meal: fixture.name,
@@ -410,14 +411,30 @@ export function markdownReport(scores: ModelScore[], fixtures: MealFixture[], at
 async function main(): Promise<void> {
   console.log(`\n${bold('🫧  Squish · model benchmark')}\n`);
 
-  if (!hasCredentials()) {
+  const models = (arg('models') ?? defaultModels().join(',')).split(',').map((m) => m.trim()).filter(Boolean);
+
+  if (models.some((m) => !isGeminiModel(m)) && !hasCredentials()) {
     console.log(red('  No Anthropic credentials — this benchmark calls the real API.'));
-    console.log('  Run npm run setup:ai first.\n');
+    console.log('  Run npm run setup:ai first, or name only Gemini models with --models.\n');
     process.exitCode = 1;
     return;
   }
-
-  const models = (arg('models') ?? DEFAULT_MODELS.join(',')).split(',').map((m) => m.trim()).filter(Boolean);
+  if (models.some(isGeminiModel) && !hasGeminiKey()) {
+    console.log(red('  No GEMINI_API_KEY — put one in .env to benchmark Gemini (a key on a billed Google project).'));
+    console.log('  Or leave Gemini out: --models claude-opus-5,claude-sonnet-5\n');
+    process.exitCode = 1;
+    return;
+  }
+  if (!arg('models') && !hasGeminiKey()) {
+    console.log(dim('  Gemini is left out: add GEMINI_API_KEY to .env to compare gemini-2.5-flash as well.'));
+  }
+  const unpriced = models.filter((m) => isGeminiModel(m) && !GEMINI_PRICING[m]);
+  if (unpriced.length) {
+    console.log(dim(`  No price on file for ${unpriced.join(', ')}: accuracy is measured, cost shows as $0.`));
+  }
+  if (models.some(isGeminiModel)) {
+    console.log(dim('  Gemini costs use Google\'s 2025 prices (server/gemini.ts) — check ai.google.dev/pricing.'));
+  }
   const runs = Math.max(1, Number(arg('runs') ?? 1));
   const subscription = Number(arg('sub') ?? 6.99);
 

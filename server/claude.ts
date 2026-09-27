@@ -481,6 +481,24 @@ export function crockeryNote(crockery?: Crockery): string {
   return `${capitalise(parts.join(' and '))} — use that as the scale wherever it is in shot.`;
 }
 
+/**
+ * What goes with a meal photo, in words. Shared with the benchmark's other
+ * providers (server/gemini.ts), so every model is asked exactly the same.
+ */
+export function photoPrompt(slot?: MealSlot, hint?: string, crockery?: Crockery): string {
+  return [
+    `This is a photo of a ${slot ?? 'meal'} someone just ate or is about to eat.`,
+    crockeryNote(crockery),
+    hint ? `They added a note: "${hint}".` : '',
+    'Identify every food and drink, estimate the portions from the visual cues, and return the nutrition.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+/** The instructions for reading a meal, with where they live added: the same for every provider. */
+export const mealSystem = (): string => `${SYSTEM}\n\n${regionNote('meal')}`;
+
 export async function analysePhotoDetailed(
   imageBase64: string,
   mediaType: string,
@@ -492,17 +510,7 @@ export async function analysePhotoDetailed(
   return requestMeal(
     [
       { type: 'image', source: { type: 'base64', media_type: asMedia(mediaType), data: imageBase64 } },
-      {
-        type: 'text',
-        text: [
-          `This is a photo of a ${slot ?? 'meal'} someone just ate or is about to eat.`,
-          crockeryNote(crockery),
-          hint ? `They added a note: "${hint}".` : '',
-          'Identify every food and drink, estimate the portions from the visual cues, and return the nutrition.',
-        ]
-          .filter(Boolean)
-          .join(' '),
-      },
+      { type: 'text', text: photoPrompt(slot, hint, crockery) },
     ],
     slot,
     model,

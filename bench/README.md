@@ -77,13 +77,35 @@ Your photos and results stay out of git — they are meals from your kitchen, an
 
 | Flag | Default | What it does |
 | --- | --- | --- |
-| `--models a,b` | opus-5, sonnet-5, haiku-4-5 | Which models to compare |
+| `--models a,b` | opus-5, sonnet-5, haiku-4-5, and gemini-2.5-flash when there is a Gemini key | Which models to compare — any `claude-…` or `gemini-…` model |
 | `--runs 3` | 1 | Repeat each photo, to see run-to-run spread |
 | `--sub 6.99` | 6.99 | Subscription price for the margin table, VAT included as on the stores |
 | `--yes` | off | Skip the "this spends money" prompt |
 | `--plate 27` | off | Tell the model your dinner plate's width, in cm |
 | `--bowl 400` | off | And your usual bowl's volume, in ml |
 | `--compare-plate` | off | Run every photo twice, with the plate size and without |
+
+## Comparing Gemini
+
+Google's Gemini can be benchmarked beside Claude. It is asked exactly what Claude is asked — the same
+instructions, the same words with the photo, the same answer shape — so the only difference in the
+table is the model.
+
+1. Make a key in Google AI Studio **on a project with billing turned on**. As Google's terms stood when
+   this was written, what is sent on the free tier may be used to improve Google's products; these are
+   photos from your kitchen, so check the current terms and use a billed project.
+2. Put it in `.env` beside your Anthropic key: `GEMINI_API_KEY=…`
+3. `npm run bench` now includes `gemini-2.5-flash`. Name others with `--models`, for example
+   `--models claude-opus-5,claude-sonnet-5,gemini-2.5-flash,gemini-2.5-pro`, and check Google's model
+   list for anything newer.
+
+The cost column uses Google's prices as published in 2025 (`GEMINI_PRICING` in `server/gemini.ts`);
+check ai.google.dev/pricing and update them if they have moved. A Gemini model with no price there is
+still measured for accuracy, and its cost shows as $0.
+
+**This is the benchmark only.** Nothing in the app sends anything to Google, and a test makes sure it
+stays that way: the privacy policy tells people their photos go to Anthropic. If Gemini wins, the
+policy changes first and the switch comes after.
 
 ## Reading the result
 
