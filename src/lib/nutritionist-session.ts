@@ -20,6 +20,7 @@ import { saltGrams } from './units';
 import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { toolLabel } from './nutritionist-tools';
 import { t } from './i18n';
+import { aboutOf, type About } from './eating';
 
 /** The outline of their diary that rides along with every question. */
 export interface ChatContext {
@@ -32,6 +33,8 @@ export interface ChatContext {
   week: string;
   streak: number;
   recentMeals: string[];
+  /** How they eat and what they want, from the profile. */
+  about: About;
 }
 
 export interface ChatMessage {
@@ -53,7 +56,7 @@ export type ChatStep =
 export function contextFor(
   meals: MealEntry[],
   targets: Targets,
-  profile: Pick<Profile, 'goal'>,
+  profile: Pick<Profile, 'goal' | 'diet' | 'avoid' | 'avoidOther' | 'aims' | 'obstacles'>,
   today = isoDate(),
 ): ChatContext {
   const todayTotals = totalsOn(meals, today);
@@ -76,6 +79,7 @@ export function contextFor(
       : 'nothing logged',
     streak: streakOf(meals, today),
     recentMeals: meals.slice(-8).map((m) => `${m.title} (${Math.round(m.nutrients.calories)} kcal)`),
+    about: aboutOf(profile),
   };
 }
 

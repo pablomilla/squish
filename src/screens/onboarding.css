@@ -1,4 +1,4 @@
-.onboarding { background: linear-gradient(180deg, var(--brand-soft) 0%, var(--bg) 42%); }
+.onboarding { background: linear-gradient(180deg, var(--brand-soft) 0%, var(--bg) 42%); overflow-x: clip; /* the confetti drifts past the edges */ }
 .onboarding .screen { padding-bottom: 28px; display: flex; flex-direction: column; }
 
 /* One bar that fills as you go, rather than a row of dashes to count. */
@@ -106,3 +106,55 @@ input[type='range'] { width: 100%; accent-color: var(--brand); height: 28px; -we
 .onboard-perks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .onboard-perks li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-md); background: var(--surface-2); font-size: var(--text-label); }
 .onboard-perks span { font-size: 20px; }
+
+/* ---------- Pace, as an animal ---------- */
+.pace-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pace-tiers > span {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: var(--r-md);
+  font-size: var(--text-caption); color: var(--ink-3); border: 1px solid transparent; transition: all 0.2s var(--ease);
+}
+.pace-tiers .pace-emoji { font-size: 22px; filter: grayscale(1); opacity: 0.55; transition: all 0.2s var(--ease); }
+.pace-tiers > span.is-on { background: var(--surface); border-color: var(--brand); color: var(--ink); font-weight: 600; }
+.pace-tiers > span.is-on .pace-emoji { filter: none; opacity: 1; transform: scale(1.15); }
+
+/* ---------- A realistic goal ---------- */
+.onboard-target h1 { font-size: var(--text-display); line-height: 1.15; }
+.weight-path { margin: 0; padding: 14px 14px 10px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); }
+.weight-path svg { width: 100%; height: auto; display: block; overflow: visible; }
+.weight-path-base { stroke: var(--line); stroke-width: 1; }
+.weight-path-line { fill: none; stroke: var(--brand); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: path-draw 1.2s 0.2s var(--ease) forwards; }
+.weight-path-dot { fill: var(--surface); stroke: var(--brand); stroke-width: 3; }
+.weight-path-goal { fill: var(--brand); stroke: var(--surface); stroke-width: 3; }
+.weight-path figcaption { margin-top: 6px; color: var(--ink-2); gap: 10px; }
+@keyframes path-draw { to { stroke-dashoffset: 0; } }
+
+/* ---------- Building the plan ---------- */
+.onboard-building { padding-top: 24px; }
+.onboard-building-bar { height: 8px; border-radius: 4px; background: var(--surface-sunk); overflow: hidden; }
+.onboard-building-bar span { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--brand); animation: build-fill 2.4s var(--ease) forwards; }
+@keyframes build-fill { to { width: 100%; } }
+.onboard-building-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.onboard-building-list li { display: flex; align-items: center; gap: 10px; font-size: var(--text-label); opacity: 0; animation: build-tick 0.3s var(--ease) forwards; }
+.onboard-tick { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--good-soft, var(--brand-soft)); color: var(--good, var(--brand-ink)); font-size: 13px; font-weight: 700; flex: none; }
+@keyframes build-tick { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- The plan, adjustable ---------- */
+.onboard-plan-energy { margin-bottom: 2px; }
+.onboard-plan-adjust { margin: 6px 0 10px; }
+.onboard-how { padding: 12px 14px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); }
+.onboard-how summary { cursor: pointer; color: var(--brand-ink); font-weight: 600; }
+.onboard-how p { margin: 8px 0 0; line-height: 1.45; }
+.onboard-how dl { margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.onboard-how dt { font-weight: 600; color: var(--ink); }
+.onboard-how dd { margin: 0; line-height: 1.4; }
+.onboard-code { text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-mono, ui-monospace, monospace); }
+
+@media (prefers-reduced-motion: reduce) {
+  .weight-path-line { animation: none; stroke-dashoffset: 0; }
+  .onboard-building-bar span { animation-duration: 0.6s; }
+  .onboard-building-list li { animation: none; opacity: 1; }
+}
+.onboard-code::placeholder { text-transform: none; letter-spacing: normal; font-family: inherit; }
+/* Squish is a block; in a centred column it is centred too. */
+.onboarding .center > .squish { margin-inline: auto; }
+.onboard-building-bar { margin: 4px 0 8px; }

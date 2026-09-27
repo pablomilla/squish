@@ -288,7 +288,7 @@ export async function sweepJobs(): Promise<void> {
     }
     console.info(`[squish] weekplan ${claimed.id} lost its instance — making it again (try ${claimed.attempts} of ${MAX_ATTEMPTS})`);
     // Checked as a request's headers are: only known values, defaults for anything else (and for jobs from before places were kept).
-    const place = placeFrom(claimed.place?.region, claimed.place?.energy, claimed.place?.language);
+    const place = placeFrom(claimed.place?.region, claimed.place?.energy, claimed.place?.language, claimed.place?.diet);
     runJob(claimed.id, run, claimed.device_id, claimed.ask, place);
   }
 }

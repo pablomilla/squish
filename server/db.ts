@@ -795,6 +795,15 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 30,
+    sql: `
+      -- How somebody heard about Squish, asked once in onboarding: a key from
+      -- a fixed list (src/lib/heard.ts), kept against the device and gone
+      -- with it. Counted on the dashboard; nothing else reads it.
+      alter table devices add column heard_from text, add column heard_at timestamptz;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

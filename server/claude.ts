@@ -27,6 +27,7 @@ import { msg } from '../src/lib/i18n';
 
 const AISLE_IDS = AISLES.map((a) => a.id);
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
+import { aimLines, eatingLines, type About } from '../src/lib/eating';
 
 /**
  * Words rather than pictures — a meal typed or spoken, a correction, the
@@ -848,6 +849,8 @@ export interface CoachContext {
   mealsLogged: number;
   timeOfDay: string;
   recentMeals: string[];
+  /** How they eat and what they want (src/lib/eating.ts): a nudge that suggests food respects the first and speaks to the second. */
+  about?: About;
 }
 
 /** Short daily nudge in Squish's voice. */
@@ -878,6 +881,7 @@ Energy: ${Math.round(ctx.caloriesEaten)} of ${Math.round(ctx.caloriesTarget)} kc
 Protein: ${Math.round(ctx.protein)} of ${Math.round(ctx.proteinTarget)} g
 Fibre so far: ${Math.round(ctx.fibre)} g
 Water: ${ctx.water} of ${ctx.waterTarget} glasses
+${[...eatingLines(ctx.about ?? {}), ...aimLines(ctx.about ?? {})].join('\n')}
 
 Pick the one thing most worth mentioning right now and say it kindly. Fit it to the time given: no "good morning" in the evening, and late at night nothing that asks them to eat or drink more.`,
       },

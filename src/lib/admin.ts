@@ -7,6 +7,7 @@
  */
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
+import type { Heard } from './heard';
 
 export interface Overview {
   accounts: number;
@@ -143,6 +144,15 @@ export interface PlanCost {
   plans: number;
   usd: number;
 }
+
+export interface HeardCount {
+  heard: Heard;
+  devices: number;
+  accounts: number;
+  plus: number;
+}
+
+export const fetchHeard = (): Promise<{ days: number; heard: HeardCount[] } | null> => ask('/api/admin/heard');
 
 export const fetchWeekPlans = (): Promise<{ plans: PlanRecord[]; costs: PlanCost[]; costDays: number; usdToGbp: number } | null> =>
   ask('/api/admin/weekplans');

@@ -25,6 +25,7 @@ import type { Device } from './identity';
 import { ALLOWANCE, type Plan } from './plan';
 import { canSendMail, sendMail } from './mail';
 import { compose } from './emails';
+import { isHeard, type Heard } from '../src/lib/heard';
 
 /**
  * Send one email to the admin asking, to prove the setup works.
@@ -279,3 +280,36 @@ export async function actions(limit = 30) {
 
 /** The allowances in force, so the dashboard shows what is actually running. */
 export const allowances = () => ALLOWANCE;
+
+/** How a device heard about Squish (src/lib/heard.ts): the first answer only. */
+export async function noteHeard(deviceId: string, heard: Heard): Promise<void> {
+  await query('update devices set heard_from = $2, heard_at = now() where id = $1 and heard_from is null', [deviceId, heard]);
+}
+
+export interface HeardCount {
+  heard: Heard;
+  /** Devices that answered this. */
+  devices: number;
+  /** Of those, how many are signed in to an account. */
+  accounts: number;
+  /** And how many of those accounts are on Plus now. */
+  plus: number;
+}
+
+/** Which ways in, over the last `days` days of answers, and how far each got. */
+export async function heardCounts(days = 90): Promise<HeardCount[]> {
+  const rows = await query<{ heard: string; devices: string; accounts: string; plus: string }>(
+    `select d.heard_from as heard, count(*)::text as devices,
+            count(distinct d.account_id)::text as accounts,
+            count(distinct d.account_id) filter (where a.plus_until > now())::text as plus
+       from devices d
+       left join accounts a on a.id = d.account_id
+      where d.heard_from is not null and d.heard_at > now() - make_interval(days => $1)
+      group by d.heard_from
+      order by count(*) desc`,
+    [days],
+  );
+  return rows
+    .filter((row) => isHeard(row.heard))
+    .map((row) => ({ heard: row.heard as Heard, devices: Number(row.devices), accounts: Number(row.accounts), plus: Number(row.plus) }));
+}

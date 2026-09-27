@@ -1,5 +1,6 @@
 import type { EnergyUnit, Region } from './lib/region';
 import type { Language } from './lib/language';
+import type { Aim, Avoid, Diet, Obstacle } from './lib/eating';
 import type { Aisle } from './lib/shopping';
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -183,6 +184,18 @@ export interface Profile {
    */
   plateCm?: number;
   bowlMl?: number;
+  /**
+   * How they eat and what they want, from onboarding (lib/eating.ts). All
+   * optional: a profile from before these were asked has none, and every
+   * prompt reads that as "nothing said".
+   */
+  diet?: Diet;
+  /** Allergies and foods they never eat, from a fixed list. */
+  avoid?: Avoid[];
+  /** Anything else they never eat, in their own few words. */
+  avoidOther?: string;
+  aims?: Aim[];
+  obstacles?: Obstacle[];
 }
 
 export interface Targets extends Nutrients {

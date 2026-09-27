@@ -13,6 +13,7 @@ import {
 } from '../lib/nutrition';
 import { STARTING_WEIGHTS } from '../lib/units';
 import { setCurrentRegion } from '../lib/region';
+import { setCurrentDiet } from '../lib/eating';
 import { setCurrentLanguage } from '../lib/language';
 import { DEFAULT_LOOK } from '../lib/looks';
 import type { Outfit } from '../lib/outfit';
@@ -532,8 +533,10 @@ export const useSquish = create<SquishState>()(
  */
 setCurrentRegion(useSquish.getState().profile);
 setCurrentLanguage(useSquish.getState().profile);
+setCurrentDiet(useSquish.getState().profile);
 useSquish.subscribe((state, prev) => {
   if (state.profile === prev.profile) return;
   setCurrentRegion(state.profile);
   setCurrentLanguage(state.profile);
+  setCurrentDiet(state.profile);
 });

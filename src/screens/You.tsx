@@ -31,6 +31,8 @@ import { friendlyDate, isoDate, lastDays } from '../lib/date';
 import { bestStreak, series, streakOf, summarise } from '../lib/selectors';
 import { shareStory } from '../lib/shareStory';
 import ShareSheet from '../components/ShareSheet';
+import { AimFields, EatingFields } from '../components/EatingFields';
+import { AIMS, AVOIDS, DIETS, OBSTACLES } from '../lib/eating';
 import type { Activity, Goal, Route, Sex } from '../types';
 import './you.css';
 import { plural, t } from '../lib/i18n';
@@ -261,6 +263,8 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <Row label={t('Age')} value={`${profile.age}`} />
         <Row label={t('Activity')} value={ACTIVITY_LABEL[profile.activity]} />
       </section>
+
+      <FoodAndGoals />
 
       <section className="card card--quiet">
         <div className="card-title">
@@ -1308,5 +1312,48 @@ function ShareCardLink() {
       </div>
       <ShareSheet open={open} onClose={() => setOpen(false)} data={data} />
     </>
+  );
+}
+
+/**
+ * How they eat and what they want, as told in onboarding: the meal plans, the
+ * nutritionist and the daily nudge all read it, so it is worth keeping right.
+ */
+function FoodAndGoals() {
+  const profile = useSquish((s) => s.profile);
+  const setProfile = useSquish((s) => s.setProfile);
+  const [editing, setEditing] = useState(false);
+  const labels = <K extends string>(options: { key: K; label: string }[], keys: K[] | undefined) =>
+    (keys ?? []).map((key) => options.find((o) => o.key === key)?.label ?? key);
+  const avoids = [...labels(AVOIDS, profile.avoid), ...(profile.avoidOther?.trim() ? [profile.avoidOther.trim()] : [])];
+  const aims = labels(AIMS, profile.aims);
+  const obstacles = labels(OBSTACLES, profile.obstacles);
+  const none = t('Nothing said');
+
+  return (
+    <section className="card">
+      <div className="card-title">
+        <h3>{t('Food and goals')}</h3>
+        <button type="button" className="btn--quiet small" onClick={() => setEditing(true)}>
+          {t('Edit')}
+        </button>
+      </div>
+      <Row label={t('I eat')} value={DIETS.find((d) => d.key === (profile.diet ?? 'any'))?.label ?? ''} />
+      <Row label={t('Never')} value={avoids.length ? listWords(avoids) : none} />
+      <Row label={t('After')} value={aims.length ? listWords(aims) : none} />
+      <Row label={t('In the way')} value={obstacles.length ? listWords(obstacles) : none} />
+      <p className="tiny muted" style={{ marginTop: 8 }}>
+        {t('Meal plans, the nutritionist and your daily nudge all go by this. Allergies are never planned in.')}
+      </p>
+      <Sheet open={editing} onClose={() => setEditing(false)} title={t('Food and goals')}>
+        <div className="stack">
+          <EatingFields value={profile} onChange={(patch) => setProfile(patch)} />
+          <AimFields value={profile} onChange={(patch) => setProfile(patch)} />
+          <button type="button" className="btn" onClick={() => setEditing(false)}>
+            {t('Done')}
+          </button>
+        </div>
+      </Sheet>
+    </section>
   );
 }

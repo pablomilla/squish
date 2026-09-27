@@ -19,6 +19,7 @@
  */
 import type { MealSlot } from '../src/types';
 import { AISLES } from '../src/lib/shopping';
+import { aimLines, cleanAbout, eatingLines, type About } from '../src/lib/eating';
 
 /** Where each ingredient is bought, so the shopping list sorts in any language. */
 const AISLE_IDS = AISLES.map((a) => a.id);
@@ -47,6 +48,8 @@ export interface WeekPlanRequest {
   /** Whatever they typed: "vegetarian", "quick weekday dinners". */
   preferences: string;
   cooking: 'quick' | 'normal' | 'batch';
+  /** How they eat and what they want, from their profile (src/lib/eating.ts). Absent from an app from before. */
+  about?: About;
 }
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
@@ -79,6 +82,7 @@ export function cleanWeekRequest(body: unknown): WeekPlanRequest | null {
     notes: list(raw.notes, 20, 240),
     preferences: text(raw.preferences, 300),
     cooking: raw.cooking === 'quick' || raw.cooking === 'batch' ? raw.cooking : 'normal',
+    about: cleanAbout(raw.about),
   };
 }
 
@@ -88,7 +92,7 @@ What a good plan here looks like:
 - Ordinary home cooking from a normal supermarket where they live (below). Realistic portions for one adult. Nothing that needs a specialist shop.
 - Each day's calories within about 5% of their daily target. Never plan a day meaningfully under it: this is not a crash diet, and the target already includes whatever deficit they chose.
 - Protein near their target across the day, spread over meals, and fibre at or above theirs: vegetables, pulses, whole grains, fruit.
-- Anything in "What they have told you" that is an allergy, intolerance or food they avoid is an absolute rule. Never include it, including as a hidden ingredient in a sauce or a stock.
+- Their diet and everything under "How they eat" are absolute rules, and so is anything in "What they have told you" that is an allergy, intolerance or food they avoid. Never include it, including as a hidden ingredient in a sauce or a stock.
 - Their liked meals are a guide to their taste. Include one or two of them, and plan the rest in the same spirit rather than repeating them all week.
 - Keep the shopping short: reuse ingredients across days, and where it suits, cook once and eat it twice (tonight's chilli is tomorrow's lunch). Say so in the meal title when a meal uses leftovers.
 - Breakfasts simple and repeatable. Weekday dinners quick unless they asked otherwise. Vary the dinners.
@@ -114,6 +118,11 @@ export function weekPlanPrompt(req: WeekPlanRequest): string {
     `Each day: ${meals}.`,
     `Daily targets: ${req.calorieTarget} kcal, ${req.proteinTarget} g protein, at least ${req.fibreTarget} g fibre. Goal: ${req.goal === 'lose' ? 'losing weight gently' : req.goal === 'gain' ? 'building up' : 'staying steady'}.`,
     cooking,
+    '',
+    '<how_they_eat>',
+    ...(eatingLines(req.about ?? {}).length ? eatingLines(req.about ?? {}) : ['- No diet or allergies given.']),
+    '</how_they_eat>',
+    ...(aimLines(req.about ?? {}).length ? ['', '<what_they_are_after>', ...aimLines(req.about ?? {}), '</what_they_are_after>'] : []),
     '',
     '<what_they_have_told_you>',
     ...(req.notes.length ? req.notes.map((n) => `- ${n}`) : ['- Nothing yet.']),

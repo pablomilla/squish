@@ -8,6 +8,8 @@ import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 import { placeHeaders } from './place';
 import { t } from './i18n';
+import type { About } from './eating';
+import type { Heard } from './heard';
 
 const TIMEOUT_MS = 45_000;
 
@@ -273,6 +275,8 @@ export interface WeekPlanAsk {
   notes: string[];
   preferences: string;
   cooking: 'quick' | 'normal' | 'batch';
+  /** How they eat and what they want, from the profile. */
+  about: About;
 }
 
 /*
@@ -543,6 +547,7 @@ export interface CoachRequest {
   mealsLogged: number;
   timeOfDay: string;
   recentMeals: string[];
+  about: About;
 }
 
 export async function coachNudge(ctx: CoachRequest): Promise<string | null> {
@@ -551,6 +556,15 @@ export async function coachNudge(ctx: CoachRequest): Promise<string | null> {
     return message;
   } catch {
     return null;
+  }
+}
+
+/** How they heard about Squish, from onboarding. Nothing waits on it and nothing breaks without it. */
+export async function noteHeard(heard: Heard): Promise<void> {
+  try {
+    await post('/api/heard', { heard });
+  } catch {
+    /* a gap in a count, nothing more */
   }
 }
 

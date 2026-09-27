@@ -27,6 +27,7 @@ import { bill } from './billing';
 import { createMessage } from './providers';
 import { withModels } from './routing';
 import { regionNote } from './region';
+import { aimLines, eatingLines, type About } from '../src/lib/eating';
 
 /** Charge a price to whoever is being served, and hand it straight back. */
 const billed = (usd: number | null, model: string): number | null => {
@@ -61,6 +62,8 @@ export interface ChatContext {
   week: string;
   streak: number;
   recentMeals: string[];
+  /** How they eat and what they want, from their profile (src/lib/eating.ts). */
+  about?: About;
 }
 
 /** Something it chose to remember, with the id that lets it change its mind. */
@@ -126,6 +129,9 @@ export function contextBlock(context: ChatContext): string {
     `- Last seven days: ${context.week}`,
     `- Logging streak: ${context.streak} days`,
     context.recentMeals.length ? `- Recently logged: ${context.recentMeals.join('; ')}` : '- Nothing logged recently',
+    // What they said when they set up: respected in every suggestion, and what to lean on when coaching them.
+    ...eatingLines(context.about ?? {}),
+    ...aimLines(context.about ?? {}),
   ].join('\n');
 }
 

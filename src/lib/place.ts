@@ -5,6 +5,7 @@
  */
 import { currentEnergyUnit, currentRegion } from './region';
 import { currentLanguage } from './language';
+import { currentDiet } from './eating';
 
 /** The browser's own time zone ("America/Chicago"), or nothing where it cannot say. */
 function timeZone(): string | null {
@@ -17,7 +18,10 @@ function timeZone(): string | null {
 
 export function placeHeaders(): Record<string, string> {
   const zone = timeZone();
+  const diet = currentDiet();
   return {
+    // How they eat, so a meal is read with it in mind (server/region.ts).
+    ...(diet && diet !== 'any' ? { 'X-Squish-Diet': diet } : {}),
     'X-Squish-Region': currentRegion().id,
     'X-Squish-Energy': currentEnergyUnit(),
     'X-Squish-Language': currentLanguage().id,

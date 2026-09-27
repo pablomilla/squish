@@ -1,5 +1,5 @@
 {
- "version": "18ejo6i-9adxi7",
+ "version": "10acm6p0kbfpyf",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -108,6 +108,13 @@
    "text": "When",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "00mf0gn-ki3e9s",
+   "text": "Anything",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -305,6 +312,13 @@
    ]
   },
   {
+   "id": "01x02pr0wnc8tm",
+   "text": "{weight} is below a healthy weight for your height. Squish will plan towards it gently, but a goal a little higher is kinder to your body.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "01xftps-fjchh8",
    "text": "Checking your nutrients {from} to {to}",
    "where": [
@@ -445,6 +459,13 @@
    "text": "Too large",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "02mej71-z45ozo",
+   "text": "That is quick. Much faster than this mostly adds fat rather than muscle.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -886,6 +907,13 @@
    ]
   },
   {
+   "id": "04y49640gjyccy",
+   "text": "Got a code?",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "04zftyz0hiyiv2",
    "text": "Dashboard",
    "where": [
@@ -925,6 +953,13 @@
    "text": "Auto",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "054xhna-i1xsu5",
+   "text": "Pescatarian",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -1299,6 +1334,13 @@
    "text": "🎯 At this pace, around <b>{when}</b> you could be at <b>{weight}</b>.",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "07hqqh10d8vo7v",
+   "text": "Build habits that last",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -1925,6 +1967,13 @@
    ]
   },
   {
+   "id": "0buxlec0bifwcg",
+   "text": "Sticking with it",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "0bypj9u0pvstjd",
    "text": "Squish AI",
    "where": [
@@ -1999,6 +2048,13 @@
    "text": "Not now",
    "where": [
     "src/components/Paywall.tsx",
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0ccpyjm0xtduqx",
+   "text": "Got it. I’ll help with that.",
+   "where": [
     "src/screens/Onboarding.tsx"
    ]
   },
@@ -2162,6 +2218,13 @@
    ]
   },
   {
+   "id": "0d9yweb0-cloi8",
+   "text": "Fish",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "0dbjs0p-hdbwl5",
    "text": "Join",
    "where": [
@@ -2187,6 +2250,20 @@
    "text": "None",
    "where": [
     "src/components/ShareSheet.tsx"
+   ]
+  },
+  {
+   "id": "0dgawcn08suc6a",
+   "text": "That code does not look right. Check it, or leave it empty.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0djhmuw-65nr3g",
+   "text": "A podcast",
+   "where": [
+    "src/lib/heard.ts"
    ]
   },
   {
@@ -2467,6 +2544,13 @@
    ]
   },
   {
+   "id": "0f80mvv-29wsfp",
+   "text": "Noting what you never eat",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0f9119a-6dduuw",
    "one": "{n} free question",
    "other": "{n} free questions",
@@ -2535,6 +2619,13 @@
    "text": "The camera is blocked for this site. Allow it in your browser settings, or pick a photo from your library instead.",
    "where": [
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "0fgwf620p02gyf",
+   "text": "Soy",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -2643,6 +2734,13 @@
    ]
   },
   {
+   "id": "0g88tuv0bzc45m",
+   "text": "Meal plans and the nutritionist go by this. Change it any time on You.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0g92frl0wppu73",
    "text": "Change your email — Squish",
    "where": [
@@ -2744,6 +2842,13 @@
    ]
   },
   {
+   "id": "0gyac4s-lmqwsy",
+   "text": "Suggested",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0h18012-bzal8e",
    "text": "AI · high confidence",
    "where": [
@@ -2825,6 +2930,13 @@
    "text": "Log your weight on a couple of days and the trend will show up here.",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "0hi8doi0ch4yy0",
+   "text": "Last question, promise.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -2945,6 +3057,13 @@
    "text": "logged today",
    "where": [
     "src/components/squad/SquadStrip.tsx"
+   ]
+  },
+  {
+   "id": "0i40g7o0-bk37z",
+   "text": "More energy",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -3180,6 +3299,13 @@
    ]
   },
   {
+   "id": "0jhws7e0mcmy9t",
+   "text": "That code was not one we know. You can try another on the You screen.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0jiymjo01x15aa",
    "text": "Welsh",
    "where": [
@@ -3261,6 +3387,13 @@
    "text": "A description is required.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "0k19pg2-l3gr60",
+   "text": "Vegan",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -3745,10 +3878,24 @@
    ]
   },
   {
+   "id": "0m9cc8p-uqbxpb",
+   "text": "Peanuts",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "0m9fubl-7gg0fk",
    "text": "Your name in the squad",
    "where": [
     "src/components/squad/SquadSheet.tsx"
+   ]
+  },
+  {
+   "id": "0m9sbbb0iuspt7",
+   "text": "Shellfish",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -4444,6 +4591,20 @@
    ]
   },
   {
+   "id": "0prxk8v-1ketmr",
+   "text": "At {pace} a week, that is about {weeks} weeks — around {when}.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0ps8mqk0yzc4xx",
+   "text": "Built from your height, weight, age and activity. Tap − or + to change anything.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0psd8fv-9bqdmi",
    "text": "Canada",
    "where": [
@@ -4476,6 +4637,20 @@
    "text": "Dairy & eggs",
    "where": [
     "src/lib/shopping.ts"
+   ]
+  },
+  {
+   "id": "0pzmxj0-spt1f5",
+   "text": "Gaining {amount} is a realistic goal",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0pzwyqb-9ltqxe",
+   "text": "What usually gets in the way?",
+   "where": [
+    "src/components/EatingFields.tsx"
    ]
   },
   {
@@ -4638,6 +4813,13 @@
    "text": "Worth logging while you remember it.",
    "where": [
     "src/lib/reminders.ts"
+   ]
+  },
+  {
+   "id": "0r7ihlp02jgnlj",
+   "text": "Get stronger",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -4821,6 +5003,20 @@
    "text": "Bagel",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0senb8g08tz4la",
+   "text": "Anything else",
+   "where": [
+    "src/components/EatingFields.tsx"
+   ]
+  },
+  {
+   "id": "0sgzb8p-93sk42",
+   "text": "Working out what your body burns",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -5057,6 +5253,13 @@
    ]
   },
   {
+   "id": "0tw6k7x-x05ez6",
+   "text": "What are you hoping for?",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0twgvhi02bt01f",
    "text": "You missed a day and came back — the streak held. It takes two in a row to lose it.",
    "where": [
@@ -5118,6 +5321,13 @@
    "text": "<b>The nutritionist</b> — {n} questions a month about your own diary, and a weekly meal plan with its shopping list",
    "where": [
     "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "0uc0dps-7k9sgc",
+   "text": "How do you eat?",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -5388,6 +5598,13 @@
    ]
   },
   {
+   "id": "0vm9h90-ryec67",
+   "text": "So I never suggest something you can’t eat.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0vmlwpb-fvx4tc",
    "text": "Undo",
    "where": [
@@ -5420,6 +5637,13 @@
    "text": "Chocolate chip cookie",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0vp6a3u-qcmyep",
+   "text": "Adding fibre and water",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -5671,6 +5895,7 @@
    "id": "0xbaa9q0c064vm",
    "text": "Back to the suggested plan",
    "where": [
+    "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -5845,6 +6070,13 @@
    ]
   },
   {
+   "id": "0yrtf9q-lysczm",
+   "text": "Balancing protein, carbs and fat",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0ysdz4x0dds181",
    "text": "As scanned",
    "where": [
@@ -5931,6 +6163,13 @@
    ]
   },
   {
+   "id": "0zfmbd80q2txd6",
+   "text": "Doing it on my own",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "0zjd3ik07f89li",
    "text": "That file would not open.",
    "where": [
@@ -5974,6 +6213,13 @@
    ]
   },
   {
+   "id": "0zp2pe6-6yvfgs",
+   "text": "How did you hear about Squish?",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0zs6hgl0nfoc2z",
    "text": "Starburst",
    "where": [
@@ -5999,6 +6245,13 @@
    "text": "Hit your protein target on 5 days in one week",
    "where": [
     "src/lib/achievements.ts"
+   ]
+  },
+  {
+   "id": "100y6du-bdtfxc",
+   "text": "Understand what I eat",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -6123,6 +6376,13 @@
    ]
   },
   {
+   "id": "10v94br-61i23v",
+   "text": "Mushrooms, coriander…",
+   "where": [
+    "src/components/EatingFields.tsx"
+   ]
+  },
+  {
    "id": "10vmqjd053lgeu",
    "text": "Tell me what to change.",
    "where": [
@@ -6141,6 +6401,13 @@
    "text": "Not on sale yet. Squish is being tested, and payment arrives with the phone app — so for now this is here to be told whether it is worth it. If you would pay for this, or would not, please say.",
    "where": [
     "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "10ysh5b-4tllad",
+   "text": "Fast",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -6308,6 +6575,13 @@
    ]
   },
   {
+   "id": "1208xpq0vjwixi",
+   "text": "Sounds good",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1229zr80awtma3",
    "text": "1 fillet",
    "where": [
@@ -6452,6 +6726,13 @@
    ]
   },
   {
+   "id": "12mubvb-g2gw0q",
+   "text": "Now",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "12niv000o9z013",
    "text": "Sign out",
    "where": [
@@ -6544,6 +6825,13 @@
    ]
   },
   {
+   "id": "133m4lk-9h22xe",
+   "text": "Allergies, or foods I never eat",
+   "where": [
+    "src/components/EatingFields.tsx"
+   ]
+  },
+  {
    "id": "134kfgb0eyc2o7",
    "text": "365-day badge",
    "where": [
@@ -6598,6 +6886,13 @@
    "text": "logged",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "13h0daw-qfjeqf",
+   "text": "Running out of meal ideas",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -6684,6 +6979,14 @@
    "text": "That goal is below your weight now. Did you mean to lose weight?",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "146657i0f8fgw5",
+   "text": "I eat",
+   "where": [
+    "src/components/EatingFields.tsx",
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -6850,6 +7153,13 @@
    ]
   },
   {
+   "id": "15ihor20vhfgyc",
+   "text": "The app store",
+   "where": [
+    "src/lib/heard.ts"
+   ]
+  },
+  {
    "id": "15iizb40u4xg3f",
    "text": "{done} of {days} days so far — your {period} of Plus follows.",
    "where": [
@@ -6882,6 +7192,13 @@
    "text": "fits your day",
    "where": [
     "src/lib/planner.ts"
+   ]
+  },
+  {
+   "id": "15om903-9jhhy1",
+   "text": "Tree nuts",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -6972,6 +7289,13 @@
    ]
   },
   {
+   "id": "167xzm90454f61",
+   "text": "An article or the news",
+   "where": [
+    "src/lib/heard.ts"
+   ]
+  },
+  {
    "id": "169jin8-68w48j",
    "text": "Could not sign out just now.",
    "where": [
@@ -7027,6 +7351,13 @@
   {
    "id": "16j7rhb-w93rk9",
    "text": "{n} free with an account",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "16k7sko-qh5030",
+   "text": "Meal plans, the nutritionist and your daily nudge all go by this. Allergies are never planned in.",
    "where": [
     "src/screens/You.tsx"
    ]
@@ -7159,10 +7490,10 @@
    ]
   },
   {
-   "id": "175hgcw-30qmjc",
-   "text": "Built from your height, weight, age and activity. Tweak it any time in You → Targets.",
+   "id": "175l1vv-wlnyj1",
+   "text": "A friend or family",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/lib/heard.ts"
    ]
   },
   {
@@ -7266,6 +7597,13 @@
    ]
   },
   {
+   "id": "17mc550-p4ciyh",
+   "text": "Not sure what is healthy",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "17oiw84-7dsipj",
    "text": "Ten years is not a grant, it is a mistake.",
    "where": [
@@ -7328,6 +7666,13 @@
    "text": "Activity",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "181bln10fdcgic",
+   "text": "Snacking and cravings",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -7622,6 +7967,13 @@
    ]
   },
   {
+   "id": "19udwow0qdudgr",
+   "text": "Gluten",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "19w48hq-y0c2vx",
    "text": "Hot chocolate",
    "where": [
@@ -7702,6 +8054,13 @@
    ]
   },
   {
+   "id": "1aaj8al0l09428",
+   "text": "Alcohol",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "1ad9e920nqxrki",
    "text": "Planned for {meal} {when}. Tap “I ate this” when you do.",
    "where": [
@@ -7727,6 +8086,13 @@
    "text": "Know the numbers already? Pop them straight in.",
    "where": [
     "src/screens/AddFood.tsx"
+   ]
+  },
+  {
+   "id": "1akqxyh0jpoej4",
+   "text": "After",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -8044,6 +8410,13 @@
    ]
   },
   {
+   "id": "1cikvp1-bkpubo",
+   "text": "Somewhere else",
+   "where": [
+    "src/lib/heard.ts"
+   ]
+  },
+  {
    "id": "1cixtb209f470e",
    "text": "For you both",
    "where": [
@@ -8118,6 +8491,13 @@
    "text": "White bread",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1cya99o0vwubej",
+   "text": "From {from} now to {to} around {when}",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -8209,6 +8589,13 @@
    "text": "Maintenance plus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.",
    "where": [
     "src/lib/planExplained.ts"
+   ]
+  },
+  {
+   "id": "1dny5gp-fm6iev",
+   "text": "Never",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -8580,6 +8967,13 @@
    ]
   },
   {
+   "id": "1fueu6z-bpl31q",
+   "text": "Steady is what lasts: small changes you can keep up, week after week.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1fzmhgg0fkmjvy",
    "text": "Search your meals",
    "where": [
@@ -8751,6 +9145,13 @@
    ]
   },
   {
+   "id": "1gwl7e206deh2z",
+   "text": "Brisk",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1gxbo3l-yx0v8e",
    "text": "Whole plate in the frame — the rim is what Squish measures against.",
    "where": [
@@ -8772,11 +9173,25 @@
    ]
   },
   {
+   "id": "1gyyyxh0166csg",
+   "text": "Setting your daily energy",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1h03x1a01uxli7",
    "one": "{n} chicken breast",
    "other": "{n} chicken breasts",
    "where": [
     "src/lib/equivalents.ts"
+   ]
+  },
+  {
+   "id": "1h24wpf-6ivs9l",
+   "text": "Building your plan…",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -8812,6 +9227,13 @@
    "text": "About you",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1hez4qk-rprqja",
+   "text": "Dairy",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -8865,6 +9287,13 @@
    ]
   },
   {
+   "id": "1hm5e83-wgk6y2",
+   "text": "Which one?",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1hm7x2606bcwic",
    "text": "Your password, to be sure it is you.",
    "where": [
@@ -8883,6 +9312,13 @@
    "text": "Strawberry heart",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "1hp1sdu0tx1sun",
+   "text": "From a friend or a partner",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -8932,6 +9368,13 @@
    "text": "Was my {meal} a good choice?",
    "where": [
     "src/lib/askSuggestions.ts"
+   ]
+  },
+  {
+   "id": "1hwlu8q02z671h",
+   "text": "Searching online",
+   "where": [
+    "src/lib/heard.ts"
    ]
   },
   {
@@ -9050,6 +9493,13 @@
    ]
   },
   {
+   "id": "1ii6rir-yao2se",
+   "text": "Losing {amount} is a realistic goal",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1iimwg8-5xrevx",
    "text": "Offline",
    "where": [
@@ -9143,6 +9593,13 @@
    ]
   },
   {
+   "id": "1j1k2xm0f0fv0o",
+   "text": "A busy schedule",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "1j308ih-ehp7mc",
    "text": "Add to my plans",
    "where": [
@@ -9231,6 +9688,13 @@
    "text": "This device has no meals in it, so the backup is almost certainly the one to keep.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1je187n0tr2wa8",
+   "text": "Your code added {n} days of {plus}.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -9451,6 +9915,7 @@
     "src/screens/AddFood.tsx",
     "src/screens/Home.tsx",
     "src/screens/Insights.tsx",
+    "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -9483,6 +9948,13 @@
    ]
   },
   {
+   "id": "1ky5yxn-kff7k8",
+   "text": "Let’s aim a little higher",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1kz3nj20-dy54q",
    "text": "Hide password",
    "where": [
@@ -9504,6 +9976,13 @@
     "src/screens/AddFood.tsx",
     "src/screens/Ask.tsx",
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "1l1h44z-4qoa0a",
+   "text": "Steady",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -9737,6 +10216,13 @@
    ]
   },
   {
+   "id": "1m59i4q-l06bui",
+   "text": "That is quick. Faster is harder to keep up and more likely to cost muscle — most people do better a notch slower.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1m6zyh80u23vlq",
    "text": "Small steps count",
    "where": [
@@ -9836,6 +10322,13 @@
    ]
   },
   {
+   "id": "1mqfv77-9hpt5g",
+   "text": "How we worked this out",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1ms0bxw-pecrij",
    "text": "It worked for a week, or it has been used already. If somebody else has your account, write to support@squish.online from this address.",
    "where": [
@@ -9876,6 +10369,13 @@
    "text": "Change email",
    "where": [
     "src/components/AccountCard.tsx"
+   ]
+  },
+  {
+   "id": "1n0z4tw-y6h6c3",
+   "text": "Eat and live healthier",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -9960,6 +10460,13 @@
     "src/screens/Diary.tsx",
     "src/screens/Home.tsx",
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1ng0aoy-mp1x22",
+   "text": "What would you like from Squish?",
+   "where": [
+    "src/components/EatingFields.tsx"
    ]
   },
   {
@@ -10134,6 +10641,13 @@
    ]
   },
   {
+   "id": "1o83xd0-5txir0",
+   "text": "Food and goals",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "1oa7bmk-yzrg6g",
    "text": "What the nutritionist remembers",
    "where": [
@@ -10198,6 +10712,13 @@
   {
    "id": "1p0lji209igduz",
    "text": "{name}, part of {plus}",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1p0s1kf-ksyuwu",
+   "text": "Nothing said",
    "where": [
     "src/screens/You.tsx"
    ]
@@ -10545,6 +11066,13 @@
    ]
   },
   {
+   "id": "1r2o08r-1oqcxc",
+   "text": "Sesame",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "1r9qqfo08qt9lc",
    "text": "What Squish wears",
    "where": [
@@ -10810,6 +11338,13 @@
    ]
   },
   {
+   "id": "1sspwll07s2r2q",
+   "text": "Vegetarian",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "1ssydq507zlb4e",
    "text": "They’ve averaged 9 g of protein — mostly toast and jam. Porridge made with milk and a spoonful of Greek yoghurt is nearer 25 g, and should carry you to lunch.",
    "where": [
@@ -10821,6 +11356,13 @@
    "text": "Skip — the guess is fine",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "1swfwlu00vu5b2",
+   "text": "In the way",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -11032,6 +11574,13 @@
    ]
   },
   {
+   "id": "1u5nx1c-9necz7",
+   "text": "It is used when you make your account.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1u6touv08r7467",
    "text": "Recipe imports come with {plus}.",
    "where": [
@@ -11172,6 +11721,13 @@
    ]
   },
   {
+   "id": "1v1f145-jk1lcw",
+   "text": "Pick as many as you like.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1v1ndew-cmklum",
    "text": "AI · low confidence",
    "where": [
@@ -11297,6 +11853,13 @@
    "text": "I ate this",
    "where": [
     "src/components/PlanCard.tsx"
+   ]
+  },
+  {
+   "id": "1vnp9t7-yldvm3",
+   "text": "Changed by you",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -11652,6 +12215,13 @@
    ]
   },
   {
+   "id": "1xur8r3-vcbbql",
+   "text": "Eggs",
+   "where": [
+    "src/lib/eating.ts"
+   ]
+  },
+  {
    "id": "1xvdq4r-2htyk8",
    "text": "Exported your data",
    "where": [
@@ -11670,6 +12240,13 @@
    "text": "Friendly ghost",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "1xylvuv044qfvc",
+   "text": "Feel good in my body",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -11695,10 +12272,24 @@
    ]
   },
   {
+   "id": "1y69nwd00lusk8",
+   "text": "Code applied.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1y6geix-rqmrnd",
    "text": "Leave a fork or hand in shot. It tells me the scale, and portions are half the answer.",
    "where": [
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "1yeuk3r-248ayp",
+   "text": "Pork",
+   "where": [
+    "src/lib/eating.ts"
    ]
   },
   {
@@ -11755,6 +12346,13 @@
    "text": "Plan a new week",
    "where": [
     "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
+   "id": "1yujpvk0ktrrtm",
+   "text": "Sources: the Mifflin–St Jeor equation (1990) for what your body burns, and the WHO, the UK’s SACN and the US Dietary Guidelines for fibre, fat, sugar and salt. Squish never suggests less than {floor} a day.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {

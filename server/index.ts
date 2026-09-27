@@ -49,7 +49,7 @@ import {
   setInviteDisabled,
   suggestCode,
 } from './invites';
-import { actions, adminEmail, allowances, returnUse, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
+import { actions, adminEmail, allowances, returnUse, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan, heardCounts, noteHeard } from './admin';
 import { htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
 import { isLanguage } from '../src/lib/language';
 import { detectRegion, isRegion } from '../src/lib/region';
@@ -125,6 +125,8 @@ import { cleanWeekRequest } from './weekplan';
 import { currentPlace, withPlace } from './region';
 import { msg } from '../src/lib/i18n';
 import { isTranslatable, languagePack, speakerFor, setTranslator, warmAll } from './translate';
+import { cleanAbout } from '../src/lib/eating';
+import { isHeard } from '../src/lib/heard';
 
 const app = express();
 app.use(cors());
@@ -448,6 +450,26 @@ function requireDevice(req: Request, res: Response, next: NextFunction): void {
  * Moving this browser to the app's new address. The old address asks for a
  * code; the new one claims it. See startHandoff in server/identity.ts.
  */
+/**
+ * How they heard about Squish (src/lib/heard.ts), from onboarding: one key
+ * from a fixed list, against the device, kept the first time only. The
+ * dashboard counts them; nothing else reads it.
+ */
+app.post('/api/heard', requireDevice, async (req, res) => {
+  const heard = req.body?.heard;
+  if (!isHeard(heard)) {
+    res.status(400).json({ error: 'unknown', message: msg('Which one?') });
+    return;
+  }
+  try {
+    await noteHeard(req.device!.id, heard);
+    res.json({ ok: true });
+  } catch (error) {
+    logFailure('heard', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
+  }
+});
+
 app.post('/api/device/handoff', requireDevice, meter('signin'), async (req, res) => {
   try {
     res.json({ code: await startHandoff(req.device!.id) });
@@ -660,14 +682,29 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
       // Whoever's link they arrived by, if anyone's: an affiliate's, or a
       // friend's invite. Never allowed to fail the sign-up: a stale link is not
       // the new account's problem.
+      // A typed code (onboarding's "Got a code?") travels the same way, and
+      // may also be an invite to Plus: tried last, and said back so the app
+      // can tell them what it got them — or that it was not one of ours.
+      let code: { kind: 'partner' | 'friend' | 'unknown' } | { kind: 'plus'; days: number } | undefined;
       if (ref !== undefined) {
         const affiliate = await attribute(made.account.id, ref).catch((error: unknown) => {
           logFailure('referral', error);
           return null;
         });
-        if (!affiliate) {
-          await attributeFriend(made.account.id, ref, signedInBefore).catch((error: unknown) => logFailure('friend invite', error));
-        }
+        const friend = affiliate
+          ? null
+          : await attributeFriend(made.account.id, ref, signedInBefore).catch((error: unknown) => {
+              logFailure('friend invite', error);
+              return null;
+            });
+        const plus =
+          affiliate || friend || typeof ref !== 'string'
+            ? null
+            : await redeem(made.account.id, ref).catch((error: unknown) => {
+                logFailure('invite at sign-up', error);
+                return null;
+              });
+        code = affiliate ? { kind: 'partner' } : friend ? { kind: 'friend' } : plus?.ok ? { kind: 'plus', days: plus.days } : { kind: 'unknown' };
       }
       // Not awaited into the response, and never allowed to fail it: the
       // account exists either way, and there is a button to send it again.
@@ -676,7 +713,7 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
           logFailure('verification email', error),
         );
       }
-      res.json({ ...whoami(made.account), broughtDiary: made.broughtDiary, verificationSent: canSendMail() });
+      res.json({ ...whoami(made.account), broughtDiary: made.broughtDiary, verificationSent: canSendMail(), code });
       return;
     }
     res.status(409).json({ error: made.reason, message: made.message ?? SIGNUP_TROUBLE[made.reason] });
@@ -1391,6 +1428,16 @@ app.post('/api/admin/emails/:key/test', requireAdmin, async (req, res) => {
   } catch (error) {
     logFailure('admin email test', error);
     res.status(502).json({ error: 'not_sent', message: error instanceof Error ? error.message : 'It did not send.' });
+  }
+});
+
+/** How people heard about Squish, from onboarding, and how far each way in got. Counts only. */
+app.get('/api/admin/heard', requireAdmin, async (_req, res) => {
+  try {
+    res.json({ days: 90, heard: await heardCounts(90) });
+  } catch (error) {
+    logFailure('admin heard', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read those just now.') });
   }
 });
 
@@ -2344,6 +2391,7 @@ app.post('/api/chat', meterQuestion, async (req, res) => {
         recentMeals: Array.isArray(context?.recentMeals)
           ? context.recentMeals.slice(0, 12).map((m: unknown) => String(m).slice(0, 80))
           : [],
+        about: cleanAbout(context?.about),
       },
       cleanNotes(notes),
     );
@@ -2619,7 +2667,7 @@ app.post('/api/analyse/clarify', meter('clarify'), async (req, res) => {
 
 /** Daily coach nudge. Body: CoachContext */
 app.post('/api/coach', async (req, res) => {
-  const ctx = req.body as CoachContext;
+  const ctx = { ...(req.body as CoachContext), about: cleanAbout(req.body?.about) };
   if (!hasCredentials()) {
     res.json({ message: null, offline: true });
     return;

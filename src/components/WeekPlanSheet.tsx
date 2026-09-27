@@ -23,6 +23,7 @@ import './week-plan.css';
 import { energyValue, formatEnergy } from '../lib/region';
 import { plural, t } from '../lib/i18n';
 import { slotName, slotWord } from '../lib/words';
+import { aboutOf } from '../lib/eating';
 
 type Stage = { kind: 'ask' } | { kind: 'planning' } | { kind: 'preview'; plan: WeekPlan };
 
@@ -122,6 +123,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
         notes: nutritionistNotes.map((n) => n.note),
         preferences: preferences.trim(),
         cooking,
+        about: aboutOf(profile),
       });
       setLeft(new Set());
       setStage({ kind: 'preview', plan: week });

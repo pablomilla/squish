@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
-import { Segmented, Sheet, useToast } from '../components/ui';
+import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { Credentials, Forgot } from '../components/AccountCard';
 import { signIn, signUp, type Arrived } from '../lib/account';
 import { friendOffer, periodWords, type FriendOffer } from '../lib/friends';
 import { planNow } from '../lib/plan';
+import { PLUS } from '../lib/subscription';
+import { AimFields, EatingFields } from '../components/EatingFields';
+import { HEARD, type Heard } from '../lib/heard';
+import { keepCode, referral } from '../lib/referral';
+import { noteHeard } from '../lib/api';
+import { explainPlan } from '../lib/planExplained';
 import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
@@ -13,9 +19,9 @@ import { HeightField, LanguageField, NumberField, RegionField, WeightField } fro
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
-import type { Activity, Goal, Mood, Profile, Sex } from '../types';
+import type { Activity, Goal, Mood, Profile, Sex, Targets } from '../types';
 import { PACE_CHOICES, formatPace, formatWeight, imperialLabel, paceIn, paceToKg, retuneForUnits } from '../lib/units';
-import { REGIONS, browserRegion, currentEnergyUnit, energyValue, regionOf, type Region } from '../lib/region';
+import { REGIONS, browserRegion, currentEnergyUnit, energyValue, regionOf, toKcal, type Region } from '../lib/region';
 import { browserLanguage, languageOf, packFor, type Language } from '../lib/language';
 import { startedWith } from '../boot/language';
 import { aroundWhen, goalProjection, type GoalProjection } from '../lib/goalDate';
@@ -25,11 +31,15 @@ import { t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
 
 /**
- * The steps, in order. Where this Squish keeps anything on the server, the
- * last is making an account: after the plan, when there is something worth
- * keeping, and before the first meal, because the free AI analyses need one.
+ * The steps, in order. Some are left out for some people (`stepsFor`): the
+ * realistic-target moment needs a goal weight to reach, and the last two
+ * need a server that keeps accounts.
+ *
+ * Each question earns its place by changing something: the targets, what the
+ * nutritionist and the meal plans suggest, or how the dashboard learns which
+ * ways in bring people who stay. Nothing is asked for its own sake.
  */
-const ALL_STEPS = ['welcome', 'name', 'about', 'goal', 'activity', 'plan', 'account'] as const;
+const ALL_STEPS = ['welcome', 'name', 'about', 'goal', 'target', 'activity', 'eating', 'aims', 'heard', 'building', 'plan', 'account'] as const;
 type Step = (typeof ALL_STEPS)[number];
 
 const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string; mood: Mood; say: string }> = {
@@ -46,6 +56,27 @@ const ACTIVITY_COPY: Record<Activity, { emoji: string; example: string; mood: Mo
   active: { emoji: '🏃', example: t('Hard exercise most days, or a physical job'), mood: 'cheering', say: t('Busy bean!') },
   athlete: { emoji: '🏅', example: t('Training hard, often twice a day'), mood: 'cheering', say: t('Champion energy!') },
 };
+
+/**
+ * How quick a pace is, as an animal: easier to feel than a number. Gaining
+ * is slower at every level, because muscle is built slower than fat is lost.
+ */
+type PaceTier = 'steady' | 'brisk' | 'fast';
+const PACE_TIERS: { tier: PaceTier; emoji: string; label: string }[] = [
+  { tier: 'steady', emoji: '🦥', label: t('Steady') },
+  { tier: 'brisk', emoji: '🐇', label: t('Brisk') },
+  { tier: 'fast', emoji: '🐆', label: t('Fast') },
+];
+function paceTier(kgPerWeek: number, goal: Goal): PaceTier {
+  const [steady, brisk] = goal === 'gain' ? [0.25, 0.5] : [0.35, 0.7];
+  return kgPerWeek <= steady + 1e-9 ? 'steady' : kgPerWeek <= brisk + 1e-9 ? 'brisk' : 'fast';
+}
+
+/** The same floors the targets are never set below (lib/nutrition.ts). */
+const floorFor = (sex: Sex) => (sex === 'male' ? 1500 : 1200);
+
+/** How long the "building your plan" moment lasts. Short: the sums are instant, this is a breath, not a wait. */
+const BUILD_MS = 2600;
 
 const prefersLessMotion = () => {
   try {
@@ -64,6 +95,7 @@ const prefersLessMotion = () => {
 export default function Onboarding({ accounts = false }: { accounts?: boolean }) {
   const completeOnboarding = useSquish((s) => s.completeOnboarding);
   const setProfile = useSquish((s) => s.setProfile);
+  const setTargets = useSquish((s) => s.setTargets);
   const [step, setStep] = useState<Step>('welcome');
   // Which way the steps slide: forward from the right, back from the left.
   const [dir, setDir] = useState<'fwd' | 'back'>('fwd');
@@ -72,8 +104,14 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
     const region = browserRegion();
     // A language already picked on the first screen (which reloads the app to switch) is kept.
     const language = useSquish.getState().profile.language ?? browserLanguage();
-    return retuneForUnits({ ...DEFAULT_PROFILE, region, language }, REGIONS[region].units);
+    return retuneForUnits({ ...DEFAULT_PROFILE, region, language, diet: 'any', avoid: [], aims: [], obstacles: [] }, REGIONS[region].units);
   });
+  // Changes to the suggested targets, made on the plan itself.
+  const [tweak, setTweak] = useState<Partial<Targets>>({});
+  const [heard, setHeard] = useState<Heard | null>(null);
+  const heardSent = useRef(false);
+  // A code from a link they followed is already kept; shown here so they can see it, and change it.
+  const [code, setCode] = useState(() => referral() ?? '');
 
   /*
    * The region goes into the store straight away, not only at the end: the
@@ -104,7 +142,6 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   const [signing, setSigning] = useState<'in' | 'forgot' | null>(null);
   // Signed in from the welcome screen already: nothing to make at the end.
   const [signedIn, setSignedIn] = useState(false);
-  const STEPS: readonly Step[] = accounts && !signedIn ? ALL_STEPS : ALL_STEPS.filter((s) => s !== 'account');
   // Came by a friend's invite: the account step says what it gets them.
   const [offer, setOffer] = useState<FriendOffer | null>(null);
   useEffect(() => {
@@ -118,6 +155,59 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   // Somebody who has said they are under 18. Held here only, never saved.
   const [tooYoung, setTooYoung] = useState(false);
   const toast = useToast();
+
+  const projection = goalProjection(draft);
+  const STEPS: readonly Step[] = ALL_STEPS.filter((s) => {
+    if (s === 'target') return draft.goal !== 'maintain' && projection?.kind === 'date';
+    if (s === 'heard') return accounts;
+    if (s === 'account') return accounts && !signedIn;
+    return true;
+  });
+  const index = STEPS.indexOf(step);
+  const suggested = useMemo(() => computeTargets(draft), [draft]);
+  const targets: Targets = { ...suggested, ...tweak };
+  const set = (patch: Partial<Profile>) => setDraft((d) => ({ ...d, ...patch }));
+  const go = (to: Step, way: 'fwd' | 'back') => {
+    setDir(way);
+    setStep(to);
+  };
+  const next = () => go(STEPS[Math.min(STEPS.length - 1, index + 1)], 'fwd');
+  const back = () => {
+    // The building moment is on the way in only.
+    let to = Math.max(0, index - 1);
+    if (STEPS[to] === 'building') to = Math.max(0, to - 1);
+    go(STEPS[to], 'back');
+  };
+  const name = draft.name.trim();
+
+  // The plan builds itself, then shows itself.
+  useEffect(() => {
+    if (step !== 'building') return;
+    const timer = window.setTimeout(() => go('plan', 'fwd'), prefersLessMotion() ? 700 : BUILD_MS);
+    return () => window.clearTimeout(timer);
+  }, [step]);
+
+  const finish = () => {
+    completeOnboarding(draft);
+    // Their own changes to the plan, on top of what was suggested.
+    if (Object.keys(tweak).length) setTargets(tweak);
+    // English, into or out of the US: American or British spelling is loaded at start.
+    if (packFor(languageOf(draft), regionOf(draft)) !== startedWith()) location.reload();
+  };
+
+  /** Leaving the "how did you hear" step: the answer counted once, and a typed code kept for the sign-up. */
+  const leaveHeard = () => {
+    const typed = code.trim();
+    if (typed && typed.toUpperCase() !== referral() && !keepCode(typed)) {
+      toast(t('That code does not look right. Check it, or leave it empty.'), '🤔');
+      return;
+    }
+    if (heard && !heardSent.current) {
+      heardSent.current = true;
+      void noteHeard(heard);
+    }
+    next();
+  };
 
   /**
    * Signed in: bring the account's diary onto this device. With a profile in
@@ -150,22 +240,23 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
     setStep('name');
   };
 
-  const index = STEPS.indexOf(step);
-
-  const finish = () => {
-    completeOnboarding(draft);
-    // English, into or out of the US: American or British spelling is loaded at start.
-    if (packFor(languageOf(draft), regionOf(draft)) !== startedWith()) location.reload();
-  };
-
   /** Account made at the end of setting up: straight into the app, told what it got them. */
   const madeAccount = (made: Arrived) => {
     finish();
     const taste = planNow().plan === 'free' ? planNow().left.photo : 0;
+    const fromCode =
+      made.code?.kind === 'plus'
+        ? t('Your code added {n} days of {plus}.', { n: made.code.days, plus: PLUS })
+        : made.code?.kind === 'unknown'
+          ? t('That code was not one we know. You can try another on the You screen.')
+          : made.code
+            ? t('Code applied.')
+            : '';
     toast(
       [
         t('Account made.'),
         taste > 0 ? t('Your {n} free AI analyses are ready.', { n: taste }) : '',
+        fromCode,
         made.verificationSent ? t('Check your email to confirm the address.') : '',
       ]
         .filter(Boolean)
@@ -173,18 +264,6 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
       '🫧',
     );
   };
-  const targets = useMemo(() => computeTargets(draft), [draft]);
-  const set = (patch: Partial<Profile>) => setDraft((d) => ({ ...d, ...patch }));
-  const next = () => {
-    setDir('fwd');
-    setStep(STEPS[Math.min(STEPS.length - 1, index + 1)]);
-  };
-  const back = () => {
-    setDir('back');
-    setStep(STEPS[Math.max(0, index - 1)]);
-  };
-  const projection = goalProjection(draft);
-  const name = draft.name.trim();
 
   if (tooYoung)
     return (
@@ -194,6 +273,12 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
         </div>
       </div>
     );
+
+  const tier = paceTier(draft.pace, draft.goal);
+  const energyUnit = currentEnergyUnit();
+  const floor = floorFor(draft.sex);
+  const explained = explainPlan(draft, targets);
+  const chosenAims = (draft.aims?.length ?? 0) + (draft.obstacles?.length ?? 0);
 
   return (
     <div className="app onboarding">
@@ -345,6 +430,14 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                   />
                   <div className="field">
                     <label htmlFor="pace">{t('Pace — {pace} per week', { pace: formatPace(draft.pace, draft.units) })}</label>
+                    <div className="pace-tiers" aria-hidden="true">
+                      {PACE_TIERS.map((p) => (
+                        <span key={p.tier} className={p.tier === tier ? 'is-on' : ''}>
+                          <span className="pace-emoji">{p.emoji}</span>
+                          {p.label}
+                        </span>
+                      ))}
+                    </div>
                     <input
                       id="pace"
                       type="range"
@@ -352,16 +445,29 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                       max={PACE_CHOICES[draft.units].max}
                       step={PACE_CHOICES[draft.units].step}
                       value={paceIn(draft.pace, draft.units)}
+                      aria-valuetext={`${formatPace(draft.pace, draft.units)} — ${PACE_TIERS.find((p) => p.tier === tier)?.label ?? ''}`}
                       onChange={(e) => set({ pace: paceToKg(Number(e.target.value), draft.units) })}
                     />
-                    <p className="tiny muted">
-                      {t('Steady beats speedy — {pace} a week is the sweet spot for most people.', { pace: draft.units === 'metric' ? formatPace(0.5, 'metric') : formatPace(0.45359237, 'imperial') })}
-                    </p>
+                    {tier === 'fast' ? (
+                      <p className="onboard-when onboard-when--check small" aria-live="polite">
+                        {draft.goal === 'gain'
+                          ? t('That is quick. Much faster than this mostly adds fat rather than muscle.')
+                          : t('That is quick. Faster is harder to keep up and more likely to cost muscle — most people do better a notch slower.')}
+                      </p>
+                    ) : (
+                      <p className="tiny muted">
+                        {t('Steady beats speedy — {pace} a week is the sweet spot for most people.', { pace: draft.units === 'metric' ? formatPace(0.5, 'metric') : formatPace(0.45359237, 'imperial') })}
+                      </p>
+                    )}
                   </div>
                   <GoalNote projection={projection} target={formatWeight(draft.targetWeightKg, draft.units)} onSwitch={(goal) => set({ goal })} />
                 </>
               )}
             </div>
+          )}
+
+          {step === 'target' && projection?.kind === 'date' && (
+            <TargetMoment profile={draft} weeks={projection.weeks} date={projection.date} />
           )}
 
           {step === 'activity' && (
@@ -389,28 +495,111 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
             </div>
           )}
 
+          {step === 'eating' && (
+            <div className="stack">
+              <Buddy mood="thinking" say={t('So I never suggest something you can’t eat.')}>
+                <h1>{t('How do you eat?')}</h1>
+              </Buddy>
+              <EatingFields value={draft} onChange={set} />
+              <p className="tiny muted">{t('Meal plans and the nutritionist go by this. Change it any time on You.')}</p>
+            </div>
+          )}
+
+          {step === 'aims' && (
+            <div className="stack">
+              <Buddy mood={chosenAims ? 'cheering' : 'excited'} say={chosenAims ? t('Got it. I’ll help with that.') : t('Pick as many as you like.')}>
+                <h1>{t('What are you hoping for?')}</h1>
+              </Buddy>
+              <AimFields value={draft} onChange={set} />
+            </div>
+          )}
+
+          {step === 'heard' && (
+            <div className="stack">
+              <Buddy mood="calm" say={t('Last question, promise.')}>
+                <h1>{t('How did you hear about Squish?')}</h1>
+              </Buddy>
+              <div className="eat-chips" role="radiogroup" aria-label={t('How did you hear about Squish?')}>
+                {HEARD.map((h) => (
+                  <button
+                    key={h.key}
+                    type="button"
+                    role="radio"
+                    className={`chip ${heard === h.key ? 'chip--on' : ''}`}
+                    aria-checked={heard === h.key}
+                    onClick={() => setHeard(heard === h.key ? null : h.key)}
+                  >
+                    <span aria-hidden="true">{h.emoji}</span>
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+              <div className="field">
+                <label htmlFor="onboard-code">{t('Got a code?')}</label>
+                <input
+                  id="onboard-code"
+                  className="input onboard-code"
+                  value={code}
+                  placeholder={t('From a friend or a partner')}
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  maxLength={24}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                />
+                <p className="tiny muted">{t('It is used when you make your account.')}</p>
+              </div>
+            </div>
+          )}
+
+          {step === 'building' && <Building restricted={Boolean((draft.diet && draft.diet !== 'any') || draft.avoid?.length)} />}
+
           {step === 'plan' && (
             <div className="stack">
               <Confetti />
               <div className="center">
                 <Squish mood="cheering" size={140} />
                 <h1 style={{ marginTop: 6 }}>{name ? t('Here’s your plan, {name}!', { name }) : t('Here’s your plan!')}</h1>
-                <p className="muted small">{t('Built from your height, weight, age and activity. Tweak it any time in You → Targets.')}</p>
+                <p className="muted small">{t('Built from your height, weight, age and activity. Tap − or + to change anything.')}</p>
               </div>
 
               <div className="card onboard-plan">
-                <div className="row-between" style={{ marginBottom: 10 }}>
+                <div className="row-between onboard-plan-energy">
                   <span className="muted small">{t('Daily energy')}</span>
                   <b style={{ fontSize: 28 }}>
-                    <CountUp value={energyValue(targets.calories)} /> {currentEnergyUnit()}
+                    <CountUp value={energyValue(targets.calories)} /> {energyUnit}
                   </b>
                 </div>
+                <div className="row-between onboard-plan-adjust">
+                  <span className="tiny muted">{tweak.calories !== undefined ? t('Changed by you') : t('Suggested')}</span>
+                  {energyUnit === 'kJ' ? (
+                    <Stepper
+                      value={energyValue(targets.calories, 'kJ')}
+                      step={200}
+                      min={energyValue(floor, 'kJ')}
+                      max={20900}
+                      onChange={(kj) => setTweak((w) => ({ ...w, calories: Math.max(floor, toKcal(kj, 'kJ')) }))}
+                      suffix="kJ"
+                    />
+                  ) : (
+                    <Stepper value={targets.calories} step={50} min={floor} max={5000} onChange={(calories) => setTweak((w) => ({ ...w, calories }))} />
+                  )}
+                </div>
                 <MacroBars totals={{ calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }} targets={targets} compact />
+                <div className="row-between onboard-plan-adjust">
+                  <span className="small">{t('Protein')}</span>
+                  <Stepper value={targets.protein} step={5} min={30} max={300} onChange={(protein) => setTweak((w) => ({ ...w, protein }))} suffix="g" />
+                </div>
                 <div className="divider" />
                 <div className="row" style={{ gap: 16 }}>
                   <span className="small muted">💧 {t('{n} glasses ({volume})', { n: targets.water, volume: waterVolume(targets.water) })}</span>
                   <span className="small muted">👟 {t('{n} steps', { n: targets.steps })}</span>
                 </div>
+                {Object.keys(tweak).length > 0 && (
+                  <button type="button" className="btn--quiet small" style={{ marginTop: 8 }} onClick={() => setTweak({})}>
+                    {t('Back to the suggested plan')}
+                  </button>
+                )}
               </div>
               {projection?.kind === 'date' && (
                 <p className="onboard-when small center">
@@ -420,6 +609,23 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                   }, { b: (text) => <b>{text}</b> })}
                 </p>
               )}
+              <details className="plan-how onboard-how">
+                <summary className="small">{t('How we worked this out')}</summary>
+                <p className="tiny">{explained.summary}</p>
+                <dl>
+                  {explained.how.map((line) => (
+                    <div key={line.label}>
+                      <dt className="tiny">{line.label}</dt>
+                      <dd className="tiny muted">{line.words}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="tiny muted">
+                  {t('Sources: the Mifflin–St Jeor equation (1990) for what your body burns, and the WHO, the UK’s SACN and the US Dietary Guidelines for fibre, fat, sugar and salt. Squish never suggests less than {floor} a day.', {
+                    floor: `${energyValue(floor).toLocaleString()} ${energyUnit}`,
+                  })}
+                </p>
+              </details>
             </div>
           )}
 
@@ -462,27 +668,39 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
           )}
         </div>
 
-        <div className="onboard-actions">
-          {index > 0 && (
-            <button type="button" className="btn btn--ghost" onClick={back}>
-              {t('Back')}
-            </button>
-          )}
-          {step === 'account' ? (
-            // The form above is the way on; this is the way round it.
-            <button type="button" className="btn btn--quiet grow" onClick={finish}>
-              {t('Not now')}
-            </button>
-          ) : step === STEPS[STEPS.length - 1] ? (
-            <button type="button" className="btn grow" onClick={finish}>
-              {t("Let's go")}
-            </button>
-          ) : (
-            <button type="button" className="btn grow" onClick={next}>
-              {step === 'welcome' ? t('Get started') : step === 'name' && !name ? t('Skip') : t('Continue')}
-            </button>
-          )}
-        </div>
+        {step !== 'building' && (
+          <div className="onboard-actions">
+            {index > 0 && (
+              <button type="button" className="btn btn--ghost" onClick={back}>
+                {t('Back')}
+              </button>
+            )}
+            {step === 'account' ? (
+              // The form above is the way on; this is the way round it.
+              <button type="button" className="btn btn--quiet grow" onClick={finish}>
+                {t('Not now')}
+              </button>
+            ) : step === STEPS[STEPS.length - 1] ? (
+              <button type="button" className="btn grow" onClick={finish}>
+                {t("Let's go")}
+              </button>
+            ) : step === 'heard' ? (
+              <button type="button" className="btn grow" onClick={leaveHeard}>
+                {heard || code.trim() ? t('Continue') : t('Skip')}
+              </button>
+            ) : (
+              <button type="button" className="btn grow" onClick={next}>
+                {step === 'welcome'
+                  ? t('Get started')
+                  : (step === 'name' && !name) || (step === 'aims' && !chosenAims)
+                    ? t('Skip')
+                    : step === 'target'
+                      ? t('Sounds good')
+                      : t('Continue')}
+              </button>
+            )}
+          </div>
+        )}
         {step === 'welcome' && accounts && (
           <button type="button" className="btn btn--quiet onboard-signin" onClick={() => setSigning('in')}>
             {t('I already have an account')}
@@ -516,6 +734,105 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
           )}
         </Sheet>
       </div>
+    </div>
+  );
+}
+
+/**
+ * After the goal weight: how much, how long, and a line showing the way —
+ * a moment to see it as doable. Honest when it is not: a goal below a
+ * healthy weight for their height is not called realistic.
+ */
+function TargetMoment({ profile, weeks, date }: { profile: Profile; weeks: number; date: Date }) {
+  const change = Math.abs(profile.weightKg - profile.targetWeightKg);
+  const amount = formatWeight(change, profile.units);
+  const bmi = profile.targetWeightKg / (profile.heightCm / 100) ** 2;
+  const low = profile.goal === 'lose' && bmi < 18.5;
+  return (
+    <div className="stack onboard-target">
+      <div className="center">
+        <Squish mood={low ? 'thinking' : 'proud'} size={120} />
+        <h1 style={{ marginTop: 6 }}>
+          {low
+            ? t('Let’s aim a little higher')
+            : profile.goal === 'gain'
+              ? t('Gaining {amount} is a realistic goal', { amount })
+              : t('Losing {amount} is a realistic goal', { amount })}
+        </h1>
+        <p className="muted">
+          {low
+            ? t('{weight} is below a healthy weight for your height. Squish will plan towards it gently, but a goal a little higher is kinder to your body.', {
+                weight: formatWeight(profile.targetWeightKg, profile.units),
+              })
+            : t('At {pace} a week, that is about {weeks} weeks — around {when}.', {
+                pace: formatPace(profile.pace, profile.units),
+                weeks: Math.max(1, Math.round(weeks)),
+                when: aroundWhen(date),
+              })}
+        </p>
+      </div>
+      <WeightPath from={formatWeight(profile.weightKg, profile.units)} to={formatWeight(profile.targetWeightKg, profile.units)} when={aroundWhen(date)} down={profile.goal === 'lose'} />
+      <p className="small center">{t('Steady is what lasts: small changes you can keep up, week after week.')}</p>
+    </div>
+  );
+}
+
+/** A line from now to the goal, easing off as it nears it — the way a real one tends to. Decoration with words. */
+function WeightPath({ from, to, when, down }: { from: string; to: string; when: string; down: boolean }) {
+  const [y0, y1] = down ? [22, 88] : [88, 22];
+  const path = `M 20 ${y0} C 110 ${y0 + (y1 - y0) * 0.75}, 200 ${y1}, 300 ${y1}`;
+  return (
+    <figure className="weight-path">
+      <svg viewBox="0 0 320 110" role="img" aria-label={t('From {from} now to {to} around {when}', { from, to, when })}>
+        <line x1="20" y1="100" x2="300" y2="100" className="weight-path-base" />
+        <path d={path} className="weight-path-line" pathLength={1} />
+        <circle cx="20" cy={y0} r="6" className="weight-path-dot" />
+        <circle cx="300" cy={y1} r="8" className="weight-path-goal" />
+      </svg>
+      <figcaption className="row-between tiny">
+        <span>
+          <b>{from}</b> · {t('Now')}
+        </span>
+        <span>
+          <b>{to}</b> · {when}
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
+
+/**
+ * A breath before the plan: the things it is working out, ticked off. The
+ * sums take no time at all, so this is short — long enough to feel made for
+ * them, never a fake wait.
+ */
+function Building({ restricted }: { restricted: boolean }) {
+  const items = [
+    t('Working out what your body burns'),
+    t('Setting your daily energy'),
+    t('Balancing protein, carbs and fat'),
+    t('Adding fibre and water'),
+    ...(restricted ? [t('Noting what you never eat')] : []),
+  ];
+  return (
+    <div className="stack onboard-building" role="status">
+      <div className="center">
+        <Squish mood="thinking" size={130} />
+        <h1 style={{ marginTop: 6 }}>{t('Building your plan…')}</h1>
+      </div>
+      <div className="onboard-building-bar" aria-hidden="true">
+        <span />
+      </div>
+      <ul className="onboard-building-list">
+        {items.map((item, i) => (
+          <li key={item} style={{ animationDelay: `${0.2 + i * (2 / items.length)}s` }}>
+            <span className="onboard-tick" aria-hidden="true">
+              ✓
+            </span>
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

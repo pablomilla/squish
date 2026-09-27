@@ -11,14 +11,17 @@ import {
   createInvite,
   deleteInvite,
   fetchInvites,
+  fetchHeard,
   fetchPeople,
   setInviteDisabled,
   setPlan,
+  type HeardCount,
   type Invite,
   type Metrics,
   type Person,
 } from '../../lib/admin';
 import { friendlyDate } from '../../lib/date';
+import { HEARD } from '../../lib/heard';
 import { Chart, Funnel, SplitBar } from './charts';
 import { KIND_LABEL, count, longDay, modelLabel, pounds, shortDay } from './format';
 import { Tile } from './Tiles';
@@ -158,6 +161,8 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
           </section>
         </>
       )}
+
+      <HeardFrom />
 
       <div className="admin-cols admin-cols--wide-first">
         <section className="card card--quiet">
@@ -533,5 +538,64 @@ function SpendByModel({ person, usdToGbp }: { person: Person; usdToGbp: number }
         </li>
       )}
     </ul>
+  );
+}
+
+/**
+ * How people say they heard about Squish (asked in onboarding), and how far
+ * each way in got: to an account, and to Plus. Worth reading beside the
+ * affiliates' own links, which only count the people who used one.
+ */
+function HeardFrom() {
+  const [found, setFound] = useState<{ days: number; heard: HeardCount[] } | null>(null);
+  useEffect(() => {
+    void fetchHeard().then(setFound);
+  }, []);
+  if (!found) return null;
+  const total = found.heard.reduce((sum, h) => sum + h.devices, 0);
+  const share = (n: number, of: number) => (of ? `${Math.round((n / of) * 100)}%` : '—');
+  return (
+    <section className="card card--quiet">
+      <div className="card-title">
+        <h3>How people heard about Squish</h3>
+        <span className="tiny muted">last {found.days} days</span>
+      </div>
+      {total === 0 ? (
+        <p className="tiny muted">Nobody has answered yet. It is asked near the end of setting up, and it can be skipped.</p>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Where</th>
+              <th scope="col">Said so</th>
+              <th scope="col">Made an account</th>
+              <th scope="col">{PLUS}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {found.heard.map((h) => {
+              const option = HEARD.find((o) => o.key === h.heard);
+              return (
+                <tr key={h.heard}>
+                  <th scope="row">
+                    {option?.emoji} {option?.label ?? h.heard}
+                  </th>
+                  <td>
+                    {count(h.devices)} <span className="muted">({share(h.devices, total)})</span>
+                  </td>
+                  <td>
+                    {count(h.accounts)} <span className="muted">({share(h.accounts, h.devices)})</span>
+                  </td>
+                  <td>{count(h.plus)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <p className="tiny muted admin-note">
+        One answer per device, from a fixed list, and it can be skipped. Nothing about who told them is kept.
+      </p>
+    </section>
   );
 }

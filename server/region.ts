@@ -15,12 +15,15 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { NextFunction, Request, Response } from 'express';
 import { HOME_REGION, REGIONS, isRegion, type EnergyUnit, type Region } from '../src/lib/region';
 import { LANGUAGES, isLanguage, type Language } from '../src/lib/language';
+import { dietPhrase, isDiet, type Diet } from '../src/lib/eating';
 
 export interface Place {
   region: Region;
   energy: EnergyUnit;
   /** What the AI writes in. English unless they chose otherwise. */
   language: Language;
+  /** How they eat, where it rules things out: a meal is read with it in mind. */
+  diet?: Diet;
 }
 
 const store = new AsyncLocalStorage<Place>();
@@ -30,15 +33,16 @@ const store = new AsyncLocalStorage<Place>();
  * unknown unit the region's own, an unknown language English. Only ever
  * values from fixed lists reach a prompt, so a header cannot carry words in.
  */
-export function placeFrom(regionHeader: unknown, energyHeader: unknown, languageHeader?: unknown): Place {
+export function placeFrom(regionHeader: unknown, energyHeader: unknown, languageHeader?: unknown, dietHeader?: unknown): Place {
   const region = isRegion(regionHeader) ? regionHeader : HOME_REGION;
   const energy = energyHeader === 'kJ' || energyHeader === 'kcal' ? energyHeader : REGIONS[region].energy;
   const language = isLanguage(languageHeader) ? languageHeader : 'en';
-  return { region, energy, language };
+  const diet = isDiet(dietHeader) && dietHeader !== 'any' ? dietHeader : undefined;
+  return diet ? { region, energy, language, diet } : { region, energy, language };
 }
 
 export function withPlace(req: Request, _res: Response, next: NextFunction): void {
-  store.run(placeFrom(req.get('x-squish-region'), req.get('x-squish-energy'), req.get('x-squish-language')), next);
+  store.run(placeFrom(req.get('x-squish-region'), req.get('x-squish-energy'), req.get('x-squish-language'), req.get('x-squish-diet')), next);
 }
 
 /** The place of the request being served; Britain outside one. */
@@ -128,6 +132,11 @@ export function regionNote(kind: NoteFor, place: Place = currentPlace()): string
     case 'meal':
     case 'recipe':
       lines.push(`Typical portions and products are the ones sold there. ${FORTIFIED[place.region]}`, json);
+      if (place.diet) {
+        lines.push(
+          `They are ${dietPhrase(place.diet)}. Where a food could be either, read it as the kind that fits — a veggie burger, oat milk, a plant-based sausage — unless the photo or their words plainly say otherwise, and give the figures for that kind.`,
+        );
+      }
       break;
     case 'label':
       lines.push('Reading the label:', LABELS[info.guidance], json);

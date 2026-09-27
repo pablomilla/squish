@@ -30,6 +30,7 @@ import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
 import { energyValue, formatEnergy, localWords } from '../lib/region';
 import { plural, t } from '../lib/i18n';
+import { aboutOf } from '../lib/eating';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
@@ -114,6 +115,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       mealsLogged,
       timeOfDay: timeOfDayWords(),
       recentMeals: todaysMeals.map((m) => m.title),
+      about: aboutOf(profile),
     }).then((message) => {
       if (!live || !message) return;
       rememberCoachNote(message, mealsLogged, part);

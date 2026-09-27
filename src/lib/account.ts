@@ -90,6 +90,8 @@ export interface Arrived {
   broughtDiary?: boolean;
   /** True where a confirmation link has been sent to the new address. */
   verificationSent?: boolean;
+  /** What a code they arrived with or typed turned out to be, when there was one. */
+  code?: { kind: 'partner' | 'friend' | 'unknown' } | { kind: 'plus'; days: number };
 }
 
 /**

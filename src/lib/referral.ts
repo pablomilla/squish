@@ -50,6 +50,23 @@ export function referral(): string | undefined {
   }
 }
 
+/**
+ * A code somebody typed in (onboarding's "Got a code?"): kept like a link's,
+ * and handed over with the sign-up the same way. Typed on purpose, it wins
+ * over a link followed earlier. The server works out which kind it is — a
+ * partner's, a friend's, or an invite to Plus.
+ */
+export function keepCode(typed: string): boolean {
+  const code = typed.trim().toUpperCase();
+  if (!/^[A-Z0-9-]{3,24}$/.test(code)) return false;
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ code, at: Date.now() } satisfies Stored));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Once an account has been made, the code has done its job. */
 export function forgetReferral(): void {
   try {
