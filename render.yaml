@@ -55,9 +55,13 @@ services:
       # (free, so capped; default 30).
       - key: SQUISH_DAILY_CLARIFY
         sync: false
-      # "off" stops the server loading and using the USDA food table (see
-      # server/foodTable.ts); it downloads it itself, once, when unset.
+      # "off" stops the server loading and using the food tables (USDA's and
+      # the UK's CoFID; see server/foodTable.ts). Unset, it downloads them
+      # itself, once each. The CoFID workbook is found on its gov.uk page;
+      # SQUISH_FOOD_TABLE_COFID_URL points straight at it if that page moves.
       - key: SQUISH_FOOD_TABLE
+        sync: false
+      - key: SQUISH_FOOD_TABLE_COFID_URL
         sync: false
       # "off" stops the server translating new interface strings into every
       # language after a deploy; they are then translated when first asked for.

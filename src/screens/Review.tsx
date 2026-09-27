@@ -421,7 +421,10 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                     {/* Said only when it is so: a food from the table says which one. */}
                     {item.source && (
                       <p className="tiny muted item-source">
-                        {t('Nutrition per gram from {table}: {food}', { table: 'USDA FoodData Central', food: item.source.name })}
+                        {t('Nutrition per gram from {table}: {food}', {
+                          table: item.source.table === 'cofid' ? 'McCance and Widdowson’s (UK)' : 'USDA FoodData Central',
+                          food: item.source.name,
+                        })}
                       </p>
                     )}
 

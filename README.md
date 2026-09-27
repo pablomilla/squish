@@ -353,17 +353,24 @@ than failing.
 
 **Plain foods are checked against a food table.** For each item the AI also names the food the way
 a food composition table would ("banana, raw", "rice, white, cooked"), and leaves that empty for a
-mixed dish, a takeaway or a branded product. Where the name matches a row of the USDA's FoodData
-Central table, the nutrition per gram is the table's, scaled to the AI's portion, and the Review
-screen says so under the item. The match is cautious (`server/foodMatch.ts`): every word must be in
+mixed dish, a takeaway or a branded product. Where the name matches a row of a government food
+table, the nutrition per gram is the table's, scaled to the AI's portion, and the Review screen says
+so under the item. There are two tables: the UK's own (McCance and Widdowson's CoFID, about 2,900
+foods as the British eat them — semi-skimmed milk, crumpets, fortified flour), asked first in
+Britain, Ireland, Australia and New Zealand; and the USDA's FoodData Central (about 7,800 foods),
+asked first in the US and Canada. Each is the other's fallback. The match is cautious (`server/foodMatch.ts`): every word must be in
 the row, the row's own name ("Rice" in "Rice, white, cooked") must be words the AI used, raw and
 cooked must agree, and the result must land within a factor of two of the AI's own calories for the
-portion. Otherwise the AI's figures stand. The server downloads the table itself (about 7 MB, once)
-the first time it starts without one and keeps it in Postgres; `SQUISH_FOOD_TABLE=off` turns it all
-off. Each analysis logs how many of its foods matched (`[squish] food table: 2 of 3 foods …`), which
+portion. Otherwise the AI's figures stand. The server downloads each table itself, once, the first
+time it starts without it, and keeps it in Postgres — the USDA's as a CSV zip, CoFID as the Excel
+workbook linked from its gov.uk page (read by `server/xlsx.ts`); each one's failure leaves the other
+working, and is retried at the next start. `SQUISH_FOOD_TABLE=off` turns it all off, and
+`SQUISH_FOOD_TABLE_COFID_URL` points straight at the workbook if gov.uk moves it. Each analysis logs how many of its foods matched (`[squish] food table: 2 of 3 foods …`), which
 is the number to watch before trusting the table further — for instance, to stop asking the AI for
-figures the table already has. Nutrition data for matched foods: U.S. Department of Agriculture,
-Agricultural Research Service, FoodData Central (public domain).
+figures the table already has. Nutrition data for matched foods: McCance and Widdowson's Composition
+of Foods Integrated Dataset, which contains public sector information licensed under the Open
+Government Licence v3.0; and U.S. Department of Agriculture, Agricultural Research Service, FoodData
+Central (public domain).
 
 **The nutritionist runs its tools in the browser.** It is the one unusual piece of architecture in
 here, and it follows from where the food lives: every diary is in `localStorage` and the server has

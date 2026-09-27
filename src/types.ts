@@ -100,7 +100,8 @@ export interface FoodItem {
 }
 
 export interface FoodSource {
-  table: 'usda';
+  /** USDA FoodData Central, or the UK's McCance and Widdowson's (CoFID). */
+  table: 'usda' | 'cofid';
   id: string;
   name: string;
 }

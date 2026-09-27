@@ -7,9 +7,11 @@ import { join } from 'node:path';
 import { crc32 } from 'node:zlib';
 import { after, before, test } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
-import { csvFields, importUsda, readUsdaZip, tableFoods, type TableFood } from '../server/foodTable';
+import { cofidFoods, cofidNumber, csvFields, findCofidUrl, importCofid, importUsda, readUsdaZip, tableFoods, type TableFood } from '../server/foodTable';
 import { candidates, indexFoods, plausible, words } from '../server/foodMatch';
-import { groundMeal, scaled } from '../server/grounding';
+import { groundMeal, scaled, tableOrder } from '../server/grounding';
+import { inPlace } from '../server/region';
+import { columnIndex, readWorkbook, sharedStrings, sheetRows, unescapeXml } from '../server/xlsx';
 import type { ModelMeal } from '../server/claude';
 
 /**
@@ -94,12 +96,95 @@ function usdaZip(): Buffer {
   return zip({ [`${DIR}food.csv`]: food.join('\r\n'), [`${DIR}nutrient.csv`]: nutrient.join('\r\n'), [`${DIR}food_nutrient.csv`]: foodNutrient.join('\r\n'), [`${DIR}acquisition_samples.csv`]: q('a', 'b') });
 }
 
+/*
+ * CoFID, cut down: several sheets, a header row that names each column with
+ * its unit, a row of codes under it, "Tr" and "N", bracketed estimates, and
+ * saturates given both per 100 g of fatty acids and per 100 g of food.
+ */
+const esc = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function xlsx(sheets: { name: string; rows: (string | number)[][] }[]): Buffer {
+  const strings: string[] = [];
+  const cell = (value: string | number, ref: string) => {
+    if (typeof value === 'number') return `<c r="${ref}"><v>${value}</v></c>`;
+    if (value === '') return '';
+    // Every other string inline, to read both kinds.
+    if (strings.length % 2 === 1) {
+      strings.push('');
+      return `<c r="${ref}" t="inlineStr"><is><t>${esc(value)}</t></is></c>`;
+    }
+    strings.push(value);
+    return `<c r="${ref}" t="s"><v>${strings.length - 1}</v></c>`;
+  };
+  const letters = (i: number) => (i < 26 ? String.fromCharCode(65 + i) : String.fromCharCode(64 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26)));
+  const files: Record<string, string> = {
+    'xl/workbook.xml': `<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets
+      .map((sheet, i) => `<sheet name="${esc(sheet.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`)
+      .join('')}</sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<Relationships>${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}</Relationships>`,
+  };
+  sheets.forEach((sheet, i) => {
+    files[`xl/worksheets/sheet${i + 1}.xml`] = `<worksheet><sheetData>${sheet.rows
+      .map((row, r) => `<row r="${r + 1}">${row.map((value, c) => cell(value, `${letters(c)}${r + 1}`)).join('')}</row>`)
+      .join('')}</sheetData></worksheet>`;
+  });
+  files['xl/sharedStrings.xml'] = `<sst>${strings.map((text) => `<si><t>${esc(text)}</t></si>`).join('')}</sst>`;
+  return zip(files);
+}
+const COFID_SHEETS = [
+  { name: 'Factors', rows: [['Nothing to see here'], ['1', '2']] },
+  {
+    name: '1.3 Proximates',
+    rows: [
+      ['Food Code', 'Food Name', 'Description', 'Group', 'Protein (g)', 'Fat (g)', 'Carbohydrate (g)', 'Energy (kcal) (kcal)', 'Energy (kJ) (kJ)', 'Total sugars (g)', 'NSP (g)', 'AOAC fibre (g)'],
+      ['', '', '', '', 'PROT', 'FAT', 'CHO', 'KCALS', 'KJ', 'TOTSUG', 'NSP', 'AOACFIB'],
+      ['13-128', 'Bananas, flesh only', '', 'FA', 1.2, 0.1, 20.3, 81, 348, 18.1, 1.1, 1.4],
+      ['12-345', 'Milk, semi-skimmed, pasteurised, average', '', 'BA', 3.5, 1.7, 4.7, 47, 197, 4.7, 0, 'N'],
+      ['11-123', 'Rice, white, basmati, boiled in unsalted water', '', 'AC', 2.6, 0.4, 'Tr', 123, 520, '(0.1)', 'Tr', 'N'],
+      ['50-001', 'Infant formula, powder', '', 'X', 12, 27, 55, 500, 2100, 50, 0, 0],
+      ['17-999', 'Stock cube, no energy given', '', 'X', 1, 1, 1, 'N', 'N', 1, 0, 0],
+    ],
+  },
+  {
+    name: '1.4 Inorganics',
+    rows: [
+      ['Food Code', 'Food Name', 'Sodium (mg)', 'Calcium (mg)', 'Iron (mg)'],
+      ['13-128', 'Bananas, flesh only', 1, 6, 0.3],
+      ['12-345', 'Milk, semi-skimmed, pasteurised, average', 43, 120, 'Tr'],
+    ],
+  },
+  {
+    name: '1.5 Vitamins',
+    rows: [
+      ['Food Code', 'Food Name', 'Vitamin D (µg)', 'Vitamin B12 (µg)', 'Folate (µg)', 'Vitamin C (mg)'],
+      ['13-128', 'Bananas, flesh only', 0, 0, 14, 11],
+      ['12-345', 'Milk, semi-skimmed, pasteurised, average', 'Tr', 0.9, 9, 2],
+    ],
+  },
+  {
+    name: '1.8 (SFA) FA per 100g food',
+    rows: [
+      ['Food Code', 'Food Name', 'Satd FA /100g FA (g)', 'Satd FA /100g fd (g)'],
+      ['12-345', 'Milk, semi-skimmed, pasteurised, average', 65, 1.1],
+    ],
+  },
+];
+
 let files: Server;
 let dir: string;
 before(async () => {
   dir = await mkdtemp(join(tmpdir(), 'squish-foods-test-'));
   await writeFile(join(dir, 'usda.zip'), usdaZip());
-  files = createServer(async (_req, res) => res.end(await readFile(join(dir, 'usda.zip'))));
+  await writeFile(join(dir, 'cofid.xlsx'), xlsx(COFID_SHEETS));
+  await writeFile(
+    join(dir, 'page'),
+    '<a href="https://assets.example/media/abc/CoFID_user_guide.xlsx">Guide</a> ' +
+      '<a href="/media/def/McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021..xlsx">The dataset</a>',
+  );
+  files = createServer(async (req, res) => {
+    const name = (req.url ?? '').split('/').pop() ?? '';
+    const file = name.endsWith('.xlsx') ? 'cofid.xlsx' : name === 'page' ? 'page' : 'usda.zip';
+    res.end(await readFile(join(dir, file)));
+  });
   await new Promise<void>((resolve) => files.listen(0, '127.0.0.1', () => resolve()));
   if (enabled) await migrate();
 });
@@ -107,8 +192,8 @@ after(async () => {
   files.close();
   await rm(dir, { recursive: true, force: true });
   if (enabled) {
-    await query(`delete from food_table where source = 'usda'`);
-    await query(`delete from food_table_imports where source = 'usda'`);
+    await query(`delete from food_table where source in ('usda', 'cofid')`);
+    await query(`delete from food_table_imports where source in ('usda', 'cofid')`);
     await closeDatabase();
   }
 });
@@ -179,4 +264,61 @@ when('the server downloads the table once, and meals are grounded in it where a 
   assert.equal(rice.source?.name, 'Rice, white, long-grain, regular, enriched, cooked');
   assert.deepEqual(curry, meal.items![2], 'a dish keeps the AI’s figures');
   assert.deepEqual(cheese, meal.items![3], 'a match the AI’s reading disagrees with is not used');
+});
+
+test('an Excel workbook: shared and inline strings, entities, gaps between cells', async () => {
+  assert.equal(unescapeXml('Fish &amp; chips &lt;3 &#233;&#x2019;'), 'Fish & chips <3 é’');
+  assert.deepEqual([columnIndex('A'), columnIndex('Z'), columnIndex('AA'), columnIndex('AB')], [0, 25, 26, 27]);
+  assert.deepEqual(sharedStrings('<sst><si><t>Plain</t></si><si><r><t>Rich </t></r><r><t xml:space="preserve">text</t></r></si></sst>'), ['Plain', 'Rich text']);
+  assert.deepEqual(sheetRows('<sheetData><row r="1"><c r="A1" t="s"><v>1</v></c><c r="C1"><v>4.5</v></c></row><row r="3"><c r="B3" t="inlineStr"><is><t>x</t></is></c></row></sheetData>', ['a', 'b']), [
+    ['b', '', '4.5'], [], ['', 'x'],
+  ]);
+  const sheets = await readWorkbook(join(dir, 'cofid.xlsx'));
+  assert.deepEqual(sheets.map((sheet) => sheet.name), COFID_SHEETS.map((sheet) => sheet.name));
+  assert.equal(sheets[1].rows[2][1], 'Bananas, flesh only');
+});
+
+test('CoFID’s sheets become foods per 100 g, joined by food code, read by their headers', async () => {
+  assert.equal(cofidNumber('Tr'), 0, 'a trace is nought');
+  assert.equal(cofidNumber('N'), undefined, 'not measured is nothing');
+  assert.equal(cofidNumber('(0.1)'), 0.1, 'an estimate is a number');
+  const foods = cofidFoods(await readWorkbook(join(dir, 'cofid.xlsx')));
+  assert.deepEqual(foods.map((food) => food.name).sort(), [
+    'Bananas, flesh only', 'Milk, semi-skimmed, pasteurised, average', 'Rice, white, basmati, boiled in unsalted water',
+  ], 'infant formula and a food with no energy figure left out');
+  const milk = foods.find((food) => food.id === '12-345')!;
+  assert.deepEqual(milk, {
+    source: 'cofid', id: '12-345', name: 'Milk, semi-skimmed, pasteurised, average',
+    per100: { protein: 3.5, fat: 1.7, carbs: 4.7, calories: 47, sugar: 4.7, sodium: 43, calcium: 120, iron: 0, vitaminD: 0, vitaminB12: 0.9, folate: 9, vitaminC: 2, satFat: 1.1 },
+  }, 'kcal not kJ, AOAC fibre left out when not measured (not NSP instead), saturates per 100 g of food');
+  assert.equal(foods.find((food) => food.id === '11-123')!.per100.carbs, 0);
+});
+
+test('the CoFID workbook is found on its gov.uk page, whatever this release calls it', async () => {
+  const base = `http://127.0.0.1:${(files.address() as AddressInfo).port}`;
+  assert.equal(await findCofidUrl(`${base}/page`), `${base}/media/def/McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021..xlsx`);
+});
+
+test('Britain, Ireland, Australia and New Zealand ask the UK table first; the US and Canada the USDA', () => {
+  assert.deepEqual(tableOrder('GB'), ['cofid', 'usda']);
+  assert.deepEqual(tableOrder('NZ'), ['cofid', 'usda']);
+  assert.deepEqual(tableOrder('US'), ['usda', 'cofid']);
+  assert.deepEqual(tableOrder('CA'), ['usda', 'cofid']);
+});
+
+when('with both tables loaded, a banana in London is CoFID’s and a banana in Boston is USDA’s', async () => {
+  const base = `http://127.0.0.1:${(files.address() as AddressInfo).port}`;
+  if (!(await tableFoods()).some((food) => food.source === 'usda')) await importUsda(`${base}/usda.zip`, 1);
+  assert.equal(await importCofid(`${base}/cofid.xlsx`, 1), 3);
+  const meal: ModelMeal = { items: [{ name: 'Banana', lookup: 'banana, raw', grams: 120, portion: '1', nutrients: { calories: 110, protein: 1, carbs: 25, fat: 0, fibre: 2 } }] };
+  const at = (region: 'GB' | 'US') => inPlace({ region, energy: 'kcal', language: 'en' }, () => groundMeal(meal));
+  const london = (await at('GB')).items![0];
+  assert.deepEqual(london.source, { table: 'cofid', id: '13-128', name: 'Bananas, flesh only' });
+  assert.equal(london.nutrients?.calories, 97);
+  const boston = (await at('US')).items![0];
+  assert.deepEqual(boston.source, { table: 'usda', id: '173944', name: 'Bananas, raw' });
+  const milk = await inPlace({ region: 'GB', energy: 'kcal', language: 'en' }, () =>
+    groundMeal({ items: [{ name: 'Milk', lookup: 'semi-skimmed milk', grams: 200, portion: '1 glass', nutrients: { calories: 95, protein: 7, carbs: 9, fat: 3, fibre: 0 } }] }),
+  );
+  assert.equal(milk.items![0].source?.name, 'Milk, semi-skimmed, pasteurised, average', 'a British food only the British table has');
 });

@@ -7,18 +7,32 @@
  * exactly as they were.
  */
 import type { ModelMeal } from './claude';
-import { tableFoods, type Per100, type TableFood } from './foodTable';
+import { tableFoods, type Per100, type TableFood, type TableSource } from './foodTable';
 import { candidates, indexFoods, plausible, type FoodIndex } from './foodMatch';
+import { currentPlace } from './region';
+import type { Region } from '../src/lib/region';
 import type { Micros, Nutrients } from '../src/types';
 
-let indexed: { foods: TableFood[]; index: FoodIndex } | null = null;
+let indexed: { foods: TableFood[]; indexes: Map<TableSource, FoodIndex> } | null = null;
 
-async function currentIndex(): Promise<FoodIndex | null> {
+/** One index per table, so a country's own table can be asked first. */
+async function currentIndexes(): Promise<Map<TableSource, FoodIndex> | null> {
   const foods = await tableFoods();
   if (!foods.length) return null;
-  if (indexed?.foods !== foods) indexed = { foods, index: indexFoods(foods) };
-  return indexed.index;
+  if (indexed?.foods !== foods) {
+    const bySource = new Map<TableSource, TableFood[]>();
+    for (const food of foods) bySource.set(food.source, [...(bySource.get(food.source) ?? []), food]);
+    indexed = { foods, indexes: new Map([...bySource].map(([source, list]) => [source, indexFoods(list)])) };
+  }
+  return indexed.indexes;
 }
+
+/**
+ * Which table to ask first. The UK's for Britain and Ireland, and for
+ * Australia and New Zealand, whose foods and recipes are closer to Britain's
+ * than to America's; the USDA's for the US and Canada. The other after.
+ */
+export const tableOrder = (region: Region): TableSource[] => (region === 'US' || region === 'CA' ? ['usda', 'cofid'] : ['cofid', 'usda']);
 
 const MACROS = ['calories', 'protein', 'carbs', 'fat', 'fibre', 'sugar', 'satFat', 'sodium'] as const;
 const MICRO_KEYS = ['iron', 'calcium', 'vitaminD', 'vitaminB12', 'folate', 'vitaminC'] as const;
@@ -51,14 +65,15 @@ export async function groundMeal(meal: ModelMeal): Promise<ModelMeal> {
   const items = meal.items ?? [];
   if (!items.some((item) => item.lookup?.trim())) return meal;
 
-  let index: FoodIndex | null;
+  let indexes: Map<TableSource, FoodIndex> | null;
   try {
-    index = await currentIndex();
+    indexes = await currentIndexes();
   } catch (error) {
     console.warn('[squish] food table unavailable:', error instanceof Error ? error.message : error);
     return meal;
   }
-  if (!index) return meal;
+  if (!indexes) return meal;
+  const order = tableOrder(currentPlace().region).flatMap((source) => (indexes.has(source) ? [indexes.get(source)!] : []));
 
   const matched: string[] = [];
   const grounded = items.map((item) => {
@@ -66,10 +81,10 @@ export async function groundMeal(meal: ModelMeal): Promise<ModelMeal> {
     const grams = item.grams;
     if (!lookup || typeof grams !== 'number' || grams <= 0) return item;
     const aiCalories = item.nutrients?.calories ?? 0;
-    for (const food of candidates(lookup, index)) {
+    for (const food of order.flatMap((index) => candidates(lookup, index))) {
       const calories = typeof food.per100.calories === 'number' ? (food.per100.calories * grams) / 100 : NaN;
       if (!Number.isFinite(calories) || !plausible(aiCalories, calories)) continue;
-      matched.push(food.name);
+      matched.push(`${food.name} (${food.source})`);
       return { ...item, nutrients: scaled(food.per100, grams, item.nutrients), source: { table: food.source, id: food.id, name: food.name } };
     }
     return item;
