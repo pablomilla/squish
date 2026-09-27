@@ -20,11 +20,13 @@
  * inbox gets a note saying so instead of a link.
  */
 import { createHash, randomBytes } from 'node:crypto';
+import type { PoolClient } from 'pg';
 import { migrate, query, transaction } from './db';
-import { sendMail, sendQuietly } from './mail';
+import { canSendMail, sendMail, sendQuietly } from './mail';
 import { compose, originOf } from './emails';
 import { readerOf, type Reader } from './reader';
 import { looksLikeEmail, lockPassword, normaliseEmail, requestReset, verifyPassword } from './accounts';
+import { sendVerification } from './verify';
 import { when } from './notices';
 
 /** A day: time to get to the other inbox, not long enough to be worth stealing. */
@@ -34,6 +36,34 @@ export const UNDO_DAYS = 7;
 
 const hashToken = (token: string): string => createHash('sha256').update(token).digest('base64');
 const newToken = (): string => randomBytes(32).toString('base64url');
+
+/**
+ * The way back, for an old address that was the owner's (confirmed) — never
+ * for an address nobody proved, which could be a stranger's. The token.
+ */
+async function leaveWayBack(client: PoolClient, accountId: string, oldEmail: string): Promise<string> {
+  const undo = newToken();
+  await client.query(
+    `insert into email_undos (token_hash, account_id, old_email, expires_at) values ($1, $2, $3, now() + make_interval(days => $4))`,
+    [hashToken(undo), accountId, oldEmail, UNDO_DAYS],
+  );
+  return undo;
+}
+
+/** The old address hears about the move, with the way back. */
+async function tellOldAddress(accountId: string, oldEmail: string, newEmail: string, undoUrl: string, origin: string): Promise<void> {
+  const reader = await readerOf(accountId);
+  sendQuietly(
+    await compose(
+      'email-changed',
+      oldEmail,
+      (words) => ({ new_email: newEmail, time: when(reader, words), undo_link: undoUrl, days: String(UNDO_DAYS) }),
+      origin,
+      reader,
+    ),
+    'email changed notice',
+  );
+}
 
 export type ChangeRequest = { ok: true; to: string } | { ok: false; reason: 'wrong' | 'bad_email' | 'same' };
 
@@ -129,33 +159,11 @@ export async function confirmEmailChange(token: string, undoLink: (token: string
     await client.query('delete from verifications where account_id = $1', [row.account_id]);
     await client.query('delete from email_changes where account_id = $1 and token_hash <> $2', [row.account_id, hashToken(token)]);
 
-    // The way back, for an old address that was the owner's (confirmed) —
-    // never to an address nobody proved, which could be a stranger's.
-    let undo: string | null = null;
-    if (account.verified) {
-      undo = newToken();
-      await client.query(
-        `insert into email_undos (token_hash, account_id, old_email, expires_at) values ($1, $2, $3, now() + make_interval(days => $4))`,
-        [hashToken(undo), row.account_id, account.email, UNDO_DAYS],
-      );
-    }
+    const undo = account.verified ? await leaveWayBack(client, row.account_id, account.email) : null;
     return { ok: true as const, accountId: row.account_id, email: row.new_email, old: undo ? { email: account.email, undo } : null };
   });
 
-  if (done.ok && done.old) {
-    const reader = await readerOf(done.accountId);
-    const { email: oldEmail, undo } = done.old;
-    sendQuietly(
-      await compose(
-        'email-changed',
-        oldEmail,
-        (words) => ({ new_email: done.email, time: when(reader, words), undo_link: undoLink(undo), days: String(UNDO_DAYS) }),
-        origin,
-        reader,
-      ),
-      'email changed notice',
-    );
-  }
+  if (done.ok && done.old) await tellOldAddress(done.accountId, done.old.email, done.email, undoLink(done.old.undo), origin);
   return done.ok ? { ok: true, accountId: done.accountId, email: done.email } : done;
 }
 
@@ -206,6 +214,65 @@ export async function undoEmailChange(token: string, resetLink: (token: string) 
   await lockPassword(done.accountId);
   await requestReset(done.email, resetLink, await readerOf(done.accountId));
   return done;
+}
+
+export type AdminChange =
+  | { ok: true; accountId: string; from: string; to: string; toldOld: boolean; verifySent: boolean }
+  | { ok: false; reason: 'no_account' | 'bad_email' | 'same' | 'taken' };
+
+/**
+ * An admin moves an account to a new address: for somebody who has lost the
+ * inbox they signed up with, or mistyped it, and so cannot use the link the
+ * ordinary way sends.
+ *
+ * Nobody has proved the new inbox, so the new address starts unconfirmed and
+ * gets the usual confirmation email. The old address, if it was confirmed,
+ * gets the same notice and way back as any other move — an admin fooled by
+ * somebody pretending to be the owner is exactly the case it is for. Links
+ * already sent to the old address stop working, as they do after any move.
+ * Devices stay signed in: the person asking for help is usually on one.
+ */
+export async function adminChangeEmail(
+  rawCurrent: string,
+  rawEmail: string,
+  links: { verify: (token: string) => string; undo: (token: string) => string },
+  origin: string,
+): Promise<AdminChange> {
+  await migrate();
+  const current = normaliseEmail(rawCurrent);
+  const email = normaliseEmail(rawEmail);
+  if (!looksLikeEmail(email)) return { ok: false, reason: 'bad_email' };
+
+  const done = await transaction(async (client) => {
+    const account = (
+      await client.query<{ id: string; email: string; verified: boolean }>(
+        'select id, email, email_verified_at is not null as verified from accounts where lower(email) = $1 for update',
+        [current],
+      )
+    ).rows[0];
+    if (!account) return { ok: false as const, reason: 'no_account' as const };
+    if (account.email === email) return { ok: false as const, reason: 'same' as const };
+    const clash = await client.query('select 1 from accounts where email = $1 and id <> $2', [email, account.id]);
+    if (clash.rows.length) return { ok: false as const, reason: 'taken' as const };
+
+    await client.query('update accounts set email = $2, email_verified_at = null where id = $1', [account.id, email]);
+    for (const table of ['resets', 'verifications', 'email_changes']) {
+      await client.query(`delete from ${table} where account_id = $1`, [account.id]);
+    }
+    const undo = account.verified ? await leaveWayBack(client, account.id, account.email) : null;
+    return { ok: true as const, accountId: account.id, from: account.email, undo };
+  });
+  if (!done.ok) return done;
+
+  if (done.undo) await tellOldAddress(done.accountId, done.from, email, links.undo(done.undo), origin);
+  const verifySent = await sendVerification(done.accountId, links.verify).then(
+    () => canSendMail(),
+    (error: unknown) => {
+      console.warn('[squish] confirmation email after an admin change not sent:', error instanceof Error ? error.message : error);
+      return false;
+    },
+  );
+  return { ok: true, accountId: done.accountId, from: done.from, to: email, toldOld: Boolean(done.undo), verifySent };
 }
 
 export async function sweepEmailChanges(): Promise<void> {

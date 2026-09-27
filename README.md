@@ -212,7 +212,8 @@ back office — a menu down the side on a laptop, tabs along the top on a phone:
   break-even, the list of fixed costs (edit it as prices change) and the numbers the sums use:
   prices, VAT, the store's cut and the exchange rate.
 - **People** — sign-ups a day, the plan split, the funnel from account to free taste to paying, the
-  list of people with buttons to grant or revoke Plus, and invite codes.
+  list of people with buttons to grant or revoke Plus or change their email address, and invite
+  codes.
 - **AI usage** — cost a day by feature, analyses a day, and the cost of each call.
 - **Affiliates** — see below.
 - **Settings** — email, the wording of every email, two-step sign-in, and a record of everything
@@ -250,6 +251,14 @@ totals only; there is a test that fails if `server/admin.ts` ever learns the wor
 
 Costs shown are what Anthropic actually charged, accumulated per call — not counts multiplied by an
 assumed price. That is what makes "is Plus priced right?" a measurement rather than an opinion.
+
+**Changing somebody's email address** is for a person who cannot use the app's own way (You →
+Account → Change email), because the inbox they signed up with is gone or was mistyped. The new
+address starts unconfirmed and is sent a confirmation email; links already sent to the old address
+stop working; the devices they are signed in on stay signed in. If the old address was confirmed it
+is told, with the same link as any other move that puts it back within a week — so somebody who
+talks an admin into moving an account they do not own is found out by the owner. An address that
+already has an account is refused, and the change is recorded under Settings.
 
 **The easy way to hand out Plus** is an invite code, made in the dashboard. Give it a length, a
 limit on how many people can use it and a note saying who it is for; the dashboard suggests a code

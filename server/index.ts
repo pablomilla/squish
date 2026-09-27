@@ -24,7 +24,7 @@ import { readJob, startJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
-import { confirmEmailChange, peekEmailChange, peekEmailUndo, requestEmailChange, undoEmailChange } from './emailChange';
+import { adminChangeEmail, confirmEmailChange, peekEmailChange, peekEmailUndo, requestEmailChange, undoEmailChange } from './emailChange';
 import { acceptLanguage, acceptedTags, readerFromRequest, readerOf, rememberReader } from './reader';
 import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
@@ -1386,6 +1386,37 @@ app.post('/api/admin/plan', requireAdmin, async (req, res) => {
     res.status(404).json({ error: 'no_account', message: msg('No account on that address.') });
   } catch (error) {
     logFailure('admin plan', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not change that just now.') });
+  }
+});
+
+/**
+ * Move somebody's account to a new address, for a person who cannot use the
+ * link the ordinary way sends. Body: { email, newEmail }. See adminChangeEmail.
+ */
+app.post('/api/admin/email', requireAdmin, async (req, res) => {
+  const { email, newEmail } = req.body ?? {};
+  if (typeof email !== 'string' || typeof newEmail !== 'string') {
+    res.status(400).json({ error: 'missing', message: msg('The current address and the new one, please.') });
+    return;
+  }
+
+  try {
+    const done = await adminChangeEmail(email, newEmail, { verify: (token) => verifyLink(req, token), undo: (token) => emailUndoLink(req, token) }, publicOrigin(req));
+    if (done.ok) {
+      await recordAdminAction(await adminEmail(req.device!), 'change email', done.from, `to ${done.to}`);
+      res.json({ from: done.from, to: done.to, toldOld: done.toldOld, verifySent: done.verifySent });
+      return;
+    }
+    const WHY = {
+      no_account: 'No account on that address.',
+      bad_email: 'That does not look like an email address.',
+      same: 'That is already the address on the account.',
+      taken: 'Another account already uses that address.',
+    };
+    res.status(done.reason === 'no_account' ? 404 : done.reason === 'taken' ? 409 : 400).json({ error: done.reason, message: WHY[done.reason] });
+  } catch (error) {
+    logFailure('admin email change', error);
     res.status(503).json({ error: 'unavailable', message: msg('Could not change that just now.') });
   }
 });

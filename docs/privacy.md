@@ -65,9 +65,10 @@ Backup is on by default where this copy of Squish has a database.
   after two hours.
 - **Whether you have confirmed your email address**, and, until you do, a
   hashed confirmation link that expires after a week.
-- **If you change your email address:** the new address and a hashed link to
-  confirm it, for a day or until you use it; then, for a week, the old address
-  and a hashed link sent to it that puts it back.
+- **If you change your email address** (or ask us to change it for you): the
+  new address and a hashed link to confirm it, for a day or until you use it;
+  then, for a week, the old address and a hashed link sent to it that puts it
+  back. A change we make for you is recorded with who made it.
 - **The language, country and time zone your app is set to**, as it last
   said, so the emails we send you are in your language and give times on
   your own clock. The time zone is your device's setting (for example

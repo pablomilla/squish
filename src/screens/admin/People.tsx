@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '../../components/ui';
 import { PLUS } from '../../lib/plan';
 import {
+  changeAccountEmail,
   createInvite,
   deleteInvite,
   fetchInvites,
@@ -28,6 +29,7 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
   const [people, setPeople] = useState<Person[]>([]);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [moving, setMoving] = useState<string | null>(null);
   const [invites, setInvites] = useState<{ invites: Invite[]; suggestion: string } | null>(null);
   const toast = useToast();
 
@@ -175,7 +177,7 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
                   {person.plan === 'plus' && ` · until ${day(person.plusUntil)}`} · {person.used.photo} photos,{' '}
                   {person.used.chat} questions this month · {usd(person.usd)} (≈{pounds(Math.round(person.usd * usdToGbp * 100))})
                 </p>
-                <div className="row" style={{ gap: 8 }}>
+                <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     className="btn btn--sm btn--ghost"
@@ -202,7 +204,22 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
                       Revoke
                     </button>
                   )}
+                  {moving !== person.id && (
+                    <button type="button" className="btn btn--sm btn--ghost" onClick={() => setMoving(person.id)}>
+                      Change email
+                    </button>
+                  )}
                 </div>
+                {moving === person.id && (
+                  <MoveEmail
+                    email={person.email}
+                    onCancel={() => setMoving(null)}
+                    onMoved={() => {
+                      setMoving(null);
+                      void load(search);
+                    }}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -214,6 +231,75 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Moving somebody's account to a new address, for when they cannot use the
+ * ordinary way — the inbox they signed up with is gone, or was mistyped.
+ * What happens next is said before the button, so nobody is surprised by the
+ * emails it sends.
+ */
+function MoveEmail({ email, onCancel, onMoved }: { email: string; onCancel: () => void; onMoved: () => void }) {
+  const [next, setNext] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [trouble, setTrouble] = useState<string | null>(null);
+  const toast = useToast();
+
+  const move = async () => {
+    setBusy(true);
+    setTrouble(null);
+    const done = await changeAccountEmail(email, next);
+    setBusy(false);
+    if (!done.ok) {
+      setTrouble(done.message);
+      return;
+    }
+    toast(
+      `Moved to ${done.to}.${done.verifySent ? ' A confirmation email is on its way there.' : ''}${done.toldOld ? ` ${email} has been told.` : ''}`,
+      '✉️',
+    );
+    onMoved();
+  };
+
+  return (
+    <form
+      className="admin-move-email"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void move();
+      }}
+    >
+      <input
+        className="input"
+        type="email"
+        value={next}
+        onChange={(event) => setNext(event.target.value)}
+        placeholder="New email address"
+        aria-label={`New email address for ${email}`}
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        autoFocus
+      />
+      <p className="tiny muted">
+        The new address starts unconfirmed and gets a confirmation email. If the old one was confirmed, it is
+        emailed a link that puts it back, for 7 days. Only do this for somebody you are sure owns the account.
+      </p>
+      {trouble && (
+        <p className="tiny account-trouble" role="alert">
+          {trouble}
+        </p>
+      )}
+      <div className="row" style={{ gap: 8 }}>
+        <button type="submit" className="btn btn--sm" disabled={busy || !next.trim()}>
+          {busy ? 'One moment…' : 'Move account'}
+        </button>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 

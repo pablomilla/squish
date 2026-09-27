@@ -1,5 +1,5 @@
 {
- "version": "0v65e6q-tbrb4s",
+ "version": "05hddje0zem344",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -7696,6 +7696,13 @@
    "text": "How good today’s food was for what it’s made of. Not how much you ate — that is the energy ring.",
    "where": [
     "src/components/diary/DayScoreSheet.tsx"
+   ]
+  },
+  {
+   "id": "1avv0db0g1r4lz",
+   "text": "The current address and the new one, please.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {

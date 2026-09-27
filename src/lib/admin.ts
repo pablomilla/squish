@@ -97,6 +97,25 @@ export async function setPlan(email: string, days: number): Promise<PlanChange> 
   }
 }
 
+export type EmailMove = { ok: true; to: string; toldOld: boolean; verifySent: boolean } | { ok: false; message: string };
+
+/** Move somebody's account to a new address (see adminChangeEmail on the server). */
+export async function changeAccountEmail(email: string, newEmail: string): Promise<EmailMove> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl('/api/admin/email'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ email, newEmail }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as { to?: string; toldOld?: boolean; verifySent?: boolean; message?: string };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.' };
+    return { ok: true, to: payload.to ?? newEmail, toldOld: Boolean(payload.toldOld), verifySent: Boolean(payload.verifySent) };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}
+
 export const fetchInvites = (): Promise<{ invites: Invite[]; redemptions: Redemption[]; suggestion: string } | null> =>
   ask('/api/admin/invites');
 
