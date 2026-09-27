@@ -338,13 +338,15 @@ export interface DayPoint {
   active: number;
   signups: number;
   analyses: number;
-  aiPence: { photo: number; chat: number; recipe: number };
+  aiPence: { photo: number; chat: number; recipe: number; weekplan: number };
 }
 
 export interface PeriodTotals {
   active: number;
   signups: number;
   aiPence: number;
+  /** The same, by who did the work: Anthropic's Claude or Google's Gemini. */
+  aiPenceBy: { claude: number; gemini: number };
   analyses: number;
 }
 
@@ -370,6 +372,8 @@ export interface MonthPnl {
   commissionPence: number;
   aiPence: number;
   aiByKind: { kind: string; calls: number; pence: number }[];
+  /** By model: claude-opus-5, gemini-3.8-flash… ("claude" is from before models were recorded). */
+  aiByModel: { model: string; calls: number; pence: number }[];
   fixedPence: number;
   profitPence: number;
 }

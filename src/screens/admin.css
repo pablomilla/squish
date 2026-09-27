@@ -130,9 +130,9 @@
  * The sectioned dashboard
  *
  * Chart colours, fixed in this order and never cycled: meal analyses,
- * nutritionist, recipe imports. The same three steps the Insights charts use
- * for protein, carbs and fat, which were checked as a set for colour-blind
- * separation and contrast on both surfaces. A single series is the brand
+ * nutritionist, recipe imports, meal plans. The same steps the Insights
+ * charts use for protein, carbs, fat and fibre, checked as a set of four
+ * (validate_palette: CVD ΔE ≥ 8.4, 3:1 contrast) on both surfaces. A single series is the brand
  * colour; "free" in the plan split is a neutral, so it never reads as a
  * category of its own. Status colours (good, warn, bad) are kept for alerts.
  * ================================================================== */
@@ -140,6 +140,7 @@
   --dv-1: var(--dv-protein);
   --dv-2: var(--dv-carbs);
   --dv-3: var(--dv-fat);
+  --dv-4: var(--dv-fibre);
   --dv-single: var(--dv-cal);
   --dv-muted: #c4b8a8;
 }

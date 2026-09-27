@@ -55,7 +55,26 @@ export function delta(now: number, before: number): { arrow: '▲' | '▼' | '' 
 }
 
 /** The category names, in the order they are always drawn. */
-export const KIND_LABEL: Record<string, string> = { photo: 'Meal analyses', chat: 'Nutritionist', recipe: 'Recipe imports' };
-export const KINDS = ['photo', 'chat', 'recipe'] as const;
+export const KIND_LABEL: Record<string, string> = { photo: 'Meal analyses', chat: 'Nutritionist', recipe: 'Recipe imports', weekplan: 'Meal plans' };
+export const KINDS = ['photo', 'chat', 'recipe', 'weekplan'] as const;
 /** Fixed order, never cycled — validated as a set (see admin.css). */
-export const KIND_COLOR: Record<string, string> = { photo: 'var(--dv-1)', chat: 'var(--dv-2)', recipe: 'var(--dv-3)' };
+export const KIND_COLOR: Record<string, string> = { photo: 'var(--dv-1)', chat: 'var(--dv-2)', recipe: 'var(--dv-3)', weekplan: 'var(--dv-4)' };
+
+/** Google's models; everything else priced is Anthropic's. */
+export const isGemini = (model: string): boolean => model.startsWith('gemini-');
+
+/**
+ * A model's id as a name: claude-opus-5 → Claude Opus 5, claude-haiku-4-5 →
+ * Claude Haiku 4.5, gemini-2.5-flash-lite → Gemini 2.5 Flash Lite. "claude"
+ * alone is the cost kept before models were recorded.
+ */
+export function modelLabel(model: string): string {
+  if (model === 'claude') return 'Claude (model not recorded)';
+  const words: string[] = [];
+  for (const part of model.split('-')) {
+    const last = words.length - 1;
+    if (/^\d+$/.test(part) && last >= 0 && /^[\d.]+$/.test(words[last])) words[last] += `.${part}`;
+    else words.push(/^[\d.]+$/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1));
+  }
+  return words.join(' ');
+}

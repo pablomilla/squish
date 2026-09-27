@@ -3,7 +3,8 @@
  * people using Squish are moving.
  *
  * Every figure here is either measured or labelled as not being. Costs are
- * measured: each AI call's price is recorded as it happens (usage.cost_usd),
+ * measured: each AI call's price is recorded as it happens, by person
+ * (usage.cost_usd) and by model and feature (ai_costs, which the dashboard reads),
  * and fixed costs are the list somebody keeps in the dashboard. Revenue is
  * measured too, from `payments` — the ledger the App Store and Google Play
  * integration writes to — which is empty until Plus goes on sale. Until then
@@ -16,6 +17,18 @@
  */
 import { migrate, query } from './db';
 import { ALLOWANCE } from './plan';
+
+/**
+ * The features AI cost is shown under. A meal's clarifying question is part of
+ * the meal analysis, so it is shown with it; weekly plans are their own line
+ * (before ai_costs they were paid for inside the nutritionist's).
+ */
+export const FEATURE_KINDS = ['photo', 'chat', 'recipe', 'weekplan'] as const;
+const FEATURES = `('photo', 'chat', 'recipe', 'weekplan')`;
+const AI_KINDS = `('photo', 'clarify', 'chat', 'recipe', 'weekplan')`;
+const FEATURE = `case when kind = 'clarify' then 'photo' else kind end`;
+/** Google's models; everything else priced is Anthropic's. */
+const IS_GEMINI = `model like 'gemini-%'`;
 
 /* ---------------- Settings ---------------- */
 
@@ -168,6 +181,8 @@ export interface MonthPnl {
   commissionPence: number;
   aiPence: number;
   aiByKind: { kind: string; calls: number; pence: number }[];
+  /** The same money by model — claude-opus-5, gemini-3.8-flash… ("claude" is from before models were recorded). */
+  aiByModel: { model: string; calls: number; pence: number }[];
   fixedPence: number;
   profitPence: number;
 }
@@ -198,7 +213,7 @@ export async function monthPnl(month: string, settings?: FinanceSettings, fixed?
   const from = monthStart(month);
   const to = monthStart(shiftMonth(month, 1));
 
-  const [money, ai, commission] = await Promise.all([
+  const [money, ai, commission, models] = await Promise.all([
     query<{ payments: string; gross: string; vat: string; fee: string; refunds: string; net: string }>(
       `select count(*)::text as payments,
               coalesce(sum(gross_pence), 0)::text as gross,
@@ -210,17 +225,33 @@ export async function monthPnl(month: string, settings?: FinanceSettings, fixed?
       [from, to],
     ),
     query<{ kind: string; calls: string; usd: string }>(
-      `select kind, sum(count)::text as calls, coalesce(sum(cost_usd), 0)::text as usd
-         from usage where day >= $1 and day < $2 and kind in ('photo', 'chat', 'recipe')
-        group by kind order by kind`,
+      `with cost as (
+         select ${FEATURE} as kind, sum(cost_usd) as usd
+           from ai_costs where day >= $1 and day < $2 and kind in ${AI_KINDS}
+          group by 1
+       ), uses as (
+         select kind, sum(count) as calls
+           from usage where day >= $1 and day < $2 and kind in ${FEATURES}
+          group by kind
+       )
+       select coalesce(cost.kind, uses.kind) as kind, coalesce(uses.calls, 0)::text as calls, coalesce(cost.usd, 0)::text as usd
+         from cost full join uses on uses.kind = cost.kind
+        order by 1`,
       [from, to],
     ),
     commissionIn(from, to),
+    query<{ model: string; calls: string; usd: string }>(
+      `select model, sum(calls)::text as calls, sum(cost_usd)::text as usd
+         from ai_costs where day >= $1 and day < $2 and kind in ${AI_KINDS}
+        group by model order by sum(cost_usd) desc, model`,
+      [from, to],
+    ),
   ]);
 
   const m = money[0];
   const aiByKind = ai.map((row) => ({ kind: row.kind, calls: Number(row.calls), pence: Math.round(Number(row.usd) * s.usdToGbp * 100) }));
   const aiPence = aiByKind.reduce((sum, row) => sum + row.pence, 0);
+  const aiByModel = models.map((row) => ({ model: row.model, calls: Number(row.calls), pence: Math.round(Number(row.usd) * s.usdToGbp * 100) }));
   const fixedPence = costs.filter((c) => c.active).reduce((sum, c) => sum + c.monthlyPence, 0);
   const netPence = Number(m.net);
 
@@ -236,6 +267,7 @@ export async function monthPnl(month: string, settings?: FinanceSettings, fixed?
     commissionPence: commission,
     aiPence,
     aiByKind,
+    aiByModel,
     fixedPence,
     profitPence: netPence - commission - aiPence - fixedPence,
   };
@@ -328,27 +360,36 @@ export interface DayPoint {
   active: number;
   signups: number;
   analyses: number;
-  aiPence: { photo: number; chat: number; recipe: number };
+  aiPence: { photo: number; chat: number; recipe: number; weekplan: number };
+}
+
+export interface PeriodTotals {
+  active: number;
+  signups: number;
+  aiPence: number;
+  aiPenceBy: { claude: number; gemini: number };
+  analyses: number;
 }
 
 export interface Metrics {
   days: number;
   series: DayPoint[];
-  totals: { active: number; signups: number; aiPence: number; analyses: number };
-  previous: { active: number; signups: number; aiPence: number; analyses: number };
+  totals: PeriodTotals;
+  previous: PeriodTotals;
   plans: { accounts: number; free: number; compedPlus: number; payingPlus: number; signedOutActive: number };
   funnel: { accounts: number; triedAi: number; usedTaste: number; plus: number; paying: number };
   /** The first day activity was recorded, so a short history is explained rather than mistaken for a quiet month. */
   recordedSince: string | null;
 }
 
-async function periodTotals(from: string, to: string, usdToGbp: number) {
-  const rows = await query<{ active: string; signups: string; usd: string; analyses: string }>(
+async function periodTotals(from: string, to: string, usdToGbp: number): Promise<PeriodTotals> {
+  const rows = await query<{ active: string; signups: string; usd: string; gemini: string; analyses: string }>(
     `select
        (select count(distinct coalesce(d.account_id, d.id)) from device_days dd join devices d on d.id = dd.device_id
          where dd.day >= $1 and dd.day < $2)::text as active,
        (select count(*) from accounts where created_at >= $1 and created_at < $2)::text as signups,
-       (select coalesce(sum(cost_usd), 0) from usage where day >= $1 and day < $2 and kind in ('photo', 'chat', 'recipe'))::text as usd,
+       (select coalesce(sum(cost_usd), 0) from ai_costs where day >= $1 and day < $2 and kind in ${AI_KINDS})::text as usd,
+       (select coalesce(sum(cost_usd), 0) from ai_costs where day >= $1 and day < $2 and kind in ${AI_KINDS} and ${IS_GEMINI})::text as gemini,
        (select coalesce(sum(count), 0) from usage where day >= $1 and day < $2 and kind = 'photo')::text as analyses`,
     [from, to],
   );
@@ -357,6 +398,11 @@ async function periodTotals(from: string, to: string, usdToGbp: number) {
     active: Number(r.active),
     signups: Number(r.signups),
     aiPence: Math.round(Number(r.usd) * usdToGbp * 100),
+    // By who did the work: Anthropic's Claude (Opus, Sonnet…) or Google's Gemini.
+    aiPenceBy: {
+      claude: Math.round((Number(r.usd) - Number(r.gemini)) * usdToGbp * 100),
+      gemini: Math.round(Number(r.gemini) * usdToGbp * 100),
+    },
     analyses: Number(r.analyses),
   };
 }
@@ -366,7 +412,7 @@ export async function metrics(days: number): Promise<Metrics> {
   const settings = await readSettings();
   const span = Math.min(365, Math.max(7, Math.round(days)));
 
-  const series = await query<{ day: string; active: string; signups: string; analyses: string; photo: string; chat: string; recipe: string }>(
+  const series = await query<{ day: string; active: string; signups: string; analyses: string; photo: string; chat: string; recipe: string; weekplan: string }>(
     `with days as (
        select generate_series(current_date - ($1::int - 1), current_date, interval '1 day')::date as day
      )
@@ -375,9 +421,10 @@ export async function metrics(days: number): Promise<Metrics> {
          where dd.day = days.day)::text as active,
        (select count(*) from accounts where created_at::date = days.day)::text as signups,
        (select coalesce(sum(count), 0) from usage where day = days.day and kind = 'photo')::text as analyses,
-       (select coalesce(sum(cost_usd), 0) from usage where day = days.day and kind = 'photo')::text as photo,
-       (select coalesce(sum(cost_usd), 0) from usage where day = days.day and kind = 'chat')::text as chat,
-       (select coalesce(sum(cost_usd), 0) from usage where day = days.day and kind = 'recipe')::text as recipe
+       (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind in ('photo', 'clarify'))::text as photo,
+       (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind = 'chat')::text as chat,
+       (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind = 'recipe')::text as recipe,
+       (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind = 'weekplan')::text as weekplan
      from days order by days.day`,
     [span],
   );
@@ -431,7 +478,7 @@ export async function metrics(days: number): Promise<Metrics> {
       active: Number(row.active),
       signups: Number(row.signups),
       analyses: Number(row.analyses),
-      aiPence: { photo: pence(row.photo), chat: pence(row.chat), recipe: pence(row.recipe) },
+      aiPence: { photo: pence(row.photo), chat: pence(row.chat), recipe: pence(row.recipe), weekplan: pence(row.weekplan) },
     })),
     totals,
     previous,

@@ -16,6 +16,7 @@ import {
   saveSettings,
   type FixedCost,
 } from '../server/finance';
+import { bill, billedAs } from '../server/billing';
 import { attribute, checkAffiliate, createAffiliate, listAffiliates, recordPayout, tidyCode } from '../server/affiliates';
 
 /**
@@ -37,6 +38,7 @@ before(async () => {
   await migrate();
   await query(`delete from payments where occurred_at >= '2001-01-01' and occurred_at < '2002-01-01'`);
   await query(`delete from usage where day >= '2001-01-01' and day < '2002-01-01'`);
+  await query(`delete from ai_costs where day >= '2001-01-01' and day < '2002-01-01'`);
   await query(`delete from admin_settings`);
 });
 
@@ -133,9 +135,21 @@ when('a month adds up: payments less refunds, commission, AI and fixed costs', a
   await pay(buyer.id, '2001-03-10', 3542, 'purchase', 'yearly');
   await pay(buyer.id, '2001-03-11', 495, 'refund');
   await pay(buyer.id, '2001-04-01', 495); // next month: not this one's
-  await query(`insert into usage (device_id, day, kind, count, cost_usd) values ($1, '2001-03-05', 'photo', 3, 0.1), ($1, '2001-03-06', 'chat', 1, 0.05)`, [
-    buyer.deviceId,
-  ]);
+  await query(
+    `insert into usage (device_id, day, kind, count, cost_usd)
+     values ($1, '2001-03-05', 'photo', 3, 0.1), ($1, '2001-03-06', 'chat', 1, 0.05), ($1, '2001-03-07', 'weekplan', 1, 0.25)`,
+    [buyer.deviceId],
+  );
+  // What the dashboard reads the money from: by model as well as feature.
+  await query(
+    `insert into ai_costs (day, kind, model, calls, cost_usd) values
+       ('2001-03-05', 'photo', 'claude-opus-5', 2, 0.06),
+       ('2001-03-05', 'photo', 'gemini-3.8-flash', 1, 0.02),
+       ('2001-03-05', 'clarify', 'claude-sonnet-5', 1, 0.02),
+       ('2001-03-06', 'chat', 'claude-opus-5', 1, 0.05),
+       ('2001-03-07', 'weekplan', 'claude-opus-5', 1, 0.25),
+       ('2001-03-08', 'translate', 'claude-sonnet-5', 1, 9)`,
+  );
 
   const fixed: FixedCost[] = [
     { id: 1, label: 'Hosting', amount: 10, currency: 'GBP', period: 'month', active: true, monthlyPence: 1000 },
@@ -147,17 +161,28 @@ when('a month adds up: payments less refunds, commission, AI and fixed costs', a
   assert.equal(pnl.netPence, 495 + 3542 - 495);
   assert.equal(pnl.refundsPence, 495);
   assert.equal(pnl.commissionPence, 0, 'nobody referred this buyer');
-  // $0.15 at 0.8 is 12p.
-  assert.equal(pnl.aiPence, 12);
+  // $0.40 at 0.8 is 32p: a meal's question counted with the meal, a meal plan on its own line, and
+  // nothing that is not one of the features.
+  assert.equal(pnl.aiPence, 32);
   assert.deepEqual(
     pnl.aiByKind.map((k) => [k.kind, k.calls, k.pence]),
     [
       ['chat', 1, 4],
       ['photo', 3, 8],
+      ['weekplan', 1, 20],
     ],
   );
+  assert.deepEqual(
+    pnl.aiByModel.map((m) => [m.model, m.calls, m.pence]),
+    [
+      ['claude-opus-5', 4, 29],
+      ['claude-sonnet-5', 1, 2],
+      ['gemini-3.8-flash', 1, 2],
+    ],
+    'Claude and Gemini apart, the dearest first',
+  );
   assert.equal(pnl.fixedPence, 1000, 'a switched-off cost still counted');
-  assert.equal(pnl.profitPence, 3542 - 12 - 1000);
+  assert.equal(pnl.profitPence, 3542 - 32 - 1000);
   assert.equal(pnl.current, false);
 });
 
@@ -268,4 +293,41 @@ when('a device used today shows up in the day’s active count', async () => {
 when('the span is kept to something sensible', async () => {
   assert.equal((await metrics(2)).days, 7);
   assert.equal((await metrics(10_000)).series.length, 365);
+});
+
+when('a cost is kept by model: a weekly plan as a plan, Gemini apart from Claude, in the period totals too', async () => {
+  const device = await registerDevice();
+  const before = await metrics(7);
+  await billedAs('weekplan', device.id, async () => {
+    bill(0.5, 'claude-opus-5-20260901');
+    bill(null, 'claude-opus-5'); // unpriced: nothing made up
+  });
+  await billedAs('photo', null, async () => bill(0.25, 'gemini-3.8-flash'));
+  bill(9, 'claude-opus-5'); // outside any request or job: nobody's, and not counted
+
+  // Written without waiting; give it a moment.
+  let rows: { kind: string; model: string; calls: number; usd: string }[] = [];
+  for (let i = 0; i < 40; i++) {
+    rows = await query(
+      `select kind, model, calls, cost_usd::text as usd from ai_costs
+        where day = current_date and ((kind = 'weekplan' and model = 'claude-opus-5') or model = 'gemini-3.8-flash')`,
+    );
+    const mine = await query(`select 1 from usage where device_id = $1 and kind = 'weekplan' and cost_usd > 0`, [device.id]);
+    if (rows.length === 2 && mine.length) break;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  assert.ok(rows.some((r) => r.kind === 'weekplan' && r.model === 'claude-opus-5'), 'the date stamp dropped from the name');
+  const [spent] = await query<{ count: number; usd: string }>(
+    `select count, cost_usd::text as usd from usage where device_id = $1 and kind = 'weekplan' and day = current_date`,
+    [device.id],
+  );
+  assert.equal(spent.count, 0, 'paid for, but not counted against anybody until it is seen');
+  assert.equal(Number(spent.usd), 0.5);
+
+  const after = await metrics(7);
+  const rate = (await readSettings()).usdToGbp;
+  const pence = (usd: number) => Math.round(usd * rate * 100);
+  assert.ok(Math.abs(after.totals.aiPenceBy.gemini - before.totals.aiPenceBy.gemini - pence(0.25)) <= 1);
+  assert.ok(Math.abs(after.totals.aiPenceBy.claude - before.totals.aiPenceBy.claude - pence(0.5)) <= 1);
+  assert.ok(after.series[6].aiPence.weekplan >= pence(0.5) - 1, 'a meal plan has its own line on the chart');
 });

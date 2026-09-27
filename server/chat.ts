@@ -27,8 +27,8 @@ import { bill } from './billing';
 import { regionNote } from './region';
 
 /** Charge a price to whoever is being served, and hand it straight back. */
-const billed = (usd: number | null): number | null => {
-  bill(usd);
+const billed = (usd: number | null, model: string): number | null => {
+  bill(usd, model);
   return usd;
 };
 
@@ -376,6 +376,7 @@ export async function chatStep(
         cacheReadTokens,
         cacheWriteTokens,
       }),
+      response.model,
     ),
     latencyMs: Date.now() - startedAt,
   };

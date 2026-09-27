@@ -396,9 +396,9 @@ export interface TokenCounts {
 }
 
 /** What a call cost, in dollars, or null for a model with no price on file. */
-/** Charge a price to whoever is being served, and hand it straight back. */
-function billed(usd: number | null): number | null {
-  bill(usd);
+/** Charge a price to whoever is being served, against its model, and hand it straight back. */
+function billed(usd: number | null, model: string): number | null {
+  bill(usd, model);
   return usd;
 }
 
@@ -536,7 +536,7 @@ export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ mea
     const cost: CallCost = {
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
-      costUsd: billed(priceUsage(model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens })),
+      costUsd: billed(priceUsage(model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model),
       latencyMs: Date.now() - startedAt,
     };
     return { figures: parsed.items!, cost };
@@ -598,6 +598,7 @@ async function requestMeal(
       cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
       cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
     }),
+    response.model,
   );
 
   // A label's figures are printed, and are the truth; everything else is
@@ -1027,6 +1028,7 @@ export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Prom
       cacheReadTokens: usage.cache_read_input_tokens ?? 0,
       cacheWriteTokens: usage.cache_creation_input_tokens ?? 0,
     }),
+    response.model,
   );
   console.info(
     `[squish] weekplan model=${response.model} days=${req.days} in=${usage.input_tokens} out=${usage.output_tokens} ` +

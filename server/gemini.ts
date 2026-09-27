@@ -185,7 +185,7 @@ export async function analysePhotoGemini(
   const usage = payload.usageMetadata ?? {};
   const costUsd = priceGemini(model, usage);
   // Counted against whoever asked, as a Claude reading is (nothing outside a request).
-  bill(costUsd);
+  bill(costUsd, model);
 
   // Checked against the food table as Claude's readings are, so the two are compared like for like;
   // named foods the table cannot answer are filled in by the same short text question (no photo).

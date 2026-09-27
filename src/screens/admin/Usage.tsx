@@ -1,13 +1,13 @@
 /**
  * AI usage: the one cost that grows with every person, so the one worth
- * watching day by day. Every figure is what Anthropic charged, added up call
- * by call — not a count multiplied by a guess.
+ * watching day by day. Every figure is what Anthropic (Claude) or Google
+ * (Gemini) charged, added up call by call — not a count multiplied by a guess.
  */
 import { useEffect, useState } from 'react';
 import { PLUS } from '../../lib/plan';
 import { fetchWeekPlans, type Finance, type Metrics, type Overview, type PlanRecord } from '../../lib/admin';
 import { Chart } from './charts';
-import { KINDS, KIND_COLOR, KIND_LABEL, count, longDay, monthName, perCall, pounds, shortDay } from './format';
+import { KINDS, KIND_COLOR, KIND_LABEL, count, isGemini, longDay, modelLabel, monthName, perCall, pounds, shortDay } from './format';
 import { Tile } from './Tiles';
 
 export default function Usage({ metrics, finance, overview }: { metrics: Metrics | null; finance: Finance | null; overview: Overview | null }) {
@@ -19,8 +19,22 @@ export default function Usage({ metrics, finance, overview }: { metrics: Metrics
   return (
     <div className="admin-section">
       {m && (
-        <div className="tiles">
+        <div className="tiles tiles--6">
           <Tile label={`AI cost, ${m.days} days`} value={pounds(m.totals.aiPence)} now={m.totals.aiPence} before={m.previous.aiPence} days={m.days} />
+          <Tile
+            label="Claude (Anthropic)"
+            value={pounds(m.totals.aiPenceBy.claude)}
+            now={m.totals.aiPenceBy.claude}
+            before={m.previous.aiPenceBy.claude}
+            days={m.days}
+          />
+          <Tile
+            label="Gemini (Google)"
+            value={pounds(m.totals.aiPenceBy.gemini)}
+            now={m.totals.aiPenceBy.gemini}
+            before={m.previous.aiPenceBy.gemini}
+            days={m.days}
+          />
           <Tile
             label="Meal analyses"
             value={count(m.totals.analyses)}
@@ -111,6 +125,10 @@ export default function Usage({ metrics, finance, overview }: { metrics: Metrics
                 </tr>
               </tbody>
             </table>
+            <p className="tiny muted admin-note">
+              Meal plans: each plan made, counted when it is first seen. Before 27 September 2026 their cost was counted
+              with the nutritionist's. A meal's clarifying question is counted with its analysis.
+            </p>
             {overview && (
               <p className="tiny muted admin-note">
                 Allowances: free accounts get a one-off taste of {overview.allowances.free.photo} meal analyses. {PLUS} gets{' '}
@@ -122,8 +140,70 @@ export default function Usage({ metrics, finance, overview }: { metrics: Metrics
         )}
       </div>
 
+      {f && <ByModel month={f.month} />}
+
       <WeekPlans />
     </div>
+  );
+}
+
+/**
+ * The month's AI cost by model, Claude's and Gemini's apart, each with its
+ * own subtotal — so a Gemini reading can be set against a Claude one, and a
+ * cheaper model's share of the bill is plain.
+ */
+function ByModel({ month }: { month: Finance['month'] }) {
+  const rows = month.aiByModel;
+  const groups = [
+    { name: 'Claude (Anthropic)', rows: rows.filter((r) => !isGemini(r.model)) },
+    { name: 'Gemini (Google)', rows: rows.filter((r) => isGemini(r.model)) },
+  ];
+  return (
+    <section className="card card--quiet">
+      <div className="card-title">
+        <h3>{monthName(month.month)}, by model</h3>
+      </div>
+      {rows.length === 0 ? (
+        <p className="tiny muted">No AI costs recorded this month yet.</p>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Model</th>
+              <th scope="col">Calls</th>
+              <th scope="col">Cost</th>
+              <th scope="col">Each</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((group) => {
+              const calls = group.rows.reduce((sum, r) => sum + r.calls, 0);
+              const pence = group.rows.reduce((sum, r) => sum + r.pence, 0);
+              return [
+                ...group.rows.map((r) => (
+                  <tr key={r.model}>
+                    <th scope="row">{modelLabel(r.model)}</th>
+                    <td>{count(r.calls)}</td>
+                    <td>{pounds(r.pence)}</td>
+                    <td>{r.calls ? perCall(r.pence / r.calls) : '—'}</td>
+                  </tr>
+                )),
+                <tr key={group.name} className="data-total">
+                  <th scope="row">{group.name}</th>
+                  <td>{count(calls)}</td>
+                  <td>{pounds(pence)}</td>
+                  <td>{calls ? perCall(pence / calls) : '—'}</td>
+                </tr>,
+              ];
+            })}
+          </tbody>
+        </table>
+      )}
+      <p className="tiny muted admin-note">
+        A call is one priced request to a model, so one meal can be two: Gemini reads the photo and Claude Sonnet fills in
+        a food the food table could not. Gemini is priced at its 2026 introductory rate until the new year.
+      </p>
+    </section>
   );
 }
 

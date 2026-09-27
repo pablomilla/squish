@@ -26,7 +26,7 @@ export default function Overview({
 }) {
   const m = metrics;
   const f = finance;
-  const aiDaily = m?.series.map((d) => d.aiPence.photo + d.aiPence.chat + d.aiPence.recipe) ?? [];
+  const aiDaily = m?.series.map((d) => d.aiPence.photo + d.aiPence.chat + d.aiPence.recipe + d.aiPence.weekplan) ?? [];
 
   // Today's AI spend against the week before it: worth a look at three times
   // the usual, once it is enough money to matter.

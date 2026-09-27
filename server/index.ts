@@ -274,7 +274,8 @@ function meter(kind: Spend) {
           res.status(429).json({ error: 'rate_limited', message: SPENT[kind] });
           return;
         }
-        next();
+        // Free to the person, not to us: a meal question's answer is still paid for, and counted.
+        billedTo(req.device.id, kind, next);
         return;
       }
 

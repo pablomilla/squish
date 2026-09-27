@@ -714,6 +714,30 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table weekplan_jobs add column place jsonb;
     `,
   },
+  {
+    id: 26,
+    sql: `
+      -- What each model cost, by day and feature — not by person, which is
+      -- usage.cost_usd's job. It is how the dashboard tells Claude from Gemini
+      -- (and Opus from Sonnet), and how a weekly plan made in the background,
+      -- on whichever instance picked it up, is still counted.
+      create table ai_costs (
+        day      date not null,
+        kind     text not null,
+        model    text not null,
+        calls    integer not null default 0,
+        cost_usd numeric(12, 6) not null default 0,
+        primary key (day, kind, model)
+      );
+
+      -- Everything priced before this was Claude (no Gemini model had a price
+      -- on file), but which Claude model was not kept.
+      insert into ai_costs (day, kind, model, calls, cost_usd)
+      select day, kind, 'claude', sum(count), sum(cost_usd)
+        from usage where cost_usd > 0
+       group by day, kind;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

@@ -22,6 +22,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { hasDatabase, migrate, query } from './db';
+import { billedAs } from './billing';
 import type { WeekPlan } from './claude';
 import type { WeekPlanRequest } from './weekplan';
 import { currentPlace, inPlace, placeFrom, type Place } from './region';
@@ -118,7 +119,7 @@ function runInMemory(id: string, deviceId: string | null, ask: WeekPlanRequest, 
   void (async () => {
     const row = memory.get(id)!;
     try {
-      const plan = await inPlace(place, () => w.make(ask, new AbortController().signal));
+      const plan = await billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, new AbortController().signal)));
       Object.assign(row, { status: 'done', plan });
     } catch (error) {
       Object.assign(row, { status: 'failed', error: w.failure(error) });
@@ -153,7 +154,8 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
     let outcome: { status: 'done'; plan: WeekPlan } | { status: 'failed'; error: string };
     try {
       // Made where they are, whichever instance makes it and however long after they asked.
-      outcome = { status: 'done', plan: await inPlace(place, () => w.make(ask, stop.signal)) };
+      // And paid for as a weekly plan, whether it started in the request or was picked up after a restart.
+      outcome = { status: 'done', plan: await billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, stop.signal))) };
     } catch (error) {
       // Stopped on purpose: the job is somebody else's now (or ours to hand over).
       if (stop.signal.aborted) return;

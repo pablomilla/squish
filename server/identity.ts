@@ -165,8 +165,10 @@ export async function spentToday(deviceId: string, kind: Spend): Promise<number>
 export async function recordCost(deviceId: string, kind: Spend, usd: number | null): Promise<void> {
   if (!usd || !Number.isFinite(usd) || usd <= 0) return;
   await query(
-    `update usage set cost_usd = cost_usd + $3
-      where device_id = $1 and day = current_date and kind = $2`,
+    // Inserted if need be: a weekly plan is paid for while it is made, but only
+    // counted (the row's first appearance) once it is seen.
+    `insert into usage (device_id, day, kind, count, cost_usd) values ($1, current_date, $2, 0, $3)
+     on conflict (device_id, day, kind) do update set cost_usd = usage.cost_usd + excluded.cost_usd`,
     [deviceId, kind, usd.toFixed(6)],
   );
 }
