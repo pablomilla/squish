@@ -656,6 +656,19 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index weekplan_jobs_working on weekplan_jobs(heartbeat_at) where status = 'working';
     `,
   },
+  {
+    id: 22,
+    sql: `
+      -- A weekly plan counts against the month when it reaches the person,
+      -- not when it is made: a plan made and never seen is kept (a day) for
+      -- the planner to hand over next time it is opened, and costs nothing
+      -- until it is. Plans made before this were counted as they were made.
+      alter table weekplan_jobs
+        add column delivered_at timestamptz,
+        add column counted      boolean not null default false;
+      update weekplan_jobs set counted = true where status = 'done';
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

@@ -141,12 +141,14 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
     photo: string;
     chat: string;
     recipe: string;
+    weekplan: string;
     usd: string;
   }>(
     `select a.id, a.email, a.email_verified_at is not null as verified, a.plus_until, a.created_at,
             coalesce(sum(u.count) filter (where u.kind = 'photo'), 0)::text  as photo,
             coalesce(sum(u.count) filter (where u.kind = 'chat'), 0)::text   as chat,
             coalesce(sum(u.count) filter (where u.kind = 'recipe'), 0)::text as recipe,
+            coalesce(sum(u.count) filter (where u.kind = 'weekplan'), 0)::text as weekplan,
             coalesce(sum(u.cost_usd), 0)::text                               as usd
        from accounts a
        left join devices d on d.account_id = a.id
@@ -165,7 +167,7 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
     plan: row.plus_until && row.plus_until > new Date() ? 'plus' : 'free',
     plusUntil: row.plus_until?.toISOString() ?? null,
     joined: row.created_at.toISOString(),
-    used: { photo: Number(row.photo), chat: Number(row.chat), recipe: Number(row.recipe) },
+    used: { photo: Number(row.photo), chat: Number(row.chat), recipe: Number(row.recipe), weekplan: Number(row.weekplan) },
     usd: Number(row.usd),
   }));
 }
@@ -200,6 +202,36 @@ export async function setPlan(actor: string, email: string, days: number): Promi
 
   const until = rows[0].plus_until;
   return { ok: true, plan: until && until > new Date() ? 'plus' : 'free', until: until?.toISOString() ?? null };
+}
+
+export type ReturnedUse = { ok: true; left: number } | { ok: false; reason: 'no_account' | 'none_used' };
+
+/**
+ * Take one use of something off somebody's month — a nutritionist question or
+ * a weekly plan that went wrong on our side. From the latest day that has
+ * one, on whichever of their devices counted it, and never below nought.
+ */
+export async function returnUse(actor: string, email: string, kind: 'chat' | 'weekplan'): Promise<ReturnedUse> {
+  const address = email.trim().toLowerCase();
+  const account = (await query<{ id: string }>('select id from accounts where lower(email) = $1', [address]))[0];
+  if (!account) return { ok: false, reason: 'no_account' };
+  const taken = await query(
+    `update usage set count = count - 1
+      where ctid = (select u.ctid from usage u join devices d on d.id = u.device_id
+                     where d.account_id = $1 and u.kind = $2 and u.count > 0
+                       and u.day >= date_trunc('month', current_date)
+                     order by u.day desc limit 1)
+      returning 1`,
+    [account.id, kind],
+  );
+  if (!taken.length) return { ok: false, reason: 'none_used' };
+  await recordAdminAction(actor, kind === 'weekplan' ? 'give back a weekly plan' : 'give back a question', address, null);
+  const left = await query<{ n: string }>(
+    `select coalesce(sum(u.count), 0)::text as n from usage u join devices d on d.id = u.device_id
+      where d.account_id = $1 and u.kind = $2 and u.day >= date_trunc('month', current_date)`,
+    [account.id, kind],
+  );
+  return { ok: true, left: Number(left[0].n) };
 }
 
 /** Write one line to "What has been done". */

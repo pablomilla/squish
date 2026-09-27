@@ -26,13 +26,13 @@ import type { WeekPlan } from './claude';
 import type { WeekPlanRequest } from './weekplan';
 
 export type Job = { status: 'working' } | { status: 'done'; plan: WeekPlan } | { status: 'failed'; error: string };
+/** A job as read by whoever asked for it: a plan read for the first time is theirs to count. */
+export type ReadJob = Job & { firstTime?: boolean };
 
 /** What a job does and what happens after. Set once, by the server, before any job starts. */
 export interface Worker {
   /** Make the plan. Abandon it when the signal says so: somebody else has the job now. */
   make: (ask: WeekPlanRequest, signal: AbortSignal) => Promise<WeekPlan>;
-  /** A plan was made: count it. Called once per job, whichever instance finished it. */
-  onDone: (deviceId: string | null) => Promise<void>;
   /** No plan: give the question back. Called once per job. */
   onFail: (deviceId: string | null) => Promise<void>;
   /** What to tell the person about an error. */
@@ -54,6 +54,7 @@ export const STALE_MS = 20 * 60_000;
 const KEEP_MS = 24 * 60 * 60_000;
 
 type Row = {
+  id?: string;
   device_id: string | null;
   owner: string | null;
   status: 'working' | 'done' | 'failed';
@@ -61,6 +62,8 @@ type Row = {
   error: string | null;
   created_at: Date;
   heartbeat_at: Date;
+  delivered_at: Date | null;
+  counted: boolean;
 };
 
 const memory = new Map<string, Row & { id: string }>();
@@ -83,7 +86,10 @@ export async function startJob(who: { deviceId: string | null; owner: string | n
   const id = newId();
   if (!hasDatabase()) {
     for (const [key, row] of memory) if (Date.now() - row.created_at.getTime() > KEEP_MS) memory.delete(key);
-    memory.set(id, { id, device_id: who.deviceId, owner: who.owner, status: 'working', plan: null, error: null, created_at: new Date(), heartbeat_at: new Date() });
+    memory.set(id, {
+      id, device_id: who.deviceId, owner: who.owner, status: 'working', plan: null, error: null,
+      created_at: new Date(), heartbeat_at: new Date(), delivered_at: null, counted: false,
+    });
     runInMemory(id, who.deviceId, ask);
     return id;
   }
@@ -102,7 +108,6 @@ function runInMemory(id: string, deviceId: string | null, ask: WeekPlanRequest):
     try {
       const plan = await w.make(ask, new AbortController().signal);
       Object.assign(row, { status: 'done', plan });
-      await w.onDone(deviceId).catch(() => {});
     } catch (error) {
       Object.assign(row, { status: 'failed', error: w.failure(error) });
       await w.onFail(deviceId).catch(() => {});
@@ -113,7 +118,7 @@ function runInMemory(id: string, deviceId: string | null, ask: WeekPlanRequest):
 /**
  * Make one job's plan, as run `run`. Only the run that still holds the job
  * may finish it, so two instances that both think they have it can never
- * both count it, or both give its question back.
+ * both finish it, or both give its question back.
  */
 function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanRequest): void {
   const w = theWorker();
@@ -152,9 +157,7 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
       console.error('[squish] could not save a weekly plan:', error instanceof Error ? error.message : error);
       return [];
     });
-    if (!kept.length) return;
-    if (outcome.status === 'done') await w.onDone(deviceId).catch(() => {});
-    else await w.onFail(deviceId).catch(() => {});
+    if (kept.length && outcome.status === 'failed') await w.onFail(deviceId).catch(() => {});
   })();
 }
 
@@ -239,11 +242,20 @@ export async function handOver(): Promise<number> {
   return mine.length;
 }
 
-/** How a job is getting on, for whoever started it — or null for no such job (or somebody else's). */
-export async function readJob(id: string, owner: string | null): Promise<Job | null> {
+/**
+ * How a job is getting on, for whoever started it — or null for no such job
+ * (or somebody else's). The first time a made plan is read it is delivered,
+ * and `firstTime` says so: that is when it counts against the month.
+ */
+export async function readJob(id: string, owner: string | null): Promise<ReadJob | null> {
   let row: Row | undefined;
   const read = async () =>
-    (await query<Row>('select device_id, owner, status, plan, error, created_at, heartbeat_at from weekplan_jobs where id = $1', [id]))[0];
+    (
+      await query<Row>(
+        'select device_id, owner, status, plan, error, created_at, heartbeat_at, delivered_at, counted from weekplan_jobs where id = $1',
+        [id],
+      )
+    )[0];
   if (hasDatabase()) {
     await migrate();
     row = await read();
@@ -258,9 +270,60 @@ export async function readJob(id: string, owner: string | null): Promise<Job | n
   if (!row) return null;
   // A job started by a known browser is only that browser's (or its account's) to read.
   if (row.owner && row.owner !== owner) return null;
-  if (row.status === 'done' && row.plan) return { status: 'done', plan: row.plan };
   if (row.status === 'failed') return { status: 'failed', error: row.error ?? theWorker().cutOff };
-  return { status: 'working' };
+  if (row.status !== 'done' || !row.plan) return { status: 'working' };
+
+  let firstTime = false;
+  if (hasDatabase()) {
+    // Delivered and counted in one step, so two reads at once count it once.
+    const marked = await query<{ was_counted: boolean }>(
+      `update weekplan_jobs j set delivered_at = coalesce(j.delivered_at, now()), counted = true
+         from (select id, counted from weekplan_jobs where id = $1 for update) old
+        where j.id = old.id
+        returning old.counted as was_counted`,
+      [id],
+    );
+    firstTime = marked.length > 0 && !marked[0].was_counted;
+  } else {
+    firstTime = !row.counted;
+    Object.assign(row, { counted: true, delivered_at: row.delivered_at ?? new Date() });
+  }
+  return { status: 'done', plan: row.plan, firstTime };
+}
+
+/**
+ * A plan this person asked for in the last day and has not seen — made
+ * while the app was closed, or still being made. The newest, if any.
+ */
+export async function waitingJob(owner: string): Promise<string | null> {
+  const rows = hasDatabase()
+    ? await query<{ id: string }>(
+        `select id from weekplan_jobs
+          where owner = $1 and created_at > now() - interval '1 day'
+            and (status = 'working' or (status = 'done' and delivered_at is null))
+          order by created_at desc limit 1`,
+        [owner],
+      )
+    : [...memory.values()]
+        .filter((row) => row.owner === owner && (row.status === 'working' || (row.status === 'done' && !row.delivered_at)))
+        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  return rows[0]?.id ?? null;
+}
+
+/**
+ * Plans this person has on the way this month that are not counted yet —
+ * being made, or made and not yet seen. The monthly cap counts them, so
+ * starting several at once is no way round it.
+ */
+export async function plansOnTheWay(owner: string): Promise<number> {
+  if (!hasDatabase()) return 0;
+  const rows = await query<{ n: string }>(
+    `select count(*)::text as n from weekplan_jobs
+      where owner = $1 and created_at >= date_trunc('month', now()) and not counted
+        and (status = 'working' or status = 'done')`,
+    [owner],
+  );
+  return Number(rows[0]?.n ?? 0);
 }
 
 export interface PlanRecord {
@@ -269,6 +332,8 @@ export interface PlanRecord {
   email: string | null;
   days: number | null;
   status: Job['status'];
+  /** Made, and has reached the person (only then is it counted). */
+  seen: boolean;
   /** Tries it took: more than one means a server stopped part-way. */
   attempts: number;
   /** How long it took, or has taken so far. */
@@ -280,8 +345,8 @@ export interface PlanRecord {
 export async function recentPlans(limit = 20): Promise<PlanRecord[]> {
   if (!hasDatabase()) return [];
   await migrate();
-  const rows = await query<{ created_at: Date; email: string | null; days: string | null; status: Job['status']; attempts: number; seconds: string; error: string | null }>(
-    `select j.created_at, a.email, j.ask->>'days' as days, j.status, j.attempts, j.error,
+  const rows = await query<{ created_at: Date; email: string | null; days: string | null; status: Job['status']; seen: boolean; attempts: number; seconds: string; error: string | null }>(
+    `select j.created_at, a.email, j.ask->>'days' as days, j.status, j.delivered_at is not null as seen, j.attempts, j.error,
             extract(epoch from coalesce(j.finished_at, now()) - j.created_at)::text as seconds
        from weekplan_jobs j
        left join accounts a on a.id = j.owner
@@ -294,6 +359,7 @@ export async function recentPlans(limit = 20): Promise<PlanRecord[]> {
     email: row.email,
     days: row.days === null ? null : Number(row.days),
     status: row.status,
+    seen: row.seen,
     attempts: row.attempts,
     seconds: Math.round(Number(row.seconds)),
     error: row.error,

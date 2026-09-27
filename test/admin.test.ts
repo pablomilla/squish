@@ -3,7 +3,7 @@ import { test, before, after } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { registerDevice, recordCost, spend } from '../server/identity';
 import { signUp } from '../server/accounts';
-import { adminsExist, isAdmin, overview, people, setPlan } from '../server/admin';
+import { adminsExist, isAdmin, overview, people, returnUse, setPlan } from '../server/admin';
 import { planFor } from '../server/plan';
 
 /**
@@ -172,4 +172,22 @@ when('the dashboard cannot reach a diary', async () => {
   const source = await import('node:fs').then((fs) => fs.readFileSync('server/admin.ts', 'utf8'));
   assert.ok(!/\bfrom diaries\b/.test(source), 'admin.ts reads the diaries table');
   assert.ok(!/\bstate\b/.test(source.replace(/\*[\s\S]*?\*\//g, '')), 'admin.ts touches diary state');
+});
+
+when('an admin can give back a question or a weekly plan, one at a time, never below nought, and it is written down', async () => {
+  const somebody = await anAccount();
+  await spend(somebody.deviceId, 'weekplan');
+  await spend(somebody.deviceId, 'weekplan');
+  await spend(somebody.deviceId, 'chat');
+  const usedOf = async () => (await people(somebody.email))[0].used;
+  assert.equal((await usedOf()).weekplan, 2);
+
+  assert.deepEqual(await returnUse('boss@example.com', somebody.email.toUpperCase(), 'weekplan'), { ok: true, left: 1 });
+  assert.deepEqual(await returnUse('boss@example.com', somebody.email, 'chat'), { ok: true, left: 0 });
+  assert.deepEqual(await returnUse('boss@example.com', somebody.email, 'chat'), { ok: false, reason: 'none_used' });
+  assert.deepEqual(await returnUse('boss@example.com', 'nobody-at-all@example.com', 'chat'), { ok: false, reason: 'no_account' });
+  assert.deepEqual(await usedOf(), { photo: 0, chat: 0, recipe: 0, weekplan: 1 });
+
+  const written = await query<{ action: string }>('select action from admin_actions where subject = $1 order by at', [somebody.email]);
+  assert.deepEqual(written.map((row) => row.action), ['give back a weekly plan', 'give back a question']);
 });

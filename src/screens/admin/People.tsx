@@ -7,6 +7,7 @@ import { useToast } from '../../components/ui';
 import { PLUS } from '../../lib/plan';
 import {
   changeAccountEmail,
+  giveBackUse,
   createInvite,
   deleteInvite,
   fetchInvites,
@@ -60,6 +61,18 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
       return;
     }
     toast(days > 0 ? `${email} is on ${PLUS}.` : `${email} is back on free.`, days > 0 ? '🎉' : '↩️');
+    await load(search);
+  };
+
+  const returnOne = async (email: string, kind: 'chat' | 'weekplan') => {
+    setBusy(email);
+    const done = await giveBackUse(email, kind);
+    setBusy(null);
+    if (!done.ok) {
+      toast(done.message, '⚠️');
+      return;
+    }
+    toast(kind === 'weekplan' ? `Gave ${email} a weekly plan back.` : `Gave ${email} a question back.`, '↩️');
     await load(search);
   };
 
@@ -175,7 +188,8 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
                 <p className="tiny muted">
                   Joined {day(person.joined)}
                   {person.plan === 'plus' && ` · until ${day(person.plusUntil)}`} · {person.used.photo} photos,{' '}
-                  {person.used.chat} questions this month · {usd(person.usd)} (≈{pounds(Math.round(person.usd * usdToGbp * 100))})
+                  {person.used.chat} questions
+                  {person.used.weekplan ? `, ${person.used.weekplan} weekly plan${person.used.weekplan === 1 ? '' : 's'}` : ''} this month · {usd(person.usd)} (≈{pounds(Math.round(person.usd * usdToGbp * 100))})
                 </p>
                 <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
                   <button
@@ -202,6 +216,26 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
                       onClick={() => void change(person.email, 0)}
                     >
                       Revoke
+                    </button>
+                  )}
+                  {(person.used.chat ?? 0) > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn--sm btn--ghost"
+                      disabled={busy === person.email}
+                      onClick={() => void returnOne(person.email, 'chat')}
+                    >
+                      Give back a question
+                    </button>
+                  )}
+                  {(person.used.weekplan ?? 0) > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn--sm btn--ghost"
+                      disabled={busy === person.email}
+                      onClick={() => void returnOne(person.email, 'weekplan')}
+                    >
+                      Give back a plan
                     </button>
                   )}
                   {moving !== person.id && (

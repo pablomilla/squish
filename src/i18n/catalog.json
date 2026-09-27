@@ -1,5 +1,5 @@
 {
- "version": "05hddje0zem344",
+ "version": "1jx014m-evma19",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -748,6 +748,13 @@
    "text": "Squad code: {code}",
    "where": [
     "src/components/squad/SquadSheet.tsx"
+   ]
+  },
+  {
+   "id": "0416z140idiewc",
+   "text": "That is this month's weekly plans. They come back on the 1st.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -9404,6 +9411,14 @@
    "text": "Your first name, as the squad will see it",
    "where": [
     "src/components/squad/SquadForms.tsx"
+   ]
+  },
+  {
+   "id": "1l5z9k008ubpws",
+   "one": "{n} weekly plan left this month.",
+   "other": "{n} weekly plans left this month.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {

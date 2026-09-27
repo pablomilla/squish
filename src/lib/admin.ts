@@ -121,12 +121,32 @@ export interface PlanRecord {
   email: string | null;
   days: number | null;
   status: 'working' | 'done' | 'failed';
+  seen: boolean;
   attempts: number;
   seconds: number;
   error: string | null;
 }
 
 export const fetchWeekPlans = (): Promise<{ plans: PlanRecord[] } | null> => ask('/api/admin/weekplans');
+
+export type GaveBack = { ok: true; left: number } | { ok: false; message: string };
+
+/** Take one question or weekly plan off somebody's month. */
+export async function giveBackUse(email: string, kind: 'chat' | 'weekplan'): Promise<GaveBack> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl('/api/admin/give-back'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ email, kind }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as { left?: number; message?: string };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.' };
+    return { ok: true, left: payload.left ?? 0 };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}
 
 export const fetchInvites = (): Promise<{ invites: Invite[]; redemptions: Redemption[]; suggestion: string } | null> =>
   ask('/api/admin/invites');

@@ -157,7 +157,9 @@ function WeekPlans() {
           {plans.map((plan) => (
             <div className="admin-plan" key={plan.at + (plan.email ?? '')}>
               <div className="admin-plan-head">
-                <span className={`badge ${plan.status === 'done' ? 'badge--good' : plan.status === 'failed' ? 'badge--bad' : ''}`}>{STATUS[plan.status]}</span>
+                <span className={`badge ${plan.status === 'done' ? (plan.seen ? 'badge--good' : 'badge--warn') : plan.status === 'failed' ? 'badge--bad' : ''}`}>
+                  {plan.status === 'done' && !plan.seen ? 'Made, not seen yet' : STATUS[plan.status]}
+                </span>
                 <span className="small admin-plan-who">{plan.email ?? 'Somebody without an account'}</span>
               </div>
               <p className="tiny muted">
@@ -171,8 +173,9 @@ function WeekPlans() {
         </div>
       )}
       <p className="tiny muted admin-note">
-        Kept for a day. A failed plan gives its question back. More than one try means the server restarted while it
-        was being made — a deploy — and another picked it up.
+        Kept for a day. A plan counts against the month when it is seen, and one not seen yet is handed over the next
+        time the planner is opened. A failed plan gives its question back. More than one try means the server
+        restarted while it was being made — a deploy — and another picked it up.
       </p>
     </section>
   );

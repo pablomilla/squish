@@ -20,7 +20,7 @@ import { FetchGuardError, readRecipePage } from './recipe';
 import { MAX_TOOL_ROUNDS, chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
-import { handOver, readJob, recentPlans, setWorker, startJob, startSweeping } from './weekplanJobs';
+import { handOver, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
@@ -41,7 +41,7 @@ import {
   setInviteDisabled,
   suggestCode,
 } from './invites';
-import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
+import { actions, adminEmail, allowances, returnUse, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
 import { htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
 import { isLanguage } from '../src/lib/language';
 import { detectRegion, isRegion } from '../src/lib/region';
@@ -560,6 +560,8 @@ app.get('/api/allowance', async (req, res) => {
       // And only shows the dashboard to somebody who can use it.
       admin: await isAdmin(req.device),
       ...(await standingOf(req.device)),
+      // The nutritionist's weekly plans, for the planner to say how many are left.
+      weekplans: { used: await weekPlansUsed(req.device), allowance: WEEKPLANS_PER_MONTH },
     });
   } catch (error) {
     logFailure('allowance', error);
@@ -1421,6 +1423,28 @@ app.post('/api/admin/email', requireAdmin, async (req, res) => {
   }
 });
 
+/** Take one question or weekly plan off somebody's month. Body: { email, kind }. */
+app.post('/api/admin/give-back', requireAdmin, async (req, res) => {
+  const { email, kind } = req.body ?? {};
+  if (typeof email !== 'string' || (kind !== 'chat' && kind !== 'weekplan')) {
+    res.status(400).json({ error: 'missing', message: 'An address, and a question or a weekly plan.' });
+    return;
+  }
+  try {
+    const done = await returnUse(await adminEmail(req.device!), email, kind);
+    if (done.ok) {
+      res.json(done);
+      return;
+    }
+    res
+      .status(done.reason === 'no_account' ? 404 : 409)
+      .json({ error: done.reason, message: done.reason === 'no_account' ? 'No account on that address.' : 'Nothing of that used this month.' });
+  } catch (error) {
+    logFailure('admin give back', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not change that just now.') });
+  }
+});
+
 /** The latest weekly plans: how each went, and why not. No plan's contents. */
 app.get('/api/admin/weekplans', requireAdmin, async (_req, res) => {
   try {
@@ -2268,6 +2292,15 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
 });
 
 /**
+ * This month's weekly plans: those seen, and those on the way (being made, or
+ * made and waiting to be seen) — so starting several at once is no way round
+ * the cap, and a plan never seen is never one of them for long.
+ */
+async function weekPlansUsed(device: NonNullable<Request['device']>): Promise<number> {
+  return (await usedThisMonth(device, 'weekplan')) + (await plansOnTheWay(device.accountId ?? device.id));
+}
+
+/**
  * Before a weekly plan spends one of the nutritionist's questions: has this
  * month's run of plans been used? Checked first so a refused plan costs
  * nothing. Free users pass straight through to the meter, whose answer —
@@ -2285,7 +2318,7 @@ async function weekPlanCap(req: Request, res: Response, next: NextFunction): Pro
       });
       return;
     }
-    if (req.device && plan === 'plus' && (await usedThisMonth(req.device, 'weekplan')) >= WEEKPLANS_PER_MONTH) {
+    if (req.device && plan === 'plus' && (await weekPlansUsed(req.device)) >= WEEKPLANS_PER_MONTH) {
       res.status(429).json({
         error: 'rate_limited',
         message: `That is this month's ${WEEKPLANS_PER_MONTH} weekly plans. They come back on the 1st — planning meals yourself is unaffected.`,
@@ -2324,14 +2357,12 @@ const planOwner = (req: Request): string | null => (req.device ? (req.device.acc
 
 /*
  * How a weekly plan job is made, and what follows (server/weekplanJobs.ts).
- * A plan made counts as one of the month's plans; a plan that fails, however
- * it fails, gives back the question the meter took.
+ * A plan counts as one of the month's plans when it reaches the person (see
+ * GET /api/weekplan/:id); a plan that fails, however it fails, gives back the
+ * question the meter took.
  */
 setWorker({
   make: (ask, signal) => planWeek(ask, signal),
-  onDone: async (deviceId) => {
-    if (deviceId) await spend(deviceId, 'weekplan');
-  },
   onFail: async (deviceId) => {
     if (deviceId) await refund(deviceId, 'chat');
   },
@@ -2369,6 +2400,21 @@ app.post('/api/weekplan', weekPlanAsk, weekPlanCap, meter('chat'), async (req, r
   }
 });
 
+/**
+ * A plan this person asked for and has not seen yet — made while the app was
+ * closed, or still being made — for the planner to pick up when opened.
+ * `{ job: null }` when there is none.
+ */
+app.get('/api/weekplan/waiting', async (req, res) => {
+  const owner = planOwner(req);
+  try {
+    res.set('Cache-Control', 'no-store').json({ job: owner ? await waitingJob(owner) : null });
+  } catch (error) {
+    logFailure('weekplan waiting', error);
+    res.json({ job: null });
+  }
+});
+
 /** How a weekly plan is getting on: `{ status: 'working' }`, the plan, or why there is none. */
 app.get('/api/weekplan/:id', async (req, res) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -2382,7 +2428,10 @@ app.get('/api/weekplan/:id', async (req, res) => {
       res.status(404).json({ error: msg('That plan is not here any more.') });
       return;
     }
-    res.set('Cache-Control', 'no-store').json(job);
+    // Seen for the first time: now it is one of the month's plans.
+    if (job.firstTime && req.device) await spend(req.device.id, 'weekplan');
+    const { firstTime: _seen, ...answer } = job;
+    res.set('Cache-Control', 'no-store').json(answer);
   } catch (error) {
     logFailure('weekplan read', error);
     res.status(503).json({ error: msg('Could not do that just now.') });

@@ -35,6 +35,8 @@ export interface Standing {
   used: Record<Billable, number>;
   allowance: Record<Billable, number>;
   left: Record<Billable, number>;
+  /** The nutritionist's weekly plans this month (Plus), where the server said. */
+  weekplans: { used: number; allowance: number } | null;
   /** ISO date the month rolls over, where the server said. */
   resets: string | null;
   /** True where this Squish keeps nothing, so there are no tiers at all. */
@@ -56,7 +58,7 @@ export interface Standing {
 const NONE: Record<Billable, number> = { photo: 0, chat: 0, recipe: 0 };
 
 /** Free, and knowing nothing: what everything starts as and falls back to. */
-const UNKNOWN: Standing = { known: false, plan: 'free', period: 'ever', needsAccount: false, taste: 0, used: NONE, allowance: NONE, left: NONE, resets: null, off: false, invites: false, account: false, admin: false };
+const UNKNOWN: Standing = { known: false, plan: 'free', period: 'ever', needsAccount: false, taste: 0, used: NONE, allowance: NONE, left: NONE, resets: null, weekplans: null, off: false, invites: false, account: false, admin: false };
 
 let standing: Standing = UNKNOWN;
 const listeners = new Set<(standing: Standing) => void>();
@@ -102,6 +104,10 @@ export async function refreshPlan(): Promise<Standing> {
       allowance: { ...NONE, ...body.allowance },
       left: { ...NONE, ...body.left },
       resets: body.resets ?? null,
+      weekplans:
+        body.weekplans && typeof body.weekplans.used === 'number' && typeof body.weekplans.allowance === 'number'
+          ? { used: body.weekplans.used, allowance: body.weekplans.allowance }
+          : null,
       invites: Boolean(body.invites),
       account: Boolean(body.account),
       admin: Boolean(body.admin),

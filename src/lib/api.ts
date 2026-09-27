@@ -71,7 +71,9 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
   }
   if (response.status === 429) {
     const payload = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
-    const said = payload.error ?? payload.message;
+    // `message` is the sentence; `error` is a sentence on some routes and a
+    // code ("rate_limited") on others, and a code is never for showing.
+    const said = payload.message ?? (payload.error && /\s/.test(payload.error) ? payload.error : undefined);
     throw new SquishApiError('rate_limited', said ? t(said) : t('Too many in one hour — try again shortly.'));
   }
   if (!response.ok) {
@@ -337,6 +339,20 @@ export async function waitForWeekPlan(job: string): Promise<WeekPlan> {
     }
   }
   throw new Error(t('Your plan is taking a while. It will be here when you open the planner again.'));
+}
+
+/**
+ * A plan asked for and not yet seen, according to the server: made while the
+ * app was closed (or on another device), or still being made. Its job id, or
+ * null. Anything going wrong is as good as none — the planner opens as usual.
+ */
+export async function waitingWeekPlan(): Promise<string | null> {
+  try {
+    const { job } = await get<{ job: string | null }>('/api/weekplan/waiting');
+    return job ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function requestWeekPlan(ask: WeekPlanAsk): Promise<WeekPlan> {

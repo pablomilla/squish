@@ -3,11 +3,11 @@ import type { MealSlot } from '../types';
 import Squish from './Squish';
 import { Segmented, Sheet, useToast } from './ui';
 import { useSquish } from '../store/useSquish';
-import { useSubscribed } from './useSubscribed';
+import { useStanding, useSubscribed } from './useSubscribed';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
 import { NUTRITIONIST_PLAN_NOTE, likesFrom } from '../lib/planner';
 import { PLUS } from '../lib/plan';
-import { isPaywalled, pendingWeekPlan, requestWeekPlan, SquishApiError, waitForWeekPlan, type WeekPlan } from '../lib/api';
+import { isPaywalled, pendingWeekPlan, requestWeekPlan, SquishApiError, waitForWeekPlan, waitingWeekPlan, type WeekPlan } from '../lib/api';
 import './week-plan.css';
 import { energyValue, formatEnergy } from '../lib/region';
 import { plural, t } from '../lib/i18n';
@@ -29,6 +29,9 @@ const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
 export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { profile, targets, meals, favourites, nutritionistNotes, addPlan } = useSquish();
   const subscribed = useSubscribed();
+  const planCounts = useStanding().weekplans;
+  /** Weekly plans left this month, where the server has said (Plus only). */
+  const plansLeft = subscribed && planCounts ? Math.max(0, planCounts.allowance - planCounts.used) : null;
   const toast = useToast();
   const today = isoDate();
 
@@ -46,21 +49,30 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
     if (stage.kind !== 'planning') setStage({ kind: 'ask' });
   };
 
-  /** A plan being made, asked for before this sheet (or the app) was last closed: wait for it again. */
+  /**
+   * A plan asked for and not seen yet — before this sheet (or the app) was
+   * last closed, remembered here; or, when this browser has forgotten it,
+   * one the server is keeping — wait for it again rather than ask anew.
+   */
   useEffect(() => {
     if (!open || stage.kind !== 'ask') return;
-    const job = pendingWeekPlan();
-    if (!job) return;
-    setStage({ kind: 'planning' });
-    waitForWeekPlan(job)
-      .then((week) => {
+    let cancelled = false;
+    void (async () => {
+      const job = pendingWeekPlan() ?? (await waitingWeekPlan());
+      if (!job || cancelled) return;
+      setStage({ kind: 'planning' });
+      try {
+        const week = await waitForWeekPlan(job);
         setLeft(new Set());
         setStage({ kind: 'preview', plan: week });
-      })
-      .catch((error: unknown) => {
+      } catch (error) {
         setStage({ kind: 'ask' });
         toast(error instanceof Error ? error.message : t('That did not work — try again.'), '😕');
-      });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // Once per opening: the stage it moves to is not a reason to look again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -198,10 +210,17 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
               onChange={(e) => setPreferences(e.target.value)}
             />
           </div>
-          <button type="button" className="btn btn--block" disabled={!slots.length} onClick={() => void plan()}>
+          <button type="button" className="btn btn--block" disabled={!slots.length || plansLeft === 0} onClick={() => void plan()}>
             {days === '7' ? t('Plan my week') : t('Plan my {n} days', { n: Number(days) })}
           </button>
-          <p className="tiny muted center">{t("Uses one of this month's questions for the nutritionist.")}</p>
+          <p className="tiny muted center">
+            {plansLeft === 0
+              ? t("That is this month's weekly plans. They come back on the 1st.")
+              : t("Uses one of this month's questions for the nutritionist.")}
+            {plansLeft !== null && plansLeft > 0 && (
+              <> {plural(plansLeft, { one: '{n} weekly plan left this month.', other: '{n} weekly plans left this month.' })}</>
+            )}
+          </p>
         </div>
       )}
 

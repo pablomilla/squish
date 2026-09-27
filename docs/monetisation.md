@@ -167,8 +167,21 @@ app does not have to be open. Before this, a plan being made during a deploy
 sat at "working" for a quarter of an hour with its question spent, and was
 given back only if the planner happened to be opened at the right time.
 **Dashboard → AI usage → Weekly plans** lists the last day's plans: whose,
-how long each took, how many tries, and why any failed (never what was
-planned). A plan that restarts is made, and paid to Anthropic for, twice.
+how long each took, how many tries, whether it has been seen, and why any
+failed (never what was planned). A plan that restarts is made, and paid to
+Anthropic for, twice.
+
+A plan counts as one of the month's four **when it reaches the person**, not
+when it is made. One made while nobody was looking — the app closed, or given
+up on — is kept for a day and handed over the next time the planner is opened
+(`GET /api/weekplan/waiting`), and counted then. Plans on the way (being made,
+or made and not yet seen) count towards the cap too, so starting several at
+once is no way round it. Until 27 September 2026 a plan was counted as it was
+made, which is how plans nobody saw used up somebody's month; **Dashboard →
+People** now has **Give back a plan** and **Give back a question** for
+putting that right, each written to the record of what was done. The planner
+says how many plans are left before anybody asks, and says the month is used
+up rather than letting the request be refused.
 
 ### A failed call costs nothing
 
