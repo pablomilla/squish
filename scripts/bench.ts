@@ -7,6 +7,7 @@
  *   npm run bench -- --sub 6.99      margin maths against your subscription price
  *   npm run bench -- --set nutrition5k   Google's weighed dishes (npm run nutrition5k first)
  *   npm run bench -- --parallel 4    analyse four photos at a time
+ *   npm run bench -- --only a,b      just those meals, by name
  *
  * Reads bench/manifest.json — your photos and what is actually in them — and
  * answers two questions: how close does each model get, and what does it cost
@@ -543,7 +544,10 @@ async function main(): Promise<void> {
     ? [{ name: 'no plate size' }, { name: 'with plate size', crockery }]
     : [{ name: crockery ? 'with plate size' : 'default', crockery }];
 
-  const fixtures = await loadFixtures();
+  // Just these meals, by name: to try again the ones that failed, for pence rather than pounds.
+  const only = arg('only')?.split(',').map((name) => name.trim()).filter(Boolean);
+  const fixtures = (await loadFixtures()).filter((f) => !only || only.includes(f.name));
+  if (!fixtures.length) throw new Error(`None of ${only?.join(', ')} is in the manifest.`);
   const total = fixtures.length * models.length * runs * variants.length;
 
   const weighed = fixtures.filter((f) => f.grams).length;

@@ -98,8 +98,18 @@ test('a refusal, a cut-off answer or an error is a failed attempt, with the reas
   answer = replyWith(MEAL);
   const cut = answer.body as { candidates: { finishReason: string; content: { parts: { text: string }[] } }[] };
   cut.candidates[0].finishReason = 'MAX_TOKENS';
+  // As seen on Nutrition5k: stuck on one character until the output limit, then cut off.
+  cut.candidates[0].content.parts[0].text = `{"title": "Porridge", "items": [{"grams": 250${' '.repeat(5000)}`;
+  await assert.rejects(
+    analysePhotoGemini('aGVsbG8=', 'image/jpeg'),
+    /cut off at 5045 characters, stuck repeating " " 5000 times/,
+    'a runaway answer says so, and a backup is asked',
+  );
+  cut.candidates[0].finishReason = 'STOP';
   cut.candidates[0].content.parts[0].text = '{"title": "Porri';
-  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), SyntaxError, 'half an answer does not parse, so a backup is asked');
+  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /it ended "\{\\"title\\": \\"Porri"/, 'a broken answer shows how it ended');
+  const asked = requests.at(-1)!.body as { systemInstruction: { parts: { text: string }[] } };
+  assert.match(asked.systemInstruction.parts[0].text, /Write the JSON compactly/, 'Gemini is asked for compact JSON');
   answer = { status: 400, body: { error: { message: 'API key not valid.' } } };
   await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /Gemini 400: API key not valid/);
   assert.equal(priceGemini('gemini-9-imaginary', { promptTokenCount: 1 }), null, 'no price on file: no made-up cost');

@@ -114,8 +114,11 @@ export function geminiRequest(params: Params): Record<string, unknown> {
   const schema = (params as { output_config?: { format?: { schema?: unknown } } }).output_config?.format?.schema;
   const tools = (params.tools ?? []).filter((tool): tool is Anthropic.Tool => 'input_schema' in tool);
 
+  // Gemini's structured answers now and then get stuck repeating whitespace or a
+  // character until they run out of room; asking for compact JSON makes that rarer.
+  const compact = schema && !tools.length ? '\n\nWrite the JSON compactly: no indentation, blank lines or runs of spaces, and no number longer than it needs to be.' : '';
   return {
-    systemInstruction: { parts: [{ text: systemText(params.system) }] },
+    systemInstruction: { parts: [{ text: systemText(params.system) + compact }] },
     contents,
     ...(tools.length
       ? {

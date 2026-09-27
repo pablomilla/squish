@@ -468,6 +468,27 @@ export interface CallCost {
 }
 
 /**
+ * A model's JSON answer, read — or a failure that says what went wrong. An
+ * answer that ran to the output limit is reported as cut off, with how it
+ * ended, rather than as the parse error it would otherwise be: Gemini now and
+ * then gets stuck repeating something inside its JSON until it runs out of
+ * room, and the ending shows what.
+ */
+export function readAnswer<T>(text: string, stop: string | null): T {
+  const ending = () => JSON.stringify(text.slice(-60));
+  if (stop === 'max_tokens') {
+    const run = /(.)\1{199,}/s.exec(text);
+    const looped = run ? `, stuck repeating ${JSON.stringify(run[1])} ${run[0].length} times` : '';
+    throw new Error(`The answer was cut off at ${text.length} characters${looped}; it ended ${ending()}`);
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    throw new Error(`${error instanceof Error ? error.message : 'Not JSON'}; it ended ${ending()}`);
+  }
+}
+
+/**
  * The full figures for the named foods the table could not answer: one
  * text-only question, no photo, on the 'fill' route (the cheaper text model
  * first). Nothing to fill, nothing asked.
@@ -494,7 +515,7 @@ export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ mea
     }, signal);
     if (response.stop_reason === 'refusal') throw new Error('The model declined to fill in the figures.');
     const text = response.content.filter((block): block is Anthropic.TextBlock => block.type === 'text').map((block) => block.text).join('');
-    const parsed = JSON.parse(text) as { items?: { nutrients?: Partial<Nutrients> }[] };
+    const parsed = readAnswer<{ items?: { nutrients?: Partial<Nutrients> }[] }>(text, response.stop_reason);
     if ((parsed.items ?? []).length !== needing.length) throw new Error('The figures came back for the wrong number of foods.');
     const cost: CallCost = {
       inputTokens: response.usage.input_tokens,
@@ -576,7 +597,7 @@ async function requestMealOn(
   // A label's figures are printed, and are the truth; everything else is
   // checked against the food table where it names a plain food, and in
   // table-first mode the named foods it could not answer are filled in.
-  const read = JSON.parse(text) as ModelMeal;
+  const read = readAnswer<ModelMeal>(text, response.stop_reason);
   let parsed = system === LABEL_SYSTEM ? read : await groundMeal(read);
   let fill: CallCost | null = null;
   if (brief) {
