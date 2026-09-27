@@ -154,7 +154,8 @@ export type ModelRoutes = Record<ModelFeature, Record<ModelAudience, string[]>>;
 
 /** Every AI feature's route, the models on offer and what has been failing (server/routing.ts). */
 export interface ModelSettings {
-  features: { id: ModelFeature; label: string; detail: string; personal: boolean }[];
+  /** `limit`: seconds a model may take before its backup is asked. */
+  features: { id: ModelFeature; label: string; detail: string; personal: boolean; limit: number }[];
   models: { id: string; provider: 'anthropic' | 'google'; price: { input: number; output: number } | null; ready: boolean }[];
   routes: ModelRoutes;
   everyoneMayUseGemini: boolean;

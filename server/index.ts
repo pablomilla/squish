@@ -1488,7 +1488,7 @@ app.post('/api/admin/give-back', requireAdmin, async (req, res) => {
 app.get('/api/admin/models', requireAdmin, async (_req, res) => {
   try {
     res.json({
-      features: FEATURES.map(({ id, label, detail, personal }) => ({ id, label, detail, personal })),
+      features: FEATURES.map(({ id, label, detail, personal, limit }) => ({ id, label, detail, personal, limit })),
       models: PRICED_MODELS.map((id) => ({
         id,
         provider: id.startsWith('gemini-') ? 'google' : 'anthropic',

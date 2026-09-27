@@ -74,7 +74,8 @@ export default function Models() {
         <span className="tiny muted">per job, with backups</span>
       </div>
       <p className="tiny muted">
-        Each job asks its model first. If that fails — an outage, an overload, an answer that does not make sense — the backup is asked,
+        Each job asks its model first. If that fails — an outage, an overload, no answer in time, an answer that does not make sense — the
+        backup is asked,
         then the second backup, so a bad hour at one company is a slower answer rather than a guess. Admins&rsquo; choices apply to your own
         accounts only, to try a model on your own meals; everybody else gets theirs.
         {!settings.everyoneMayUseGemini &&
@@ -100,6 +101,11 @@ export default function Models() {
               <div className="admin-model-edit">
                 <div className="admin-model-what">
                   <span className="tiny muted">{feature.detail}</span>
+                  <span className="tiny muted">
+                    A model that has not answered within{' '}
+                    {feature.limit < 120 ? `${feature.limit} seconds` : `${feature.limit / 60} minutes`} hands over to its backup. The last
+                    in the line is given as long as it needs.
+                  </span>
                   {failures.map((f) => (
                     <span className="tiny admin-model-failed" key={f.model} title={f.lastError}>
                       ⚠️ {modelLabel(f.model)} failed {f.failures}× this week

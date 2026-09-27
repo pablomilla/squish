@@ -52,17 +52,27 @@ export interface FeatureInfo {
   personal: boolean;
   /** What it runs on until somebody chooses otherwise: the model it always had, then the other Claude. */
   defaults: string[];
+  /**
+   * How long a model may take before its backup is asked instead, in seconds.
+   * A company that is down usually says so at once; one that is struggling can
+   * simply not answer, and without a limit the person waits minutes before the
+   * backup gets its turn. Set well above a normal answer — a photo with
+   * thinking is usually 10–40 seconds — so a slow good answer is not thrown
+   * away, and never on the last model in a chain, which has nothing to hand to.
+   */
+  limit: number;
 }
 
 export const FEATURES: FeatureInfo[] = [
-  { id: 'photo', label: 'Meal photos', detail: 'Reading a photo of a meal.', personal: true, defaults: chain(MAIN, TEXT) },
-  { id: 'label', label: 'Nutrition labels', detail: 'Reading the figures off a packet.', personal: true, defaults: chain(MAIN, TEXT) },
+  { id: 'photo', label: 'Meal photos', detail: 'Reading a photo of a meal.', personal: true, defaults: chain(MAIN, TEXT), limit: 75 },
+  { id: 'label', label: 'Nutrition labels', detail: 'Reading the figures off a packet.', personal: true, defaults: chain(MAIN, TEXT), limit: 60 },
   {
     id: 'words',
     label: 'Typed and spoken meals',
     detail: 'A meal described in words, a correction, and the answer to a question about a meal.',
     personal: true,
     defaults: chain(TEXT, MAIN),
+    limit: 45,
   },
   {
     id: 'fill',
@@ -70,12 +80,22 @@ export const FEATURES: FeatureInfo[] = [
     detail: 'The foods the food table could not answer, after a meal, recipe or plan is read.',
     personal: true,
     defaults: chain(TEXT, MAIN),
+    // A week's worth of foods can be a long answer.
+    limit: 120,
   },
-  { id: 'recipe', label: 'Recipe imports', detail: 'One serving of a recipe from a web page.', personal: true, defaults: chain(MAIN, TEXT) },
-  { id: 'chat', label: 'Nutritionist', detail: 'Questions to the nutritionist, and its lookups in the diary.', personal: true, defaults: chain(CHAT, TEXT) },
-  { id: 'weekplan', label: 'Meal plans', detail: 'A week of meals from the nutritionist.', personal: true, defaults: chain(WEEK, TEXT) },
-  { id: 'coach', label: 'Daily nudge', detail: 'The one-line note on Home.', personal: true, defaults: chain(MAIN, TEXT) },
-  { id: 'translate', label: 'Translating the app', detail: 'The app’s own words, into other languages. Nobody’s data.', personal: false, defaults: chain(MAIN, TEXT) },
+  { id: 'recipe', label: 'Recipe imports', detail: 'One serving of a recipe from a web page.', personal: true, defaults: chain(MAIN, TEXT), limit: 75 },
+  { id: 'chat', label: 'Nutritionist', detail: 'Questions to the nutritionist, and its lookups in the diary.', personal: true, defaults: chain(CHAT, TEXT), limit: 60 },
+  // A week of meals takes minutes, and nobody is watching it: generous.
+  { id: 'weekplan', label: 'Meal plans', detail: 'A week of meals from the nutritionist.', personal: true, defaults: chain(WEEK, TEXT), limit: 300 },
+  { id: 'coach', label: 'Daily nudge', detail: 'The one-line note on Home.', personal: true, defaults: chain(MAIN, TEXT), limit: 20 },
+  {
+    id: 'translate',
+    label: 'Translating the app',
+    detail: 'The app’s own words, into other languages. Nobody’s data.',
+    personal: false,
+    defaults: chain(MAIN, TEXT),
+    limit: 180,
+  },
 ];
 
 const FEATURE = new Map(FEATURES.map((f) => [f.id, f]));
@@ -246,17 +266,27 @@ export async function modelsFor(feature: Feature): Promise<string[]> {
 
 const reason = (error: unknown): string => (error instanceof Error ? error.message : String(error)).replace(/\s+/g, ' ').slice(0, 300);
 
+/** A model that did not answer within its feature's limit, so its backup was asked. */
+export class TimeLimit extends Error {
+  constructor(seconds: number) {
+    super(`no answer within ${seconds} s`);
+  }
+}
+
 /**
  * Ask the feature's models in turn until one answers. `run` does the whole
  * job on the model it is given — the call and the reading of the answer — so
- * an answer that will not parse counts as a failure too.
+ * an answer that will not parse counts as a failure too. It is handed a
+ * signal to pass to the call, which stops it when its time is up.
  *
- * Stopping on purpose (the signal) is never retried, and nor is anything
- * `final` says would fail the same way anywhere.
+ * A model with a backup behind it has the feature's time limit; the last one
+ * has none, because a slow answer beats no answer. Stopping on purpose (the
+ * caller's signal) is never retried, and nor is anything `final` says would
+ * fail the same way anywhere.
  */
 export async function withModels<T>(
   feature: Feature,
-  run: (model: string, attempt: number) => Promise<T>,
+  run: (model: string, attempt: number, signal: AbortSignal) => Promise<T>,
   options: {
     signal?: AbortSignal;
     final?: (error: unknown) => boolean;
@@ -264,15 +294,33 @@ export async function withModels<T>(
     models?: string[];
     /** Count failures on the dashboard even so. Named models are measurements, not the service, and are not counted. */
     record?: boolean;
+    /** Instead of the feature's own limit, in milliseconds: for the tests. */
+    limitMs?: number;
   } = {},
 ): Promise<T> {
   const models = options.models ?? (await modelsFor(feature));
   const record = !options.models || options.record === true;
+  const limitMs = options.limitMs ?? FEATURE.get(feature)!.limit * 1000;
   const failed: Served['failed'] = [];
   let last: unknown = new Error('No model to ask.');
   for (const [attempt, model] of models.entries()) {
+    const stop = new AbortController();
+    const signal = options.signal ? AbortSignal.any([options.signal, stop.signal]) : stop.signal;
+    let timer: NodeJS.Timeout | undefined;
+    // Raced rather than trusted to the signal alone: whatever is not waiting on the network when time runs out is left behind too.
+    const outOfTime =
+      attempt < models.length - 1
+        ? new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+              // The reason first, then the stop: a call that fails the moment it is stopped must not win the race with "aborted".
+              reject(new TimeLimit(Math.round(limitMs / 1000)));
+              stop.abort();
+            }, limitMs);
+          })
+        : null;
     try {
-      const result = await run(model, attempt);
+      const answer = run(model, attempt, signal);
+      const result = await (outOfTime ? Promise.race([answer, outOfTime]) : answer);
       store.getStore()?.served.push({ feature, model, failed: [...failed] });
       if (failed.length && record) void noteFailures(feature, failed, true);
       return result;
@@ -282,6 +330,8 @@ export async function withModels<T>(
       failed.push({ model, error: reason(error) });
       const next = models[attempt + 1];
       console.warn(`[squish] ${feature}: ${model} failed (${reason(error)})${next ? ` — trying ${next}` : ' — no backup left'}`);
+    } finally {
+      clearTimeout(timer);
     }
   }
   if (record) void noteFailures(feature, failed, false);

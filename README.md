@@ -265,8 +265,10 @@ already has an account is refused, and the change is recorded under Settings.
 meal photos, labels, typed and spoken meals, filling in figures, recipe imports, the nutritionist,
 meal plans, the daily nudge and translating the app — each with a model and up to two backups. A
 job asks its model first; if that fails (an outage, an overload, a refusal, an answer that does not
-parse), the backup answers instead, so one company's bad hour is a slower answer rather than a meal
-logged as a guess. Every job starts on the Claude model it always used, with the other Claude as its
+parse, or no answer in time), the backup answers instead, so one company's bad hour is a slower
+answer rather than a meal logged as a guess. The time allowed before handing over is set per job
+(`limit` in `server/routing.ts`: 75 seconds for a photo, 45 for words, five minutes for a meal plan)
+and shown on the card; the last model in a chain is never cut off. Every job starts on the Claude model it always used, with the other Claude as its
 backup. Each failure is counted on the card, with the reason and whether a backup saved it.
 
 There are two routes per job: **you and other admins**, for trying a model on your own meals (the

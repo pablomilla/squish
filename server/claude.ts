@@ -482,7 +482,7 @@ export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ mea
     ...needing.map(({ item }, n) => `${n + 1}. ${item.name ?? 'Food'} — ${item.portion ?? 'a portion'}${item.grams ? `, ${Math.round(item.grams)} g` : ''}${item.lookup ? ` (${item.lookup})` : ''}`),
   ].join('\n');
 
-  const ask = async (model: string) => {
+  const ask = async (model: string, _attempt: number, signal: AbortSignal) => {
     const startedAt = Date.now();
     const response = await createMessage({
       model,
@@ -491,7 +491,7 @@ export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ mea
       system: `${FILL_SYSTEM}\n\n${regionNote('meal')}`,
       messages: [{ role: 'user', content: prompt }],
       ...tuningFor(model, fillSchema(micros)),
-    });
+    }, signal);
     if (response.stop_reason === 'refusal') throw new Error('The model declined to fill in the figures.');
     const text = response.content.filter((block): block is Anthropic.TextBlock => block.type === 'text').map((block) => block.text).join('');
     const parsed = JSON.parse(text) as { items?: { nutrients?: Partial<Nutrients> }[] };
@@ -528,7 +528,7 @@ function requestMeal(
   schema: Record<string, unknown> = MEAL_SCHEMA,
   pinned?: string,
 ): Promise<DetailedAnalysis> {
-  return withModels(feature, (model) => requestMealOn(model, content, fallbackSlot, system, schema), pinned ? { models: [pinned] } : {});
+  return withModels(feature, (model, _attempt, signal) => requestMealOn(model, content, fallbackSlot, system, schema, signal), pinned ? { models: [pinned] } : {});
 }
 
 async function requestMealOn(
@@ -537,6 +537,7 @@ async function requestMealOn(
   fallbackSlot: MealSlot | undefined,
   system: string,
   schema: Record<string, unknown>,
+  signal: AbortSignal,
 ): Promise<DetailedAnalysis> {
   const startedAt = Date.now();
   const brief = await tableFirst(system);
@@ -547,7 +548,7 @@ async function requestMealOn(
     system: `${system}${brief ? `\n${TABLE_FIRST_RULE}` : ''}\n\n${regionNote(system === LABEL_SYSTEM ? 'label' : system === RECIPE_SYSTEM ? 'recipe' : 'meal')}`,
     messages: [{ role: 'user', content }],
     ...tuningFor(model, brief ? briefSchema(schema) : schema),
-  });
+  }, signal);
   const latencyMs = Date.now() - startedAt;
 
   if (response.stop_reason === 'refusal') {
@@ -829,10 +830,10 @@ export interface CoachContext {
 
 /** Short daily nudge in Squish's voice. */
 export async function coachMessage(ctx: CoachContext): Promise<string> {
-  return withModels('coach', (model) => coachOn(model, ctx));
+  return withModels('coach', (model, _attempt, signal) => coachOn(model, ctx, signal));
 }
 
-async function coachOn(model: string, ctx: CoachContext): Promise<string> {
+async function coachOn(model: string, ctx: CoachContext, signal: AbortSignal): Promise<string> {
   const response = await createMessage({
     model,
     max_tokens: 400,
@@ -859,7 +860,7 @@ Water: ${ctx.water} of ${ctx.waterTarget} glasses
 Pick the one thing most worth mentioning right now and say it kindly. Fit it to the time given: no "good morning" in the evening, and late at night nothing that asks them to eat or drink more.`,
       },
     ],
-  });
+  }, signal);
 
   billed(priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model);
   const nudge = response.content
@@ -971,10 +972,11 @@ async function groundWeek(week: ModelWeek, brief: boolean): Promise<{ week: Mode
  * same call before the route's own backup is asked.
  */
 export function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Promise<WeekPlan> {
-  return withModels('weekplan', (model) => planWeekOn(model, req, signal), { signal });
+  // The job's own stop and the time limit, in one signal for each attempt.
+  return withModels('weekplan', (model, _attempt, attemptSignal) => planWeekOn(model, req, attemptSignal), { signal });
 }
 
-async function planWeekOn(model: string, req: WeekPlanRequest, signal?: AbortSignal): Promise<WeekPlan> {
+async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSignal): Promise<WeekPlan> {
   const startedAt = Date.now();
   const plain = model.startsWith('claude-haiku') || model.startsWith('gemini-');
   // Table first, as for meals: an ingredient the table can answer carries only calories and free sugar.
@@ -1032,11 +1034,13 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal?: AbortSig
  */
 export function translateBatch(entries: CatalogEntry[], language: Pack): Promise<Record<string, unknown>> {
   // Too long is too long on any model: the batch is split rather than asked again whole.
-  return withModels('translate', (model) => translateOn(model, entries, language), { final: (error) => error instanceof TranslationTooLong });
+  return withModels('translate', (model, _attempt, signal) => translateOn(model, entries, language, signal), {
+    final: (error) => error instanceof TranslationTooLong,
+  });
 }
 
-async function translateOn(model: string, entries: CatalogEntry[], language: Pack): Promise<Record<string, unknown>> {
-  const response = await createMessage(translateRequest(entries, language, model));
+async function translateOn(model: string, entries: CatalogEntry[], language: Pack, signal: AbortSignal): Promise<Record<string, unknown>> {
+  const response = await createMessage(translateRequest(entries, language, model), signal);
   // Too long for one answer: the caller splits the batch and asks again.
   if (response.stop_reason === 'max_tokens') throw new TranslationTooLong(`translation of ${entries.length} strings into ${language} ran long`);
   if (response.stop_reason === 'refusal') throw new Error('translation stopped: refusal');

@@ -79,6 +79,46 @@ test('stopping on purpose, or a failure that would happen anywhere, is not tried
   await assert.rejects(withModels('coach', async (m) => Promise.reject(new Error(`${m} down`)), { models: ['a', 'b'] }), /b down/, 'every model down: the last reason');
 });
 
+test('a model that does not answer in time hands over to its backup; the last one is given as long as it needs', async () => {
+  const stopped: string[] = [];
+  // Hangs until told to stop, as a struggling API does.
+  const hang = (model: string, signal: AbortSignal) =>
+    new Promise<string>((_, reject) => signal.addEventListener('abort', () => (stopped.push(model), reject(new Error('aborted')))));
+  const started = Date.now();
+  const result = await servedAs('admins', async () => {
+    const answer = await withModels(
+      'photo',
+      (model, _attempt, signal) => (model === 'claude-opus-5' ? hang(model, signal) : new Promise((r) => setTimeout(() => r(`read by ${model}`), 120))),
+      { models: ['claude-opus-5', 'gemini-3.8-flash'], limitMs: 50 },
+    );
+    return { answer, served: servedBy('photo') };
+  });
+  assert.equal(result.answer, 'read by gemini-3.8-flash', 'the last model ran past the limit and was still waited for');
+  assert.deepEqual(stopped, ['claude-opus-5'], 'the hung request was stopped, not left running');
+  assert.deepEqual(result.served?.failed, [{ model: 'claude-opus-5', error: 'no answer within 0 s' }]);
+  assert.ok(Date.now() - started < 1000);
+
+  // Work that ignores the signal is left behind all the same.
+  const ignored = await withModels('coach', (model) => (model === 'a' ? new Promise<string>(() => {}) : Promise.resolve('b answered')), {
+    models: ['a', 'b'],
+    limitMs: 30,
+  });
+  assert.equal(ignored, 'b answered');
+
+  // The job's own stop is not a time limit: nothing more is asked.
+  const stop = new AbortController();
+  const asked: string[] = [];
+  const pending = withModels('weekplan', (model, _a, signal) => (asked.push(model), hang(model, signal)), {
+    models: ['a', 'b'],
+    signal: stop.signal,
+    limitMs: 10_000,
+  });
+  stop.abort();
+  await assert.rejects(pending);
+  assert.deepEqual(asked, ['a']);
+  for (const f of FEATURES) assert.ok(f.limit >= 20, `${f.id} gives a model a fair chance`);
+});
+
 test('for everybody, a job with their data stays on Claude until Gemini is switched on for everybody', () => {
   assert.match(refusal('gemini-3.8-flash', 'photo', 'everyone')!, /SQUISH_GEMINI_FOR_EVERYONE/);
   assert.equal(refusal('gemini-3.8-flash', 'photo', 'admins'), null, 'an admin may try it on their own meals');

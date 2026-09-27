@@ -383,7 +383,11 @@ export async function chatStep(
   tuning: Tuning = {},
 ): Promise<ChatStep> {
   // The eval names its model; the app asks the 'chat' route, backups and all.
-  return withModels('chat', (model, attempt) => chatStepOn(model, attempt > 0, messages, context, notes, tuning), tuning.model ? { models: [tuning.model] } : {});
+  return withModels(
+    'chat',
+    (model, attempt, signal) => chatStepOn(model, attempt > 0, messages, context, notes, tuning, signal),
+    tuning.model ? { models: [tuning.model] } : {},
+  );
 }
 
 async function chatStepOn(
@@ -393,12 +397,13 @@ async function chatStepOn(
   context: ChatContext,
   notes: Note[],
   tuning: Tuning,
+  signal: AbortSignal,
 ): Promise<ChatStep> {
   const startedAt = Date.now();
   const request = chatRequest(messages, context, notes, { ...tuning, model });
   // Haiku has neither adaptive thinking nor an effort setting.
   const tuned: typeof request = model.startsWith('claude-haiku') ? { ...request, thinking: { type: 'disabled' }, output_config: undefined } : request;
-  const response = await createMessage(model.startsWith('claude-') ? forClaude(tuned, backup) : tuned);
+  const response = await createMessage(model.startsWith('claude-') ? forClaude(tuned, backup) : tuned, signal);
 
   const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
   const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
