@@ -158,7 +158,9 @@ never seen. A plan that fails gives its question back, and is not counted as
 a plan.
 
 A plan also survives the server restarting, which happens on every deploy.
-The request is kept with the job; the instance making it vouches for it every
+The request is kept with the job, and so is where the person is — country,
+energy unit and language — so a plan made again on another instance is
+still made for them: their supermarket, their wording, their food table first; the instance making it vouches for it every
 ten seconds; and every instance looks every fifteen for a job nobody has
 vouched for in a minute, and makes it again. A deploy hands its plans over as
 it stops, so they are taken up at once. After three tries, or twenty minutes,

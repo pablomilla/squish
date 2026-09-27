@@ -24,6 +24,7 @@ import { randomBytes } from 'node:crypto';
 import { hasDatabase, migrate, query } from './db';
 import type { WeekPlan } from './claude';
 import type { WeekPlanRequest } from './weekplan';
+import { currentPlace, inPlace, placeFrom, type Place } from './region';
 
 export type Job = { status: 'working' } | { status: 'done'; plan: WeekPlan } | { status: 'failed'; error: string };
 /** A job as read by whoever asked for it: a plan read for the first time is theirs to count. */
@@ -82,7 +83,16 @@ const theWorker = (): Worker => {
 const newId = (): string => randomBytes(18).toString('base64url');
 
 /** Start a plan: answered at once with the job's id, made in the background. */
-export async function startJob(who: { deviceId: string | null; owner: string | null }, ask: WeekPlanRequest): Promise<string> {
+/**
+ * Start a plan: answered at once with the job's id, made in the background.
+ * Where the person is comes from the request that asked (`currentPlace`),
+ * and is kept with the job so every attempt at it is made for them.
+ */
+export async function startJob(
+  who: { deviceId: string | null; owner: string | null },
+  ask: WeekPlanRequest,
+  place: Place = currentPlace(),
+): Promise<string> {
   const id = newId();
   if (!hasDatabase()) {
     for (const [key, row] of memory) if (Date.now() - row.created_at.getTime() > KEEP_MS) memory.delete(key);
@@ -90,23 +100,25 @@ export async function startJob(who: { deviceId: string | null; owner: string | n
       id, device_id: who.deviceId, owner: who.owner, status: 'working', plan: null, error: null,
       created_at: new Date(), heartbeat_at: new Date(), delivered_at: null, counted: false,
     });
-    runInMemory(id, who.deviceId, ask);
+    runInMemory(id, who.deviceId, ask, place);
     return id;
   }
   await migrate();
   await query(`delete from weekplan_jobs where created_at < now() - interval '1 day'`).catch(() => {});
   const run = newId();
-  await query('insert into weekplan_jobs (id, device_id, owner, ask, run) values ($1, $2, $3, $4, $5)', [id, who.deviceId, who.owner, JSON.stringify(ask), run]);
-  runJob(id, run, who.deviceId, ask);
+  await query('insert into weekplan_jobs (id, device_id, owner, ask, run, place) values ($1, $2, $3, $4, $5, $6)', [
+    id, who.deviceId, who.owner, JSON.stringify(ask), run, JSON.stringify(place),
+  ]);
+  runJob(id, run, who.deviceId, ask, place);
   return id;
 }
 
-function runInMemory(id: string, deviceId: string | null, ask: WeekPlanRequest): void {
+function runInMemory(id: string, deviceId: string | null, ask: WeekPlanRequest, place: Place): void {
   const w = theWorker();
   void (async () => {
     const row = memory.get(id)!;
     try {
-      const plan = await w.make(ask, new AbortController().signal);
+      const plan = await inPlace(place, () => w.make(ask, new AbortController().signal));
       Object.assign(row, { status: 'done', plan });
     } catch (error) {
       Object.assign(row, { status: 'failed', error: w.failure(error) });
@@ -120,7 +132,7 @@ function runInMemory(id: string, deviceId: string | null, ask: WeekPlanRequest):
  * may finish it, so two instances that both think they have it can never
  * both finish it, or both give its question back.
  */
-function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanRequest): void {
+function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanRequest, place: Place): void {
   const w = theWorker();
   const stop = new AbortController();
   running.set(id, { run, stop });
@@ -140,7 +152,8 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
   void (async () => {
     let outcome: { status: 'done'; plan: WeekPlan } | { status: 'failed'; error: string };
     try {
-      outcome = { status: 'done', plan: await w.make(ask, stop.signal) };
+      // Made where they are, whichever instance makes it and however long after they asked.
+      outcome = { status: 'done', plan: await inPlace(place, () => w.make(ask, stop.signal)) };
     } catch (error) {
       // Stopped on purpose: the job is somebody else's now (or ours to hand over).
       if (stop.signal.aborted) return;
@@ -185,12 +198,12 @@ export async function sweepJobs(): Promise<void> {
   for (;;) {
     const run = newId();
     const claimed = (
-      await query<{ id: string; device_id: string | null; ask: WeekPlanRequest | null; attempts: number }>(
+      await query<{ id: string; device_id: string | null; ask: WeekPlanRequest | null; attempts: number; place: Partial<Place> | null }>(
         `update weekplan_jobs set run = $1, heartbeat_at = now(), attempts = attempts + 1
           where id = (select id from weekplan_jobs
                        where status = 'working' and heartbeat_at < now() - make_interval(secs => $2)
                        order by created_at limit 1 for update skip locked)
-          returning id, device_id, ask, attempts`,
+          returning id, device_id, ask, attempts, place`,
         [run, DEAD_MS / 1000],
       )
     )[0];
@@ -208,7 +221,9 @@ export async function sweepJobs(): Promise<void> {
       continue;
     }
     console.info(`[squish] weekplan ${claimed.id} lost its instance — making it again (try ${claimed.attempts} of ${MAX_ATTEMPTS})`);
-    runJob(claimed.id, run, claimed.device_id, claimed.ask);
+    // Checked as a request's headers are: only known values, defaults for anything else (and for jobs from before places were kept).
+    const place = placeFrom(claimed.place?.region, claimed.place?.energy, claimed.place?.language);
+    runJob(claimed.id, run, claimed.device_id, claimed.ask, place);
   }
 }
 

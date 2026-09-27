@@ -704,6 +704,16 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 25,
+    sql: `
+      -- Where the person asking for a weekly plan is (country, energy unit,
+      -- language), kept with the job: a plan made again after a restart is
+      -- made for the same place — its wording, its supermarket and which
+      -- food table is asked first — not for the server's default.
+      alter table weekplan_jobs add column place jsonb;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

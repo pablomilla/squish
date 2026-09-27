@@ -6,6 +6,7 @@ import { refund, spend } from '../server/identity';
 import { DEAD_MS, MAX_ATTEMPTS, STALE_MS, handOver, plansOnTheWay, readJob, setWorker, startJob, sweepJobs, waitingJob } from '../server/weekplanJobs';
 import type { WeekPlan } from '../server/claude';
 import type { WeekPlanRequest } from '../server/weekplan';
+import { currentPlace, inPlace } from '../server/region';
 
 /**
  * A weekly plan is made in the background and asked after, so a slow one is
@@ -27,12 +28,16 @@ const ASK = { startDate: '2026-09-28', days: 3 } as WeekPlanRequest;
  */
 const endings = new Map<string, { resolve: (plan: WeekPlan) => void; reject: (error: Error) => void; signal: AbortSignal }[]>();
 const made: string[] = [];
+/** Where each plan was made, by the ask's key: one entry per attempt. */
+const madeIn = new Map<string, string[]>();
 const givenBack: (string | null)[] = [];
 setWorker({
   make: (ask, signal) =>
     new Promise<WeekPlan>((resolve, reject) => {
       const key = ask.preferences;
       made.push(key);
+      const place = currentPlace();
+      madeIn.set(key, [...(madeIn.get(key) ?? []), `${place.region}/${place.energy}/${place.language}`]);
       endings.set(key, [...(endings.get(key) ?? []), { resolve, reject, signal }]);
       signal.addEventListener('abort', () => reject(new Error('aborted')));
     }),
@@ -200,4 +205,39 @@ when('a refund takes one back, from the latest day that has one, never below nou
   await refund(device, 'chat');
   await refund(device, 'chat');
   assert.equal(await count(), 0, 'and no further than nought');
+});
+
+when('a plan is made for where the person is — and still is when another server picks it up', async () => {
+  const device = await aDevice();
+  const key = randomUUID();
+  // Asked from Boston, in kilocalories, in Spanish: the request's place, as the route sees it.
+  const id = await inPlace({ region: 'US', energy: 'kcal', language: 'es' }, () => startJob({ deviceId: device, owner: device }, askFor(key)));
+  const first = await runOf(key);
+  assert.deepEqual(madeIn.get(key), ['US/kcal/es']);
+
+  // The server making it stops; one with no request in hand takes it over.
+  await query(`update weekplan_jobs set heartbeat_at = now() - make_interval(secs => $2) where id = $1`, [id, DEAD_MS / 1000 + 5]);
+  await sweepJobs();
+  const second = await waitFor(() => (endings.get(key)!.length === 2 ? endings.get(key)![1] : undefined));
+  assert.deepEqual(madeIn.get(key), ['US/kcal/es', 'US/kcal/es'], 'the same place, not the server’s default');
+  first.resolve(WEEK);
+  second.resolve(WEEK);
+  await settle(id, device);
+});
+
+when('a stored place that is not one, or none at all, is made for the defaults', async () => {
+  const device = await aDevice();
+  const key = randomUUID();
+  const id = await startJob({ deviceId: device, owner: device }, askFor(key), { region: 'US', energy: 'kcal', language: 'en' });
+  const first = await runOf(key);
+  await query(`update weekplan_jobs set place = $2, heartbeat_at = now() - interval '5 minutes' where id = $1`, [
+    id,
+    JSON.stringify({ region: 'Atlantis', energy: 'joules', language: 'Klingon' }),
+  ]);
+  await sweepJobs();
+  const second = await waitFor(() => (endings.get(key)!.length === 2 ? endings.get(key)![1] : undefined));
+  assert.equal(madeIn.get(key)?.[1], 'GB/kcal/en', 'only known values ever reach a prompt');
+  first.resolve(WEEK);
+  second.resolve(WEEK);
+  await settle(id, device);
 });
