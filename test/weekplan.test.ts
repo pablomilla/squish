@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { cleanWeekRequest, weekPlanPrompt, WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM } from '../server/weekplan';
-import { toWeekPlan } from '../server/claude';
+import { fitToTarget, toWeekPlan } from '../server/claude';
 
 /**
  * The nutritionist's weekly plan, without calling the model: what a request
@@ -77,4 +77,29 @@ test('a month-end start rolls into the next month', () => {
   const req = cleanWeekRequest({ ...base, startDate: '2026-12-30', days: 3 })!;
   const plan = toWeekPlan({ days: [1, 2, 3].map((day) => ({ day, meals: [{ slot: 'dinner' as const, title: 'Tea', items: [item('rice', 1500)] }] })) }, req);
   assert.deepEqual(plan.days.map((d) => d.date), ['2026-12-30', '2026-12-31', '2027-01-01']);
+});
+
+test('days that drift from the target are scaled back to it, portions and all; close days and wild ones are left alone', () => {
+  const req = cleanWeekRequest({ ...base, days: 4 })!;
+  const day = (n: number, kcal: number) => ({
+    day: n,
+    meals: [
+      { slot: 'breakfast' as const, title: 'Oats', items: [item('porridge oats', kcal * 0.4)] },
+      { slot: 'dinner' as const, title: 'Curry', items: [item('chicken breast', kcal * 0.6)] },
+    ],
+  });
+  // 2,500 on a 1,900 target — the plan reported; 1,950 close enough; 4,500 and 900 too far to be a rounding problem.
+  const planned = toWeekPlan({ days: [day(1, 2500), day(2, 1950), day(3, 4500), day(4, 900)] }, req);
+  const { plan, fitted } = fitToTarget(planned, 1900, 1200);
+
+  assert.deepEqual(fitted.map((f) => f.from), [2500]);
+  const [scaled, close, wild, low] = plan.days;
+  assert.ok(Math.abs(scaled.calories - 1900) <= 2, `day one now adds up to the target: ${scaled.calories}`);
+  const oats = scaled.meals[0].items[0];
+  assert.equal(oats.grams, 76, 'the portion shrinks with its calories: 100 g × 0.76');
+  assert.equal(oats.nutrients.protein, 15.2, 'and everything else in it');
+  assert.equal(scaled.meals[0].nutrients.calories, oats.nutrients.calories, "the meal's total follows its foods");
+  assert.equal(close.calories, 1950, 'within 10%: left as planned');
+  assert.equal(wild.calories, 4500, 'more than one-and-a-half times out: shown as it came, not disguised');
+  assert.equal(low.underFloor, true, 'and a day under the floor is still marked');
 });

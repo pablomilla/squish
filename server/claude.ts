@@ -950,6 +950,59 @@ export function toWeekPlan(parsed: ModelWeek, req: WeekPlanRequest): WeekPlan {
   return { summary: parsed.summary?.trim() ?? '', days };
 }
 
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** Every figure in a set of nutrients times a factor; whatever nobody said stays unsaid. */
+function scaleNutrients(n: Nutrients, factor: number): Nutrients {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(n)) {
+    if (key === 'micros' && value && typeof value === 'object') {
+      out.micros = Object.fromEntries(Object.entries(value).map(([m, v]) => [m, typeof v === 'number' ? round1(v * factor) : v]));
+    } else {
+      out[key] = typeof value === 'number' ? (key === 'calories' ? Math.round(value * factor) : round1(value * factor)) : value;
+    }
+  }
+  return out as unknown as Nutrients;
+}
+
+/** How far a day may land from the target before its portions are brought to it, and the most they are scaled by. */
+export const FIT = { tolerance: 0.1, least: 0.6, most: 1.5 };
+
+/**
+ * Each day brought to the calorie target it was planned for.
+ *
+ * The model is asked for days within about 5% of the target, but the figures
+ * it gave are then replaced by the food table's (server/grounding.ts), and a
+ * day can drift well away from it — a plan that says it is for 1,900 kcal a
+ * day and adds up to 2,500 is no use to anybody. A day more than 10% out has
+ * every portion on it scaled by the same factor, grams and nutrition
+ * together, so the meals stay the meals and the day adds up. A day so far out
+ * that it would take more than halving or one-and-a-half times is left as it
+ * is: that is a bad plan, not a rounding problem, and is shown as it came.
+ * Exported for the tests.
+ */
+export function fitToTarget(plan: WeekPlan, target: number, floor: number): { plan: WeekPlan; fitted: { date: string; from: number }[] } {
+  const fitted: { date: string; from: number }[] = [];
+  const days = plan.days.map((day) => {
+    if (!day.calories || Math.abs(day.calories / target - 1) <= FIT.tolerance) return day;
+    const factor = target / day.calories;
+    if (factor < FIT.least || factor > FIT.most) return day;
+    fitted.push({ date: day.date, from: day.calories });
+    const meals = day.meals.map((meal) => ({
+      ...meal,
+      nutrients: scaleNutrients(meal.nutrients, factor),
+      items: meal.items.map((item) => ({
+        ...item,
+        grams: item.grams === undefined ? undefined : Math.round(item.grams * factor),
+        nutrients: scaleNutrients(item.nutrients, factor),
+      })),
+    }));
+    const calories = Math.round(meals.reduce((sum, m) => sum + m.nutrients.calories, 0));
+    return { ...day, meals, calories, underFloor: calories < floor };
+  });
+  return { plan: { ...plan, days }, fitted };
+}
+
 /**
  * A week's ingredients checked against the food table in one pass, and — in
  * table-first mode — the named ones it could not answer filled in with one
@@ -1015,8 +1068,9 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
       : {
           thinking: { type: 'adaptive' as const },
           output_config: { effort: 'medium' as const, format },
-          betas: ['server-side-fallback-2026-07-01'],
-          fallbacks: 'default' as const,
+          // Anthropic's own fallback for a declined plan, on Opus, where it was proven; on any
+          // other model a decline fails over to the route's backup (server/routing.ts) instead.
+          ...(model.startsWith('claude-opus') ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const } : {}),
         }),
   }, signal);
 
@@ -1042,9 +1096,15 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('');
-  const { week, fill } = await groundWeek(JSON.parse(text) as ModelWeek, brief);
+  const { week, fill } = await groundWeek(readAnswer<ModelWeek>(text, response.stop_reason), brief);
   if (fill) console.info(`[squish] weekplan fill-in: out=${fill.outputTokens} ${fill.costUsd === null ? 'unpriced' : `$${fill.costUsd.toFixed(4)}`}`);
-  const plan = toWeekPlan(week, req);
+  const { plan, fitted } = fitToTarget(toWeekPlan(week, req), req.calorieTarget, floorFor(req.sex));
+  if (fitted.length) {
+    console.info(
+      `[squish] weekplan ${model}: ${fitted.length} of ${plan.days.length} days came to ${fitted.map((f) => f.from).join(', ')} kcal ` +
+        `against a ${req.calorieTarget} kcal target — portions scaled to it`,
+    );
+  }
   if (!plan.days.length) throw new WeekPlanError(msg('The plan came back empty. Try again in a moment.'));
   return plan;
 }
