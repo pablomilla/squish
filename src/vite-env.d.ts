@@ -14,3 +14,6 @@ interface ImportMeta {
   /** Absent outside Vite — a test or a script has no env at all. */
   readonly env: ImportMetaEnv;
 }
+
+/** The build this app is (vite.config.ts): compared with the server's, to know when a newer one is out. */
+declare const __SQUISH_BUILD__: string;

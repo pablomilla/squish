@@ -19,6 +19,7 @@ import { isOversized, rehomePhotos } from './lib/rehome';
 import { refreshPlan, watchPlan } from './lib/plan';
 import SquadSync from './components/squad/SquadSync';
 import AchievementSync from './components/AchievementSync';
+import UpdateWatcher from './components/UpdateWatcher';
 import { onPaywall } from './lib/paywall';
 import { askForAccount, resetTokenInUrl } from './lib/account';
 import { t } from './lib/i18n';
@@ -256,6 +257,7 @@ function Shell() {
       <AddSheet open={adding} onClose={() => setAdding(false)} go={go} />
       {keepsData && <SquadSync />}
       <AchievementSync />
+      <UpdateWatcher quiet={isTab && !adding} />
 
       {isTab && (
         <nav className="tabbar" aria-label={t('Main')}>

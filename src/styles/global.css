@@ -216,6 +216,16 @@ a { color: var(--brand-ink); }
   animation: sheet-up 0.26s var(--ease) both;
 }
 
+/* ---------- Update bar (components/UpdateWatcher.tsx) ---------- */
+.update-bar {
+  position: fixed; left: 0; right: 0; margin: 0 auto; bottom: calc(var(--tab-h) + 18px); z-index: 70;
+  width: calc(min(100%, var(--max-w)) - 32px);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 8px 8px 16px; border-radius: var(--r-pill);
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+  box-shadow: var(--shadow-md); animation: sheet-up 0.26s var(--ease) both;
+}
+
 /* ---------- Bits ---------- */
 .pill-stat { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-2); }
 .pill-stat b { font-size: 21px; }

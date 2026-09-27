@@ -1,5 +1,5 @@
 {
- "version": "11doeaf-ql71pm",
+ "version": "0yvntsk0w9m035",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -367,6 +367,13 @@
    "text": "{met} of {total} met",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "028r6qc-aox8ae",
+   "text": "Refresh",
+   "where": [
+    "src/components/UpdateWatcher.tsx"
    ]
   },
   {
@@ -3410,6 +3417,13 @@
     "src/components/AddSheet.tsx",
     "src/screens/AddFood.tsx",
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "0kuykz1-a565zi",
+   "text": "Squish has been updated.",
+   "where": [
+    "src/components/UpdateWatcher.tsx"
    ]
   },
   {

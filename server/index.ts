@@ -10,6 +10,7 @@
  * marks the response `offline: true` so the UI can label it honestly.
  */
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
@@ -2135,6 +2136,22 @@ app.get('/api/i18n/:language', async (req, res) => {
   } catch {
     res.status(503).json({ error: msg('Translations are not available right now.') });
   }
+});
+
+/**
+ * Which build of the app this server is serving (dist/build.json, written by
+ * vite.config.ts), so an app left open across a deploy can see it is out of
+ * date and refresh itself (src/lib/update.ts). Null when there is no built
+ * app — in development, where Vite serves it.
+ */
+let servedBuild: string | null | undefined;
+app.get('/api/build', async (_req, res) => {
+  if (servedBuild === undefined) {
+    servedBuild = await readFile(resolve(DIST, 'build.json'), 'utf8')
+      .then((text) => (JSON.parse(text) as { build?: string }).build ?? null)
+      .catch(() => null);
+  }
+  res.set('Cache-Control', 'no-store').json({ build: servedBuild });
 });
 
 app.get('/api/health', (_req, res) => {
