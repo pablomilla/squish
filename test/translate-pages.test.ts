@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { stringsOf, translateHtml } from '../server/htmlWords';
-import { fillLanguage, forgetStored, setTranslator, wanted } from '../server/translate';
+import { acceptable, fillLanguage, forgetStored, setTranslator, wanted } from '../server/translate';
 import { acceptLanguage, readerFromRequest, readerOf, rememberReader, zoneFrom } from '../server/reader';
 import { compose, EMAILS } from '../server/emails';
 import { describeDevice, when } from '../server/notices';
@@ -12,6 +12,7 @@ import { rewardWords } from '../server/friends';
 import { languageOfPath, registerSiteStrings, siteRouter } from '../server/site';
 import { privacyPage, registerPrivacyStrings } from '../server/privacy';
 import { speaker } from '../src/lib/i18n';
+import { AMERICAN_WORDS, standInAmerican } from './standInAmerican';
 
 /**
  * The emails and the website, in the reader's language: translated from the
@@ -19,14 +20,8 @@ import { speaker } from '../src/lib/i18n';
  * translation is missing — and never at the cost of a link.
  */
 const LANGS = ['ko', 'ga', 'en-US'];
-/** American English, as the stand-in makes it: just the spelling, as the real one mostly is. */
-const american = (text: string) =>
-  text
-    .replace(/fibre/g, 'fiber')
-    .replace(/Fibre/g, 'Fiber')
-    .replace(/colour/g, 'color')
-    .replace(/centre/g, 'center')
-    .replace(/^Confirm your/, 'Confirm (US) your');
+/** American English, as the stand-in makes it (test/standInAmerican.ts), and one marker to tell an email by. */
+const american = (text: string) => standInAmerican(text).replace(/^Confirm your/, 'Confirm (US) your');
 /** A stand-in for Claude that marks every string, keeping its tags and placeholders — and spells American for en-US. */
 const korean = async (entries: { id: string; text?: string; one?: string; other?: string }[], pack?: string) =>
   Object.fromEntries(
@@ -439,4 +434,18 @@ test('every link to the policy says the language, and in English the country', a
   assert.match(american.text, /privacy\?lang=en&country=US/);
   const british = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'GB', zone: 'Europe/London' });
   assert.match(british.text, /privacy\?lang=en&country=GB/);
+});
+
+test('the stand-in American words pass the same check as a real translation, for every string', () => {
+  let changed = 0;
+  for (const entry of wanted()) {
+    const value = entry.text !== undefined ? standInAmerican(entry.text) : { one: standInAmerican(entry.one!), other: standInAmerican(entry.other!) };
+    assert.ok(acceptable(entry, value, 'en-US'), `the stand-in broke ${entry.text ?? entry.other}`);
+    if (JSON.stringify(value) !== JSON.stringify(entry.text ?? { one: entry.one, other: entry.other })) changed++;
+  }
+  assert.ok(changed > 30, `only ${changed} strings changed`);
+  assert.equal(standInAmerican('Crisps and chips, or a Favourite biscuit? Ask your GP.'), 'Chips and fries, or a Favorite cookie? Ask your doctor.');
+  assert.equal(standInAmerican('{n} tins of <b>sweetcorn</b>'), '{n} cans of <b>corn</b>');
+  assert.equal(standInAmerican('tinsel and ginger'), 'tinsel and ginger', 'whole words only');
+  assert.ok(Object.keys(AMERICAN_WORDS).length >= 50);
 });
