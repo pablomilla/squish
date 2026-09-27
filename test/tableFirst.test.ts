@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
-import { analyseLabel, analysePhotoDetailed, briefSchema, MEAL_SCHEMA, planWeek, TEXT_MODEL } from '../server/claude';
+import { analyseLabel, analysePhotoDetailed, analyseRecipe, briefSchema, MEAL_SCHEMA, planWeek, TEXT_MODEL } from '../server/claude';
 import { WEEKPLAN_SCHEMA, type WeekPlanRequest } from '../server/weekplan';
 import { useTableForTests, type TableFood } from '../server/foodTable';
 
@@ -209,4 +209,37 @@ test('the week’s schema, briefly: only the ingredients’ nutrients relaxed', 
   const brief = JSON.stringify(briefSchema(WEEKPLAN_SCHEMA as unknown as Record<string, unknown>));
   assert.equal((brief.match(/"required":\[\]/g) ?? []).length, 1);
   assert.ok(JSON.stringify(WEEKPLAN_SCHEMA).includes('"required":["calories"'), 'the original untouched');
+});
+
+test('a recipe’s ingredients, by their raw weights: from the table where it can, filled in where not, servings kept', async () => {
+  useTableForTests([
+    ...TABLE,
+    { source: 'cofid', id: '11-400', name: 'Pasta, white, dried, raw', per100: { calories: 342, protein: 12, carbs: 74, fat: 1.5, fibre: 2.9, sugar: 3.1, satFat: 0.2, sodium: 3 } },
+    { source: 'cofid', id: '11-401', name: 'Pasta, white, boiled in unsalted water', per100: { calories: 145, protein: 5, carbs: 31, fat: 0.6, fibre: 1.2, sugar: 0.5, satFat: 0.1, sodium: 1 } },
+  ]);
+  sent.length = 0;
+  firstAnswer = {
+    ...meal([
+      item('Spaghetti', 'pasta, dried', 100, { calories: 350, freeSugar: 0 }),
+      item('Pesto', '', 30, { ...full, calories: 150 }),
+      item('Pine nuts', 'pine nuts, raw', 10, { calories: 67, freeSugar: 0 }),
+    ]),
+    servings: 4,
+  };
+  fillAnswer = { items: [{ nutrients: { ...full, calories: 67, protein: 1.4, carbs: 1.3, fat: 6.8 } }] };
+
+  const recipe = await analyseRecipe({ url: 'https://example.com/pesto-pasta', title: 'Pesto pasta', ingredients: ['400 g spaghetti', '120 g pesto', '40 g pine nuts'] }, 'dinner');
+  const [first, fill] = sent;
+  assert.match(first.system, /in the state the recipe weighs it/, 'the recipe’s own rule for table names');
+  assert.match(first.system, /give only calories and freeSugar/);
+  assert.equal(first.itemNutrientsRequired?.length, 0);
+  assert.equal(sent.length, 2);
+  assert.match(fill.prompt, /Pine nuts/);
+
+  const [pasta, pesto, nuts] = recipe.items;
+  assert.equal(pasta.source?.name, 'Pasta, white, dried, raw', 'dried weight, dried figures — never the boiled row');
+  assert.equal(pasta.nutrients.calories, 342);
+  assert.equal(pesto.nutrients.calories, 150, 'a jar of sauce keeps the AI’s figures');
+  assert.equal(nuts.nutrients.fat, 6.8, 'filled in');
+  assert.equal(recipe.servings, 4);
 });

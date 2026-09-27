@@ -142,6 +142,7 @@ Rules:
 - Every ingredient that ends up in the dish is an item. Leave out anything listed for serving alongside, garnishes described as optional, and anything used only for greasing a tin.
 - Account for what cooking does: fat absorbed by fried food counts, water boiled off does not add calories, and a marinade mostly stays behind.
 - portion names what the amount is in words — "1 small onion", "2 tbsp", "a handful". grams carries the weight. Do not put weights in the portion text.
+- lookup names the ingredient the way a food composition table would, in English, in the state the recipe weighs it — usually as bought, before cooking: "pasta, dried", "chicken thigh, raw", "onion, raw", "lentils, red, dried", "olive oil", "cheddar cheese". Say "raw" or "dried" where it applies: a dried or raw weight matched to cooked food is out by half or more. Leave it empty for a branded or ready-made product (a stock cube, a jar of sauce), a mix, or an ingredient the recipe is too vague about.
 - title is the recipe's own name where the page gives one.
 - confidence is "low" when the yield is a guess, quantities are vague, or the page was clearly not a recipe.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the language given below. One or two sentences about the dish.

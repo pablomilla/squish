@@ -375,7 +375,10 @@ text-only question to the cheaper text model, with no photo. Whether that saves 
 often named foods match, so every analysis logs the split and the output tokens
 (`[squish] table first: 2 from the table, 1 filled in, 1 from the first answer · 640+180 output
 tokens`), and the AI usage dashboard's cost per analysis shows the effect over time.
-`SQUISH_TABLE_FIRST=off` goes back to asking for everything. Nutrition labels are never affected. Nutrition data for matched foods: McCance and Widdowson's Composition
+`SQUISH_TABLE_FIRST=off` goes back to asking for everything. Nutrition labels are never affected.
+The same goes for weekly plans (one fill-in question for the whole week) and recipe imports, where
+an ingredient is named in the state the recipe weighs it — "pasta, dried", "chicken thigh, raw" —
+because a dried weight matched to cooked pasta's figures would be out by more than half. Nutrition data for matched foods: McCance and Widdowson's Composition
 of Foods Integrated Dataset, which contains public sector information licensed under the Open
 Government Licence v3.0; and U.S. Department of Agriculture, Agricultural Research Service, FoodData
 Central (public domain).
