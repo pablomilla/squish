@@ -5,6 +5,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { MEAL_SCHEMA } from '../server/claude';
 import { analysePhotoGemini, priceGemini, toGeminiSchema } from '../server/gemini';
+import { useTableForTests } from '../server/foodTable';
 
 /**
  * Gemini, for the benchmark: asked exactly what Claude is asked, read into
@@ -30,11 +31,14 @@ before(async () => {
   await new Promise<void>((resolve) => api.listen(0, '127.0.0.1', () => resolve()));
   process.env.GEMINI_BASE_URL = `http://127.0.0.1:${(api.address() as AddressInfo).port}`;
   process.env.GEMINI_API_KEY = 'gm-test';
+  // No food table unless a test brings one: nothing here touches the database.
+  useTableForTests([]);
 });
 after(() => {
   api.close();
   delete process.env.GEMINI_BASE_URL;
   delete process.env.GEMINI_API_KEY;
+  useTableForTests(null);
 });
 
 const MEAL = {
@@ -95,9 +99,35 @@ test('a refusal, a cut-off answer or an error is a failed attempt, with the reas
   assert.equal(priceGemini('gemini-9-imaginary', { promptTokenCount: 1 }), null, 'no price on file: no made-up cost');
 });
 
-test('nothing in the app can send a photo to Google: only the benchmark uses Gemini', () => {
-  for (const file of readdirSync('server').filter((f) => f.endsWith('.ts') && f !== 'gemini.ts')) {
+test('nothing in the app sends a photo to Google except an admin’s own, through the trial switch', () => {
+  // Only the trial's switch and the one photo route may reach Gemini; nothing else in the server.
+  const allowed = new Set(['gemini.ts', 'modelTrial.ts', 'index.ts']);
+  for (const file of readdirSync('server').filter((f) => f.endsWith('.ts') && !allowed.has(f))) {
     assert.doesNotMatch(readFileSync(`server/${file}`, 'utf8'), /from '\.\/gemini'/, `server/${file} imports gemini`);
   }
+  assert.doesNotMatch(readFileSync('server/modelTrial.ts', 'utf8'), /analysePhotoGemini/, 'the switch decides; it does not send');
+  // In the routes, Gemini is called once, only after photoReader has said so.
+  const routes = readFileSync('server/index.ts', 'utf8');
+  const calls = [...routes.matchAll(/analysePhotoGemini\(/g)];
+  assert.equal(calls.length, 1, 'one call to Gemini in the routes');
+  const gate = routes.lastIndexOf("reader.reader === 'gemini'", calls[0].index);
+  const decided = routes.lastIndexOf('await photoReader(req.device)', gate);
+  assert.ok(decided > 0 && gate > decided && calls[0].index! - decided < 400, 'and only just after photoReader chose Gemini');
   assert.match(readFileSync('scripts/bench.ts', 'utf8'), /from '\.\.\/server\/gemini'/);
+});
+
+test('with a food table, Gemini is asked table first too: two figures for a named food, the table for the rest', async () => {
+  useTableForTests([{ source: 'usda', id: '1', name: 'Porridge oats, cooked', per100: { calories: 71, protein: 2.5, carbs: 12, fat: 1.5, fibre: 1.7, sugar: 0.3 } }]);
+  requests = [];
+  answer = replyWith({ ...MEAL, items: [{ ...MEAL.items[0], lookup: 'porridge oats, cooked', nutrients: { calories: 190, freeSugar: 0 } }] });
+  const { analysis } = await analysePhotoGemini('aGVsbG8=', 'image/jpeg', 'breakfast');
+  useTableForTests([]);
+
+  const body = requests[0].body as { systemInstruction: { parts: { text: string }[] }; generationConfig: { responseSchema: unknown } };
+  assert.match(body.systemInstruction.parts[0].text, /give only calories and freeSugar/);
+  const schema = JSON.stringify(body.generationConfig.responseSchema);
+  assert.ok(schema.includes('"nutrients":{"type":"OBJECT"'), 'nutrients still described');
+  assert.ok(!schema.includes('"required":[]'), 'an empty required list is left out rather than sent');
+  assert.equal(analysis.items[0].source?.name, 'Porridge oats, cooked');
+  assert.equal(analysis.items[0].nutrients.calories, 178, '250 g at 71 kcal per 100 g');
 });

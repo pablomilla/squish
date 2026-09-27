@@ -224,6 +224,12 @@ export interface AnalysisResult {
    * a token is not shown.
    */
   clarify?: Clarify;
+  /**
+   * Admins trying Gemini on their own photos (server/modelTrial.ts): which
+   * model read this one, or why Gemini did not and Claude did instead.
+   * Absent for everybody else, always.
+   */
+  trial?: { reader: 'gemini'; model: string } | { reader: 'claude'; geminiError: string };
 }
 
 export interface Clarify {

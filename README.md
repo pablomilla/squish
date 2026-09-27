@@ -216,8 +216,8 @@ back office — a menu down the side on a laptop, tabs along the top on a phone:
   codes.
 - **AI usage** — cost a day by feature, analyses a day, and the cost of each call.
 - **Affiliates** — see below.
-- **Settings** — email, the wording of every email, two-step sign-in, and a record of everything
-  done from the dashboard and by whom.
+- **Settings** — email, the wording of every email, two-step sign-in, the Gemini trial (below), and
+  a record of everything done from the dashboard and by whom.
 
 Every chart can be hovered for exact values or switched to a table. Revenue comes only from the
 `payments` table, which the App Store and Google Play integration will write to when Plus goes on
@@ -259,6 +259,17 @@ stop working; the devices they are signed in on stay signed in. If the old addre
 is told, with the same link as any other move that puts it back within a week — so somebody who
 talks an admin into moving an account they do not own is found out by the owner. An address that
 already has an account is refused, and the change is recorded under Settings.
+
+**Trying Gemini on your own meals.** Settings has a switch that sends meal photos from admin
+accounts — nobody else's — to Google's Gemini instead of Claude, to see what it is like day to day.
+It needs `GEMINI_API_KEY` in Render (a key from a Google AI Studio project with billing on; the free
+tier lets Google use what is sent), and the model is chosen on the same card (`gemini-2.5-flash` to
+start; check Google's list for newer). Everybody else stays on Claude whatever it says, because the
+privacy policy names Anthropic; a test holds the app to that. Labels and typed meals stay on Claude
+too. Gemini gets the same instructions, the same answer shape and the same food-table check as
+Claude, and the Review screen says "Read by Gemini", or "Gemini failed — read by Claude" with the
+reason, so a meal is never lost to the trial. Before trying it on anybody else, the privacy policy
+changes first.
 
 **The easy way to hand out Plus** is an invite code, made in the dashboard. Give it a length, a
 limit on how many people can use it and a note saying who it is for; the dashboard suggests a code

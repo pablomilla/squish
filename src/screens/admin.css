@@ -375,3 +375,8 @@
 .admin-plan { border-top: 1px solid var(--line); padding-top: var(--s2); display: flex; flex-direction: column; gap: 2px; }
 .admin-plan-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .admin-plan-who { overflow-wrap: anywhere; }
+
+/* The Gemini trial card: a short explanation, the model, and the switch. */
+.admin-gemini { display: flex; flex-direction: column; gap: 10px; }
+.admin-gemini p { margin: 0; }
+.admin-gemini > .btn { align-self: flex-start; }

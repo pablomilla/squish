@@ -68,6 +68,12 @@ services:
       # sugar in the AI's answer (see "Table first" in server/claude.ts).
       - key: SQUISH_TABLE_FIRST
         sync: false
+      # A Gemini key, for the admins-only trial (Dashboard → Settings → Try
+      # Gemini on your meals). From a Google AI Studio project with billing
+      # on. Without it the switch does nothing; nobody else's photos ever go
+      # to Google either way.
+      - key: GEMINI_API_KEY
+        sync: false
       # "off" stops the server translating new interface strings into every
       # language after a deploy; they are then translated when first asked for.
       - key: SQUISH_I18N_WARM

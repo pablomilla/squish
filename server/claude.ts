@@ -429,7 +429,7 @@ export function priceUsage(model: string, counts: TokenCounts): number | null {
  * match — every analysis logs the split, and SQUISH_TABLE_FIRST=off goes back
  * to asking for everything.
  */
-const TABLE_FIRST_RULE = `- nutrients: for an item with a lookup, give only calories and freeSugar — its other figures come from a food table, so leave them out. For an item without a lookup, give all of them.`;
+export const TABLE_FIRST_RULE = `- nutrients: for an item with a lookup, give only calories and freeSugar — its other figures come from a food table, so leave them out. For an item without a lookup, give all of them.`;
 
 /**
  * A schema with every food item's nutrients optional, so a table food can
@@ -459,7 +459,7 @@ export function briefSchema(schema: Record<string, unknown>): Record<string, unk
 }
 
 /** Whether to ask table first: a table to answer from, and not a label (whose printed figures are the truth). */
-async function tableFirst(system: string): Promise<boolean> {
+export async function tableFirst(system: string): Promise<boolean> {
   if (system === LABEL_SYSTEM || process.env.SQUISH_TABLE_FIRST === 'off') return false;
   try {
     return (await tableFoods()).length > 0;
@@ -497,7 +497,7 @@ function fillSchema(micros: boolean): Record<string, unknown> {
   };
 }
 
-interface CallCost {
+export interface CallCost {
   inputTokens: number;
   outputTokens: number;
   costUsd: number | null;
@@ -509,7 +509,7 @@ interface CallCost {
  * text-only question to the text model (the main model if that fails), no
  * photo. Nothing to fill, nothing asked.
  */
-async function fillFigures(meal: ModelMeal, micros = true): Promise<{ meal: ModelMeal; filled: number; cost: CallCost | null }> {
+export async function fillFigures(meal: ModelMeal, micros = true): Promise<{ meal: ModelMeal; filled: number; cost: CallCost | null }> {
   const items = meal.items ?? [];
   const needing = items.map((item, index) => ({ item, index })).filter(({ item }) => missingFigures(item));
   if (!needing.length) return { meal, filled: 0, cost: null };
@@ -679,7 +679,7 @@ export function photoPrompt(slot?: MealSlot, hint?: string, crockery?: Crockery)
 }
 
 /** The instructions for reading a meal, with where they live added: the same for every provider. */
-export const mealSystem = (): string => `${SYSTEM}\n\n${regionNote('meal')}`;
+export const mealSystem = (brief = false): string => `${SYSTEM}${brief ? `\n${TABLE_FIRST_RULE}` : ''}\n\n${regionNote('meal')}`;
 
 export async function analysePhotoDetailed(
   imageBase64: string,

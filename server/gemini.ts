@@ -1,12 +1,13 @@
 /**
  * Google's Gemini, for the benchmark only.
  *
- * **Not used by any route.** The privacy policy tells people their photos go
- * to Anthropic and nobody else, so nothing a user sends may come here until
- * that policy says otherwise — a test fails if server/index.ts ever imports
- * this file. What it is for is `npm run bench`: the owner's own photos of
- * weighed meals, read by Gemini and by Claude side by side, to find out
- * whether it is as good and what it costs.
+ * **Never for anybody but the people running Squish.** The privacy policy
+ * tells people their photos go to Anthropic and nobody else, so a person's
+ * photo may only come here if they are an admin trying it on their own meals
+ * (server/modelTrial.ts decides, and a test holds the app to it), or through
+ * `npm run bench`: the owner's own photos of weighed meals, read by Gemini
+ * and by Claude side by side, to find out whether it is as good and what it
+ * costs.
  *
  * Like for like: the same instructions (`mealSystem`), the same words with
  * the photo (`photoPrompt`), the same answer shape (MEAL_SCHEMA, turned into
@@ -24,7 +25,20 @@
  */
 import type { MealSlot } from '../src/types';
 import { groundMeal } from './grounding';
-import { MEAL_SCHEMA, mealSystem, photoPrompt, toAnalysis, type Crockery, type DetailedAnalysis, type ModelMeal } from './claude';
+import { bill } from './billing';
+import {
+  briefSchema,
+  fillFigures,
+  MEAL_SCHEMA,
+  mealSystem,
+  photoPrompt,
+  SYSTEM,
+  tableFirst,
+  toAnalysis,
+  type Crockery,
+  type DetailedAnalysis,
+  type ModelMeal,
+} from './claude';
 
 const BASE_URL = (): string => (process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com').replace(/\/+$/, '');
 const apiKey = (): string | undefined => process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
@@ -56,6 +70,8 @@ export function toGeminiSchema(schema: unknown): unknown {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(schema as Record<string, unknown>)) {
     if (key === 'additionalProperties') continue;
+    // Nothing required is the same as no list; an empty one is left out.
+    if (key === 'required' && Array.isArray(value) && !value.length) continue;
     if (key === 'type' && typeof value === 'string') out.type = value.toUpperCase();
     else if (key === 'properties' && value && typeof value === 'object') {
       out.properties = Object.fromEntries(Object.entries(value).map(([name, inner]) => [name, toGeminiSchema(inner)]));
@@ -97,11 +113,13 @@ export async function analysePhotoGemini(
   if (!key) throw new Error('No GEMINI_API_KEY set.');
 
   const startedAt = Date.now();
+  // Table first, as Claude is asked: a food the table can answer carries only calories and free sugar.
+  const brief = await tableFirst(SYSTEM);
   const response = await fetch(`${BASE_URL()}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: mealSystem() }] },
+      systemInstruction: { parts: [{ text: mealSystem(brief) }] },
       contents: [
         {
           role: 'user',
@@ -110,7 +128,7 @@ export async function analysePhotoGemini(
       ],
       generationConfig: {
         responseMimeType: 'application/json',
-        responseSchema: toGeminiSchema(MEAL_SCHEMA),
+        responseSchema: toGeminiSchema(brief ? briefSchema(MEAL_SCHEMA) : MEAL_SCHEMA),
         // Room for thinking and the answer, as the Claude side has.
         maxOutputTokens: 8000,
       },
@@ -134,16 +152,25 @@ export async function analysePhotoGemini(
     .join('');
 
   const usage = payload.usageMetadata ?? {};
+  const costUsd = priceGemini(model, usage);
+  // Counted against whoever asked, as a Claude reading is (nothing outside a request).
+  bill(costUsd);
+
+  // Checked against the food table as Claude's readings are, so the two are compared like for like;
+  // named foods the table cannot answer are filled in by the same short text question (no photo).
+  let meal = await groundMeal(JSON.parse(text) as ModelMeal);
+  const fill = brief ? await fillFigures(meal) : null;
+  if (fill) meal = fill.meal;
+
   return {
-    // Checked against the food table as Claude's readings are, so the two are compared like for like.
-    analysis: toAnalysis(await groundMeal(JSON.parse(text) as ModelMeal), slot),
+    analysis: toAnalysis(meal, slot),
     usage: {
       model: payload.modelVersion ?? model,
-      inputTokens: usage.promptTokenCount ?? 0,
-      outputTokens: (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0),
+      inputTokens: (usage.promptTokenCount ?? 0) + (fill?.cost?.inputTokens ?? 0),
+      outputTokens: (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0) + (fill?.cost?.outputTokens ?? 0),
       cacheReadTokens: 0,
-      costUsd: priceGemini(model, usage),
-      latencyMs,
+      costUsd: costUsd === null ? null : costUsd + (fill?.cost?.costUsd ?? 0),
+      latencyMs: latencyMs + (fill?.cost?.latencyMs ?? 0),
     },
   };
 }

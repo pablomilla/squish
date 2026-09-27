@@ -22,6 +22,8 @@ import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
 import { checkAnswer, signQuestion, withoutQuestion } from './clarify';
 import { ensureFoodTable } from './foodTable';
+import { analysePhotoGemini } from './gemini';
+import { photoReader, readGeminiTrial, saveGeminiTrial } from './modelTrial';
 import { handOver, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
@@ -113,6 +115,7 @@ import {
   translateBatch,
   WeekPlanError,
   type CoachContext,
+  type Crockery,
 } from './claude';
 import { cleanWeekRequest } from './weekplan';
 import { currentPlace, withPlace } from './region';
@@ -1452,6 +1455,32 @@ app.post('/api/admin/give-back', requireAdmin, async (req, res) => {
   }
 });
 
+/** The Gemini trial: whether admins' own meal photos go to Gemini, which model, and whether there is a key. */
+app.get('/api/admin/gemini', requireAdmin, async (_req, res) => {
+  try {
+    res.json(await readGeminiTrial());
+  } catch (error) {
+    logFailure('admin gemini', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+/** Body: { on?, model? }. */
+app.put('/api/admin/gemini', requireAdmin, async (req, res) => {
+  try {
+    const saved = await saveGeminiTrial(req.body ?? {});
+    if (!saved.ok) {
+      res.status(400).json({ error: 'bad_setting', message: saved.message });
+      return;
+    }
+    await recordAdminAction(await adminEmail(req.device!), saved.trial.on ? 'gemini trial on' : 'gemini trial off', null, saved.trial.model);
+    res.json(saved.trial);
+  } catch (error) {
+    logFailure('admin gemini save', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save that just now.') });
+  }
+});
+
 /** The latest weekly plans: how each went, and why not. No plan's contents. */
 app.get('/api/admin/weekplans', requireAdmin, async (_req, res) => {
   try {
@@ -2105,17 +2134,29 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
   }
 
   try {
-    res.json(
-      label
-        ? withoutQuestion(await analyseLabel(data, type, mealSlot))
-        : await signQuestion(
-            await analysePhoto(data, type, mealSlot, typeof hint === 'string' ? hint : undefined, {
-              // Sizes, not free text: this goes straight into a prompt.
-              plateCm: inRange(crockery?.plateCm, 15, 40),
-              bowlMl: inRange(crockery?.bowlMl, 150, 1500),
-            }),
-          ),
-    );
+    // Sizes, not free text: this goes straight into a prompt.
+    const plate: Crockery = { plateCm: inRange(crockery?.plateCm, 15, 40), bowlMl: inRange(crockery?.bowlMl, 150, 1500) };
+    const note = typeof hint === 'string' ? hint : undefined;
+    if (label) {
+      res.json(withoutQuestion(await analyseLabel(data, type, mealSlot)));
+      return;
+    }
+    // An admin trying Gemini on their own meals; everybody else, always Claude (server/modelTrial.ts).
+    const reader = await photoReader(req.device);
+    if (reader.reader === 'gemini') {
+      try {
+        const { analysis } = await analysePhotoGemini(data, type, mealSlot, note, reader.model, plate);
+        res.json(await signQuestion({ ...analysis, trial: { reader: 'gemini', model: reader.model } }));
+        return;
+      } catch (error) {
+        // The meal still gets read — by Claude — and the admin sees why Gemini did not.
+        console.warn('[squish] gemini trial failed — read by Claude instead:', error instanceof Error ? error.message : error);
+        const analysis = await analysePhoto(data, type, mealSlot, note, plate);
+        res.json(await signQuestion({ ...analysis, trial: { reader: 'claude', geminiError: error instanceof Error ? error.message.slice(0, 200) : 'Gemini failed' } }));
+        return;
+      }
+    }
+    res.json(await signQuestion(await analysePhoto(data, type, mealSlot, note, plate)));
   } catch (error) {
     logFailure('photo analysis', error);
     // A rough guess to edit, not the AI's reading: it costs nothing.

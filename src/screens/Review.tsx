@@ -278,6 +278,13 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
             {upfShare >= 0.95 ? t('Ultra-processed') : t('Mostly ultra-processed')}
           </span>
         )}
+        {/* Only ever on an admin's own photo, during the Gemini trial. */}
+        {analysis.trial?.reader === 'gemini' && <span className="badge">🧪 Read by Gemini · {analysis.trial.model}</span>}
+        {analysis.trial?.reader === 'claude' && (
+          <span className="badge badge--warn" title={analysis.trial.geminiError}>
+            Gemini failed — read by Claude
+          </span>
+        )}
         {analysis.offline ? (
           <span className="badge badge--warn" title={t('No model was reachable, so these numbers come from the offline estimator')}>
             {t('Offline estimate')}

@@ -148,6 +148,30 @@ export async function giveBackUse(email: string, kind: 'chat' | 'weekplan'): Pro
   }
 }
 
+export interface GeminiTrial {
+  on: boolean;
+  model: string;
+  keySet: boolean;
+}
+
+export const fetchGeminiTrial = (): Promise<GeminiTrial | null> => ask('/api/admin/gemini');
+
+export async function saveGeminiTrial(change: { on?: boolean; model?: string }): Promise<{ ok: true; trial: GeminiTrial } | { ok: false; message: string }> {
+  try {
+    const token = await deviceToken(apiUrl);
+    const response = await fetch(apiUrl('/api/admin/gemini'), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(change),
+    });
+    const payload = (await response.json().catch(() => ({}))) as GeminiTrial & { message?: string };
+    if (!response.ok) return { ok: false, message: payload.message ?? 'That did not work.' };
+    return { ok: true, trial: payload };
+  } catch {
+    return { ok: false, message: 'Could not reach Squish just now.' };
+  }
+}
+
 export const fetchInvites = (): Promise<{ invites: Invite[]; redemptions: Redemption[]; suggestion: string } | null> =>
   ask('/api/admin/invites');
 
