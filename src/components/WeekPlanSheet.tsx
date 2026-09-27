@@ -10,6 +10,7 @@ import { PLUS } from '../lib/plan';
 import {
   clearReadyWeekPlan,
   isPaywalled,
+  latestWeekPlan,
   pendingWeekPlan,
   readyWeekPlan,
   requestWeekPlan,
@@ -37,7 +38,7 @@ const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
  * eaten — so a plan somebody ignores costs them nothing at all.
  */
 export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { profile, targets, meals, favourites, nutritionistNotes, addPlan } = useSquish();
+  const { profile, targets, meals, favourites, nutritionistNotes, addPlan, plans } = useSquish();
   const subscribed = useSubscribed();
   const planCounts = useStanding().weekplans;
   /** Weekly plans left this month, where the server has said (Plus only). */
@@ -74,7 +75,18 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
     let cancelled = false;
     void (async () => {
       const job = pendingWeekPlan() ?? (await waitingWeekPlan());
-      if (!job || cancelled) return;
+      if (cancelled) return;
+      if (!job) {
+        // Nothing on the way: perhaps one was made and never arrived. Not if its meals are in the plans already.
+        const inPlans = (week: WeekPlan) =>
+          week.days.some((day) => day.meals.some((meal) => plans.some((p) => p.date === day.date && p.title === meal.title)));
+        const lost = await latestWeekPlan(inPlans);
+        if (lost && !cancelled) {
+          setLeft(new Set());
+          setStage({ kind: 'preview', plan: lost });
+        }
+        return;
+      }
       setStage({ kind: 'planning' });
       try {
         const week = await waitForWeekPlan(job);

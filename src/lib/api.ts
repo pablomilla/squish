@@ -321,11 +321,31 @@ const READY_KEY = 'squish-weekplan-ready';
 /** A kept plan is worth offering for a week; after that its days are mostly gone. */
 const READY_KEEP_MS = 7 * 24 * 60 * 60_000;
 
-function keepReady(plan: WeekPlan): void {
+function keepReady(plan: WeekPlan, job: string | null = null): void {
   try {
-    localStorage.setItem(READY_KEY, JSON.stringify({ plan, at: Date.now() }));
+    localStorage.setItem(READY_KEY, JSON.stringify({ plan, job, at: Date.now() }));
   } catch {
     /* private mode: it is shown now, just not kept for later */
+  }
+}
+
+/** Plans added or thrown away here, by job: the server's copy of one is never offered again. */
+const FINISHED_KEY = 'squish-weekplan-finished';
+
+function finishedJobs(): string[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(FINISHED_KEY) ?? '[]') as unknown;
+    return Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function markFinished(job: string): void {
+  try {
+    localStorage.setItem(FINISHED_KEY, JSON.stringify([job, ...finishedJobs().filter((id) => id !== job)].slice(0, 20)));
+  } catch {
+    /* worst case it is offered again, and can be thrown away again */
   }
 }
 
@@ -341,12 +361,37 @@ export function readyWeekPlan(): WeekPlan | null {
   return null;
 }
 
-/** Added to the plans, or thrown away on purpose. */
+/** Added to the plans, or thrown away on purpose — here, and for the server's copy of it. */
 export function clearReadyWeekPlan(): void {
   try {
+    const saved = JSON.parse(localStorage.getItem(READY_KEY) ?? 'null') as { job?: string | null } | null;
+    if (saved?.job) markFinished(saved.job);
     localStorage.removeItem(READY_KEY);
   } catch {
     /* nothing to clear */
+  }
+}
+
+/**
+ * The latest plan the server made for this person in the last day, if it
+ * never reached them — an app still running the version from before a
+ * deploy collects a plan and loses it; so does a phone that dies as it
+ * arrives. `alreadyAdded` says whether its meals are in the plans already,
+ * for plans added before jobs were remembered here. Kept like any other
+ * arrived plan, so it is not asked for twice.
+ */
+export async function latestWeekPlan(alreadyAdded: (plan: WeekPlan) => boolean): Promise<WeekPlan | null> {
+  try {
+    const { job, plan } = await get<{ job: string | null; plan: WeekPlan | null }>('/api/weekplan/latest');
+    if (!job || !plan?.days?.length || finishedJobs().includes(job)) return null;
+    if (alreadyAdded(plan)) {
+      markFinished(job);
+      return null;
+    }
+    keepReady(plan, job);
+    return plan;
+  } catch {
+    return null;
   }
 }
 
@@ -384,7 +429,7 @@ export async function waitForWeekPlan(job: string): Promise<WeekPlan> {
     }
     if (answer.status === 'done') {
       // Kept before anything else: whoever was waiting for it may be long gone.
-      keepReady(answer.plan);
+      keepReady(answer.plan, job);
       forgetJob();
       void refreshPlan(); // one of the month's plans used
       return answer.plan;

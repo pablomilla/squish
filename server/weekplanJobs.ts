@@ -338,6 +338,28 @@ export async function waitingJob(owner: string): Promise<string | null> {
 }
 
 /**
+ * This person's latest made plan from the last day — delivered or not — so
+ * the app can offer it again if it never reached them: an app still running
+ * an old version, a phone that died as it arrived. The app decides whether it
+ * is one they already added or threw away.
+ */
+export async function latestMadePlan(owner: string): Promise<{ job: string; plan: WeekPlan } | null> {
+  if (!hasDatabase()) {
+    const row = [...memory.values()]
+      .filter((r) => r.owner === owner && r.status === 'done' && r.plan)
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())[0];
+    return row ? { job: row.id, plan: row.plan! } : null;
+  }
+  const rows = await query<{ id: string; plan: WeekPlan }>(
+    `select id, plan from weekplan_jobs
+      where owner = $1 and status = 'done' and plan is not null and created_at > now() - interval '1 day'
+      order by created_at desc limit 1`,
+    [owner],
+  );
+  return rows[0] ? { job: rows[0].id, plan: rows[0].plan } : null;
+}
+
+/**
  * Plans this person has on the way this month that are not counted yet —
  * being made, or made and not yet seen. The monthly cap counts them, so
  * starting several at once is no way round it.

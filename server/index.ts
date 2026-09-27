@@ -27,7 +27,7 @@ import { PRICED_MODELS, rateFor } from './pricing';
 import {
   FEATURES, currentAudience, describeRoutes, everyoneMayUseGemini, readRoutes, recentFailures, saveRoutes, servedAs, servedBy, type Feature,
 } from './routing';
-import { handOver, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
+import { handOver, latestMadePlan, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
@@ -2490,6 +2490,17 @@ app.post('/api/weekplan', weekPlanAsk, weekPlanCap, meter('chat'), async (req, r
  * closed, or still being made — for the planner to pick up when opened.
  * `{ job: null }` when there is none.
  */
+/** The latest plan made for this person in the last day, to offer again if it never reached them. */
+app.get('/api/weekplan/latest', async (req, res) => {
+  const owner = planOwner(req);
+  try {
+    res.set('Cache-Control', 'no-store').json(owner ? ((await latestMadePlan(owner)) ?? { job: null, plan: null }) : { job: null, plan: null });
+  } catch (error) {
+    logFailure('weekplan latest', error);
+    res.json({ job: null, plan: null });
+  }
+});
+
 app.get('/api/weekplan/waiting', async (req, res) => {
   const owner = planOwner(req);
   try {
