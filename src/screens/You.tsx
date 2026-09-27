@@ -133,6 +133,23 @@ export default function You({ go }: { go: (route: Route) => void }) {
         </div>
       </header>
 
+      {/*
+        Only where the server says so, and the server decides again on every
+        request — hiding this is a convenience, never the lock. First on the
+        page, because whoever sees it is here for it most often.
+      */}
+      {standing.admin && (
+        <section className="card card--quiet">
+          <div className="card-title">
+            <h3>{t('Dashboard')}</h3>
+          </div>
+          <p className="tiny muted">{t('Who is signed up, what they are on, and what it is costing.')}</p>
+          <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={() => go({ name: 'admin' })}>
+            {t('Open the dashboard')}
+          </button>
+        </section>
+      )}
+
       <section className="card card--hero">
         <div className="card-title">
           <h3>{t('Your plan')}</h3>
@@ -530,22 +547,6 @@ export default function You({ go }: { go: (route: Route) => void }) {
           </>
         )}
       </section>
-
-      {/*
-        Only where the server says so, and the server decides again on every
-        request — hiding this is a convenience, never the lock.
-      */}
-      {standing.admin && (
-        <section className="card card--quiet">
-          <div className="card-title">
-            <h3>{t('Dashboard')}</h3>
-          </div>
-          <p className="tiny muted">{t('Who is signed up, what they are on, and what it is costing.')}</p>
-          <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={() => go({ name: 'admin' })}>
-            {t('Open the dashboard')}
-          </button>
-        </section>
-      )}
 
       <PlanCard standing={standing} />
 
