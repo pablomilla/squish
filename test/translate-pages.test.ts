@@ -6,7 +6,7 @@ import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { stringsOf, translateHtml } from '../server/htmlWords';
 import { acceptable, fillLanguage, forgetStored, setTranslator, wanted } from '../server/translate';
 import { acceptLanguage, readerFromRequest, readerOf, rememberReader, zoneFrom } from '../server/reader';
-import { compose, EMAILS } from '../server/emails';
+import { compose, EMAILS, inTheirWords, resetWording, saveWording } from '../server/emails';
 import { describeDevice, when } from '../server/notices';
 import { rewardWords } from '../server/friends';
 import { languageOfPath, registerSiteStrings, siteRouter } from '../server/site';
@@ -461,4 +461,33 @@ test('the website says family doctor in Canada, and GP where people say GP', asy
   assert.equal(words(canada).CA, 'en-CA');
   assert.equal(words(canada).GB, null);
   assert.equal(words(await (await fetch(`${base}/?country=CA`)).text()).CA, null, 'the home page reads the same in Canada');
+});
+
+test('an email that mentions a GP says family doctor to a Canadian reader, and keeps its placeholders', async () => {
+  const wording = {
+    subject: 'Ask your GP',
+    body: 'Your account was signed into on {device}, {time}.\n\nIf you are unwell, talk to your GP.\n\n{app_link}',
+    buttonLabel: 'Open Squish',
+  };
+  assert.deepEqual(inTheirWords(wording, 'CA'), {
+    subject: 'Ask your family doctor',
+    body: 'Your account was signed into on {device}, {time}.\n\nIf you are unwell, talk to your family doctor.\n\n{app_link}',
+    buttonLabel: 'Open Squish',
+  });
+  assert.deepEqual(inTheirWords(wording, 'AU'), wording, 'Australians have GPs');
+
+  if (!hasDatabase()) return;
+  // Edited in the dashboard, as the owner would.
+  assert.deepEqual(await saveWording('signin', wording, 'test'), []);
+  try {
+    const values = { device: 'Safari on iPhone', time: 'now', app_link: ORIGIN };
+    const canadian = await compose('signin', 'a@example.com', values, ORIGIN, { language: 'en', region: 'CA', zone: 'America/Toronto' });
+    assert.equal(canadian.subject, 'Ask your family doctor');
+    assert.match(canadian.text, /talk to your family doctor\./);
+    assert.match(canadian.text, /signed into on Safari on iPhone, now\./);
+    const british = await compose('signin', 'a@example.com', values, ORIGIN, { language: 'en', region: 'GB', zone: 'Europe/London' });
+    assert.equal(british.subject, 'Ask your GP');
+  } finally {
+    await resetWording('signin', 'test');
+  }
 });

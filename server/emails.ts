@@ -29,6 +29,7 @@
 import { hasDatabase, migrate, query } from './db';
 import { idOf, type Speaker } from '../src/lib/i18n';
 import { packFor, type Pack } from '../src/lib/language';
+import { localWords, type Region } from '../src/lib/region';
 import { registerStrings, speakerFor, translationsFor, type CatalogEntry } from './translate';
 import { DEFAULT_READER, type Reader } from './reader';
 
@@ -473,6 +474,19 @@ export async function translateWording(definition: EmailDefinition, wording: Wor
 }
 
 /**
+ * A British English wording in a country's own words, from the app's table
+ * (localWords): "talk to your GP" is "talk to your family doctor" in Canada.
+ * Placeholders are untouched, since the table only holds words.
+ */
+export function inTheirWords(wording: Wording, region: Region): Wording {
+  return {
+    subject: localWords(wording.subject, region),
+    body: localWords(wording.body, region),
+    buttonLabel: wording.buttonLabel === null ? null : localWords(wording.buttonLabel, region),
+  };
+}
+
+/**
  * An email ready to hand to sendMail: the wording in force, in the reader's
  * language, filled in, both versions. Values that are words themselves (a
  * device, a date) are made with the reader's `t`, so they match.
@@ -491,6 +505,9 @@ export async function compose(
   const region = definition.translated ? reader.region : 'GB';
   const words = await speakerFor(language, region);
   const { wording } = await wordingFor(key);
-  const translated = await translateWording(definition, wording, packFor(language, region));
-  return { to, ...renderEmail(definition, translated, typeof values === 'function' ? values(words) : values, origin, words) };
+  const pack = packFor(language, region);
+  const translated = await translateWording(definition, wording, pack);
+  // British English outside the US, in the country's own words where they differ: a family doctor in Canada.
+  const worded = language === 'en' && !pack && definition.translated ? inTheirWords(translated, region) : translated;
+  return { to, ...renderEmail(definition, worded, typeof values === 'function' ? values(words) : values, origin, words) };
 }

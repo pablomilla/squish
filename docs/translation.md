@@ -78,6 +78,12 @@ the device ("Safari en iPhone"), the time (on their clock, with its zone's
 short name), the reward sentence. The footer, and the page a confirmation link
 opens, are ordinary `t()` strings in the app's catalog.
 
+In English outside the US, the wording also goes through the app's table of
+country words (`localWords`): an email that says "talk to your GP" says
+"talk to your family doctor" to a reader in Canada. None of the default
+wordings has such a word today; it matters for wording edited in the
+dashboard.
+
 The partner and test emails go to the business and stay English.
 
 ## The website
