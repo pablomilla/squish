@@ -309,6 +309,47 @@ function forgetJob(): void {
   }
 }
 
+/**
+ * A plan that has arrived, kept on this device until it is added or thrown
+ * away on purpose. The server counts a plan as delivered the moment the app
+ * fetches it; if the screen that asked for it had gone by then — a plan takes
+ * minutes, and people wander off — or the preview was closed, the plan
+ * arrived into nothing: made, paid for, and never seen. Kept here, the
+ * planner shows it again the next time it opens, wherever it is opened from.
+ */
+const READY_KEY = 'squish-weekplan-ready';
+/** A kept plan is worth offering for a week; after that its days are mostly gone. */
+const READY_KEEP_MS = 7 * 24 * 60 * 60_000;
+
+function keepReady(plan: WeekPlan): void {
+  try {
+    localStorage.setItem(READY_KEY, JSON.stringify({ plan, at: Date.now() }));
+  } catch {
+    /* private mode: it is shown now, just not kept for later */
+  }
+}
+
+/** A plan that arrived and has not yet been added or discarded, if there is one. */
+export function readyWeekPlan(): WeekPlan | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(READY_KEY) ?? 'null') as { plan?: WeekPlan; at?: number } | null;
+    if (saved?.plan?.days?.length && typeof saved.at === 'number' && Date.now() - saved.at < READY_KEEP_MS) return saved.plan;
+  } catch {
+    /* unreadable: as good as none */
+  }
+  clearReadyWeekPlan();
+  return null;
+}
+
+/** Added to the plans, or thrown away on purpose. */
+export function clearReadyWeekPlan(): void {
+  try {
+    localStorage.removeItem(READY_KEY);
+  } catch {
+    /* nothing to clear */
+  }
+}
+
 /** A plan asked for earlier and not yet seen, if there is one worth waiting for. */
 export function pendingWeekPlan(): string | null {
   try {
@@ -342,6 +383,8 @@ export async function waitForWeekPlan(job: string): Promise<WeekPlan> {
       continue; // A dropped connection or a slow answer: ask again.
     }
     if (answer.status === 'done') {
+      // Kept before anything else: whoever was waiting for it may be long gone.
+      keepReady(answer.plan);
       forgetJob();
       void refreshPlan(); // one of the month's plans used
       return answer.plan;
@@ -372,7 +415,10 @@ export async function waitingWeekPlan(): Promise<string | null> {
 export async function requestWeekPlan(ask: WeekPlanAsk): Promise<WeekPlan> {
   const started = await post<WeekPlan | { job: string }>('/api/weekplan', ask);
   // A server from before jobs answers with the plan itself.
-  if (!('job' in started)) return started;
+  if (!('job' in started)) {
+    keepReady(started);
+    return started;
+  }
   rememberJob(started.job);
   void refreshPlan(); // the question the plan spent
   return waitForWeekPlan(started.job);

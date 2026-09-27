@@ -1,5 +1,5 @@
 {
- "version": "1477zke0l3lxic",
+ "version": "0i7f52r0hbq6ki",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -10355,6 +10355,13 @@
    "text": "Log again after a week or more away",
    "where": [
     "src/lib/achievements.ts"
+   ]
+  },
+  {
+   "id": "1qfz5bf0pwdgk3",
+   "text": "Throw this plan away? It still counts as one of this month’s plans.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {

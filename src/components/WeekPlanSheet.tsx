@@ -7,7 +7,17 @@ import { useStanding, useSubscribed } from './useSubscribed';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
 import { NUTRITIONIST_PLAN_NOTE, likesFrom } from '../lib/planner';
 import { PLUS } from '../lib/plan';
-import { isPaywalled, pendingWeekPlan, requestWeekPlan, SquishApiError, waitForWeekPlan, waitingWeekPlan, type WeekPlan } from '../lib/api';
+import {
+  clearReadyWeekPlan,
+  isPaywalled,
+  pendingWeekPlan,
+  readyWeekPlan,
+  requestWeekPlan,
+  SquishApiError,
+  waitForWeekPlan,
+  waitingWeekPlan,
+  type WeekPlan,
+} from '../lib/api';
 import './week-plan.css';
 import { energyValue, formatEnergy } from '../lib/region';
 import { plural, t } from '../lib/i18n';
@@ -44,10 +54,8 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
   const [preferences, setPreferences] = useState('');
   const [left, setLeft] = useState<Set<string>>(new Set());
 
-  const close = () => {
-    onClose();
-    if (stage.kind !== 'planning') setStage({ kind: 'ask' });
-  };
+  // Closing never throws a plan away: one that arrived is kept (lib/api.ts) and shown next time.
+  const close = () => onClose();
 
   /**
    * A plan asked for and not seen yet — before this sheet (or the app) was
@@ -56,6 +64,13 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
    */
   useEffect(() => {
     if (!open || stage.kind !== 'ask') return;
+    // One that arrived while nobody was looking — or was closed unkept — comes first.
+    const ready = readyWeekPlan();
+    if (ready) {
+      setLeft(new Set());
+      setStage({ kind: 'preview', plan: ready });
+      return;
+    }
     let cancelled = false;
     void (async () => {
       const job = pendingWeekPlan() ?? (await waitingWeekPlan());
@@ -124,6 +139,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
         added += 1;
       });
     }
+    clearReadyWeekPlan();
     toast(plural(added, { one: '{n} meal added to your plans — and to your shopping list.', other: '{n} meals added to your plans — and to your shopping list.' }), '🗓️');
     setStage({ kind: 'ask' });
     onClose();
@@ -281,7 +297,16 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
             <button type="button" className="btn btn--block" onClick={() => keep(stage.plan)}>
               {t('Add to my plans')}
             </button>
-            <button type="button" className="btn--quiet small" onClick={() => setStage({ kind: 'ask' })}>
+            <button
+              type="button"
+              className="btn--quiet small"
+              onClick={() => {
+                // The one way a plan is thrown away, so it asks first: it was one of the month's.
+                if (!window.confirm(t('Throw this plan away? It still counts as one of this month’s plans.'))) return;
+                clearReadyWeekPlan();
+                setStage({ kind: 'ask' });
+              }}
+            >
               {t('Start again')}
             </button>
           </div>
