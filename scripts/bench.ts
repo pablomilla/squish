@@ -5,6 +5,8 @@
  *   npm run bench -- --models claude-sonnet-5,claude-haiku-4-5
  *   npm run bench -- --runs 3        repeat each photo, to see run-to-run spread
  *   npm run bench -- --sub 6.99      margin maths against your subscription price
+ *   npm run bench -- --set nutrition5k   Google's weighed dishes (npm run nutrition5k first)
+ *   npm run bench -- --parallel 4    analyse four photos at a time
  *
  * Reads bench/manifest.json — your photos and what is actually in them — and
  * answers two questions: how close does each model get, and what does it cost
@@ -20,7 +22,9 @@ import { analysePhotoDetailed, hasCredentials, type Crockery, type ModelUsage } 
 import { DEFAULT_GEMINI, GEMINI_PRICING, hasGeminiKey, isGeminiModel } from '../server/gemini';
 import type { MealSlot } from '../src/types';
 
-const BENCH_DIR = resolve(process.cwd(), 'bench');
+/** bench/ for your own meals; bench/<set>/ for another set, such as Nutrition5k's. */
+const SET = arg('set');
+const BENCH_DIR = resolve(process.cwd(), 'bench', ...(SET ? [SET.replace(/[^a-z0-9-]/gi, '')] : []));
 const CLAUDE_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
 /**
  * Claude's three, and Gemini 2.5 Flash beside them when there is a key for
@@ -182,6 +186,60 @@ export function scoreModel(model: string, attempts: Attempt[], fixtures: MealFix
   };
 }
 
+/**
+ * The Nutrition5k paper's own measure, so results sit beside its table: for
+ * each quantity, the mean absolute error, and that error as a share of the
+ * mean true value (not the mean of each dish's percentage, which small dishes
+ * would swamp). The same sums as its scripts/compute_eval_statistics.py.
+ */
+export interface PaperScore {
+  model: string;
+  dishes: number;
+  calories: { mae: number; pct: number };
+  mass: { mae: number; pct: number };
+  fat: { mae: number; pct: number };
+  carbs: { mae: number; pct: number };
+  protein: { mae: number; pct: number };
+}
+
+export function paperScore(model: string, attempts: Attempt[], fixtures: MealFixture[]): PaperScore {
+  const byName = new Map(fixtures.map((f) => [f.name, f]));
+  const pairs = attempts
+    .filter((a) => a.model === model && a.ok && a.predicted && byName.has(a.meal))
+    .map((a) => ({ truth: byName.get(a.meal)!, a }));
+  const measure = (truth: (f: MealFixture) => number | undefined, guess: (a: Attempt) => number | undefined) => {
+    const scored = pairs.filter(({ truth: f, a }) => truth(f) !== undefined && guess(a) !== undefined);
+    const mae = mean(scored.map(({ truth: f, a }) => Math.abs(guess(a)! - truth(f)!)));
+    const truthMean = mean(scored.map(({ truth: f }) => truth(f)!));
+    return { mae, pct: truthMean ? mae / truthMean : 0 };
+  };
+  return {
+    model,
+    dishes: pairs.length,
+    calories: measure((f) => f.calories, (a) => a.predicted!.calories),
+    mass: measure((f) => f.grams, (a) => a.predictedGrams),
+    fat: measure((f) => f.fat, (a) => a.predicted!.fat),
+    carbs: measure((f) => f.carbs, (a) => a.predicted!.carbs),
+    protein: measure((f) => f.protein, (a) => a.predicted!.protein),
+  };
+}
+
+/** The paper's own results on its full test split, for the table: calorie error as a share of the mean. Its models were trained on the training split; the models here were not trained on any of it. */
+export const PAPER_RESULTS = [
+  { method: 'Nutrition5k paper: photo only (2D direct)', calories: 0.261 },
+  { method: 'Nutrition5k paper: photo + depth (RGB-D direct)', calories: 0.188 },
+  { method: 'Nutrition5k paper: best, depth-derived volume', calories: 0.165 },
+];
+
+/** One model's predictions in the file Google's scripts/compute_eval_statistics.py reads: dish_id,calories,mass,fat,carb,protein. */
+export function predictionsCsv(model: string, attempts: Attempt[]): string {
+  const seen = new Set<string>();
+  return attempts
+    .filter((a) => a.model === model && a.ok && a.predicted && !seen.has(a.meal) && seen.add(a.meal))
+    .map((a) => [a.meal, a.predicted!.calories, a.predictedGrams ?? 0, a.predicted!.fat, a.predicted!.carbs, a.predicted!.protein].join(','))
+    .join('\n');
+}
+
 export interface PlateVerdict {
   model: string;
   /** Portion error without the plate size, and with it. */
@@ -316,10 +374,35 @@ async function runOne(fixture: MealFixture, model: string, run: number, variant:
   }
 }
 
-export function markdownReport(scores: ModelScore[], fixtures: MealFixture[], attempts: Attempt[], subscription: number): string {
+export function markdownReport(
+  scores: ModelScore[],
+  fixtures: MealFixture[],
+  attempts: Attempt[],
+  subscription: number,
+  paper: PaperScore[] = [],
+): string {
   const lines: string[] = [];
   lines.push('# Squish model benchmark', '');
   lines.push(`Run ${new Date().toISOString()} · ${fixtures.length} meals · ${attempts.length} analyses`, '');
+
+  if (paper.length) {
+    lines.push('## Against the Nutrition5k paper', '');
+    lines.push(
+      'Dishes from the official test split of Nutrition5k (Thames et al., CVPR 2021; data CC BY 4.0), overhead photos, ' +
+        'weighed ingredients. Mean absolute error, and that error as a share of the mean true value — the paper\'s own measure.',
+      '',
+    );
+    lines.push('| Method | Dishes | Calories | Mass | Fat | Carbs | Protein |');
+    lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+    const cell = (m: { mae: number; pct: number }, unit: string, dp = 1) => `${m.mae.toFixed(dp)} ${unit} (${pct(m.pct)})`;
+    for (const p of paper) {
+      lines.push(
+        `| ${p.model} | ${p.dishes} | ${cell(p.calories, 'kcal', 0)} | ${cell(p.mass, 'g', 0)} | ${cell(p.fat, 'g')} | ${cell(p.carbs, 'g')} | ${cell(p.protein, 'g')} |`,
+      );
+    }
+    for (const r of PAPER_RESULTS) lines.push(`| ${r.method} | test split | ${pct(r.calories)} | | | | |`);
+    lines.push('');
+  }
 
   const arms = [...new Set(scores.map((s) => s.variant))];
   if (arms.length > 1) {
@@ -492,18 +575,24 @@ async function main(): Promise<void> {
 
   const attempts: Attempt[] = [];
   let done = 0;
+  // A few photos at once, if asked: a hundred dishes one after another is the best part of an hour.
+  const parallel = Math.max(1, Math.min(8, Number(arg('parallel') ?? 1)));
   for (const model of models) {
     for (const variant of variants) {
       for (let run = 1; run <= runs; run += 1) {
-        for (const fixture of fixtures) {
-          const attempt = await runOne(fixture, model, run, variant);
-          attempts.push(attempt);
-          done += 1;
-          const status = attempt.ok
-            ? `${attempt.predicted?.calories} kcal vs ${fixture.calories} (${pct(ape(fixture.calories, attempt.predicted?.calories ?? 0))} off)`
-            : red(`failed: ${attempt.error}`);
-          const arm = variants.length > 1 ? `${variant.name.padEnd(16)} ` : '';
-          console.log(`  [${String(done).padStart(3)}/${total}] ${model.padEnd(18)} ${arm}${fixture.name.padEnd(24)} ${status}`);
+        for (let i = 0; i < fixtures.length; i += parallel) {
+          const batch = fixtures.slice(i, i + parallel);
+          const results = await Promise.all(batch.map((fixture) => runOne(fixture, model, run, variant)));
+          results.forEach((attempt, n) => {
+            const fixture = batch[n];
+            attempts.push(attempt);
+            done += 1;
+            const status = attempt.ok
+              ? `${attempt.predicted?.calories} kcal vs ${fixture.calories} (${pct(ape(fixture.calories, attempt.predicted?.calories ?? 0))} off)`
+              : red(`failed: ${attempt.error}`);
+            const arm = variants.length > 1 ? `${variant.name.padEnd(16)} ` : '';
+            console.log(`  [${String(done).padStart(3)}/${total}] ${model.padEnd(18)} ${arm}${fixture.name.padEnd(24)} ${status}`);
+          });
         }
       }
     }
@@ -558,13 +647,36 @@ async function main(): Promise<void> {
     }),
   );
 
+  // Beside the paper's table, in the paper's own measure, when the set is its dishes.
+  const paper = SET === 'nutrition5k' ? models.map((model) => paperScore(model, attempts, fixtures)) : [];
+  if (paper.length) {
+    console.log(`\n${bold('  Against the Nutrition5k paper')} ${dim('(mean absolute error, and as a share of the mean true value)')}\n`);
+    console.table([
+      ...paper.map((p) => ({
+        method: p.model,
+        dishes: p.dishes,
+        calories: `${p.calories.mae.toFixed(0)} kcal · ${pct(p.calories.pct)}`,
+        mass: `${p.mass.mae.toFixed(0)} g · ${pct(p.mass.pct)}`,
+        fat: `${p.fat.mae.toFixed(1)} g · ${pct(p.fat.pct)}`,
+        carbs: `${p.carbs.mae.toFixed(1)} g · ${pct(p.carbs.pct)}`,
+        protein: `${p.protein.mae.toFixed(1)} g · ${pct(p.protein.pct)}`,
+      })),
+      ...PAPER_RESULTS.map((r) => ({ method: r.method, dishes: '', calories: pct(r.calories), mass: '', fat: '', carbs: '', protein: '' })),
+    ]);
+  }
+
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  await writeFile(resolve(BENCH_DIR, `results-${stamp}.json`), JSON.stringify({ scores, attempts, fixtures }, null, 2));
-  await writeFile(resolve(BENCH_DIR, 'report.md'), markdownReport(scores, fixtures, attempts, subscription));
+  await writeFile(resolve(BENCH_DIR, `results-${stamp}.json`), JSON.stringify({ scores, attempts, fixtures, paper }, null, 2));
+  await writeFile(resolve(BENCH_DIR, 'report.md'), markdownReport(scores, fixtures, attempts, subscription, paper));
+  // For Google's own scoring script, so the numbers can be checked independently of this one.
+  if (paper.length) {
+    for (const model of models) await writeFile(resolve(BENCH_DIR, `predictions-${model}.csv`), `${predictionsCsv(model, attempts)}\n`);
+    console.log(dim(`  Predictions for Google's compute_eval_statistics.py: bench/${SET}/predictions-<model>.csv`));
+  }
 
   const spent = attempts.reduce((sum, a) => sum + (a.usage?.costUsd ?? 0), 0);
   console.log(`\n  Spent about ${bold(usd(spent, 2))} on this run.`);
-  console.log(`  Written: ${bold('bench/report.md')} ${dim(`and results-${stamp}.json`)}\n`);
+  console.log(`  Written: ${bold(`bench/${SET ? `${SET}/` : ''}report.md`)} ${dim(`and results-${stamp}.json`)}\n`);
 }
 
 const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;

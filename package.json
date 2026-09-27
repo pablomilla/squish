@@ -14,6 +14,7 @@
     "setup:ai": "tsx --env-file-if-exists=.env scripts/setup-ai.ts",
     "check:ai": "tsx --env-file-if-exists=.env scripts/setup-ai.ts --check",
     "bench": "tsx --env-file-if-exists=.env scripts/bench.ts",
+    "nutrition5k": "tsx scripts/nutrition5k.ts",
     "eval": "tsx --env-file-if-exists=.env eval/nutritionist/all.ts",
     "eval:smoke": "tsx --env-file-if-exists=.env eval/nutritionist/run.ts --smoke",
     "eval:one": "tsx --env-file-if-exists=.env eval/nutritionist/run.ts",

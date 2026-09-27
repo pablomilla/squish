@@ -434,6 +434,18 @@ npm run bench                                        # opus-5 vs sonnet-5 vs hai
 npm run bench -- --runs 3 --sub 6.99                 # spread across repeats, margin at £6.99
 ```
 
+To measure against a peer-reviewed standard rather than your own kitchen, run it on Google's
+**Nutrition5k** dishes (CVPR 2021; weighed ingredients, CC BY 4.0). The report sets Squish beside the
+paper's own results, in the paper's own measure, and writes predictions Google's scoring script can
+check independently:
+
+```bash
+npm run nutrition5k                               # 100 dishes from the official test split
+npm run bench -- --set nutrition5k --parallel 4
+```
+
+See [`bench/README.md`](bench/README.md#against-a-published-study-nutrition5k) for how to read it fairly.
+
 It writes `bench/report.md` with accuracy per model, a per-meal breakdown of what each one saw, and
 what a subscriber costs per month at two, three and five meals a day — before and after a store's
 cut. `bench/README.md` covers how to build a test set whose numbers you can trust; the answer is only

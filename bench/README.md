@@ -108,6 +108,43 @@ still measured for accuracy, and its cost shows as $0.
 stays that way: the privacy policy tells people their photos go to Anthropic. If Gemini wins, the
 policy changes first and the switch comes after.
 
+## Against a published study: Nutrition5k
+
+Your own meals say how Squish does on your food. To say how it does against an outside standard, the
+benchmark can run on **Nutrition5k**, Google Research's dataset of about 5,000 weighed cafeteria
+dishes (Thames et al., *Nutrition5k: Towards Automatic Nutritional Understanding of Generic Food*,
+CVPR 2021, peer reviewed). Every ingredient was weighed as the plate was built, so the truth is a
+scale reading, not an estimate.
+
+```bash
+npm run nutrition5k                               # 100 dishes from the official test split
+npm run bench -- --set nutrition5k --parallel 4   # asks before it spends anything
+```
+
+- `npm run nutrition5k -- --count 507` takes the whole overhead test split; `--seed 2` a different
+  sample. The same seed always picks the same dishes, so runs a month apart compare like with like.
+- Photos and figures download from Google's public bucket into `bench/nutrition5k/`, which git
+  ignores. The data is CC BY 4.0: cite the paper if you publish a result.
+- The report opens with the paper's own measure — mean absolute error, and that as a share of the
+  mean true value — for calories, mass, fat, carbohydrate and protein, beside the paper's results:
+  **26.1%** calorie error from the photo alone, **18.8%** with a depth camera, **16.5%** at best.
+- `bench/nutrition5k/predictions-<model>.csv` is in the format of Google's
+  [`compute_eval_statistics.py`](https://github.com/google-research-datasets/Nutrition5k/blob/main/scripts/compute_eval_statistics.py),
+  so anybody can check the numbers with Google's script rather than ours:
+  `python compute_eval_statistics.py dish_metadata_cafe1.csv predictions-claude-opus-5.csv out.json`.
+- Run it where the app runs (Render's Shell) to measure the whole pipeline as people get it, food
+  table included; without a database it measures the model's reading alone.
+
+Read it fairly. The paper's models were **trained on Nutrition5k's own training dishes** and
+photographed by the same rig; Squish has never seen any of it. The dishes are from Google's
+cafeterias in California, photographed straight down in even light, and some are part-built plates
+from its incremental scans. It is a stern, honest yardstick for reading a plate — not a measure of
+British home cooking, which your own set is for.
+
+Cost: one analysis per dish per model. From what the dashboard has measured so far that is roughly
+$4–5 per 100 dishes on Opus, about $1 on Sonnet, and under $1 on Gemini 3.8 Flash; the run prints
+what it actually spent.
+
 ## Reading the result
 
 **Portion error** is the one to look at if you weighed anything. It is the mean percentage error

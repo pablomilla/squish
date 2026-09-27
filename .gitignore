@@ -10,6 +10,8 @@ bench/photos/
 bench/manifest.json
 bench/results-*.json
 bench/report.md
+# Downloaded from Google's bucket by npm run nutrition5k (CC BY 4.0), not redistributed here
+bench/nutrition5k/
 
 # Push subscriptions: reminder endpoints, written at runtime
 .data/
