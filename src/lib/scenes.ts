@@ -16,6 +16,7 @@
  */
 import { entitled, onShow, SEASONS, type Entitlement, type ItemUnlock, type Pack, type Season } from './outfit';
 import { t } from './i18n';
+import { localWords } from './region';
 
 export interface Scene {
   id: string;
@@ -39,9 +40,10 @@ export const SCENES: Scene[] = [
   { id: 'rainy-window', name: t('Rainy window'), ...pack('cosy', t('Cosy pack')) },
   { id: 'snowy-village', name: t('Snowy village'), ...season('winter') },
   { id: 'fireworks-city', name: t('Fireworks'), ...season('new-year') },
-  { id: 'sweet-shop', name: t('Sweet shop'), ...season('valentines') },
+  // Named when shown, not when loaded: the country, and so the word, is only known then.
+  { id: 'sweet-shop', get name() { return localWords(t('Sweet shop')); }, ...season('valentines') },
   { id: 'blossom-garden', name: t('Blossom garden'), ...season('spring') },
-  { id: 'ice-lolly-stand', name: t('Ice-lolly stand'), ...season('summer') },
+  { id: 'ice-lolly-stand', get name() { return localWords(t('Ice-lolly stand')); }, ...season('summer') },
   { id: 'pumpkin-patch', name: t('Pumpkin patch'), ...season('halloween') },
 ];
 

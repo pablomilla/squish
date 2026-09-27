@@ -19,7 +19,11 @@ the packet is not. Everything that differs lives in `src/lib/region.ts`.
 | Plan card, per | kg or lb | kg or lb | kg or lb | kg or lb | kg or lb | kg or lb |
 
 Food names follow the country: chips are fries in North America and hot chips
-in Australia and New Zealand; crisps are chips everywhere but here. The
+in Australia and New Zealand; crisps are chips everywhere but here. Sweets are
+lollies in Australia and New Zealand (candy in North America), an ice lolly
+is an icy pole in Australia and an ice block in New Zealand, and a sweet
+potato is a kūmara in New Zealand — on the stickers and Home scenes that use
+those words, and in the coach's tips. The
 built-in food table carries local names and local sizes (a US can of cola is
 355 ml, an Australian one 375, a schooner of beer 425), and the British name
 stays on each food as a search word.

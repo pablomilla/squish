@@ -12,7 +12,7 @@
 import { overPenalty, overTargets, scoreBreakdown, ultraProcessedShare, CEILING_LABEL, type ScoreFactorKey } from './nutrition';
 import { mealsOn, totalsOn, dayScore } from './selectors';
 import type { MealEntry, Targets } from '../types';
-import { fibreWord, saltWord } from './region';
+import { fibreWord, localWords, saltWord } from './region';
 import { t } from './i18n';
 
 /**
@@ -93,7 +93,7 @@ export function explainDay(meals: MealEntry[], date: string, targets: Targets, t
       lift < 15
         ? t('Something with protein or fibre — eggs, beans, yoghurt, veg or wholegrains — lifts the score most.')
         : worst === 'freeSugar' || worst === 'sugar'
-          ? t('Fancy something sweet? Fruit, yoghurt or a few nuts score far higher than sweets and bars.')
+          ? localWords(t('Fancy something sweet? Fruit, yoghurt or a few nuts score far higher than sweets and bars.'))
           : worst === 'processed'
             ? t('Simple, home-cooked food lifts the score more than packaged food does.')
             : worst === 'satFat' || worst === 'fat'

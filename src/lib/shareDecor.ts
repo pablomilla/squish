@@ -16,6 +16,7 @@
  */
 import { entitled, onShow, SEASONS, type Entitlement, type ItemUnlock, type Season } from './outfit';
 import { t } from './i18n';
+import { localWords } from './region';
 
 export interface Decoration {
   id: string;
@@ -86,12 +87,13 @@ export const STICKERS: Decoration[] = [
   { id: 'chick', name: t('Chick'), ...seasonFree('spring') },
   { id: 'tulip', name: t('Tulip'), ...seasonFree('spring') },
   { id: 'egg', name: t('Egg'), ...seasonFree('spring') },
-  { id: 'ice-lolly', name: t('Ice lolly'), ...seasonFree('summer') },
+  // Named when shown, not when loaded: the country, and so the word, is only known then.
+  { id: 'ice-lolly', get name() { return localWords(t('Ice lolly')); }, ...seasonFree('summer') },
   { id: 'watermelon-slice', name: t('Watermelon'), ...seasonFree('summer') },
   { id: 'sunglasses', name: t('Sunglasses'), ...seasonFree('summer') },
   { id: 'friendly-ghost', name: t('Friendly ghost'), ...seasonFree('halloween') },
   { id: 'pumpkin', name: t('Pumpkin'), ...seasonFree('halloween') },
-  { id: 'sweets', name: t('Sweets'), ...seasonFree('halloween') },
+  { id: 'sweets', get name() { return localWords(t('Sweets')); }, ...seasonFree('halloween') },
 ];
 
 /** Streak badges live with the stickers but are drawn from their own folder. */

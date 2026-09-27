@@ -343,6 +343,18 @@ const WORDS: Record<string, Partial<Record<Region, string>>> = {
   porridge: { US: 'oatmeal', CA: 'oatmeal' },
   'fizzy drinks': { US: 'sodas', CA: 'pop', AU: 'soft drinks', NZ: 'fizzy drinks' },
   'fizzy drink': { US: 'soda', CA: 'pop', AU: 'soft drink', NZ: 'fizzy drink' },
+  // Sweets are lollies in Australia and New Zealand — and an ice lolly is an
+  // icy pole in one and an ice block in the other.
+  sweets: { US: 'candy', CA: 'candy', AU: 'lollies', NZ: 'lollies' },
+  'sweet shop': { US: 'candy store', CA: 'candy store', AU: 'lolly shop', NZ: 'lolly shop' },
+  'ice lolly': { US: 'popsicle', CA: 'popsicle', AU: 'icy pole', NZ: 'ice block' },
+  'ice lollies': { US: 'popsicles', CA: 'popsicles', AU: 'icy poles', NZ: 'ice blocks' },
+  'ice-lolly': { US: 'popsicle', CA: 'popsicle', AU: 'icy-pole', NZ: 'ice-block' },
+  'sweet potato': { NZ: 'kūmara' },
+  'sweet potatoes': { NZ: 'kūmara' },
+  mangetout: { US: 'snow peas', CA: 'snow peas', AU: 'snow peas', NZ: 'snow peas' },
+  'cereal bar': { US: 'granola bar', CA: 'granola bar', AU: 'muesli bar', NZ: 'muesli bar' },
+  'cereal bars': { US: 'granola bars', CA: 'granola bars', AU: 'muesli bars', NZ: 'muesli bars' },
 };
 
 const WORD_PATTERN = new RegExp(

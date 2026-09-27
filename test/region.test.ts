@@ -19,6 +19,8 @@ import {
 import { foodById, searchFoods, toFoodItem } from '../src/lib/foods';
 import { equivalentFor } from '../src/lib/equivalents';
 import { formatWeight, imperialLabel, stonePoundsToKg } from '../src/lib/units';
+import { stickerById } from '../src/lib/shareDecor';
+import { sceneById } from '../src/lib/scenes';
 
 /**
  * Regions: the six countries, and the things that change between them —
@@ -173,4 +175,33 @@ test('a new person’s country is their clock’s first, then their languages’
   assert.equal(guessRegion('Europe/Paris', ['en-AU']), 'AU', 'a clock outside the six says nothing');
   assert.equal(guessRegion(undefined, 'en-NZ'), 'NZ');
   assert.equal(guessRegion(null, undefined), 'GB');
+});
+
+test('sweets are lollies, and an ice lolly an icy pole or an ice block, down under', () => {
+  assert.equal(localWords('far higher than sweets and bars', 'AU'), 'far higher than lollies and bars');
+  assert.equal(localWords('Sweets', 'NZ'), 'Lollies');
+  assert.equal(localWords('Ice lolly', 'AU'), 'Icy pole');
+  assert.equal(localWords('Ice lolly', 'NZ'), 'Ice block');
+  assert.equal(localWords('Ice-lolly stand', 'AU'), 'Icy-pole stand');
+  assert.equal(localWords('Ice-lolly stand', 'NZ'), 'Ice-block stand');
+  assert.equal(localWords('Sweet shop', 'AU'), 'Lolly shop');
+  assert.equal(localWords('Sweet potato, baked', 'NZ'), 'Kūmara, baked');
+  assert.equal(localWords('Sweet potato, baked', 'AU'), 'Sweet potato, baked', 'Australians say sweet potato');
+  assert.equal(localWords('a cereal bar and mangetout', 'NZ'), 'a muesli bar and snow peas');
+  assert.equal(localWords('Sweets', 'GB'), 'Sweets');
+  assert.equal(localWords('Sweets', 'IE'), 'Sweets');
+});
+
+test('sticker and scene names follow the country when shown, not when loaded', () => {
+  const sticker = stickerById('ice-lolly')!;
+  const scene = sceneById('sweet-shop')!;
+  assert.equal(sticker.name, 'Ice lolly');
+  assert.equal(scene.name, 'Sweet shop');
+  setCurrentRegion({ region: 'AU' });
+  assert.equal(sticker.name, 'Icy pole');
+  assert.equal(stickerById('sweets')!.name, 'Lollies');
+  assert.equal(scene.name, 'Lolly shop');
+  assert.equal(sceneById('ice-lolly-stand')!.name, 'Icy-pole stand');
+  setCurrentRegion({ region: 'NZ' });
+  assert.equal(sticker.name, 'Ice block');
 });
