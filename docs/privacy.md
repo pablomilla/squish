@@ -36,7 +36,7 @@ an account or a backup.
 
 | What | Examples |
 |---|---|
-| Your profile | The name you typed, if any; sex, age, height, weight, target weight, activity level, goal, and units |
+| Your profile | The name you typed, if any; sex, age, height, weight, target weight, activity level, goal, and units; and, if you answered when setting up, how you eat (a diet, allergies, foods you never eat), what you want from Squish and what you find gets in the way |
 | Your meals | Titles, foods, portions, nutrition figures, and your notes — including meals you have planned for later, and your shopping list |
 | Your photos | **The meal photographs themselves, which stay here.** Only a thumbnail of each — a few kilobytes — is part of the backup below |
 | Your days | Water, weight entries, and the day's totals |
@@ -63,6 +63,16 @@ Backup is on by default where this copy of Squish has a database.
 - **How many photos, chats and recipes you have used today.** Counts only.
 - **If you make an account:** your email address, and your password stored as
   a scrypt hash. We never store the password itself and cannot read it.
+- **If you sign in with Google or Apple:** the id Google or Apple gives your
+  account there, linked to your Squish account so the same button signs you
+  in next time. From them we receive that id and your email address — with
+  Apple, the private relay address if you chose to hide yours — and nothing
+  else: not your name, contacts, photos or anything else in your Google or
+  Apple account. See "Google and Apple — signing in" below.
+- **How you heard about Squish**, if you answered when setting up: one choice
+  from a fixed list (a friend, TikTok, a podcast…), kept against your device.
+  We count the answers to learn which ways in bring people who stay; nothing
+  about who told you is asked or kept.
 - **If you ask to reset a password:** a hashed, single-use token that expires
   after two hours.
 - **Whether you have confirmed your email address**, and, until you do, a
@@ -81,7 +91,9 @@ Backup is on by default where this copy of Squish has a database.
   people signed up and subscribed through their link, never who. The code is
   kept in your browser for 30 days after you follow the link and deleted
   once it has been used. Following a link adds one to a count of visits and
-  records nothing about you.
+  records nothing about you. A code you type in when setting up is kept and
+  used the same way — and if it is an invite to Squish Plus instead, it is
+  applied to your new account, as it would be from the You screen.
 
 - **If you invite friends:** your invite code, and for each person who made
   an account with it, that they did, and whether and when they earned the
@@ -177,11 +189,12 @@ one of these things:
 
 | When you | What is sent |
 |---|---|
-| Photograph a meal | The photo, to be read. It is not kept afterwards — not by us and not on our server |
-| Describe a meal in words or by voice | What you wrote or said |
+| Photograph a meal | The photo, to be read, and your diet if you told Squish one (so a vegetarian's burger is read as a veggie one). The photo is not kept afterwards — not by us and not on our server |
+| Describe a meal in words or by voice | What you wrote or said, and your diet if you told Squish one |
 | Import a recipe from a link | The text of that page |
-| Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept |
-| Ask the nutritionist to plan your week | Your daily targets, goal and sex (for the minimum it will plan to), the names of meals you eat often and foods you have saved, the notes it has kept, and anything you typed for the plan |
+| Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept — and how you eat and what you want from Squish, if you told it when setting up |
+| Ask the nutritionist to plan your week | Your daily targets, goal and sex (for the minimum it will plan to), the names of meals you eat often and foods you have saved, the notes it has kept, how you eat (your diet, allergies and foods you never eat) and what you want from Squish, and anything you typed for the plan |
+| Open Home (the daily nudge) | The first name you gave, today's totals so far and your water, your streak, the titles of today's meals, and how you eat and what you want from Squish if you told it |
 
 Each of these also carries which of the six countries you chose (the UK,
 Ireland, the US, Canada, Australia or New Zealand) and whether you count in
@@ -216,6 +229,18 @@ privacy policy, at [policies.google.com/privacy](https://policies.google.com/pri
 
 The nutritionist is the one to be aware of: answering "am I getting enough
 protein?" means sending a slice of your diary along with the question.
+
+### Google and Apple — signing in
+
+Only if you choose "Continue with Google" or "Continue with Apple". Nothing is
+loaded from Google or Apple, and nothing is sent to them, until you tap one of
+those buttons: the sign-in happens in their own window, on their site, under
+their own privacy policies
+([policies.google.com/privacy](https://policies.google.com/privacy),
+[apple.com/legal/privacy](https://www.apple.com/legal/privacy/)). They tell
+us who you are there — an id and your email address — and we do not ask
+them for anything more. They learn that you signed in to Squish. You can
+always use an email address and password instead.
 
 ### Open Food Facts — barcodes
 

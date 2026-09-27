@@ -7,13 +7,17 @@ without the ones above it.
 |---|---|---|
 | **Device** | An opaque token the browser gets on first use | Everybody, automatically |
 | **Backup** | A copy of the diary, kept against the device | Everybody, automatically |
-| **Account** | An email and password the backup hangs off instead | Only people who ask |
+| **Account** | An email and password — or a Google or Apple account — the backup hangs off instead | Only people who ask (offered at the end of onboarding) |
 
 The whole thing switches off when `DATABASE_URL` is unset. There are then no
 devices, no backup and no accounts, and Squish behaves exactly as it did before
 any of this existed: diary in the browser, nothing on the server. That is not a
 degraded mode to apologise for — it is how Squish runs on a laptop, and it is
 what stops a database outage taking the app down.
+
+Signing in with Google or Apple is set up separately, and each is offered
+only once its client ID is in the environment: see
+[sign-in-with.md](sign-in-with.md).
 
 ## Why in this order
 

@@ -118,6 +118,36 @@ export const signUp = (email: string, password: string): Promise<Done<Arrived>> 
   enter('/api/account', email, password, referral());
 export const signIn = (email: string, password: string): Promise<Done<Arrived>> => enter('/api/session', email, password);
 
+export type Provider = 'google' | 'apple';
+
+/** Which of Google and Apple this Squish offers, and the ids their scripts need. Null where it cannot say. */
+export interface ProviderSetup {
+  google: { clientId: string } | null;
+  apple: { clientId: string; redirectUri: string } | null;
+}
+let setup: Promise<ProviderSetup | null> | null = null;
+export function providerSetup(): Promise<ProviderSetup | null> {
+  setup ??= ask<ProviderSetup>('GET', '/api/account/providers').then((answer) => (answer.ok ? { google: answer.google, apple: answer.apple } : null));
+  return setup;
+}
+
+/**
+ * Signed in with Google or Apple: hand the ID token to the server, which
+ * checks it and signs this device in — to the account it belongs to, one on
+ * the same verified address, or a new one (`created`), which a code they
+ * arrived with or typed is applied to, as at sign-up.
+ */
+export async function signInWith(provider: Provider, token: string, nonce: string): Promise<Done<Arrived & { created?: boolean }>> {
+  const ref = referral();
+  const answer = await ask<Arrived & { created?: boolean }>('POST', '/api/account/federated', { provider, token, nonce, ...(ref ? { ref } : {}) });
+  if (answer.ok) {
+    if (ref && answer.created) forgetReferral();
+    switchedIdentity();
+    await refreshPlan();
+  }
+  return answer;
+}
+
 export async function signOut(): Promise<Done<Record<string, never>>> {
   const answer = await ask<Record<string, never>>('DELETE', '/api/session');
   if (answer.ok) {

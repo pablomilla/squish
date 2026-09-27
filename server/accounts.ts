@@ -45,7 +45,7 @@ const KEYLEN = 64;
  * verification reads the cost out of what was stored rather than assuming
  * whatever is current.
  */
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
   const key = await scrypt(password, salt, KEYLEN, COST);
   return `scrypt$${COST.N}$${COST.r}$${COST.p}$${salt.toString('base64')}$${key.toString('base64')}`;

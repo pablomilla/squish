@@ -804,6 +804,21 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table devices add column heard_from text, add column heard_at timestamptz;
     `,
   },
+  {
+    id: 31,
+    sql: `
+      -- Google and Apple accounts signed in with (server/federated.ts): their
+      -- id there, and whose Squish account it is. Gone with the account.
+      create table account_identities (
+        provider   text not null,
+        subject    text not null,
+        account_id text not null references accounts(id) on delete cascade,
+        created_at timestamptz not null default now(),
+        primary key (provider, subject)
+      );
+      create index account_identities_account on account_identities(account_id);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

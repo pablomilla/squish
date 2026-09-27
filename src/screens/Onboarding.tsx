@@ -8,6 +8,7 @@ import { friendOffer, periodWords, type FriendOffer } from '../lib/friends';
 import { planNow } from '../lib/plan';
 import { PLUS } from '../lib/subscription';
 import { AimFields, EatingFields } from '../components/EatingFields';
+import SignInWith, { type SignedInWith } from '../components/SignInWith';
 import { HEARD, type Heard } from '../lib/heard';
 import { keepCode, referral } from '../lib/referral';
 import { noteHeard } from '../lib/api';
@@ -263,6 +264,16 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
         .join(' '),
       '🫧',
     );
+  };
+
+  /**
+   * In with Google or Apple. A new account at the end of setting up is made
+   * as the email form makes one; anything else — an account they already
+   * had, or signing in from the welcome screen — is arriving.
+   */
+  const enteredWith = (who: SignedInWith) => {
+    if (who.created && step === 'account') madeAccount(who);
+    else void arrived(who);
   };
 
   if (tooYoung)
@@ -653,6 +664,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                   })}
                 </p>
               )}
+              <SignInWith onDone={enteredWith} onTrouble={(message) => toast(message, '⚠️')} />
               <Credentials
                 submit={t('Create account')}
                 hint={t('Four words you will remember beats one word with a number on the end.')}
@@ -712,6 +724,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
           onClose={() => setSigning(null)}
           title={signing === 'forgot' ? t('Forgotten password') : t('Sign in')}
         >
+          {signing === 'in' && <SignInWith onDone={enteredWith} onTrouble={(message) => toast(message, '⚠️')} />}
           {signing === 'in' && (
             <Credentials
               submit={t('Sign in')}

@@ -1,5 +1,5 @@
 {
- "version": "10acm6p0kbfpyf",
+ "version": "0v8liwi00iqw44",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -1556,6 +1556,13 @@
    "text": "Send the link again",
    "where": [
     "src/components/AccountCard.tsx"
+   ]
+  },
+  {
+   "id": "08l4umz-3vb4oh",
+   "text": "Continue with Google",
+   "where": [
+    "src/components/SignInWith.tsx"
    ]
   },
   {
@@ -4759,6 +4766,13 @@
    ]
   },
   {
+   "id": "0qv13ke0wvcqtp",
+   "text": "Apple sign-in did not work just then. Try again, or use your email.",
+   "where": [
+    "src/components/SignInWith.tsx"
+   ]
+  },
+  {
    "id": "0qvtz3k0mmdxrm",
    "text": "On",
    "where": [
@@ -5158,13 +5172,6 @@
    "text": "They go on the card you share — pick them there.",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "0t5yz7i0bl1lqc",
-   "text": "Your photos, meals and questions can now be read by Google’s Gemini as well as Anthropic’s Claude — for some jobs, and as a backup when Claude cannot answer. Google do not use them to improve their products.",
-   "where": [
-    "src/components/PolicyNotice.tsx"
    ]
   },
   {
@@ -5715,6 +5722,13 @@
    "text": "Checking…",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0vzzk0z08yymwi",
+   "text": "That sign-in did not come through. Try again.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -6320,6 +6334,13 @@
    ]
   },
   {
+   "id": "10ihc210-rgfdw",
+   "text": "That sign-in could not be checked. Try again, or use your email.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "10k1wv1-egoww4",
    "text": "Team Sunshine",
    "where": [
@@ -6610,6 +6631,13 @@
    ]
   },
   {
+   "id": "126rugl00r18hj",
+   "text": "Your browser blocked the Google window. Allow pop-ups for Squish and try again.",
+   "where": [
+    "src/components/SignInWith.tsx"
+   ]
+  },
+  {
    "id": "126t8p20gsbdmt",
    "text": "Headphones",
    "where": [
@@ -6836,6 +6864,13 @@
    "text": "365-day badge",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "135hsyz090xrrc",
+   "text": "Google sign-in did not work just then. Try again, or use your email.",
+   "where": [
+    "src/components/SignInWith.tsx"
    ]
   },
   {
@@ -9549,6 +9584,13 @@
    ]
   },
   {
+   "id": "1iv8v4706iadil",
+   "text": "or with your email",
+   "where": [
+    "src/components/SignInWith.tsx"
+   ]
+  },
+  {
    "id": "1iwu3yv-tdbpix",
    "text": "Nothing squished today — that’s fine. Tomorrow is a fresh page.",
    "where": [
@@ -10965,6 +11007,13 @@
    ]
   },
   {
+   "id": "1qj2noa-1yxgvn",
+   "text": "That account did not share an email address, which Squish needs. Try another way to sign in.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1qjgr8j-3ho513",
    "text": "Brilliant meal",
    "where": [
@@ -12286,6 +12335,13 @@
    ]
   },
   {
+   "id": "1y6xm9g-c48ni8",
+   "text": "Continue with Apple",
+   "where": [
+    "src/components/SignInWith.tsx"
+   ]
+  },
+  {
    "id": "1yeuk3r-248ayp",
    "text": "Pork",
    "where": [
@@ -12304,6 +12360,13 @@
    "text": "Your plan is taking a while. It will be here when you open the planner again.",
    "where": [
     "src/lib/api.ts"
+   ]
+  },
+  {
+   "id": "1yixhnc0966oba",
+   "text": "Your photos, meals and questions can now be read by Google’s Gemini as well as Anthropic’s Claude — for some jobs, and as a backup when Claude cannot answer. Google do not use them to improve their products. You can also now sign in with Google or Apple, and tell Squish how you eat so the AI can respect it.",
+   "where": [
+    "src/components/PolicyNotice.tsx"
    ]
   },
   {

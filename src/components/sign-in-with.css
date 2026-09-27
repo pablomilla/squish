@@ -1,0 +1,18 @@
+/* Apple and Google, above the email form (components/SignInWith.tsx). */
+.sign-in-with { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.apple-button {
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  padding: 11px 16px; border-radius: var(--r-pill); background: #000; color: #fff;
+  font-size: 16px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+.apple-button:disabled { opacity: 0.6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .apple-button { background: #fff; color: #000; } }
+:root[data-theme='dark'] .apple-button { background: #fff; color: #000; }
+.google-button {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px;
+  padding: 11px 16px; border-radius: var(--r-pill); background: #fff; color: #1f1f1f; border: 1px solid #747775;
+  font-size: 15px; font-weight: 500; font-family: Roboto, Arial, sans-serif;
+}
+.google-button:disabled { opacity: 0.6; }
+.sign-in-or { display: flex; align-items: center; gap: 10px; margin: 4px 0 0; }
+.sign-in-or::before, .sign-in-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }

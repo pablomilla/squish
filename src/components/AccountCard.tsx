@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { friendOffer, periodWords, type FriendOffer } from '../lib/friends';
 import { Sheet, useToast } from './ui';
 import PasswordField from './PasswordField';
+import SignInWith from './SignInWith';
 import {
   changeEmail,
   changePassword,
@@ -185,6 +186,23 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
       )}
 
       <Sheet open={form !== null} onClose={() => setForm(null)} title={form ? TITLES[form] : undefined}>
+        {(form === 'in' || form === 'up') && (
+          <SignInWith
+            onDone={(arrived) => {
+              setForm(null);
+              void whoAmI().then(setWho);
+              toast(
+                arrived.created
+                  ? t('Account made.')
+                  : arrived.broughtDiary === false
+                    ? t('Signed in. That account already has a diary — Backup will ask which to keep.')
+                    : t('Signed in.'),
+                '🫧',
+              );
+            }}
+            onTrouble={(message) => toast(message, '⚠️')}
+          />
+        )}
         {form === 'in' && (
           <Credentials
             submit={t('Sign in')}

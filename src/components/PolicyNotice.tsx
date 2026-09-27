@@ -62,7 +62,7 @@ export default function PolicyNotice() {
       </div>
       <p className="small">
         {t(
-          'Your photos, meals and questions can now be read by Google’s Gemini as well as Anthropic’s Claude — for some jobs, and as a backup when Claude cannot answer. Google do not use them to improve their products.',
+          'Your photos, meals and questions can now be read by Google’s Gemini as well as Anthropic’s Claude — for some jobs, and as a backup when Claude cannot answer. Google do not use them to improve their products. You can also now sign in with Google or Apple, and tell Squish how you eat so the AI can respect it.',
         )}
       </p>
       <div className="row" style={{ gap: 10, marginTop: 12 }}>

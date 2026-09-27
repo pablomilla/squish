@@ -127,6 +127,7 @@ import { msg } from '../src/lib/i18n';
 import { isTranslatable, languagePack, speakerFor, setTranslator, warmAll } from './translate';
 import { cleanAbout } from '../src/lib/eating';
 import { isHeard } from '../src/lib/heard';
+import { BadToken, enterWith, isProvider, providerSetup, verifyIdToken } from './federated';
 
 const app = express();
 app.use(cors());
@@ -665,6 +666,96 @@ app.get('/api/account', requireDevice, async (req, res) => {
   }
 });
 
+type CodeResult = { kind: 'partner' | 'friend' | 'unknown' } | { kind: 'plus'; days: number };
+
+/**
+ * A code that came with a new account: from a link they followed, or typed
+ * into onboarding's "Got a code?". Tried as a partner's, then a friend's,
+ * then an invite to Plus, and said back so the app can tell them what it got
+ * them — or that it was not one of ours. Never allowed to fail the sign-up:
+ * a stale link is not the new account's problem.
+ */
+async function applyCode(accountId: string, ref: unknown, signedInBefore: string | null): Promise<CodeResult> {
+  const affiliate = await attribute(accountId, ref).catch((error: unknown) => {
+    logFailure('referral', error);
+    return null;
+  });
+  if (affiliate) return { kind: 'partner' };
+  const friend = await attributeFriend(accountId, ref, signedInBefore).catch((error: unknown) => {
+    logFailure('friend invite', error);
+    return null;
+  });
+  if (friend) return { kind: 'friend' };
+  if (typeof ref !== 'string') return { kind: 'unknown' };
+  const plus = await redeem(accountId, ref).catch((error: unknown) => {
+    logFailure('invite at sign-up', error);
+    return null;
+  });
+  return plus?.ok ? { kind: 'plus', days: plus.days } : { kind: 'unknown' };
+}
+
+/**
+ * Where Google's sign-in popup comes back to (components/SignInWith.tsx):
+ * the ID token is in the fragment, which never reaches a server, so this
+ * page hands it to the window that opened it — on this origin only — and
+ * closes. Nothing is logged, kept or even seen here.
+ */
+app.get('/api/auth/return', (_req, res) => {
+  res
+    .set('Cache-Control', 'no-store')
+    .set('Referrer-Policy', 'no-referrer')
+    .type('html')
+    .send(
+      `<!doctype html><meta charset="utf-8"><title>Squish</title><body style="font-family:system-ui;text-align:center;padding:40px">` +
+        `<p>Signing you in…</p><script>` +
+        `var p=new URLSearchParams(location.hash.slice(1)||location.search.slice(1)),a={};p.forEach(function(v,k){a[k]=v});` +
+        `if(window.opener){window.opener.postMessage({squishAuth:a},location.origin);window.close()}` +
+        `else{document.body.textContent='You can close this window and go back to Squish.'}` +
+        `</script>`,
+    );
+});
+
+/** Which of Google and Apple are set up here, and what the app needs to offer them. */
+app.get('/api/account/providers', (req, res) => {
+  res.set('Cache-Control', 'no-store').json(providerSetup(publicOrigin(req)));
+});
+
+/**
+ * Signed in with Google or Apple: the ID token they handed the browser,
+ * checked here (server/federated.ts), then this device signed in as that
+ * person — their account found, linked by a verified address, or made.
+ */
+app.post('/api/account/federated', requireDevice, meter('signin'), async (req, res) => {
+  const { provider, token, nonce, ref } = req.body ?? {};
+  if (!isProvider(provider) || typeof token !== 'string' || typeof nonce !== 'string') {
+    res.status(400).json({ error: 'missing', message: msg('That sign-in did not come through. Try again.') });
+    return;
+  }
+  let who;
+  try {
+    who = await verifyIdToken(provider, token, nonce);
+  } catch (error) {
+    if (!(error instanceof BadToken)) logFailure(`${provider} keys`, error);
+    else console.warn(`[squish] ${provider} sign-in refused: ${error.message}`);
+    res.status(401).json({ error: 'refused', message: msg('That sign-in could not be checked. Try again, or use your email.') });
+    return;
+  }
+  try {
+    const signedInBefore = req.device!.accountId ?? null;
+    const entered = await enterWith(req.device!.id, who);
+    if (!entered.ok) {
+      res.status(409).json({ error: 'no_email', message: msg('That account did not share an email address, which Squish needs. Try another way to sign in.') });
+      return;
+    }
+    await rememberReader(entered.account.id, readerFromRequest(req));
+    const code = entered.created && ref !== undefined ? await applyCode(entered.account.id, ref, signedInBefore) : undefined;
+    res.json({ ...whoami(entered.account), broughtDiary: entered.broughtDiary, created: entered.created, code });
+  } catch (error) {
+    logFailure(`${provider} sign-in`, error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not sign you in just now.') });
+  }
+});
+
 app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
   const { email, password, ref } = req.body ?? {};
   if (typeof email !== 'string' || typeof password !== 'string') {
@@ -682,30 +773,7 @@ app.post('/api/account', requireDevice, meter('signin'), async (req, res) => {
       // Whoever's link they arrived by, if anyone's: an affiliate's, or a
       // friend's invite. Never allowed to fail the sign-up: a stale link is not
       // the new account's problem.
-      // A typed code (onboarding's "Got a code?") travels the same way, and
-      // may also be an invite to Plus: tried last, and said back so the app
-      // can tell them what it got them — or that it was not one of ours.
-      let code: { kind: 'partner' | 'friend' | 'unknown' } | { kind: 'plus'; days: number } | undefined;
-      if (ref !== undefined) {
-        const affiliate = await attribute(made.account.id, ref).catch((error: unknown) => {
-          logFailure('referral', error);
-          return null;
-        });
-        const friend = affiliate
-          ? null
-          : await attributeFriend(made.account.id, ref, signedInBefore).catch((error: unknown) => {
-              logFailure('friend invite', error);
-              return null;
-            });
-        const plus =
-          affiliate || friend || typeof ref !== 'string'
-            ? null
-            : await redeem(made.account.id, ref).catch((error: unknown) => {
-                logFailure('invite at sign-up', error);
-                return null;
-              });
-        code = affiliate ? { kind: 'partner' } : friend ? { kind: 'friend' } : plus?.ok ? { kind: 'plus', days: plus.days } : { kind: 'unknown' };
-      }
+      const code = ref === undefined ? undefined : await applyCode(made.account.id, ref, signedInBefore);
       // Not awaited into the response, and never allowed to fail it: the
       // account exists either way, and there is a button to send it again.
       if (canSendMail()) {
