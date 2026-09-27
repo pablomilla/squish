@@ -170,7 +170,7 @@ function localLinks(html: string, language: Language): string {
  * doctor" in Canada — from the app's table of them (localWords), on the text
  * people read and nothing else: never an address or an attribute's code.
  */
-export function inTheirWords(html: string, region: Region): string {
+export function pageInTheirWords(html: string, region: Region): string {
   return translateHtml(html, (english) => {
     const local = localWords(english, region);
     return local === english ? undefined : local;
@@ -323,10 +323,10 @@ async function page(
       complete = words.complete;
     } else if (language === 'en') {
       // British English elsewhere, with the country's own words for the few that differ.
-      html = inTheirWords(html, region);
+      html = pageInTheirWords(html, region);
     }
     const wording = Object.fromEntries(
-      REGION_LIST.map((r) => [r.id, packFor(language, r.id) ?? (language === 'en' && inTheirWords(source, r.id) !== source ? `en-${r.id}` : null)]),
+      REGION_LIST.map((r) => [r.id, packFor(language, r.id) ?? (language === 'en' && pageInTheirWords(source, r.id) !== source ? `en-${r.id}` : null)]),
     ) as Record<Region, string | null>;
     const name = file.slice(SITE_DIR.length + 1).replace(/\.html$/, '');
     const pagePath = name === 'index' ? '' : name;

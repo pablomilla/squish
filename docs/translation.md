@@ -133,12 +133,14 @@ start-up.
   only those with prices. Another language is the same in every country.
 - Elsewhere, English pages are the British source with the country's own
   words for the few that differ, from the app's table (`localWords`, via
-  `inTheirWords` in `server/site.ts`): "your family doctor" on the support
+  `pageInTheirWords` in `server/site.ts`): "your family doctor" on the support
   page in Canada, where Britain says "your GP". The clock's guess only reloads
   a page for them where that page has such a word.
 - The email confirmation page follows the account's country the same way.
 - So does the privacy policy: American for the US, with a note at the top
-  that the British English version is the one that counts. The policy has no
+  that the British English version is the one that counts; elsewhere in
+  English, the country's own words from the same table, like the pages
+  (none of the policy's words differ today). The policy has no
   script, so it cannot read the clock; every link to it says the language
   and, in English, the country outright — the website's
   (`/privacy?lang=en&country=GB`, the clock's guess included), the app's and

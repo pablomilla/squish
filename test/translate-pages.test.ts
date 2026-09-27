@@ -6,11 +6,11 @@ import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { stringsOf, translateHtml } from '../server/htmlWords';
 import { acceptable, fillLanguage, forgetStored, setTranslator, wanted } from '../server/translate';
 import { acceptLanguage, readerFromRequest, readerOf, rememberReader, zoneFrom } from '../server/reader';
-import { compose, EMAILS, inTheirWords, resetWording, saveWording } from '../server/emails';
+import { compose, EMAILS, resetWording, saveWording, wordingInTheirWords } from '../server/emails';
 import { describeDevice, when } from '../server/notices';
 import { rewardWords } from '../server/friends';
-import { languageOfPath, registerSiteStrings, siteRouter } from '../server/site';
-import { privacyPage, registerPrivacyStrings } from '../server/privacy';
+import { languageOfPath, pageInTheirWords, registerSiteStrings, siteRouter } from '../server/site';
+import { privacyPage, registerPrivacyStrings, render, standalonePage } from '../server/privacy';
 import { speaker } from '../src/lib/i18n';
 import { AMERICAN_WORDS, standInAmerican } from './standInAmerican';
 
@@ -469,12 +469,12 @@ test('an email that mentions a GP says family doctor to a Canadian reader, and k
     body: 'Your account was signed into on {device}, {time}.\n\nIf you are unwell, talk to your GP.\n\n{app_link}',
     buttonLabel: 'Open Squish',
   };
-  assert.deepEqual(inTheirWords(wording, 'CA'), {
+  assert.deepEqual(wordingInTheirWords(wording, 'CA'), {
     subject: 'Ask your family doctor',
     body: 'Your account was signed into on {device}, {time}.\n\nIf you are unwell, talk to your family doctor.\n\n{app_link}',
     buttonLabel: 'Open Squish',
   });
-  assert.deepEqual(inTheirWords(wording, 'AU'), wording, 'Australians have GPs');
+  assert.deepEqual(wordingInTheirWords(wording, 'AU'), wording, 'Australians have GPs');
 
   if (!hasDatabase()) return;
   // Edited in the dashboard, as the owner would.
@@ -490,4 +490,13 @@ test('an email that mentions a GP says family doctor to a Canadian reader, and k
   } finally {
     await resetWording('signin', 'test');
   }
+});
+
+test('a policy that mentions a GP would say family doctor to Canadians; the real one has none yet', async () => {
+  const page = standalonePage(render('# Health\n\nIf you are unsure, talk to your **GP** before you start.'));
+  const canada = pageInTheirWords(page, 'CA');
+  assert.match(canada, /talk to your <strong>family doctor<\/strong> before you start/);
+  assert.equal(pageInTheirWords(page, 'AU'), page);
+  // The policy as it stands has no word that differs, so every English reader outside the US gets it as written.
+  for (const region of ['CA', 'AU', 'NZ', 'IE'] as const) assert.equal(await privacyPage('en', region), await privacyPage('en', 'GB'), region);
 });

@@ -478,7 +478,7 @@ export async function translateWording(definition: EmailDefinition, wording: Wor
  * (localWords): "talk to your GP" is "talk to your family doctor" in Canada.
  * Placeholders are untouched, since the table only holds words.
  */
-export function inTheirWords(wording: Wording, region: Region): Wording {
+export function wordingInTheirWords(wording: Wording, region: Region): Wording {
   return {
     subject: localWords(wording.subject, region),
     body: localWords(wording.body, region),
@@ -508,6 +508,6 @@ export async function compose(
   const pack = packFor(language, region);
   const translated = await translateWording(definition, wording, pack);
   // British English outside the US, in the country's own words where they differ: a family doctor in Canada.
-  const worded = language === 'en' && !pack && definition.translated ? inTheirWords(translated, region) : translated;
+  const worded = language === 'en' && !pack && definition.translated ? wordingInTheirWords(translated, region) : translated;
   return { to, ...renderEmail(definition, worded, typeof values === 'function' ? values(words) : values, origin, words) };
 }

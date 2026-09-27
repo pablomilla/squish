@@ -22,7 +22,7 @@ import { packFor, type Language } from '../src/lib/language';
 import type { Region } from '../src/lib/region';
 import { stringsOf, translateHtml } from './htmlWords';
 import { registerStrings } from './translate';
-import { htmlTag, pageWords } from './site';
+import { htmlTag, pageInTheirWords, pageWords } from './site';
 
 const SOURCE = resolve(process.cwd(), 'docs/privacy.md');
 
@@ -226,7 +226,8 @@ export function registerPrivacyStrings(): number {
 }
 
 /**
- * The rendered page, in a language — and in English, American for the US.
+ * The rendered page, in a language — and in English, American for the US and
+ * the country's own words elsewhere.
  *
  * The English is cached after the first read, because the file cannot change
  * without a deploy. Null where the file is missing, which the route turns
@@ -241,7 +242,9 @@ export async function privacyPage(language: Language = 'en', region: Region = 'G
     }
   }
   const pack = packFor(language, region);
-  if (!pack) return cached;
+  // British English outside the US, in the country's own words where the
+  // policy has any: a family doctor in Canada, where Britain has a GP.
+  if (!pack) return language === 'en' ? pageInTheirWords(cached, region) : cached;
   const page = withNote(cached, language === 'en' ? AMERICAN_NOTE : TRANSLATION_NOTE);
   const words = await pageWords(pack, page);
   return translateHtml(page, words.lookup).replace('<html lang="en-GB">', htmlTag(language, region));
