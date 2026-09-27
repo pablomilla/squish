@@ -13,6 +13,7 @@ import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } fro
 import { bill } from './billing';
 import { priceUsage } from './pricing';
 import { createMessage, streamMessage } from './providers';
+import { repeating } from './runaway';
 import { withModels, type Feature } from './routing';
 
 export { priceUsage, type TokenCounts } from './pricing';
@@ -477,8 +478,8 @@ export interface CallCost {
 export function readAnswer<T>(text: string, stop: string | null): T {
   const ending = () => JSON.stringify(text.slice(-60));
   if (stop === 'max_tokens') {
-    const run = /(.)\1{199,}/s.exec(text);
-    const looped = run ? `, stuck repeating ${JSON.stringify(run[1])} ${run[0].length} times` : '';
+    const stuck = repeating(text);
+    const looped = stuck ? `, stuck repeating ${JSON.stringify(stuck)}` : '';
     throw new Error(`The answer was cut off at ${text.length} characters${looped}; it ended ${ending()}`);
   }
   try {

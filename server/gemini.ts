@@ -20,6 +20,8 @@
  *                     products; check the current terms before relying on it
  *   GEMINI_BASE_URL   optional, for a proxy or the tests' stand-in
  */
+import { repeating } from './runaway';
+
 const BASE_URL = (): string => (process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com').replace(/\/+$/, '');
 const apiKey = (): string | undefined => process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
 
@@ -122,8 +124,9 @@ export function priceGemini(model: string, usage: GeminiResponse['usageMetadata'
 
 /**
  * Gemini now and then gets stuck inside a structured answer, writing the same
- * character over and over — on Nutrition5k, a number followed by fourteen
- * thousand zeros — until it runs out of room. Streamed, that is caught within
+ * thing over and over — on Nutrition5k, a number followed by fourteen
+ * thousand zeros, or by "123456789" again and again — until it runs out of
+ * room. Streamed, that is caught within
  * a second of starting, rather than after paying for the whole runaway.
  */
 export class GeminiRunaway extends Error {
@@ -134,8 +137,6 @@ export class GeminiRunaway extends Error {
   }
 }
 
-/** Longer than any honest run in an answer: indentation is a few spaces, a number a few digits. */
-const RUNAWAY = /(.)\1{199}$/s;
 
 /**
  * One call, streamed (streamGenerateContent, as server-sent events), gathered
@@ -182,10 +183,10 @@ export async function geminiGenerate(model: string, body: Record<string, unknown
       }
       if (typeof part.text === 'string' && !part.thought) {
         answer += part.text;
-        const stuck = RUNAWAY.exec(answer.slice(-200));
+        const stuck = repeating(answer);
         if (stuck) {
           stop.abort();
-          throw new GeminiRunaway(stuck[1]);
+          throw new GeminiRunaway(stuck);
         }
       }
     }
