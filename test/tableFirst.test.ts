@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
-import { analyseLabel, analysePhotoDetailed, briefSchema, MEAL_SCHEMA, TEXT_MODEL } from '../server/claude';
+import { analyseLabel, analysePhotoDetailed, briefSchema, MEAL_SCHEMA, planWeek, TEXT_MODEL } from '../server/claude';
+import { WEEKPLAN_SCHEMA, type WeekPlanRequest } from '../server/weekplan';
 import { useTableForTests, type TableFood } from '../server/foodTable';
 
 /**
@@ -13,10 +14,11 @@ import { useTableForTests, type TableFood } from '../server/foodTable';
  * question; a dish gets everything in the first answer, as before.
  */
 
-type Sent = { model: string; system: string; prompt: string; itemNutrientsRequired: string[] | null; fill: boolean };
+type Sent = { model: string; system: string; prompt: string; itemNutrientsRequired: string[] | null; fill: boolean; schema?: unknown };
 const sent: Sent[] = [];
 let firstAnswer: Record<string, unknown> = {};
 let fillAnswer: Record<string, unknown> = {};
+let weekAnswer: Record<string, unknown> = {};
 let failing = new Set<string>();
 let api: Server;
 
@@ -32,6 +34,7 @@ before(async () => {
     req.on('data', (chunk) => (raw += chunk));
     req.on('end', () => {
       const body = JSON.parse(raw) as {
+        stream?: boolean;
         model: string;
         system: string;
         messages: { content: string | { type: string; text?: string }[] }[];
@@ -43,7 +46,22 @@ before(async () => {
       sent.push({
         model: body.model, system: body.system, prompt, fill,
         itemNutrientsRequired: body.output_config?.format?.schema?.properties?.items?.items?.properties?.nutrients?.required ?? null,
+        schema: body.output_config?.format?.schema,
       });
+      if (body.stream) {
+        // A weekly plan is streamed: the same answer, as server-sent events.
+        const message = reply(body.model, weekAnswer);
+        const send = (event: string, data: unknown) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+        res.writeHead(200, { 'content-type': 'text/event-stream' });
+        send('message_start', { type: 'message_start', message: { ...message, content: [], stop_reason: null, usage: { input_tokens: 3000, output_tokens: 1 } } });
+        send('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
+        send('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: message.content[0].text } });
+        send('content_block_stop', { type: 'content_block_stop', index: 0 });
+        send('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 5000 } });
+        send('message_stop', { type: 'message_stop' });
+        res.end();
+        return;
+      }
       res.setHeader('content-type', 'application/json');
       if (failing.has(body.model)) {
         res.statusCode = 400;
@@ -144,4 +162,51 @@ test('if the text model cannot fill the figures, the main one does', async () =>
   assert.deepEqual(sent.map((s) => [s.model, s.fill]), [['claude-opus-5', false], [TEXT_MODEL, true], ['claude-opus-5', true]]);
   assert.equal(analysis.items[0].nutrients.calories, 153);
   failing = new Set();
+});
+
+test('a week’s ingredients: two figures each where the table can answer, one fill-in for the whole week', async () => {
+  useTableForTests(TABLE);
+  sent.length = 0;
+  const planNutrients = { calories: 400, protein: 25, carbs: 45, fat: 12, fibre: 6, satFat: 3, sugar: 8, freeSugar: 2, sodium: 700 };
+  const ingredient = (name: string, lookup: string, grams: number, nutrients: Record<string, unknown>) => ({ name, emoji: '🍽️', portion: '1', grams, liquid: false, ultraProcessed: false, aisle: 'other', lookup, nutrients });
+  weekAnswer = {
+    summary: 'A calm week.',
+    days: [1, 2].map((day) => ({
+      day,
+      meals: [
+        { slot: 'breakfast', title: 'Oats and banana', items: [ingredient('Banana', 'banana, raw', 120, { calories: 110, freeSugar: 0 }), ingredient('Oats', 'oats, rolled', 50, { calories: 190, freeSugar: 0 })] },
+        { slot: 'dinner', title: 'Ready lasagne', items: [ingredient('Lasagne ready meal', '', 400, planNutrients)] },
+      ],
+    })),
+  };
+  fillAnswer = { items: [0, 1].map(() => ({ nutrients: { ...full, calories: 187, protein: 6.5, carbs: 30, fat: 3.5 } })) };
+  const ask: WeekPlanRequest = {
+    startDate: '2026-09-28', days: 2, slots: ['breakfast', 'dinner'], snacks: false, calorieTarget: 1800, proteinTarget: 100,
+    fibreTarget: 30, goal: 'maintain', sex: 'female', likes: [], notes: [], preferences: '', cooking: 'normal',
+  };
+
+  const plan = await planWeek(ask);
+  const [week, fill] = sent;
+  assert.equal(sent.length, 2, 'the plan, and one fill-in for the whole week');
+  const nested = JSON.stringify(week.schema);
+  assert.ok(nested.includes('"required":[]'), 'ingredient nutrients optional in the plan');
+  assert.match(week.system, /give only calories and freeSugar/);
+  assert.equal(fill.model, TEXT_MODEL);
+  assert.equal((fill.prompt.match(/Oats/g) ?? []).length, 2, 'both days’ oats, in one question');
+  assert.doesNotMatch(fill.prompt, /Banana|Lasagne/);
+  assert.ok(!JSON.stringify(fill.schema).includes('micros'), 'no vitamins and minerals for a plan, as the plan itself has none');
+
+  const [breakfast, dinner] = plan.days[0].meals;
+  assert.equal(breakfast.items[0].nutrients.calories, 107);
+  assert.equal(breakfast.items[0].source?.name, 'Bananas, raw');
+  assert.equal(breakfast.items[1].nutrients.calories, 187);
+  assert.equal(breakfast.items[1].nutrients.protein, 6.5);
+  assert.equal(dinner.items[0].nutrients.calories, 400, 'a ready meal keeps the plan’s own figures');
+  assert.equal(plan.days[0].calories, 107 + 187 + 400);
+});
+
+test('the week’s schema, briefly: only the ingredients’ nutrients relaxed', () => {
+  const brief = JSON.stringify(briefSchema(WEEKPLAN_SCHEMA as unknown as Record<string, unknown>));
+  assert.equal((brief.match(/"required":\[\]/g) ?? []).length, 1);
+  assert.ok(JSON.stringify(WEEKPLAN_SCHEMA).includes('"required":["calories"'), 'the original untouched');
 });

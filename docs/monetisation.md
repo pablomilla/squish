@@ -166,6 +166,15 @@ the plan is failed and its question given back by the server itself — the
 app does not have to be open. Before this, a plan being made during a deploy
 sat at "working" for a quarter of an hour with its question spent, and was
 given back only if the planner happened to be opened at the right time.
+A plan's ingredients are checked against the food tables too, as meals are
+(see "How the AI part works" in the README): with a table loaded, an
+ingredient the table can answer carries only calories and free sugar in the
+plan, and the ones it cannot are filled in by one short question to the text
+model for the whole week. A plan is the biggest answer Squish asks for, and
+mostly plain ingredients, so this is where not asking for figures the table
+already has should save the most; each plan logs how many of its ingredients
+came from the table (`[squish] weekplan table first: …`).
+
 **Dashboard → AI usage → Weekly plans** lists the last day's plans: whose,
 how long each took, how many tries, whether it has been seen, and why any
 failed (never what was planned). A plan that restarts is made, and paid to

@@ -96,6 +96,7 @@ What a good plan here looks like:
 
 How to write it:
 - Ingredient names are plain shop names, the same name every time the same thing appears ("chicken breast", "basmati rice", "red pepper"), so the shopping list can add them up. One ingredient per item: a stir-fry is chicken breast, noodles, pepper and sauce, not "stir-fry".
+- lookup names the ingredient the way a food composition table would, in English, prepared as eaten ("rice, white, cooked", not "basmati rice"; "banana, raw"), so its nutrition per gram can come from the table. Leave it empty for a branded or ready-made product — a jar of sauce, a ready meal, a protein bar.
 - aisle is the part of a supermarket the ingredient is bought from. The app sorts the shopping list by it, whatever language the names are in.
 - portion is words only ("1 breast", "1 bowl", "2 slices"); grams carries the weight. Nutrition is per the portion stated.
 - Count fibre inside carbohydrate, satFat inside fat, freeSugar inside sugar. freeSugar is 0 for whole fruit, vegetables and plain milk or yoghurt.
@@ -180,9 +181,14 @@ export const WEEKPLAN_SCHEMA = {
                       liquid: { type: 'boolean' },
                       ultraProcessed: { type: 'boolean' },
                       aisle: { type: 'string', enum: AISLE_IDS },
+                      lookup: {
+                        type: 'string',
+                        description:
+                          "The ingredient as a food composition table lists it, in English, prepared as eaten: 'rice, white, cooked', 'chicken breast, meat only, roasted', 'semi-skimmed milk'. Empty for a branded or ready-made product.",
+                      },
                       nutrients: PLAN_NUTRIENTS,
                     },
-                    required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'aisle', 'nutrients'],
+                    required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'aisle', 'lookup', 'nutrients'],
                     additionalProperties: false,
                   },
                 },

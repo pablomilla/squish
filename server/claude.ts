@@ -431,16 +431,31 @@ export function priceUsage(model: string, counts: TokenCounts): number | null {
  */
 const TABLE_FIRST_RULE = `- nutrients: for an item with a lookup, give only calories and freeSugar — its other figures come from a food table, so leave them out. For an item without a lookup, give all of them.`;
 
-/** The meal schema with an item's nutrients all optional, so a table food can carry just two. */
+/**
+ * A schema with every food item's nutrients optional, so a table food can
+ * carry just two — wherever items sit in it: a meal's items, or a week's
+ * days of meals of items. An item is anything with both a `lookup` and
+ * `nutrients`.
+ */
 export function briefSchema(schema: Record<string, unknown>): Record<string, unknown> {
-  const copy = structuredClone(schema) as { properties: { items: { items: { properties: { nutrients: Record<string, unknown> } } } } };
-  const item = copy.properties.items.items.properties;
-  item.nutrients = {
-    ...item.nutrients,
-    required: [],
-    description: 'Only calories and freeSugar for an item with a lookup; everything for an item without one.',
+  const relax = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(relax);
+    if (!node || typeof node !== 'object') return node;
+    const out = Object.fromEntries(Object.entries(node).map(([key, value]) => [key, relax(value)])) as Record<string, unknown>;
+    const properties = out.properties as Record<string, Record<string, unknown>> | undefined;
+    if (properties?.lookup && properties.nutrients) {
+      out.properties = {
+        ...properties,
+        nutrients: {
+          ...properties.nutrients,
+          required: [],
+          description: 'Only calories and freeSugar for an item with a lookup; everything for an item without one.',
+        },
+      };
+    }
+    return out;
   };
-  return copy as unknown as Record<string, unknown>;
+  return relax(schema) as Record<string, unknown>;
 }
 
 /** Whether to ask table first: a table to answer from, and not a label (whose printed figures are the truth). */
@@ -464,16 +479,23 @@ Rules:
 - Count fibre inside total carbohydrate, and give sugar as total sugars.
 - freeSugar is the added-and-juice share of sugar, counted inside it: 0 for fruit, vegetables and plain milk.
 - satFat is the saturated share of fat, counted inside it, and is never larger than fat.
-- micros are per portion, estimated the way a food composition table would have them, with fortification where they live (below).`;
+- micros, where asked for, are per portion, estimated the way a food composition table would have them, with fortification where they live (below).`;
 
-const FILL_SCHEMA = {
-  type: 'object',
-  properties: {
-    items: { type: 'array', items: { type: 'object', properties: { nutrients: ITEM_NUTRIENTS }, required: ['nutrients'], additionalProperties: false } },
-  },
-  required: ['items'],
-  additionalProperties: false,
-} as const;
+/** The fill-in's answer: each food's figures, with vitamins and minerals or (for a week's plan) without. */
+function fillSchema(micros: boolean): Record<string, unknown> {
+  const { micros: _left, ...withoutMicros } = NUTRIENT_PROPS;
+  const nutrients = micros
+    ? ITEM_NUTRIENTS
+    : { ...ITEM_NUTRIENTS, properties: withoutMicros, required: ITEM_NUTRIENTS.required.filter((key) => key !== 'micros') };
+  return {
+    type: 'object',
+    properties: {
+      items: { type: 'array', items: { type: 'object', properties: { nutrients }, required: ['nutrients'], additionalProperties: false } },
+    },
+    required: ['items'],
+    additionalProperties: false,
+  };
+}
 
 interface CallCost {
   inputTokens: number;
@@ -487,7 +509,7 @@ interface CallCost {
  * text-only question to the text model (the main model if that fails), no
  * photo. Nothing to fill, nothing asked.
  */
-async function fillFigures(meal: ModelMeal): Promise<{ meal: ModelMeal; filled: number; cost: CallCost | null }> {
+async function fillFigures(meal: ModelMeal, micros = true): Promise<{ meal: ModelMeal; filled: number; cost: CallCost | null }> {
   const items = meal.items ?? [];
   const needing = items.map((item, index) => ({ item, index })).filter(({ item }) => missingFigures(item));
   if (!needing.length) return { meal, filled: 0, cost: null };
@@ -501,10 +523,11 @@ async function fillFigures(meal: ModelMeal): Promise<{ meal: ModelMeal; filled: 
     const startedAt = Date.now();
     const response = await getClient().messages.create({
       model,
-      max_tokens: 4000,
+      // A week can leave dozens of foods to fill; room for each, and for thinking.
+      max_tokens: Math.min(32000, 2000 + 300 * needing.length),
       system: `${FILL_SYSTEM}\n\n${regionNote('meal')}`,
       messages: [{ role: 'user', content: prompt }],
-      ...tuningFor(model, FILL_SCHEMA as unknown as Record<string, unknown>),
+      ...tuningFor(model, fillSchema(micros)),
     });
     if (response.stop_reason === 'refusal') throw new Error('The model declined to fill in the figures.');
     const text = response.content.filter((block): block is Anthropic.TextBlock => block.type === 'text').map((block) => block.text).join('');
@@ -937,14 +960,53 @@ export function toWeekPlan(parsed: ModelWeek, req: WeekPlanRequest): WeekPlan {
  * with the server-side fallback, so a refusal on one model is retried on
  * another rather than handed back as an empty week.
  */
+/**
+ * A week's ingredients checked against the food table in one pass, and — in
+ * table-first mode — the named ones it could not answer filled in with one
+ * question for the whole week, not one per meal.
+ */
+async function groundWeek(week: ModelWeek, brief: boolean): Promise<{ week: ModelWeek; fill: CallCost | null }> {
+  const places: { day: number; meal: number; item: number }[] = [];
+  const all: NonNullable<ModelMeal['items']> = [];
+  (week.days ?? []).forEach((day, d) =>
+    (day.meals ?? []).forEach((meal, m) =>
+      (meal.items ?? []).forEach((item, i) => {
+        places.push({ day: d, meal: m, item: i });
+        all.push(item);
+      }),
+    ),
+  );
+  if (!all.length) return { week, fill: null };
+
+  let items = (await groundMeal({ title: 'a week of planned meals', items: all })).items ?? all;
+  let fill: CallCost | null = null;
+  if (brief) {
+    // Without vitamins and minerals, as the rest of a plan is.
+    const done = await fillFigures({ title: 'a week of planned meals', items }, false);
+    items = done.meal.items ?? items;
+    fill = done.cost;
+    const fromTable = items.filter((item) => item.source).length;
+    console.info(`[squish] weekplan table first: ${fromTable} of ${items.length} ingredients from the table, ${done.filled} filled in`);
+  }
+
+  const days = structuredClone(week.days ?? []);
+  places.forEach(({ day, meal, item }, n) => {
+    days[day].meals![meal].items![item] = items[n];
+  });
+  return { week: { ...week, days }, fill };
+}
+
 export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Promise<WeekPlan> {
   const startedAt = Date.now();
   const haiku = WEEKPLAN_MODEL.startsWith('claude-haiku');
-  const format = { type: 'json_schema' as const, schema: WEEKPLAN_SCHEMA as unknown as Record<string, unknown> };
+  // Table first, as for meals: an ingredient the table can answer carries only calories and free sugar.
+  const brief = await tableFirst(WEEKPLAN_SYSTEM);
+  const schema = (brief ? briefSchema(WEEKPLAN_SCHEMA as unknown as Record<string, unknown>) : WEEKPLAN_SCHEMA) as Record<string, unknown>;
+  const format = { type: 'json_schema' as const, schema };
   const stream = getClient().beta.messages.stream({
     model: WEEKPLAN_MODEL,
     max_tokens: 32000,
-    system: `${WEEKPLAN_SYSTEM}\n\n${regionNote('plan')}`,
+    system: `${WEEKPLAN_SYSTEM}${brief ? `\n${TABLE_FIRST_RULE}` : ''}\n\n${regionNote('plan')}`,
     messages: [{ role: 'user', content: weekPlanPrompt(req) }],
     ...(haiku
       ? { output_config: { format } }
@@ -978,7 +1040,9 @@ export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Prom
     .filter((block): block is Anthropic.Beta.BetaTextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('');
-  const plan = toWeekPlan(JSON.parse(text) as ModelWeek, req);
+  const { week, fill } = await groundWeek(JSON.parse(text) as ModelWeek, brief);
+  if (fill) console.info(`[squish] weekplan fill-in: out=${fill.outputTokens} ${fill.costUsd === null ? 'unpriced' : `$${fill.costUsd.toFixed(4)}`}`);
+  const plan = toWeekPlan(week, req);
   if (!plan.days.length) throw new WeekPlanError(msg('The plan came back empty. Try again in a moment.'));
   return plan;
 }
