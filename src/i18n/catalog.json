@@ -1,5 +1,5 @@
 {
- "version": "1383mgn-60zc4c",
+ "version": "1wrwr6p-clh1b0",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -674,6 +674,13 @@
    ]
   },
   {
+   "id": "03njzjc0rp05lt",
+   "text": "{grams} g for each pound you weigh, to help build muscle.",
+   "where": [
+    "src/lib/planExplained.ts"
+   ]
+  },
+  {
    "id": "03oekdz-t1fury",
    "text": "Add {n} steps",
    "where": [
@@ -923,6 +930,13 @@
   {
    "id": "05fhfqh0lfdywu",
    "text": "Then adjusted {percent}% to match what your own logs and weigh-ins show.",
+   "where": [
+    "src/lib/planExplained.ts"
+   ]
+  },
+  {
+   "id": "05od6630ozwytx",
+   "text": "Maintenance plus what your pace needs. A pound of body fat is roughly {fat}, so {pace} a week is about {energy} a day.",
    "where": [
     "src/lib/planExplained.ts"
    ]
@@ -3087,6 +3101,13 @@
    ]
   },
   {
+   "id": "0jqcwcl0h4warf",
+   "text": "{grams} g for each pound you weigh.",
+   "where": [
+    "src/lib/planExplained.ts"
+   ]
+  },
+  {
    "id": "0jqer1b-idqw9j",
    "text": "Added sugar",
    "where": [
@@ -4120,6 +4141,13 @@
    "text": "{nutrient}: {value} of {target} grams",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "0p5cjt30-klh2u",
+   "text": "{grams} g for each pound you weigh — higher while losing, to help keep muscle.",
+   "where": [
+    "src/lib/planExplained.ts"
    ]
   },
   {
@@ -9393,6 +9421,13 @@
    "text": "Leave the squad",
    "where": [
     "src/components/squad/SquadSheet.tsx"
+   ]
+  },
+  {
+   "id": "1man24j-sei18g",
+   "text": "Maintenance minus what your pace needs. A pound of body fat is roughly {fat}, so {pace} a week is about {energy} a day.",
+   "where": [
+    "src/lib/planExplained.ts"
    ]
   },
   {

@@ -39,3 +39,19 @@ test('when the safety floor holds the target up, it says the pace will be slower
   const { summary } = explainPlan(small, computeTargets(small));
   assert.match(summary, /won't suggest less than 1,200 kcal a day, so that's slower than the 1 kg a week you picked/);
 });
+
+test('in pounds, protein and body fat are per pound too, not per kg', () => {
+  const imperial = { ...base, units: 'imperial' as const };
+  const how = explainPlan(imperial, computeTargets(imperial)).how;
+  assert.match(how[1].words, /A pound of body fat is roughly 3,500 kcal/);
+  assert.equal(how[2].words, '0.8 g for each pound you weigh — higher while losing, to help keep muscle.');
+  for (const goal of ['maintain', 'gain'] as const) {
+    const words = explainPlan({ ...imperial, goal }, computeTargets({ ...imperial, goal })).how.find((h) => h.label === 'Protein')!.words;
+    assert.match(words, /g for each pound you weigh/);
+    assert.doesNotMatch(words, /kg/);
+  }
+  // Metric stays per kg.
+  const metric = explainPlan(base, computeTargets(base)).how;
+  assert.equal(metric[2].words, '1.8 g for each kg you weigh — higher while losing, to help keep muscle.');
+  assert.match(metric[1].words, /A kilogram of body fat is roughly 7,700 kcal/);
+});

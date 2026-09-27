@@ -26,7 +26,7 @@
  * profile through.
  */
 
-import { msg, t, uiLanguage, uiLocale } from './i18n';
+import { hasTranslations, msg, t, uiLanguage, uiLocale } from './i18n';
 
 export type Region = 'GB' | 'IE' | 'US' | 'CA' | 'AU' | 'NZ';
 export type EnergyUnit = 'kcal' | 'kJ';
@@ -367,6 +367,9 @@ const matchCase = (original: string, word: string) =>
 export function localWords(text: string, region: Region = current.region): string {
   // Only English has British words to swap; a translation already uses its own.
   if (region === 'GB' || region === 'IE' || uiLanguage() !== 'en') return text;
+  // Nor, once it has loaded, does American English: its pack has chosen the
+  // words already, and swapping again would make its "chips" into "fries".
+  if (region === 'US' && hasTranslations()) return text;
   return text.replace(WORD_PATTERN, (found) => {
     const local = WORDS[found.toLowerCase().replace(/\s+/g, ' ')]?.[region];
     return local ? matchCase(found, local) : found;

@@ -187,7 +187,7 @@ export function rewardWords(
   );
 }
 
-const ENGLISH = speaker({ language: 'en', locale: 'en-GB', lookup: () => undefined });
+const ENGLISH = speaker({ language: 'en', locale: 'en-GB' });
 
 export interface Settled {
   friendDays: number;

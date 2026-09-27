@@ -8,8 +8,9 @@
  *
  * What it covers is everything the AI writes: meal and food names, the
  * coach's notes, the nutritionist's replies, weekly plans. The app's own
- * buttons and headings stay English until the interface itself is
- * translated. Kept free of the DOM, like lib/region.ts.
+ * words are translated too (lib/i18n.ts), from a "pack" per language — and
+ * one more for American English, since an app written in British English
+ * reads as foreign in Ohio. Kept free of the DOM, like lib/region.ts.
  */
 import type { Region } from './region';
 import { msg } from './i18n';
@@ -121,3 +122,28 @@ export function setCurrentLanguage(profile: { language?: Language }): void {
 }
 
 export const currentLanguage = (): LanguageInfo => LANGUAGES[current];
+
+// ---- Which words to load ------------------------------------------------------------------
+
+/**
+ * A set of the app's words kept translated on the server: every language but
+ * English, and American English. The source is British English, which is
+ * what Britain, Ireland, Australia and New Zealand read — and Canada, whose
+ * spelling ("colour", "fibre") is British too.
+ */
+export type Pack = Exclude<Language, 'en'> | 'en-US';
+
+export const AMERICAN: Pack = 'en-US';
+
+export const PACKS: Pack[] = [...(Object.keys(LANGUAGES) as Language[]).filter((l): l is Exclude<Language, 'en'> => l !== 'en'), AMERICAN];
+
+export const isPack = (value: unknown): value is Pack => value === AMERICAN || (isLanguage(value) && value !== 'en');
+
+/** The words for a language in a country: American English in the US, none for English elsewhere (it is the source). */
+export function packFor(language: Language, region: Region): Pack | null {
+  if (language !== 'en') return language;
+  return region === 'US' ? AMERICAN : null;
+}
+
+/** A pack's name, in English, for a prompt or a log. */
+export const packName = (pack: Pack): string => (pack === AMERICAN ? 'American English' : LANGUAGES[pack].name);

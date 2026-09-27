@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { LANGUAGES, LANGUAGE_LIST, detectLanguage, languageOf, speechLocale } from '../src/lib/language';
+import { AMERICAN, LANGUAGES, LANGUAGE_LIST, PACKS, detectLanguage, isPack, languageOf, packFor, speechLocale } from '../src/lib/language';
 import { placeFrom, regionNote } from '../server/region';
 import { toWeekPlan } from '../server/claude';
 import { WEEKPLAN_SCHEMA, cleanWeekRequest } from '../server/weekplan';
@@ -100,4 +100,15 @@ test('a weekly plan says where each ingredient is bought, and the list sorts by 
   const list = shoppingList(plans, '2026-10-01', '2026-10-03');
   assert.equal(list.find((l) => l.name === 'Pechuga de pollo')?.aisle, 'meat-fish', 'not guessed from a Spanish name');
   assert.equal(list.find((l) => l.name === 'Pechuga de pollo')?.amount, '450 g');
+});
+
+test('English in the US reads American; everywhere else English is the British source', () => {
+  assert.equal(packFor('en', 'US'), AMERICAN);
+  for (const region of ['GB', 'IE', 'CA', 'AU', 'NZ'] as const) assert.equal(packFor('en', region), null, `${region} spells the British way`);
+  assert.equal(packFor('es', 'US'), 'es', 'another language is itself wherever it is read');
+  assert.equal(packFor('fr', 'CA'), 'fr');
+  assert.ok(PACKS.includes(AMERICAN));
+  assert.equal(PACKS.length, Object.keys(LANGUAGES).length, 'every language but English, and American English');
+  assert.ok(isPack('en-US') && isPack('de'));
+  assert.ok(!isPack('en') && !isPack('en-GB') && !isPack('xx'));
 });

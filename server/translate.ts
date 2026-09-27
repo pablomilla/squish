@@ -27,7 +27,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type Anthropic from '@anthropic-ai/sdk';
 import { hasDatabase, query } from './db';
-import { LANGUAGES, isLanguage, type Language } from '../src/lib/language';
+import { AMERICAN, LANGUAGES, PACKS, isPack, packFor, packName, type Language, type Pack } from '../src/lib/language';
 import { localeFor, speaker, type PluralForms, type Speaker, type Translation } from '../src/lib/i18n';
 import { REGIONS, isRegion } from '../src/lib/region';
 
@@ -46,8 +46,8 @@ export interface Catalog {
 
 export const CATALOG: Catalog = JSON.parse(readFileSync(join(import.meta.dirname, '../src/i18n/catalog.json'), 'utf8'));
 
-/** Every language but English, which is the catalog itself. */
-export const TRANSLATED_LANGUAGES = (Object.keys(LANGUAGES) as Language[]).filter((l) => l !== 'en');
+/** Every language but English, which is the catalog itself, and American English. */
+export const TRANSLATED_LANGUAGES: Pack[] = PACKS;
 
 export const BATCH = 60;
 
@@ -123,10 +123,10 @@ const memory = new Map<string, Map<string, Translation>>();
  * What this process translates is added as it is stored; what another
  * instance translated shows up when the copy runs out.
  */
-const recent = new Map<Language, { at: number; found: Map<string, Translation> }>();
+const recent = new Map<Pack, { at: number; found: Map<string, Translation> }>();
 const FRESH_MS = 5 * 60_000;
 
-async function stored(language: Language): Promise<Map<string, Translation>> {
+async function stored(language: Pack): Promise<Map<string, Translation>> {
   if (!hasDatabase()) return memory.get(language) ?? new Map();
   const copy = recent.get(language);
   if (copy && Date.now() - copy.at < FRESH_MS) return copy.found;
@@ -139,7 +139,7 @@ async function stored(language: Language): Promise<Map<string, Translation>> {
 /** Forget the copies, for a test that changed the table underneath. */
 export const forgetStored = (): void => recent.clear();
 
-async function store(language: Language, found: Map<string, Translation>): Promise<void> {
+async function store(language: Pack, found: Map<string, Translation>): Promise<void> {
   if (!found.size) return;
   if (!hasDatabase()) {
     const known = memory.get(language) ?? new Map();
@@ -160,7 +160,7 @@ async function store(language: Language, found: Map<string, Translation>): Promi
 
 // ---- Translating -----------------------------------------------------------------------------
 
-export type Translator = (entries: CatalogEntry[], language: Language) => Promise<Record<string, unknown>>;
+export type Translator = (entries: CatalogEntry[], language: Pack) => Promise<Record<string, unknown>>;
 
 let translator: Translator | null = null;
 
@@ -173,7 +173,7 @@ export function setTranslator(next: Translator | null): void {
  * Translate these, a batch at a time, keeping the ones that pass the check.
  * Stops at the first failure: what is left waits for the next attempt.
  */
-async function translateEntries(language: Language, entries: CatalogEntry[]): Promise<Map<string, Translation>> {
+async function translateEntries(language: Pack, entries: CatalogEntry[]): Promise<Map<string, Translation>> {
   const added = new Map<string, Translation>();
   if (!translator) return added;
   for (let i = 0; i < entries.length; i += BATCH) {
@@ -195,13 +195,13 @@ async function translateEntries(language: Language, entries: CatalogEntry[]): Pr
   return added;
 }
 
-const running = new Map<Language, Promise<number>>();
+const running = new Map<Pack, Promise<number>>();
 
 /**
  * Translate whatever is missing for a language. One run per language at a
  * time: a second request while it runs waits for the same one.
  */
-export function fillLanguage(language: Language): Promise<number> {
+export function fillLanguage(language: Pack): Promise<number> {
   const current = running.get(language);
   if (current) return current;
   const run = (async () => {
@@ -220,7 +220,7 @@ export function fillLanguage(language: Language): Promise<number> {
  * Waits at most `waitMs` for Claude; whatever is not back by then is left
  * out, and shows in English.
  */
-export async function translationsFor(language: Language, entries: CatalogEntry[], waitMs = 20_000): Promise<Map<string, Translation>> {
+export async function translationsFor(language: Pack, entries: CatalogEntry[], waitMs = 20_000): Promise<Map<string, Translation>> {
   const have = await stored(language);
   const out = new Map<string, Translation>();
   const missing: CatalogEntry[] = [];
@@ -243,18 +243,20 @@ export async function translationsFor(language: Language, entries: CatalogEntry[
 /**
  * `t` and `plural` in somebody's language, on the server: for an email, or a
  * page of the website. Uses what is translated already and never waits.
- * The region makes the numbers and dates local ("es-US").
+ * The region makes the numbers and dates local ("es-US"), and English in
+ * the US American.
  */
 export async function speakerFor(language: Language, region?: string): Promise<Speaker> {
-  const regionLocale = REGIONS[isRegion(region) ? region : 'GB'].locale;
-  const locale = localeFor(language, regionLocale);
-  if (language === 'en') return speaker({ language, locale, lookup: () => undefined });
-  const have = await stored(language).catch(() => new Map<string, Translation>());
+  const where = isRegion(region) ? region : 'GB';
+  const locale = localeFor(language, REGIONS[where].locale);
+  const pack = packFor(language, where);
+  if (!pack) return speaker({ language, locale });
+  const have = await stored(pack).catch(() => new Map<string, Translation>());
   return speaker({ language, locale, lookup: (id) => have.get(id) });
 }
 
 export interface LanguagePack {
-  language: Language;
+  language: Pack;
   version: string;
   /** False while strings are still missing; the app keeps asking. */
   complete: boolean;
@@ -262,7 +264,7 @@ export interface LanguagePack {
 }
 
 /** What the app gets for a language: what is ready now, and a nudge to translate the rest. */
-export async function languagePack(language: Language): Promise<LanguagePack> {
+export async function languagePack(language: Pack): Promise<LanguagePack> {
   const have = await stored(language);
   const messages: Record<string, Translation> = {};
   for (const entry of CATALOG.entries) {
@@ -274,14 +276,14 @@ export async function languagePack(language: Language): Promise<LanguagePack> {
   return { language, version: CATALOG.version, complete, messages };
 }
 
-export const isTranslatable = (value: unknown): value is Language => isLanguage(value) && value !== 'en';
+export const isTranslatable = (value: unknown): value is Pack => isPack(value);
 
 /** Every language in turn, after a deploy. Never throws; a failure waits for the next request. */
 export async function warmAll(): Promise<void> {
   for (const language of TRANSLATED_LANGUAGES) {
     try {
       const added = await fillLanguage(language);
-      if (added) console.log(`    Translated ${added} interface strings into ${LANGUAGES[language].name}.`);
+      if (added) console.log(`    Translated ${added} interface strings into ${packName(language)}.`);
     } catch {
       /* tried again when somebody asks */
     }
@@ -303,8 +305,20 @@ How to translate:
 
 For counted strings you get the English "one" and "other" forms and must give every plural form the target language uses, in the categories listed. Each form may use {n} for the number.`;
 
-export function translateRequest(entries: CatalogEntry[], language: Language, model: string): Anthropic.MessageCreateParamsNonStreaming {
-  const lang = LANGUAGES[language];
+/**
+ * American English is not a translation: most strings come back exactly as
+ * they went, and only what an American would notice changes. The units and
+ * the salt-or-sodium label are left alone because the app converts those
+ * itself, by country, and would convert them twice.
+ */
+export const AMERICAN_RULES = `This is not a translation into another language. Rewrite each British English string as a native American app would say it, changing only what an American reader would notice:
+- Spelling: color, favorite, fiber, center, gray, program, yogurt, organize/realize (-ize), analyze, traveled, cozy, mom.
+- Words: cookie (biscuit), chips (crisps), fries (chips), zucchini (courgette), eggplant (aubergine), cilantro (coriander), ground beef (mince), shrimp (prawns), candy (sweets), soda (fizzy drink), oatmeal (porridge), canned (tinned), whole wheat (wholemeal), two weeks (fortnight), math (maths), vacation (holiday).
+- Phrasing that reads as British: "at the weekend" → "on the weekend", "have a go" → "give it a try", "in hospital" → "in the hospital".
+- Leave everything else exactly as written. If nothing needs to change, return the string unchanged — most will be.
+- Never change units (kcal, kJ, g, mg, kg, lb, st), numbers, "salt" or "sodium", or dates: the app converts those itself.`;
+
+export function translateRequest(entries: CatalogEntry[], language: Pack, model: string): Anthropic.MessageCreateParamsNonStreaming {
   const categories = pluralCategories(language);
   const strings = entries.filter((e) => e.text !== undefined).map((e) => ({ id: e.id, english: e.text, where: e.where.join(', ') }));
   const plurals = entries.filter((e) => e.text === undefined).map((e) => ({ id: e.id, one: e.one, other: e.other, where: e.where.join(', ') }));
@@ -345,7 +359,10 @@ export function translateRequest(entries: CatalogEntry[], language: Language, mo
     messages: [
       {
         role: 'user',
-        content: `Translate into ${lang.name} (${lang.native}). Plural categories for ${lang.name}: ${categories.join(', ')}.\n\n${JSON.stringify({ strings, plurals })}`,
+        content:
+          language === AMERICAN
+            ? `${AMERICAN_RULES}\n\nPlural categories: ${categories.join(', ')}.\n\n${JSON.stringify({ strings, plurals })}`
+            : `Translate into ${LANGUAGES[language as Language].name} (${LANGUAGES[language as Language].native}). Plural categories for ${LANGUAGES[language as Language].name}: ${categories.join(', ')}.\n\n${JSON.stringify({ strings, plurals })}`,
       },
     ],
   };

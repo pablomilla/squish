@@ -28,7 +28,7 @@
  */
 import { hasDatabase, migrate, query } from './db';
 import { idOf, type Speaker } from '../src/lib/i18n';
-import type { Language } from '../src/lib/language';
+import { packFor, type Pack } from '../src/lib/language';
 import { registerStrings, speakerFor, translationsFor, type CatalogEntry } from './translate';
 import { DEFAULT_READER, type Reader } from './reader';
 
@@ -451,12 +451,13 @@ export function wordingStrings(definition: EmailDefinition, wording: Wording): C
 registerStrings(Object.values(EMAILS).filter((d) => d.translated).flatMap((d) => wordingStrings(d, defaultWording(d))));
 
 /**
- * A wording in another language. Any line without a translation that passes
- * the check stays English, so the worst case is an email in two languages —
- * never one missing its link.
+ * A wording in another language, or in American English (`pack`; null is
+ * the British source). Any line without a translation that passes the check
+ * stays as written, so the worst case is an email in two languages — never
+ * one missing its link.
  */
-export async function translateWording(definition: EmailDefinition, wording: Wording, language: Language): Promise<Wording> {
-  if (language === 'en' || !definition.translated) return wording;
+export async function translateWording(definition: EmailDefinition, wording: Wording, language: Pack | null): Promise<Wording> {
+  if (!language || !definition.translated) return wording;
   const found = await translationsFor(language, wordingStrings(definition, wording));
   const line = (text: string): string => {
     const trimmed = text.trim();
@@ -485,9 +486,11 @@ export async function compose(
 ): Promise<{ to: string; subject: string; text: string; html: string }> {
   const { renderEmail } = await import('./emailRender');
   const definition = EMAILS[key];
+  // The business's emails are British English wherever they go.
   const language = definition.translated ? reader.language : 'en';
-  const words = await speakerFor(language, reader.region);
+  const region = definition.translated ? reader.region : 'GB';
+  const words = await speakerFor(language, region);
   const { wording } = await wordingFor(key);
-  const translated = await translateWording(definition, wording, language);
+  const translated = await translateWording(definition, wording, packFor(language, region));
   return { to, ...renderEmail(definition, translated, typeof values === 'function' ? values(words) : values, origin, words) };
 }

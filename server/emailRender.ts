@@ -51,7 +51,7 @@ const fill = (text: string, values: Record<string, string>): string =>
   text.replace(PLACEHOLDER, (whole, name: string) => values[name] ?? whole);
 
 /** For the dashboard's previews and anything else in English. */
-const ENGLISH = speaker({ language: 'en', locale: 'en-GB', lookup: () => undefined });
+const ENGLISH = speaker({ language: 'en', locale: 'en-GB' });
 
 /**
  * `words` is the reader's language: the wording arrives translated already,
@@ -115,7 +115,7 @@ export function renderEmail(
   const subject = fill(wording.subject, values);
 
   const html = `<!doctype html>
-<html lang="${escape(english ? 'en-GB' : words.language === 'zh' ? 'zh-Hans' : words.language)}" dir="${RTL_LANGUAGES.has(words.language) ? 'rtl' : 'ltr'}">
+<html lang="${escape(english ? words.locale : words.language === 'zh' ? 'zh-Hans' : words.language)}" dir="${RTL_LANGUAGES.has(words.language) ? 'rtl' : 'ltr'}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

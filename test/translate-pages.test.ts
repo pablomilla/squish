@@ -342,3 +342,25 @@ test('the page carries every country’s prices for the time zone guess, and say
   const notFound = await (await fetch(`${base}/nope`)).text();
   assert.doesNotMatch(notFound, /prices-data|prices\.js/, 'no prices, no script');
 });
+
+/* ---------------- American English ---------------- */
+
+test('an English email to somebody in the US is in American English; in Canada it stays British', async () => {
+  setTranslator(async (entries, pack) =>
+    Object.fromEntries(entries.map((e) => [e.id, pack === 'en-US' && e.text ? e.text.replace(/Confirm/g, 'Confirm (US)') : e.text ?? { one: e.one, other: e.other }])),
+  );
+  try {
+    const link = `${ORIGIN}/verify?token=x`;
+    const american = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'US', zone: 'America/Chicago' });
+    assert.equal(american.subject, 'Confirm (US) your email for Squish');
+    assert.match(american.html, /<html lang="en-US"/);
+    const canadian = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'CA', zone: 'America/Toronto' });
+    assert.equal(canadian.subject, 'Confirm your email for Squish');
+    assert.match(canadian.html, /<html lang="en-CA"/);
+    // The business's emails are British wherever they go.
+    const partner = await compose('partner-signin', 'p@example.com', { name: 'Sam', link, expiry: '30 minutes' }, ORIGIN, { language: 'en', region: 'US', zone: 'America/Chicago' });
+    assert.match(partner.html, /<html lang="en-GB"/);
+  } finally {
+    setTranslator(korean);
+  }
+});

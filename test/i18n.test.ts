@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { afterEach, test } from 'node:test';
-import { fill, idOf, localeFor, plural, pluralKey, pseudo, setLanguage, t } from '../src/lib/i18n';
+import { fill, hasTranslations, idOf, localeFor, plural, pluralKey, pseudo, setLanguage, t } from '../src/lib/i18n';
+import { localWords, setCurrentRegion } from '../src/lib/region';
 import { CATALOG_PATH, VERSION_PATH, extract, versionModule } from '../scripts/i18n-extract';
 
 /**
@@ -65,4 +66,27 @@ test('the catalog is up to date with the source, and every string is whole', () 
   const committed = JSON.parse(readFileSync(CATALOG_PATH, 'utf8'));
   assert.equal(committed.version, catalog.version, 'run `npm run i18n` and commit src/i18n');
   assert.equal(readFileSync(VERSION_PATH, 'utf8'), versionModule(catalog.version));
+});
+
+test('English with a pack is American English; without one it is the British source', () => {
+  assert.equal(t('Fibre friend'), 'Fibre friend');
+  assert.equal(hasTranslations(), false);
+  setLanguage({ language: 'en', locale: 'en-US', messages: { [idOf('Fibre friend')]: 'Fiber friend', [idOf(pluralKey({ one: '{n} biscuit', other: '{n} biscuits' }))]: { one: '{n} cookie', other: '{n} cookies' } } });
+  assert.equal(t('Fibre friend'), 'Fiber friend');
+  assert.equal(plural(3, { one: '{n} biscuit', other: '{n} biscuits' }), '3 cookies');
+  assert.equal(t('Log a meal'), 'Log a meal', 'anything not in the pack is the English as written');
+});
+
+test('in the US, food words are swapped until the American pack arrives, then left to it', () => {
+  setCurrentRegion({ region: 'US' });
+  try {
+    assert.equal(localWords('crisps and chips'), 'chips and fries', 'no pack yet: the swaps stand in');
+    setLanguage({ language: 'en', locale: 'en-US', messages: { [idOf('a bag of crisps')]: 'a bag of chips' } });
+    // Swapping again would turn the pack's American "chips" into "fries".
+    assert.equal(localWords(t('a bag of crisps')), 'a bag of chips');
+    setCurrentRegion({ region: 'CA' });
+    assert.equal(localWords('crisps and chips'), 'chips and fries', 'Canada has no pack, so it keeps its swaps');
+  } finally {
+    setCurrentRegion({ region: 'GB' });
+  }
 });

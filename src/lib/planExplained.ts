@@ -16,6 +16,9 @@ import type { Profile, Targets } from '../types';
 
 /** A kilogram of body fat, near enough, in kcal. The same figure the targets use. */
 const KCAL_PER_KG = 7700;
+const LB_PER_KG = 2.20462;
+/** A pound of it: the 3,500 kcal everybody who counts in pounds has heard of. */
+const KCAL_PER_LB = Math.round(KCAL_PER_KG / LB_PER_KG / 100) * 100;
 
 /** In kcal or kJ, whichever they count in. */
 const kcal = (n: number) => formatEnergy(n);
@@ -56,6 +59,9 @@ export function explainPlan(profile: Profile, targets: Targets): PlanExplained {
 
   const tuned = profile.burnFactor && Math.abs(profile.burnFactor - 1) >= 0.005 ? Math.round((profile.burnFactor - 1) * 100) : 0;
   const perKg = profile.goal === 'lose' ? 1.8 : profile.goal === 'gain' ? 1.9 : 1.6;
+  // In pounds for somebody who weighs themselves in pounds (or stones): 0.8 g, not 1.8 g "for each kg".
+  const imperial = profile.units === 'imperial';
+  const perLb = Math.round((perKg / LB_PER_KG) * 10) / 10;
 
   const how = [
     {
@@ -71,11 +77,15 @@ export function explainPlan(profile: Profile, targets: Targets): PlanExplained {
         profile.goal === 'maintain'
           ? t('The same as maintenance, because your goal is to stay steady.')
           : t(
-              profile.goal === 'lose'
-                ? 'Maintenance minus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.'
-                : 'Maintenance plus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.',
+              imperial
+                ? profile.goal === 'lose'
+                  ? 'Maintenance minus what your pace needs. A pound of body fat is roughly {fat}, so {pace} a week is about {energy} a day.'
+                  : 'Maintenance plus what your pace needs. A pound of body fat is roughly {fat}, so {pace} a week is about {energy} a day.'
+                : profile.goal === 'lose'
+                  ? 'Maintenance minus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.'
+                  : 'Maintenance plus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.',
               {
-                fat: aboutEnergy(KCAL_PER_KG),
+                fat: aboutEnergy(imperial ? KCAL_PER_LB : KCAL_PER_KG),
                 pace: formatPace(profile.pace, profile.units),
                 energy: kcal(Math.round((Math.min(profile.pace, 1) * KCAL_PER_KG) / 7)),
               },
@@ -83,8 +93,13 @@ export function explainPlan(profile: Profile, targets: Targets): PlanExplained {
     },
     {
       label: t('Protein'),
-      words:
-        profile.goal === 'lose'
+      words: imperial
+        ? profile.goal === 'lose'
+          ? t('{grams} g for each pound you weigh — higher while losing, to help keep muscle.', { grams: perLb })
+          : profile.goal === 'gain'
+            ? t('{grams} g for each pound you weigh, to help build muscle.', { grams: perLb })
+            : t('{grams} g for each pound you weigh.', { grams: perLb })
+        : profile.goal === 'lose'
           ? t('{grams} g for each kg you weigh — higher while losing, to help keep muscle.', { grams: perKg })
           : profile.goal === 'gain'
             ? t('{grams} g for each kg you weigh, to help build muscle.', { grams: perKg })

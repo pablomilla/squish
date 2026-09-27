@@ -13,7 +13,7 @@ import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } fro
 import { bill } from './billing';
 import { regionNote } from './region';
 import { readTranslation, translateRequest, type CatalogEntry } from './translate';
-import type { Language } from '../src/lib/language';
+import type { Pack } from '../src/lib/language';
 import { isAisle } from '../src/lib/shopping';
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
@@ -750,7 +750,7 @@ export async function planWeek(req: WeekPlanRequest): Promise<WeekPlan> {
  * interface is translated once for everyone, so its cost is the business's,
  * and is logged for the record.
  */
-export async function translateBatch(entries: CatalogEntry[], language: Language): Promise<Record<string, unknown>> {
+export async function translateBatch(entries: CatalogEntry[], language: Pack): Promise<Record<string, unknown>> {
   const response = await getClient().messages.create(translateRequest(entries, language, MODEL));
   if (response.stop_reason === 'refusal' || response.stop_reason === 'max_tokens') {
     throw new Error(`translation stopped: ${response.stop_reason}`);

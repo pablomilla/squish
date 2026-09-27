@@ -42,7 +42,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { idOf, localeFor, RTL_LANGUAGES } from '../src/lib/i18n';
-import { LANGUAGE_LIST, isLanguage, type Language } from '../src/lib/language';
+import { LANGUAGE_LIST, isLanguage, type Language, type Pack } from '../src/lib/language';
 import { REGION_LIST, REGIONS, TIME_ZONES, detectRegion, isRegion, type Region } from '../src/lib/region';
 import { stringsOf, translateHtml, type Lookup } from './htmlWords';
 import { fillLanguage, registerStrings, speakerFor, translationsFor } from './translate';
@@ -112,7 +112,7 @@ const APP_PATHS = ['/reset', '/partners'];
  * Claude: what is missing shows in English this time, and the language is
  * set translating in the background for the next visitor.
  */
-export async function pageWords(language: Language, html: string): Promise<{ lookup: Lookup; complete: boolean }> {
+export async function pageWords(language: Pack, html: string): Promise<{ lookup: Lookup; complete: boolean }> {
   const entries = stringsOf(html).map((text) => ({ id: idOf(text), text, where: [] }));
   const found = await translationsFor(language, entries, 0).catch(() => new Map());
   const complete = found.size === entries.length;

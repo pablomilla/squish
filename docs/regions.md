@@ -15,7 +15,8 @@ the packet is not. Everything that differs lives in `src/lib/region.ts`.
 | Imperial body weight | stones | stones | pounds | pounds | pounds | pounds |
 | Starts on | metric | metric | imperial | metric | metric | metric |
 | Vitamins and minerals | UK RNIs | UK RNIs | US/Canada DRIs | US/Canada DRIs | ANZ NRVs | ANZ NRVs |
-| Spelling | fibre | fibre | **fiber** | fibre | fibre | fibre |
+| Spelling | British | British | **American** | British | British | British |
+| Plan card, per | kg or lb | kg or lb | kg or lb | kg or lb | kg or lb | kg or lb |
 
 Food names follow the country: chips are fries in North America and hot chips
 in Australia and New Zealand; crisps are chips everywhere but here. The
@@ -94,6 +95,16 @@ Around it:
 The app itself is translated too — see docs/translation.md. Choosing a
 language on the first screen or on You → About you switches both the app and
 its AI, and restarts Squish in it.
+
+English in the US is American English: every screen, badge ("Fiber friend")
+and email, from an American word set made the same way as a translation.
+Everywhere else English is the British source — Canada included, whose
+spelling ("colour", "fibre") is British; its food words (fries, cookies, pop)
+still follow the country. Changing country into or out of the US, in English,
+restarts Squish so the spelling changes with it; in setup, at the end.
+
+The "Your plan" card explains protein and body fat per pound for anybody who
+weighs themselves in pounds or stones, and per kilogram otherwise.
 
 ## Not yet
 

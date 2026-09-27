@@ -122,3 +122,13 @@ test('with no translator there is nothing to do, and English is what shows', asy
   assert.equal(pack.complete, CATALOG.entries.length === 0);
   assert.equal(pack.version, CATALOG.version);
 });
+
+test('American English is asked for as a light rewrite, not a translation', () => {
+  const request = translateRequest([text('Your favourite biscuits'), counted], 'en-US', 'claude-opus-5');
+  const content = request.messages[0].content as string;
+  assert.match(content, /not a translation into another language/);
+  assert.match(content, /color, favorite, fiber/);
+  assert.match(content, /Never change units/);
+  assert.match(content, /Plural categories: one, other/);
+  assert.doesNotMatch(content, /Translate into/);
+});

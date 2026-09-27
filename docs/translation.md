@@ -39,6 +39,22 @@ emails and the website come from the same store, the same way.
 Arabic and Urdu set the page right to left; a few left/right positions are
 mirrored at the end of `global.css`.
 
+## American English
+
+The source is British English, which is what Britain, Ireland, Australia, New
+Zealand and Canada read. English in the US gets its own word set, `en-US`,
+made and served exactly like a language (`/api/i18n/en-US`) — only the
+request is different: not a translation but a light rewrite
+(`AMERICAN_RULES` in `server/translate.ts`), changing spelling, food words
+and British phrasing and leaving everything else as it is. Units and
+salt/sodium are left alone: the app converts those itself, by country.
+
+Which set loads is `packFor(language, region)` in `src/lib/language.ts`:
+a language's own everywhere; for English, American in the US and none
+elsewhere. The emails use the same rule. Until the American set has loaded,
+`localWords` keeps swapping the food words in the US as before; once it has,
+it steps aside, or the American "chips" would become "fries".
+
 ## Emails
 
 Each account keeps the language, country and time zone its app last sent
@@ -102,7 +118,8 @@ start-up.
 
 About 1,600 interface strings, and about 250 more for the emails, the website
 and the privacy policy — a little over 30,000 words in all. Translating all of it into
-one language is a few dollars of Claude time, once; after that only changed
+one language is a few dollars of Claude time, once (American English about the
+same, since every string goes and comes back); after that only changed
 strings are sent. The cost is logged by the server, not charged to anybody's
 allowance.
 

@@ -7,7 +7,7 @@ import InviteCard from '../components/InviteCard';
 import SquadCard from '../components/squad/SquadCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, LanguageField, NumberField, RegionField, WeightField } from '../components/fields';
-import { LANGUAGES, languageOf } from '../lib/language';
+import { LANGUAGES, languageOf, packFor } from '../lib/language';
 import { REGIONS, energyUnitOf, energyValue, formatEnergy, regionOf, toKcal, type EnergyUnit } from '../lib/region';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, imperialLabel, retuneForUnits, saltGrams, saltLabel, saltShown, showsSodium, sodiumFromShown, sodiumMg, weightUnitLabel } from '../lib/units';
 import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
@@ -622,7 +622,14 @@ export default function You({ go }: { go: (route: Route) => void }) {
               />
             </div>
           )}
-          <RegionField value={regionOf(profile)} onChange={(region) => setProfile({ region, energy: undefined })} />
+          <RegionField
+            value={regionOf(profile)}
+            onChange={(region) => {
+              setProfile({ region, energy: undefined });
+              // Into or out of the US, in English, changes the app's spelling — loaded at start, like a language.
+              if (packFor(languageOf(profile), region) !== packFor(languageOf(profile), regionOf(profile))) location.reload();
+            }}
+          />
           <LanguageField
             value={languageOf(profile)}
             onChange={(language) => {

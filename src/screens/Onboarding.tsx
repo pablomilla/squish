@@ -13,8 +13,9 @@ import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
 import type { Activity, Goal, Mood, Profile, Sex } from '../types';
 import { PACE_CHOICES, formatPace, formatWeight, imperialLabel, paceIn, paceToKg, retuneForUnits } from '../lib/units';
-import { REGIONS, browserRegion, currentEnergyUnit, energyValue, type Region } from '../lib/region';
-import { browserLanguage, languageOf, type Language } from '../lib/language';
+import { REGIONS, browserRegion, currentEnergyUnit, energyValue, regionOf, type Region } from '../lib/region';
+import { browserLanguage, languageOf, packFor, type Language } from '../lib/language';
+import { startedWith } from '../boot/language';
 import { aroundWhen, goalProjection, type GoalProjection } from '../lib/goalDate';
 import type { Units } from '../lib/units';
 import './onboarding.css';
@@ -381,7 +382,15 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
             </button>
           )}
           {step === 'plan' ? (
-            <button type="button" className="btn grow" onClick={() => completeOnboarding(draft)}>
+            <button
+              type="button"
+              className="btn grow"
+              onClick={() => {
+                completeOnboarding(draft);
+                // English, into or out of the US: American or British spelling is loaded at start.
+                if (packFor(languageOf(draft), regionOf(draft)) !== startedWith()) location.reload();
+              }}
+            >
               {t("Let's go")}
             </button>
           ) : (

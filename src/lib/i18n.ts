@@ -29,6 +29,7 @@ export const PSEUDO = 'qps';
 let language = 'en';
 let locale = 'en-GB';
 let messages: Record<string, Translation> = {};
+let translated = false;
 
 /**
  * A short, stable name for a string: two 32-bit FNV-1a hashes, so a
@@ -54,10 +55,15 @@ export function setLanguage(next: { language: string; locale: string; messages?:
   language = next.language;
   locale = next.locale;
   messages = next.messages ?? {};
-  current = speaker({ language, locale, lookup: (id) => messages[id] });
+  // British English is the source, so it looks nothing up; anything else — American English included — does.
+  const loaded = messages;
+  translated = Object.keys(loaded).length > 0;
+  current = speaker({ language, locale, lookup: language === 'en' && !translated ? undefined : (id) => loaded[id] });
 }
 
 export const uiLanguage = () => language;
+/** Whether any translations are loaded: false for British English, and for any other before its words arrive. */
+export const hasTranslations = () => translated;
 /** For Intl: their language, in their country where that is a real locale ("es-US"). */
 export const uiLocale = () => locale;
 
@@ -105,15 +111,16 @@ export interface Speaker {
  * `t` and `plural` for one language. The app has one, set at start-up; the
  * server makes one for each email it writes, in the reader's language.
  */
-export function speaker(next: { language: string; locale: string; lookup: (id: string) => Translation | undefined }): Speaker {
+export function speaker(next: { language: string; locale: string; lookup?: (id: string) => Translation | undefined }): Speaker {
   const { language: lang, locale: loc, lookup } = next;
   const fillIn = (text: string, vars?: Vars) => fillFor(text, vars, loc);
-  const find = (key: string) => lookup(idOf(key));
+  // English with no lookup is the source itself; English with one is a variety of it (American).
+  const find = (key: string) => (lookup ? lookup(idOf(key)) : undefined);
   return {
     language: lang,
     locale: loc,
     t(english, vars) {
-      if (lang === 'en' || !english) return fillIn(english, vars);
+      if (!english) return english;
       if (lang === PSEUDO) return fillIn(pseudo(english), vars);
       const found = find(english);
       return fillIn(typeof found === 'string' ? found : english, vars);
@@ -121,7 +128,6 @@ export function speaker(next: { language: string; locale: string; lookup: (id: s
     plural(n, forms, vars) {
       const all = { n, ...vars };
       const english = n === 1 ? forms.one : forms.other;
-      if (lang === 'en') return fillIn(english, all);
       if (lang === PSEUDO) return fillIn(pseudo(english), all);
       const found = find(pluralKey(forms));
       if (!found || typeof found === 'string') return fillIn(english, all);
@@ -136,7 +142,7 @@ export function speaker(next: { language: string; locale: string; lookup: (id: s
   };
 }
 
-let current: Speaker = speaker({ language, locale, lookup: () => undefined });
+let current: Speaker = speaker({ language, locale });
 
 /**
  * A string in their language: `t('Log a meal')`, `t('{n} kcal left', { n })`.

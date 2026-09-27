@@ -12,9 +12,12 @@
  * next time. Without one — the first launch in a language — it waits a few
  * seconds behind the splash screen, and starts in English for anything the
  * server could not supply in that time.
+ *
+ * English in the US loads a pack too — American English — while English
+ * anywhere else is the British source and loads nothing.
  */
 import { PSEUDO, localeFor, setLanguage, RTL_LANGUAGES, type Translation } from '../lib/i18n';
-import { browserLanguage, isLanguage, languageOf } from '../lib/language';
+import { browserLanguage, isLanguage, languageOf, packFor, type Language } from '../lib/language';
 import { REGIONS, browserRegion, regionOf, type Region } from '../lib/region';
 import { apiUrl } from '../lib/origin';
 import { CATALOG_VERSION } from '../i18n/version';
@@ -82,6 +85,15 @@ async function fetchCatalog(language: string, timeoutMs: number): Promise<Cached
   }
 }
 
+let loadedPack: string | null = null;
+
+/**
+ * The words loaded at start: a language's pack, American English, or null
+ * for British English. A country picked in setup that needs different ones
+ * (English, into or out of the US) restarts the app at the end of setup.
+ */
+export const startedWith = (): string | null => loadedPack;
+
 export async function chooseLanguage(): Promise<void> {
   const profile = savedProfile();
   // Somebody who has not set up yet has not chosen: their browser's language is the best guess, as in onboarding.
@@ -93,26 +105,29 @@ export async function chooseLanguage(): Promise<void> {
   document.documentElement.lang = language === PSEUDO ? 'en' : locale;
   document.documentElement.dir = RTL_LANGUAGES.has(language) ? 'rtl' : 'ltr';
 
-  if (language === 'en' || language === PSEUDO) {
+  const pack = language === PSEUDO ? null : packFor(language as Language, region);
+  loadedPack = pack;
+  if (!pack) {
     setLanguage({ language, locale });
     return;
   }
 
-  const cached = readCache(language);
+  const cached = readCache(pack);
   if (cached) {
     setLanguage({ language, locale, messages: cached.messages });
     // Fresher for next time, if the app has changed or the last copy was partial.
     if (cached.version !== CATALOG_VERSION || !cached.complete) {
-      void fetchCatalog(language, 60_000).then((fresh) => fresh && writeCache(language, fresh));
+      void fetchCatalog(pack, 60_000).then((fresh) => fresh && writeCache(pack, fresh));
     }
     return;
   }
 
-  const fresh = await fetchCatalog(language, WAIT_MS);
+  // American English waits less: British English is a perfectly readable fallback for it.
+  const fresh = await fetchCatalog(pack, pack === 'en-US' ? 2000 : WAIT_MS);
   setLanguage({ language, locale, messages: fresh?.messages ?? {} });
-  if (fresh) writeCache(language, fresh);
+  if (fresh) writeCache(pack, fresh);
   // Partial on a first launch: keep asking in the background, for next launch.
-  if (!fresh?.complete) void keepAsking(language);
+  if (!fresh?.complete) void keepAsking(pack);
 }
 
 async function keepAsking(language: string, tries = 10): Promise<void> {
