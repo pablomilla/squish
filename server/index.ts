@@ -20,7 +20,7 @@ import { FetchGuardError, readRecipePage } from './recipe';
 import { MAX_TOOL_ROUNDS, chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
-import { readJob, startJob } from './weekplanJobs';
+import { handOver, readJob, recentPlans, setWorker, startJob, startSweeping } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
@@ -1421,6 +1421,16 @@ app.post('/api/admin/email', requireAdmin, async (req, res) => {
   }
 });
 
+/** The latest weekly plans: how each went, and why not. No plan's contents. */
+app.get('/api/admin/weekplans', requireAdmin, async (_req, res) => {
+  try {
+    res.json({ plans: await recentPlans() });
+  } catch (error) {
+    logFailure('admin weekplans', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not read those just now.') });
+  }
+});
+
 app.get('/api/admin/invites', requireAdmin, async (_req, res) => {
   try {
     res.json({ invites: await listInvites(), redemptions: await redemptions(), suggestion: suggestCode() });
@@ -2312,10 +2322,26 @@ const WEEKPLAN_CUT_OFF = msg('That plan was interrupted, so the question has bee
 /** Whoever a plan belongs to: the account, else this browser, else nobody (the id is then the key). */
 const planOwner = (req: Request): string | null => (req.device ? (req.device.accountId ?? req.device.id) : null);
 
-/** A failed plan costs nothing: the question the meter took is given back. */
-const giveBackQuestion = async (deviceId: string | null): Promise<void> => {
-  if (deviceId) await refund(deviceId, 'chat');
-};
+/*
+ * How a weekly plan job is made, and what follows (server/weekplanJobs.ts).
+ * A plan made counts as one of the month's plans; a plan that fails, however
+ * it fails, gives back the question the meter took.
+ */
+setWorker({
+  make: (ask, signal) => planWeek(ask, signal),
+  onDone: async (deviceId) => {
+    if (deviceId) await spend(deviceId, 'weekplan');
+  },
+  onFail: async (deviceId) => {
+    if (deviceId) await refund(deviceId, 'chat');
+  },
+  failure: (error) => {
+    if (error instanceof WeekPlanError) return error.message;
+    logFailure('weekplan', error);
+    return WEEKPLAN_FAILED;
+  },
+  cutOff: WEEKPLAN_CUT_OFF,
+});
 
 /**
  * The nutritionist plans a few days of meals. Body: WeekPlanRequest (see
@@ -2324,30 +2350,17 @@ const giveBackQuestion = async (deviceId: string | null): Promise<void> => {
  *
  * Answers at once with a job id (202); the plan is made in the background and
  * read from GET /api/weekplan/:id, because a week can take the nutritionist
- * longer than a request should be held open. A plan that fails gives its
- * question back.
+ * longer than a request should be held open — and a deploy part-way through
+ * must not lose it. A plan that fails gives its question back.
  */
 app.post('/api/weekplan', weekPlanAsk, weekPlanCap, meter('chat'), async (req, res) => {
   const request = res.locals.weekAsk as NonNullable<ReturnType<typeof cleanWeekRequest>>;
-  const device = req.device;
   // The job keeps a device only when this request spent a question, so only a
-  // question really spent is ever given back (now, or when found cut off).
-  const counted = device && res.locals.counted === 'chat' ? device.id : null;
+  // question really spent is ever given back (now, or when found cut off). A
+  // plan made is still counted against the browser that asked for it.
+  const counted = req.device && res.locals.counted === 'chat' ? req.device.id : null;
   try {
-    const job = await startJob(
-      { deviceId: counted, owner: planOwner(req) },
-      async () => {
-        const plan = await planWeek(request);
-        if (device) await spend(device.id, 'weekplan').catch(() => undefined);
-        return plan;
-      },
-      giveBackQuestion,
-      (error) => {
-        if (error instanceof WeekPlanError) return error.message;
-        logFailure('weekplan', error);
-        return WEEKPLAN_FAILED;
-      },
-    );
+    const job = await startJob({ deviceId: counted, owner: planOwner(req) }, request);
     res.status(202).json({ job });
   } catch (error) {
     logFailure('weekplan start', error);
@@ -2364,7 +2377,7 @@ app.get('/api/weekplan/:id', async (req, res) => {
     return;
   }
   try {
-    const job = await readJob(id, planOwner(req), giveBackQuestion, WEEKPLAN_CUT_OFF);
+    const job = await readJob(id, planOwner(req));
     if (!job) {
       res.status(404).json({ error: msg('That plan is not here any more.') });
       return;
@@ -2492,8 +2505,10 @@ if (SERVE_APP) {
   });
 }
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🫧  Squish on http://localhost:${PORT}`);
+  // Weekly plans a previous instance was making when it stopped: pick them up.
+  startSweeping();
   // New interface strings, into every language, before most people open the app.
   if (hasCredentials() && process.env.SQUISH_I18N_WARM !== 'off') setTimeout(() => void warmAll(), 5000);
   const source = credentialSource();
@@ -2515,3 +2530,22 @@ app.listen(PORT, () => {
   // Reminders are the phone's job now — scheduled on the device by the app,
   // with nothing here that has to be awake at breakfast to deliver them.
 });
+
+/*
+ * A deploy stops this instance with SIGTERM. Weekly plans being made here are
+ * handed over first, so the new instance takes them up at once rather than
+ * after a minute of silence; then the server closes as it would have anyway.
+ */
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.once(signal, () => {
+    void handOver()
+      .then((count) => {
+        if (count) console.info(`[squish] ${signal}: handed over ${count} weekly plan${count === 1 ? '' : 's'} being made`);
+      })
+      .catch(() => {})
+      .finally(() => {
+        server.close();
+        process.exit(0);
+      });
+  });
+}

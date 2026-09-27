@@ -3,15 +3,66 @@ import { randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { refund, spend } from '../server/identity';
-import { STALE_MS, readJob, startJob } from '../server/weekplanJobs';
+import { DEAD_MS, MAX_ATTEMPTS, STALE_MS, handOver, readJob, setWorker, startJob, sweepJobs } from '../server/weekplanJobs';
 import type { WeekPlan } from '../server/claude';
+import type { WeekPlanRequest } from '../server/weekplan';
 
 /**
  * A weekly plan is made in the background and asked after, so a slow one is
- * never lost to a timeout; and one that fails gives its question back.
+ * never lost to a timeout; one whose server stops part-way (a deploy) is made
+ * again by another; and one that fails, however, gives its question back —
+ * once, and without anybody having to ask after it.
  */
 const enabled = hasDatabase();
 const when = enabled ? test : test.skip;
+
+const WEEK: WeekPlan = { summary: 'A calm week', days: [{ date: '2026-09-28', meals: [], calories: 1800, underFloor: false }] };
+const ASK = { startDate: '2026-09-28', days: 3 } as WeekPlanRequest;
+
+/**
+ * The worker the tests drive: each plan waits for the test to say how it
+ * ends (keyed by the ask's preferences), and what was counted or given back
+ * is written down, by device.
+ */
+const endings = new Map<string, { resolve: (plan: WeekPlan) => void; reject: (error: Error) => void; signal: AbortSignal }[]>();
+const made: string[] = [];
+const counted: (string | null)[] = [];
+const givenBack: (string | null)[] = [];
+setWorker({
+  make: (ask, signal) =>
+    new Promise<WeekPlan>((resolve, reject) => {
+      const key = ask.preferences;
+      made.push(key);
+      endings.set(key, [...(endings.get(key) ?? []), { resolve, reject, signal }]);
+      signal.addEventListener('abort', () => reject(new Error('aborted')));
+    }),
+  onDone: async (device) => {
+    counted.push(device);
+  },
+  onFail: async (device) => {
+    givenBack.push(device);
+  },
+  failure: (error) => `no plan: ${(error as Error).message}`,
+  cutOff: 'interrupted',
+});
+
+const askFor = (key: string): WeekPlanRequest => ({ ...ASK, preferences: key });
+const waitFor = async <T>(check: () => T | undefined | Promise<T | undefined>): Promise<T> => {
+  for (let i = 0; i < 300; i++) {
+    const found = await check();
+    if (found !== undefined) return found;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error('waited too long');
+};
+/** The latest run of a plan, once it has started. */
+const runOf = (key: string) => waitFor(() => endings.get(key)?.at(-1));
+const settle = (id: string, owner: string | null) =>
+  waitFor(async () => {
+    const job = await readJob(id, owner);
+    return job?.status === 'working' ? undefined : job;
+  });
+const times = (list: (string | null)[], device: string | null) => list.filter((d) => d === device).length;
 
 before(async () => {
   if (enabled) await migrate();
@@ -20,65 +71,102 @@ after(async () => {
   if (enabled) await closeDatabase();
 });
 
-const WEEK: WeekPlan = { summary: 'A calm week', days: [{ date: '2026-09-28', meals: [], calories: 1800, underFloor: false }] };
-const settle = async (id: string, owner: string | null) => {
-  for (let i = 0; i < 100; i++) {
-    const job = await readJob(id, owner, async () => {}, 'cut off');
-    if (job?.status !== 'working') return job;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  return readJob(id, owner, async () => {}, 'cut off');
-};
-
 async function aDevice() {
   const id = randomUUID();
   await query('insert into devices (id, token_hash) values ($1, $2)', [id, `hash-${id}`]);
   return id;
 }
 
-test('a plan is working, then done — and only its owner can read it', async () => {
+test('a plan is working, then done and counted — and only its owner can read it', async () => {
   const device = enabled ? await aDevice() : null;
-  let finish!: (plan: WeekPlan) => void;
-  const id = await startJob({ deviceId: device, owner: device }, () => new Promise<WeekPlan>((resolve) => (finish = resolve)), async () => {}, () => 'failed');
-  assert.deepEqual(await readJob(id, device, async () => {}, 'cut off'), { status: 'working' }, 'answered at once, still thinking');
-  finish(WEEK);
+  const key = randomUUID();
+  const id = await startJob({ deviceId: device, owner: device }, askFor(key));
+  assert.deepEqual(await readJob(id, device), { status: 'working' }, 'answered at once, still thinking');
+  (await runOf(key)).resolve(WEEK);
   assert.deepEqual(await settle(id, device), { status: 'done', plan: WEEK });
-  if (device) assert.equal(await readJob(id, 'somebody-else', async () => {}, 'cut off'), null, 'another browser cannot read it');
-  assert.equal(await readJob('no-such-plan-here', device, async () => {}, 'cut off'), null);
+  if (device) {
+    await waitFor(() => (times(counted, device) ? true : undefined));
+    assert.equal(await readJob(id, 'somebody-else'), null, 'another browser cannot read it');
+  }
+  assert.equal(await readJob('no-such-plan-here', device), null);
 });
 
 test('a plan that fails says why, and gives the question back', async () => {
-  const device = enabled ? await aDevice() : null;
-  const given: (string | null)[] = [];
-  const id = await startJob(
-    { deviceId: device, owner: device },
-    async () => {
-      throw new Error('overloaded');
-    },
-    async (who) => {
-      given.push(who);
-    },
-    (error) => `no plan: ${(error as Error).message}`,
-  );
+  const device = enabled ? await aDevice() : randomUUID();
+  const key = randomUUID();
+  const id = await startJob({ deviceId: device, owner: device }, askFor(key));
+  (await runOf(key)).reject(new Error('overloaded'));
   assert.deepEqual(await settle(id, device), { status: 'failed', error: 'no plan: overloaded' });
-  assert.deepEqual(given, [device]);
+  await waitFor(() => (times(givenBack, device) ? true : undefined));
+  assert.equal(times(counted, device), 0);
 });
 
-when('a plan cut off by a restart is failed when next asked after, and its question given back once', async () => {
+when('a plan whose server stopped part-way is made again by another, and counted once', async () => {
   const device = await aDevice();
-  const id = `stale-${randomUUID()}`;
-  await query(`insert into weekplan_jobs (id, device_id, owner, created_at) values ($1, $2, $2, now() - make_interval(secs => $3))`, [
-    id,
-    device,
-    STALE_MS / 1000 + 60,
-  ]);
-  const given: (string | null)[] = [];
-  const onStale = async (who: string | null) => {
-    given.push(who);
-  };
-  assert.deepEqual(await readJob(id, device, onStale, 'interrupted'), { status: 'failed', error: 'interrupted' });
-  assert.deepEqual(await readJob(id, device, onStale, 'interrupted'), { status: 'failed', error: 'interrupted' });
-  assert.deepEqual(given, [device], 'given back once, however often it is asked after');
+  const key = randomUUID();
+  const id = await startJob({ deviceId: device, owner: device }, askFor(key));
+  const first = await runOf(key);
+  // The server making it goes quiet: nothing has vouched for it in over a minute.
+  await query(`update weekplan_jobs set heartbeat_at = now() - make_interval(secs => $2) where id = $1`, [id, DEAD_MS / 1000 + 5]);
+  assert.deepEqual(await readJob(id, device), { status: 'working' }, 'asking after it notices, and it is being made again');
+  const second = await waitFor(() => (endings.get(key)!.length === 2 ? endings.get(key)![1] : undefined));
+  assert.equal((await query<{ attempts: number }>('select attempts from weekplan_jobs where id = $1', [id]))[0].attempts, 2);
+
+  // The first one finishing late changes nothing: the job is not its to finish.
+  first.resolve({ ...WEEK, summary: 'late' });
+  second.resolve(WEEK);
+  assert.deepEqual(await settle(id, device), { status: 'done', plan: WEEK });
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(times(counted, device), 1, 'counted once');
+  assert.equal(times(givenBack, device), 0);
+});
+
+when('a plan handed over at shutdown is taken up at the next sweep, not a minute later', async () => {
+  const device = await aDevice();
+  const key = randomUUID();
+  const id = await startJob({ deviceId: device, owner: device }, askFor(key));
+  const first = await runOf(key);
+  assert.ok((await handOver()) >= 1);
+  assert.equal(first.signal.aborted, true, 'the plan being made here is stopped');
+  await sweepJobs();
+  const second = await waitFor(() => (endings.get(key)!.length === 2 ? endings.get(key)![1] : undefined));
+  second.resolve(WEEK);
+  assert.deepEqual(await settle(id, device), { status: 'done', plan: WEEK });
+  assert.equal(times(givenBack, device), 0, 'stopping it for the hand-over is not a failure');
+});
+
+when('a plan cut off too often is failed by the sweep, and its question given back once, with nobody asking', async () => {
+  const device = await aDevice();
+  const key = randomUUID();
+  const id = await startJob({ deviceId: device, owner: device }, askFor(key));
+  await runOf(key);
+  await query(`update weekplan_jobs set attempts = $2, heartbeat_at = now() - interval '1 hour' where id = $1`, [id, MAX_ATTEMPTS]);
+  await sweepJobs();
+  await sweepJobs();
+  assert.equal(times(givenBack, device), 1);
+  assert.deepEqual(await readJob(id, device), { status: 'failed', error: 'interrupted' });
+  assert.equal(times(givenBack, device), 1, 'once, however often it is swept or asked after');
+  assert.equal((await query<{ attempts: number }>('select attempts from weekplan_jobs where id = $1', [id]))[0].attempts, MAX_ATTEMPTS, 'the tries made, not one more');
+});
+
+when('a plan left from before plans could be made again (no request kept) is failed and given back', async () => {
+  const device = await aDevice();
+  const id = `old-${randomUUID()}`;
+  await query(`insert into weekplan_jobs (id, device_id, owner, heartbeat_at) values ($1, $2, $2, now() - interval '5 minutes')`, [id, device]);
+  await sweepJobs();
+  assert.deepEqual(await readJob(id, device), { status: 'failed', error: 'interrupted' });
+  assert.equal(times(givenBack, device), 1);
+});
+
+when('a plan still not made long after any plan takes is given up on, however lively', async () => {
+  const device = await aDevice();
+  const key = randomUUID();
+  const id = await startJob({ deviceId: device, owner: device }, askFor(key));
+  await runOf(key);
+  await query(`update weekplan_jobs set created_at = now() - make_interval(secs => $2) where id = $1`, [id, STALE_MS / 1000 + 60]);
+  await sweepJobs();
+  assert.deepEqual(await readJob(id, device), { status: 'failed', error: 'interrupted' });
+  assert.equal(times(givenBack, device), 1);
 });
 
 when('a refund takes one back, from the latest day that has one, never below nought', async () => {

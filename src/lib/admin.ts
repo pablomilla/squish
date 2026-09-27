@@ -116,6 +116,18 @@ export async function changeAccountEmail(email: string, newEmail: string): Promi
   }
 }
 
+export interface PlanRecord {
+  at: string;
+  email: string | null;
+  days: number | null;
+  status: 'working' | 'done' | 'failed';
+  attempts: number;
+  seconds: number;
+  error: string | null;
+}
+
+export const fetchWeekPlans = (): Promise<{ plans: PlanRecord[] } | null> => ask('/api/admin/weekplans');
+
 export const fetchInvites = (): Promise<{ invites: Invite[]; redemptions: Redemption[]; suggestion: string } | null> =>
   ask('/api/admin/invites');
 

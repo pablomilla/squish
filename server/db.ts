@@ -639,6 +639,23 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index email_undos_account on email_undos(account_id);
     `,
   },
+  {
+    id: 21,
+    sql: `
+      -- Weekly plans that outlive the server making them. The request is kept
+      -- so another instance (or this one, restarted by a deploy) can make the
+      -- plan again; the instance working on a job says so every few seconds
+      -- (heartbeat_at), under a run id of its own, and a job nobody has
+      -- vouched for in a minute is taken over — or, after a few tries,
+      -- failed and its question given back.
+      alter table weekplan_jobs
+        add column ask          jsonb,
+        add column run          text,
+        add column heartbeat_at timestamptz not null default now(),
+        add column attempts     integer not null default 1;
+      create index weekplan_jobs_working on weekplan_jobs(heartbeat_at) where status = 'working';
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

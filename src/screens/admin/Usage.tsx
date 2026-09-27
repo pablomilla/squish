@@ -3,8 +3,9 @@
  * watching day by day. Every figure is what Anthropic charged, added up call
  * by call — not a count multiplied by a guess.
  */
+import { useEffect, useState } from 'react';
 import { PLUS } from '../../lib/plan';
-import type { Finance, Metrics, Overview } from '../../lib/admin';
+import { fetchWeekPlans, type Finance, type Metrics, type Overview, type PlanRecord } from '../../lib/admin';
 import { Chart } from './charts';
 import { KINDS, KIND_COLOR, KIND_LABEL, count, longDay, monthName, perCall, pounds, shortDay } from './format';
 import { Tile } from './Tiles';
@@ -120,6 +121,59 @@ export default function Usage({ metrics, finance, overview }: { metrics: Metrics
           </section>
         )}
       </div>
+
+      <WeekPlans />
     </div>
+  );
+}
+
+const minutes = (seconds: number) => (seconds < 90 ? `${seconds} s` : `${Math.round(seconds / 60)} min`);
+const STATUS: Record<PlanRecord['status'], string> = { done: 'Made', failed: 'Failed', working: 'Being made' };
+
+/**
+ * The latest weekly plans, one line each: when, whose, how it went and how
+ * long it took. A plan takes minutes and runs in the background, so this is
+ * the one place that says what happened to one somebody never saw — a failure
+ * with its reason, or a restart part-way (more than one try). Never what was
+ * planned.
+ */
+function WeekPlans() {
+  const [plans, setPlans] = useState<PlanRecord[] | null>(null);
+  useEffect(() => {
+    void fetchWeekPlans().then((found) => setPlans(found?.plans ?? []));
+  }, []);
+  if (!plans) return null;
+
+  return (
+    <section className="card card--quiet">
+      <div className="card-title">
+        <h3>Weekly plans</h3>
+        <span className="tiny muted">latest {plans.length || ''}</span>
+      </div>
+      {plans.length === 0 ? (
+        <p className="tiny muted">None asked for in the last day.</p>
+      ) : (
+        <div className="admin-plans">
+          {plans.map((plan) => (
+            <div className="admin-plan" key={plan.at + (plan.email ?? '')}>
+              <div className="admin-plan-head">
+                <span className={`badge ${plan.status === 'done' ? 'badge--good' : plan.status === 'failed' ? 'badge--bad' : ''}`}>{STATUS[plan.status]}</span>
+                <span className="small admin-plan-who">{plan.email ?? 'Somebody without an account'}</span>
+              </div>
+              <p className="tiny muted">
+                {new Date(plan.at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                {plan.days !== null && ` · ${plan.days} days`} · {minutes(plan.seconds)}
+                {plan.attempts > 1 && ` · ${plan.attempts} tries`}
+              </p>
+              {plan.error && <p className="tiny">{plan.error}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="tiny muted admin-note">
+        Kept for a day. A failed plan gives its question back. More than one try means the server restarted while it
+        was being made — a deploy — and another picked it up.
+      </p>
+    </section>
   );
 }

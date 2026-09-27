@@ -274,7 +274,7 @@ const JOB_KEY = 'squish-weekplan-job';
 /** How long a remembered job is worth picking up: the server keeps it a day, but a plan is stale sooner. */
 const JOB_KEEP_MS = 30 * 60_000;
 /** How long one wait lasts before the app stops watching (the plan still arrives, for next time). */
-const JOB_WAIT_MS = 10 * 60_000;
+const JOB_WAIT_MS = 15 * 60_000;
 const JOB_POLL_MS = 3000;
 
 function rememberJob(job: string): void {
@@ -327,10 +327,12 @@ export async function waitForWeekPlan(job: string): Promise<WeekPlan> {
     }
     if (answer.status === 'done') {
       forgetJob();
+      void refreshPlan(); // one of the month's plans used
       return answer.plan;
     }
     if (answer.status === 'failed') {
       forgetJob();
+      void refreshPlan(); // the question has been given back: show it
       throw new SquishApiError('server', t(answer.error));
     }
   }
@@ -342,6 +344,7 @@ export async function requestWeekPlan(ask: WeekPlanAsk): Promise<WeekPlan> {
   // A server from before jobs answers with the plan itself.
   if (!('job' in started)) return started;
   rememberJob(started.job);
+  void refreshPlan(); // the question the plan spent
   return waitForWeekPlan(started.job);
 }
 

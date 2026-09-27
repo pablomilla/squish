@@ -708,7 +708,7 @@ export function toWeekPlan(parsed: ModelWeek, req: WeekPlanRequest): WeekPlan {
  * with the server-side fallback, so a refusal on one model is retried on
  * another rather than handed back as an empty week.
  */
-export async function planWeek(req: WeekPlanRequest): Promise<WeekPlan> {
+export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Promise<WeekPlan> {
   const startedAt = Date.now();
   const haiku = WEEKPLAN_MODEL.startsWith('claude-haiku');
   const format = { type: 'json_schema' as const, schema: WEEKPLAN_SCHEMA as unknown as Record<string, unknown> };
@@ -725,7 +725,7 @@ export async function planWeek(req: WeekPlanRequest): Promise<WeekPlan> {
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default' as const,
         }),
-  });
+  }, { signal });
   const response = await stream.finalMessage();
 
   const usage = response.usage;
