@@ -647,6 +647,13 @@ async function main(): Promise<void> {
     }),
   );
 
+  // Why anything failed, so a failure count is never a mystery to be dug out of the JSON.
+  const failures = attempts.filter((a) => !a.ok);
+  if (failures.length) {
+    console.log(`\n${bold('  What failed')}\n`);
+    for (const a of failures) console.log(`  ${a.model.padEnd(18)} ${a.meal.padEnd(24)} ${red(a.error ?? 'no reason given')}`);
+  }
+
   // Beside the paper's table, in the paper's own measure, when the set is its dishes.
   const paper = SET === 'nutrition5k' ? models.map((model) => paperScore(model, attempts, fixtures)) : [];
   if (paper.length) {
