@@ -49,3 +49,9 @@
 .fix-row .input { flex: 1; min-width: 0; }
 .fix-row .btn { flex: none; }
 .review-plan-day { margin-top: 8px; }
+
+/* The AI's one question about the meal: answers to tap, under the heading. */
+.review-question { display: flex; flex-direction: column; gap: 8px; }
+.review-question-text { margin: 0; font-weight: 600; }
+.review-question-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-question-skip { align-self: flex-start; }

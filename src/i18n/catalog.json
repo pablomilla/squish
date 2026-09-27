@@ -1,5 +1,5 @@
 {
- "version": "1jx014m-evma19",
+ "version": "1wrg8cu0n2th5x",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -2108,6 +2108,13 @@
    "text": "Weight trend over time",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "0d0pmg9-yrzlxv",
+   "text": "Quick question — it changes the numbers",
+   "where": [
+    "src/screens/Review.tsx"
    ]
   },
   {
@@ -4827,6 +4834,13 @@
    ]
   },
   {
+   "id": "0soubf8-3tsfos",
+   "text": "Something else",
+   "where": [
+    "src/screens/Review.tsx"
+   ]
+  },
+  {
    "id": "0sqxo9d0vomwo9",
    "text": "Your progress",
    "where": [
@@ -5711,6 +5725,13 @@
    "text": "1 schooner",
    "where": [
     "src/lib/region.ts"
+   ]
+  },
+  {
+   "id": "0y2l8fn-map5h8",
+   "text": "Thanks — updated",
+   "where": [
+    "src/screens/Review.tsx"
    ]
   },
   {
@@ -9450,6 +9471,13 @@
    ]
   },
   {
+   "id": "1lagnu3-7hwbmf",
+   "text": "That question has gone stale — tell me in words instead.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1ld5azr0olv2jc",
    "text": "I have forgotten my password",
    "where": [
@@ -9723,6 +9751,13 @@
   {
    "id": "1ms0bxw-pecrij",
    "text": "It worked for a week, or it has been used already. If somebody else has your account, write to support@squish.online from this address.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
+   "id": "1msrrzl-bjakj2",
+   "text": "That is not a question I asked.",
    "where": [
     "server/index.ts"
    ]
@@ -10678,6 +10713,13 @@
    "text": "They’ve averaged 9 g of protein — mostly toast and jam. Porridge made with milk and a spoonful of Greek yoghurt is nearer 25 g, and should carry you to lunch.",
    "where": [
     "src/components/NutritionistPitch.tsx"
+   ]
+  },
+  {
+   "id": "1suqr3c0e5kmpk",
+   "text": "Skip — the guess is fine",
+   "where": [
+    "src/screens/Review.tsx"
    ]
   },
   {

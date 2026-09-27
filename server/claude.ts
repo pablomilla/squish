@@ -21,6 +21,15 @@ const AISLE_IDS = AISLES.map((a) => a.id);
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
+/**
+ * Words rather than pictures — a meal typed or spoken, a correction, the
+ * answer to a question about one — go to a cheaper model. Reading a photo is
+ * the hard part, and stays on MODEL; turning "two slices of toast with
+ * butter" into nutrition is well within Sonnet 5, at 40% of the price per
+ * token and quicker. SQUISH_TEXT_MODEL changes it without a deploy (set it
+ * to the same as SQUISH_MODEL to undo this).
+ */
+export const TEXT_MODEL = process.env.SQUISH_TEXT_MODEL ?? 'claude-sonnet-5';
 
 /** USD per million tokens. Used to price a run, not to bill anyone. */
 const PRICING: Record<string, { input: number; output: number }> = {
@@ -126,6 +135,16 @@ export const MEAL_SCHEMA = {
       description:
         'One or two warm, non-judgemental sentences from Squish, a friendly blob mascot. Encouraging, never shaming, max 220 characters. Mention one concrete nutrition observation.',
     },
+    question: {
+      type: 'string',
+      description:
+        'One short question about the single thing you could not tell that would change the calories most, in the language given below — or an empty string when there is nothing worth asking.',
+    },
+    choices: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Two to four short answers to the question, a few words each, most likely first, in the same language. Empty when the question is empty.',
+    },
     items: {
       type: 'array',
       description: 'Every distinct food or drink you can identify, with its own estimated nutrition',
@@ -166,7 +185,7 @@ export const MEAL_SCHEMA = {
       },
     },
   },
-  required: ['title', 'slot', 'confidence', 'score', 'coachNote', 'items'],
+  required: ['title', 'slot', 'confidence', 'score', 'coachNote', 'items', 'question', 'choices'],
   additionalProperties: false,
 } as const;
 
@@ -190,6 +209,7 @@ Rules:
 - ultraProcessed asks how the food was made, not whether it is good for someone. A home-cooked shepherd's pie is false however much fat is in it; a diet cola is true however few calories are in it.
 - aisle is the part of a supermarket the item is bought from. A meal can be planned for later and put on a shopping list, which is sorted by it whatever language the names are in; a cooked dish is under the aisle of its main ingredient, and a takeaway or restaurant dish under "other".
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
+- question is for the one thing you could not tell that would move the calories by about 50 kcal or more: which dressing or sauce, what it was cooked in, whole or skimmed milk, sugar in a drink, a portion hidden from view. Read the meal on your best guess anyway — the question is a way to make it better, not a reason to leave it unfinished — and give 2 to 4 short choices, your best guess first. Ask only one, never about something plainly visible or already described, and leave question and choices empty when nothing would change the numbers that much. Most meals need no question.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the language given below.`;
 
 /** Only the six we know about, only as non-negative numbers. */
@@ -229,6 +249,9 @@ function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
 export interface ModelMeal {
   /** Recipes only: how many servings the whole thing makes. */
   servings?: number;
+  /** What it would ask, if anything, and the answers to tap. */
+  question?: string;
+  choices?: string[];
   title?: string;
   slot?: MealSlot;
   confidence?: 'high' | 'medium' | 'low';
@@ -280,6 +303,7 @@ export function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): Analysis
     },
   );
 
+  const asked = clarifyFrom(parsed);
   const score =
     typeof parsed.score === 'number' && parsed.score > 0
       ? Math.max(0, Math.min(100, Math.round(parsed.score)))
@@ -293,7 +317,20 @@ export function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): Analysis
     score,
     coachNote: parsed.coachNote?.trim() || 'Logged! Every entry helps me understand your day.',
     confidence: parsed.confidence ?? 'medium',
+    ...(asked ? { clarify: asked } : {}),
   };
+}
+
+/**
+ * The model's question, if it asked a real one: a question of sensible length
+ * with two to four distinct, short answers. Anything else is dropped rather
+ * than shown half-formed — the meal is complete without it.
+ */
+export function clarifyFrom(parsed: Pick<ModelMeal, 'question' | 'choices'>): { question: string; choices: string[] } | undefined {
+  const question = parsed.question?.trim() ?? '';
+  if (question.length < 5 || question.length > 160) return undefined;
+  const choices = [...new Set((parsed.choices ?? []).map((c) => (typeof c === 'string' ? c.trim() : '')).filter((c) => c && c.length <= 60))].slice(0, 4);
+  return choices.length >= 2 ? { question, choices } : undefined;
 }
 
 /**
@@ -488,6 +525,7 @@ Rules:
 - Return exactly one item unless the packet genuinely holds separate foods.
 - If the photo is not a nutrition label — a plate of food, a barcode alone, a blurry mess — return an empty items array, a score of 0, and say so kindly in coachNote.
 - confidence is "low" when the print is small, angled, or partly out of frame.
+- question is an empty string and choices an empty list: a label is read, not guessed at.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the language given below.`;
 
 export async function analyseLabel(
@@ -521,8 +559,28 @@ export async function analysePhoto(
   return analysis;
 }
 
+/**
+ * Ask the text model, and the main one if that fails — a refusal, an outage,
+ * a malformed answer. Words are cheap to ask about twice; a meal logged as a
+ * rough offline guess because the cheaper model had a bad moment is not.
+ */
+async function requestText(
+  content: Anthropic.ContentBlockParam[],
+  slot: MealSlot | undefined,
+  system: string = SYSTEM,
+  schema: Record<string, unknown> = MEAL_SCHEMA,
+): Promise<DetailedAnalysis> {
+  try {
+    return await requestMeal(content, slot, TEXT_MODEL, system, schema);
+  } catch (error) {
+    if (TEXT_MODEL === MODEL) throw error;
+    console.warn(`[squish] ${TEXT_MODEL} could not read that — asking ${MODEL}:`, error instanceof Error ? error.message : error);
+    return requestMeal(content, slot, MODEL, system, schema);
+  }
+}
+
 export async function analyseText(description: string, slot?: MealSlot): Promise<AnalysisResult> {
-  const { analysis } = await requestMeal(
+  const { analysis } = await requestText(
     [
       {
         type: 'text',
@@ -574,7 +632,7 @@ export async function refineAnalysis(
     .map((item) => `- ${item.name}, ${item.portion || 'a portion'}${item.grams ? ` (${item.grams} g)` : ''}, ${Math.round(item.nutrients.calories)} kcal`)
     .join('\n');
 
-  const { analysis: corrected } = await requestMeal(
+  const { analysis: corrected } = await requestText(
     [
       {
         type: 'text',
@@ -584,13 +642,16 @@ export async function refineAnalysis(
           '',
           `The person says: "${instruction}"`,
           '',
-          'Apply their correction and return the whole meal again. They are telling you about the food, not asking a question — trust them over your own earlier reading. Leave anything they did not mention exactly as it was, including its portion and its nutrition. If they are adding a food, add it; if they are removing one, leave it out.',
+          'Apply their correction and return the whole meal again. They are telling you about the food, not asking a question — trust them over your own earlier reading. Leave anything they did not mention exactly as it was, including its portion and its nutrition. If they are adding a food, add it; if they are removing one, leave it out. Leave question and choices empty: they have told you what they know.',
         ].join('\n'),
       },
     ],
     slot,
   );
-  return corrected;
+  // One question a meal, and this was the answer to it (or a correction that
+  // makes it moot): never a second.
+  const { clarify: _asked, ...answered } = corrected;
+  return answered;
 }
 
 export interface CoachContext {

@@ -202,6 +202,20 @@ export interface AnalysisResult {
   confidence: 'high' | 'medium' | 'low';
   /** True when the local estimator answered instead of Claude. */
   offline?: boolean;
+  /**
+   * The one thing the AI was unsure of that would change the numbers most —
+   * "Was the dressing vinaigrette, Caesar or olive oil?" — with answers to
+   * tap. Answering costs nothing from the allowance, so the server signs the
+   * question (`token`) and only answers the questions it asked; one without
+   * a token is not shown.
+   */
+  clarify?: Clarify;
+}
+
+export interface Clarify {
+  question: string;
+  choices: string[];
+  token?: string;
 }
 
 /**

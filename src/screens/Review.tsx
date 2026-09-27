@@ -9,7 +9,7 @@ import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { NumberField } from '../components/fields';
 import { useSquish } from '../store/useSquish';
-import { isPaywalled, refineAnalysis } from '../lib/api';
+import { answerQuestion, isPaywalled, refineAnalysis } from '../lib/api';
 import { savePhoto } from '../lib/photos';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
 import MealQuality from '../components/MealQuality';
@@ -60,6 +60,12 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [fix, setFix] = useState('');
   const [fixing, setFixing] = useState(false);
+  /**
+   * The AI's one question about this meal, until it is answered or waved
+   * away. Only one it signed: that is what makes answering free.
+   */
+  const [question, setQuestion] = useState(analysis.clarify?.token ? analysis.clarify : null);
+  const [answering, setAnswering] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
   // Eaten, or planned for later. Only for a new meal: an edit is of something
   // already in the diary. A day still to come can only be a plan.
@@ -95,7 +101,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
     const timer = setTimeout(
       () =>
         setPendingMeal({
-          analysis: { ...analysis, title, items, nutrients: totals, score },
+          // The question goes with it only while it is still unanswered.
+          analysis: { ...analysis, title, items, nutrients: totals, score, clarify: question ?? undefined },
           photo: draft.photo,
           slot,
           date: draft.date,
@@ -104,7 +111,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       700,
     );
     return () => clearTimeout(timer);
-  }, [analysis, draft.editingId, draft.photo, draft.date, items, note, score, setPendingMeal, slot, title, totals]);
+  }, [analysis, draft.editingId, draft.photo, draft.date, items, note, question, score, setPendingMeal, slot, title, totals]);
 
   const setFactor = (id: string, factor: number) =>
     setRows((list) => list.map((row) => (row.item.id === id ? { ...row, factor: Math.max(0.05, factor) } : row)));
@@ -132,6 +139,32 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
     } finally {
       setFixing(false);
     }
+  };
+
+  /** Tap an answer: the meal is read again with it, and the question goes. */
+  const answer = async (choice: string) => {
+    if (!question || answering) return;
+    setAnswering(choice);
+    try {
+      const corrected = await answerQuestion({ ...analysis, items, title, nutrients: totals, score }, question, choice, slot);
+      setRows(corrected.items.map(makeRow));
+      if (corrected.title?.trim()) setTitle(corrected.title.trim());
+      setOpenRow(null);
+      setQuestion(null);
+      toast(t('Thanks — updated'), '✨');
+    } catch (error) {
+      if (!isPaywalled(error)) toast(error instanceof Error ? error.message : t('I could not work that out.'), '😅');
+    } finally {
+      setAnswering(null);
+    }
+  };
+
+  /** None of those: the words box, where any answer fits. */
+  const answerInWords = () => {
+    setQuestion(null);
+    const box = document.getElementById('fix');
+    box?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    box?.focus({ preventScroll: true });
   };
 
   const chooseFood = (food: FoodRecord) => {
@@ -260,6 +293,36 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
       {/* Why it scores what it does, updating as items change. Folded: the
           meal is the point of this screen, the reasons are for whoever asks. */}
       <MealQuality meal={{ nutrients: totals, items }} folded />
+
+      {question && (
+        <section className="card review-question" aria-labelledby="review-question">
+          <p className="tiny muted">{t('Quick question — it changes the numbers')}</p>
+          <p id="review-question" className="small review-question-text" dir="auto">
+            {question.question}
+          </p>
+          <div className="review-question-choices">
+            {question.choices.map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                className="chip"
+                dir="auto"
+                disabled={answering !== null}
+                aria-busy={answering === choice}
+                onClick={() => void answer(choice)}
+              >
+                {answering === choice ? t('Thinking…') : choice}
+              </button>
+            ))}
+            <button type="button" className="chip" disabled={answering !== null} onClick={answerInWords}>
+              {t('Something else')}
+            </button>
+          </div>
+          <button type="button" className="btn--quiet tiny review-question-skip" disabled={answering !== null} onClick={() => setQuestion(null)}>
+            {t('Skip — the guess is fine')}
+          </button>
+        </section>
+      )}
 
       {analysis.coachNote && (
         <div className="review-coach">

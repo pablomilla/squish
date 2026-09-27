@@ -46,6 +46,15 @@ services:
         sync: false
       - key: SQUISH_WEEKPLAN_MODEL
         sync: false
+      # The model for words rather than photos: meals typed or spoken,
+      # corrections, answers to the AI's questions. Default claude-sonnet-5;
+      # set it to the same as SQUISH_MODEL to put them back on that.
+      - key: SQUISH_TEXT_MODEL
+        sync: false
+      # Answers to the AI's question about a meal a browser may give in a day
+      # (free, so capped; default 30).
+      - key: SQUISH_DAILY_CLARIFY
+        sync: false
       # "off" stops the server translating new interface strings into every
       # language after a deploy; they are then translated when first asked for.
       - key: SQUISH_I18N_WARM

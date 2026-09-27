@@ -20,6 +20,7 @@ import { FetchGuardError, readRecipePage } from './recipe';
 import { MAX_TOOL_ROUNDS, chatStep, cleanMessages, cleanNotes, toolRounds, type ChatUsage } from './chat';
 import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
+import { checkAnswer, signQuestion, withoutQuestion } from './clarify';
 import { handOver, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
@@ -107,6 +108,7 @@ import {
   hasCredentials,
   planWeek,
   refineAnalysis,
+  TEXT_MODEL,
   translateBatch,
   WeekPlanError,
   type CoachContext,
@@ -221,7 +223,10 @@ const hits = new Map<string, { count: number; resetAt: number }>();
  * guessing down, so they stay per-device and per-day and have nothing to do
  * with which tier somebody is on.
  */
-const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify' | 'weekplan', number> = {
+const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify' | 'weekplan' | 'clarify', number> = {
+  // Answering the AI's question about a meal is free (it was our question),
+  // so it is counted per day instead: plenty for every meal anybody eats.
+  clarify: Number(process.env.SQUISH_DAILY_CLARIFY ?? 30),
   // Weekly plans are counted, not guarded here: /api/weekplan has its own monthly cap.
   weekplan: 0,
   // Each one is an email to an address. Five a day is plenty for somebody
@@ -240,6 +245,7 @@ const SPENT: Partial<Record<Spend, string>> = {
   reset: 'That is enough reset links for one day. Check your inbox, including the spam folder.',
   invite: 'Too many codes tried from this device. Try again tomorrow.',
   verify: 'That is enough confirmation emails for one day. Check your spam folder for the last one.',
+  clarify: 'That is a lot of questions for one day — tell me what to change in words instead.',
 };
 
 /**
@@ -2100,12 +2106,14 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
   try {
     res.json(
       label
-        ? await analyseLabel(data, type, mealSlot)
-        : await analysePhoto(data, type, mealSlot, typeof hint === 'string' ? hint : undefined, {
-            // Sizes, not free text: this goes straight into a prompt.
-            plateCm: inRange(crockery?.plateCm, 15, 40),
-            bowlMl: inRange(crockery?.bowlMl, 150, 1500),
-          }),
+        ? withoutQuestion(await analyseLabel(data, type, mealSlot))
+        : await signQuestion(
+            await analysePhoto(data, type, mealSlot, typeof hint === 'string' ? hint : undefined, {
+              // Sizes, not free text: this goes straight into a prompt.
+              plateCm: inRange(crockery?.plateCm, 15, 40),
+              bowlMl: inRange(crockery?.bowlMl, 150, 1500),
+            }),
+          ),
     );
   } catch (error) {
     logFailure('photo analysis', error);
@@ -2132,7 +2140,7 @@ app.post('/api/analyse/text', meter('photo'), async (req, res) => {
   }
 
   try {
-    res.json(await analyseText(description.trim(), mealSlot));
+    res.json(await signQuestion(await analyseText(description.trim(), mealSlot)));
   } catch (error) {
     logFailure('text analysis', error);
     // A rough guess from the food list, not the AI's: it costs nothing.
@@ -2279,7 +2287,7 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
 
   try {
     const source = await readRecipePage(url);
-    res.json(await analyseRecipe(source, asSlot(slot)));
+    res.json(withoutQuestion(await analyseRecipe(source, asSlot(slot))));
   } catch (error) {
     await giveBack(req, res, 'recipe');
     if (error instanceof FetchGuardError) {
@@ -2469,6 +2477,38 @@ app.post('/api/analyse/refine', meter('photo'), async (req, res) => {
   }
 });
 
+/**
+ * Answer the AI's own question about a meal. Body: { analysis, clarify,
+ * choice, slot } — `clarify` exactly as it came with the analysis. Free: it
+ * was our question. Only a question the server signed, answered with one of
+ * the answers it offered, within the hour; and a day's worth per browser.
+ */
+app.post('/api/analyse/clarify', meter('clarify'), async (req, res) => {
+  const { analysis, clarify, choice, slot } = req.body ?? {};
+  if (!analysis || !Array.isArray(analysis.items)) {
+    res.status(400).json({ error: msg('There is no meal to correct.') });
+    return;
+  }
+  const answer = await checkAnswer(clarify, choice).catch(() => ({ ok: false as const, reason: 'invalid' as const }));
+  if (!answer.ok) {
+    res.status(answer.reason === 'expired' ? 410 : 400).json({
+      error: answer.reason === 'expired' ? msg('That question has gone stale — tell me in words instead.') : msg('That is not a question I asked.'),
+    });
+    return;
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: msg('Squish is offline, so this one needs editing by hand.') });
+    return;
+  }
+  try {
+    const instruction = `Asked "${answer.question}", they answered "${answer.choice}".`;
+    res.json(await refineAnalysis(withoutQuestion(analysis as AnalysisResult), instruction, asSlot(slot)));
+  } catch (error) {
+    logFailure('clarify', error);
+    res.status(502).json({ error: msg('I could not work that out — try editing it by hand.') });
+  }
+});
+
 /** Daily coach nudge. Body: CoachContext */
 app.post('/api/coach', async (req, res) => {
   const ctx = req.body as CoachContext;
@@ -2563,7 +2603,7 @@ const server = app.listen(PORT, () => {
   const source = credentialSource();
   console.log(
     hasCredentials()
-      ? `    Claude vision enabled (${process.env.SQUISH_MODEL ?? 'claude-opus-5'}, via ${source})`
+      ? `    Claude enabled: photos on ${process.env.SQUISH_MODEL ?? 'claude-opus-5'}, words on ${TEXT_MODEL} (via ${source})`
       : '    No Anthropic credentials found — serving offline estimates.',
   );
   if (!hasCredentials()) {

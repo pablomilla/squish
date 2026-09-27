@@ -1,4 +1,4 @@
-import type { AnalysisResult, MealSlot } from '../types';
+import type { AnalysisResult, Clarify, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
 import { apiUrl } from './origin';
 import { deviceToken, forgetDevice } from './identity';
@@ -202,6 +202,20 @@ export async function refineAnalysis(
   slot?: MealSlot,
 ): Promise<AnalysisResult> {
   return post<AnalysisResult>('/api/analyse/refine', { analysis, instruction, slot });
+}
+
+/**
+ * Answer the AI's own question about a meal ("Was the dressing vinaigrette,
+ * Caesar or olive oil?"). Free — the question was Squish's — and the meal
+ * comes back re-read with the answer, with no second question.
+ */
+export async function answerQuestion(
+  analysis: AnalysisResult,
+  clarify: Clarify,
+  choice: string,
+  slot?: MealSlot,
+): Promise<AnalysisResult> {
+  return post<AnalysisResult>('/api/analyse/clarify', { analysis, clarify, choice, slot });
 }
 
 /** Analyse a written meal description. */

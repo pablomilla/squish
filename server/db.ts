@@ -669,6 +669,20 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       update weekplan_jobs set counted = true where status = 'done';
     `,
   },
+  {
+    id: 23,
+    sql: `
+      -- Keys the server makes for itself and keeps: shared by every instance
+      -- and surviving a restart, so something signed by one is still good at
+      -- another. The first is for the AI's questions about a meal (see
+      -- server/clarify.ts).
+      create table server_secrets (
+        name       text primary key,
+        value      text not null,
+        created_at timestamptz not null default now()
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

@@ -183,6 +183,31 @@ putting that right, each written to the record of what was done. The planner
 says how many plans are left before anybody asks, and says the month is used
 up rather than letting the request be refused.
 
+### Words go to a cheaper model
+
+Since 27 September 2026 a meal typed or spoken, a correction ("it was
+grilled, not fried") and the answer to the AI's own question go to
+**Sonnet 5** (`SQUISH_TEXT_MODEL`), at $2 / $10 per million tokens against
+Opus 5's $5 / $25, and quicker. Photos and labels stay on Opus 5: reading a
+picture is the hard part, and whether a cheaper model is good enough at it is
+a question for `npm run bench` against weighed meals, not a guess. If the text
+model fails a request, the main model answers it, so a cheaper model's bad
+moment never becomes an offline estimate.
+
+### The AI's one question, free
+
+When the AI cannot tell one thing that would move a meal by about 50 kcal —
+the dressing, the cooking fat, whole or skimmed milk — it reads the meal on
+its best guess and asks about that one thing, with two to four answers to
+tap (Review screen). Tapping one re-reads the meal with the answer on the
+text model and costs the person **nothing**: the question was ours. That is
+what the signature is for (`server/clarify.ts`): the server signs each
+question with the answers it offered and an hour's life, so the free route
+(`POST /api/analyse/clarify`) only answers questions it asked, with one of
+its answers — it is not a free re-read of any meal. It is also capped at 30
+a day per browser (`SQUISH_DAILY_CLARIFY`). A meal asks once; the re-read
+never asks again. Most meals should ask nothing, and the prompt says so.
+
 ### A failed call costs nothing
 
 Every AI allowance is counted before the call, so ten requests at once
