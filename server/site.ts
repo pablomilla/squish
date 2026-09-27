@@ -43,7 +43,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { idOf, localeFor, RTL_LANGUAGES } from '../src/lib/i18n';
 import { LANGUAGE_LIST, isLanguage, packFor, type Language, type Pack } from '../src/lib/language';
-import { REGION_LIST, REGIONS, TIME_ZONES, detectRegion, isRegion, type Region } from '../src/lib/region';
+import { REGION_LIST, REGIONS, TIME_ZONES, detectRegion, isRegion, localWords, type Region } from '../src/lib/region';
 import { stringsOf, translateHtml, type Lookup } from './htmlWords';
 import { fillLanguage, registerStrings, speakerFor, translationsFor } from './translate';
 import { acceptLanguage, acceptedTags } from './reader';
@@ -165,6 +165,18 @@ function localLinks(html: string, language: Language): string {
     .replace(new RegExp(`href="${APP_PLACEHOLDER.replace(/[.]/g, '\\.')}"`, 'g'), `href="${APP_PLACEHOLDER}/?lang=${language}"`);
 }
 
+/**
+ * A British English page in a country's own words — "talk to your family
+ * doctor" in Canada — from the app's table of them (localWords), on the text
+ * people read and nothing else: never an address or an attribute's code.
+ */
+export function inTheirWords(html: string, region: Region): string {
+  return translateHtml(html, (english) => {
+    const local = localWords(english, region);
+    return local === english ? undefined : local;
+  });
+}
+
 /** The privacy policy's address for a page: its language, and in English its country. */
 export const privacyHref = (language: Language, region: Region): string =>
   language === 'en' ? `/privacy?lang=en&amp;country=${region}` : `/privacy?lang=${language}`;
@@ -226,7 +238,7 @@ export function sitePrice(amount: number, region: Region, language: Language): s
  * shows that country's prices, unless somebody picked one. The guess is made
  * in the browser and goes nowhere.
  */
-async function withPrices(html: string, region: Region, language: Language, picked: boolean): Promise<string> {
+async function withPrices(html: string, region: Region, language: Language, picked: boolean, words: Record<Region, string | null>): Promise<string> {
   const pricesIn = (r: Region) => ({
     free: sitePrice(0, r, language),
     monthly: sitePrice(REGIONS[r].price.monthly, r, language),
@@ -246,8 +258,10 @@ async function withPrices(html: string, region: Region, language: Language, pick
     region,
     picked,
     // Which words each country reads this page in: in English, American in
-    // the US. A guess from the clock that changes them reloads the page.
-    words: Object.fromEntries(REGION_LIST.map((r) => [r.id, packFor(language, r.id)])),
+    // the US, and elsewhere the country's own words where this page has any
+    // (a family doctor in Canada). A guess from the clock that changes them
+    // reloads the page.
+    words,
     prices: Object.fromEntries(REGION_LIST.map((r) => [r.id, pricesIn(r.id)])),
     zones: TIME_ZONES,
   };
@@ -300,13 +314,20 @@ async function page(
   try {
     let html = await readFile(file, 'utf8');
     let complete = true;
+    const source = html;
     // Another language, or American English for English in the US.
     const pack = packFor(language, region);
     if (pack) {
       const words = await pageWords(pack, html);
       html = translateHtml(html, words.lookup);
       complete = words.complete;
+    } else if (language === 'en') {
+      // British English elsewhere, with the country's own words for the few that differ.
+      html = inTheirWords(html, region);
     }
+    const wording = Object.fromEntries(
+      REGION_LIST.map((r) => [r.id, packFor(language, r.id) ?? (language === 'en' && inTheirWords(source, r.id) !== source ? `en-${r.id}` : null)]),
+    ) as Record<Region, string | null>;
     const name = file.slice(SITE_DIR.length + 1).replace(/\.html$/, '');
     const pagePath = name === 'index' ? '' : name;
     html = html
@@ -323,7 +344,7 @@ async function page(
         return `<link rel="canonical" href="${url.origin}/${language}${url.pathname}" />`;
       });
     }
-    html = (await withPrices(html, region, language, picked)).replaceAll(APP_PLACEHOLDER, appOrigin);
+    html = (await withPrices(html, region, language, picked, wording)).replaceAll(APP_PLACEHOLDER, appOrigin);
     // Cached for the life of the process once whole: the pages only change
     // with a deploy. One still waiting on translations is made again next time.
     if (process.env.NODE_ENV === 'production' && complete) pages.set(key, html);

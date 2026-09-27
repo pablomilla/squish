@@ -229,3 +229,10 @@ test('the two-week badge is "Two weeks" in Canada, and a fortnight elsewhere, wh
   assert.equal(badge.title, 'Fortnight');
   assert.equal(badge.description, 'Two weeks of logging');
 });
+
+test('a GP is a family doctor in Canada, written as words, not shouted', () => {
+  assert.equal(localWords('please talk to your GP first', 'CA'), 'please talk to your family doctor first');
+  assert.equal(localWords('GPs and dietitians', 'CA'), 'family doctors and dietitians');
+  assert.equal(localWords('your GP', 'US'), 'your doctor');
+  for (const region of ['GB', 'IE', 'AU', 'NZ'] as const) assert.equal(localWords('your GP', region), 'your GP');
+});

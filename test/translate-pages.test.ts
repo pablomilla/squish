@@ -449,3 +449,16 @@ test('the stand-in American words pass the same check as a real translation, for
   assert.equal(standInAmerican('tinsel and ginger'), 'tinsel and ginger', 'whole words only');
   assert.ok(Object.keys(AMERICAN_WORDS).length >= 50);
 });
+
+test('the website says family doctor in Canada, and GP where people say GP', async () => {
+  const canada = await (await fetch(`${base}/support?country=CA`)).text();
+  assert.match(canada, /please talk to your family doctor before tracking/);
+  for (const country of ['GB', 'IE', 'AU', 'NZ']) {
+    assert.match(await (await fetch(`${base}/support?country=${country}`)).text(), /please talk to your GP before tracking/, country);
+  }
+  // Only this page has a Canadian word, so only here does the clock's guess of Canada reload.
+  const words = (html: string) => JSON.parse(/id="prices-data">([^<]*)</.exec(html)![1]).words as Record<string, string | null>;
+  assert.equal(words(canada).CA, 'en-CA');
+  assert.equal(words(canada).GB, null);
+  assert.equal(words(await (await fetch(`${base}/?country=CA`)).text()).CA, null, 'the home page reads the same in Canada');
+});

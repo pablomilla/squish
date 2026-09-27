@@ -371,7 +371,14 @@ const WORDS: Record<string, Partial<Record<Region, string>>> = {
   'double cream': { US: 'heavy cream', CA: 'whipping cream' },
   'single cream': { US: 'light cream', CA: 'table cream' },
   'icing sugar': { US: 'powdered sugar' },
+  // A GP is a family doctor in Canada and a doctor in the US; Ireland,
+  // Australia and New Zealand have GPs too.
+  gp: { US: 'doctor', CA: 'family doctor' },
+  gps: { US: 'doctors', CA: 'family doctors' },
 };
+
+/** Abbreviations: "GP" is not shouted, so its replacement is written as it is, never in capitals. */
+const ABBREVIATIONS = new Set(['gp', 'gps']);
 
 const WORD_PATTERN = new RegExp(
   `\\b(${Object.keys(WORDS)
@@ -399,8 +406,10 @@ export function localWords(text: string, region: Region = current.region): strin
   // words already, and swapping again would make its "chips" into "fries".
   if (region === 'US' && hasTranslations()) return text;
   return text.replace(WORD_PATTERN, (found) => {
-    const local = WORDS[found.toLowerCase().replace(/\s+/g, ' ')]?.[region];
-    return local ? matchCase(found, local) : found;
+    const key = found.toLowerCase().replace(/\s+/g, ' ');
+    const local = WORDS[key]?.[region];
+    if (!local) return found;
+    return ABBREVIATIONS.has(key) ? local : matchCase(found, local);
   });
 }
 
