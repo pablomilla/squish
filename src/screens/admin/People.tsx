@@ -20,7 +20,7 @@ import {
 } from '../../lib/admin';
 import { friendlyDate } from '../../lib/date';
 import { Chart, Funnel, SplitBar } from './charts';
-import { count, longDay, pounds, shortDay } from './format';
+import { KIND_LABEL, count, longDay, modelLabel, pounds, shortDay } from './format';
 import { Tile } from './Tiles';
 
 const day = (iso: string | null) => (iso ? friendlyDate(iso.slice(0, 10)) : '—');
@@ -191,6 +191,7 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
                   {person.used.chat} questions
                   {person.used.weekplan ? `, ${person.used.weekplan} weekly plan${person.used.weekplan === 1 ? '' : 's'}` : ''} this month · {usd(person.usd)} (≈{pounds(Math.round(person.usd * usdToGbp * 100))})
                 </p>
+                <SpendByModel person={person} usdToGbp={usdToGbp} />
                 <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
@@ -504,3 +505,33 @@ function Invites({
   );
 }
 
+
+/**
+ * Which models somebody's month went to, feature by feature, and what each
+ * cost. Use from before models were kept (or unpriced) is the remainder,
+ * said as such rather than left to look like a sum that does not add up.
+ */
+function SpendByModel({ person, usdToGbp }: { person: Person; usdToGbp: number }) {
+  if (!person.byModel.length && person.usd <= 0) return null;
+  const kinds = [...new Set(person.byModel.map((m) => m.kind))];
+  const unsplit = person.usd - person.byModel.reduce((sum, m) => sum + m.usd, 0);
+  const money = (value: number) => `${pounds(Math.round(value * usdToGbp * 100))} (${usd(value)})`;
+  return (
+    <ul className="admin-person-models tiny">
+      {kinds.map((kind) => (
+        <li key={kind}>
+          <span className="muted">{KIND_LABEL[kind] ?? kind}:</span>{' '}
+          {person.byModel
+            .filter((m) => m.kind === kind)
+            .map((m) => `${modelLabel(m.model)} ${money(m.usd)}${m.calls > 1 ? ` over ${count(m.calls)} calls` : ''}`)
+            .join(' · ')}
+        </li>
+      ))}
+      {unsplit > 0.00005 && (
+        <li className="muted">
+          {person.byModel.length ? 'Earlier this month' : 'This month'}, before models were kept: {money(unsplit)}
+        </li>
+      )}
+    </ul>
+  );
+}

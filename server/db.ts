@@ -778,6 +778,23 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 29,
+    sql: `
+      -- What each device's AI use cost, by day, feature and model: usage.cost_usd
+      -- split by the model that did the work, for the dashboard's People list.
+      -- Counts and prices only, gone with the device like usage is.
+      create table usage_models (
+        device_id text not null references devices(id) on delete cascade,
+        day       date not null,
+        kind      text not null,
+        model     text not null,
+        calls     integer not null default 0,
+        cost_usd  numeric(12, 6) not null default 0,
+        primary key (device_id, day, kind, model)
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

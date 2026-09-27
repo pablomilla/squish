@@ -17,6 +17,7 @@ import {
   type FixedCost,
 } from '../server/finance';
 import { bill, billedAs } from '../server/billing';
+import { people } from '../server/admin';
 import { attribute, checkAffiliate, createAffiliate, listAffiliates, recordPayout, tidyCode } from '../server/affiliates';
 
 /**
@@ -330,4 +331,29 @@ when('a cost is kept by model: a weekly plan as a plan, Gemini apart from Claude
   assert.ok(Math.abs(after.totals.aiPenceBy.gemini - before.totals.aiPenceBy.gemini - pence(0.25)) <= 1);
   assert.ok(Math.abs(after.totals.aiPenceBy.claude - before.totals.aiPenceBy.claude - pence(0.5)) <= 1);
   assert.ok(after.series[6].aiPence.weekplan >= pence(0.5) - 1, 'a meal plan has its own line on the chart');
+});
+
+when('the People list splits each person\'s month by feature and model', async () => {
+  const who = await anAccount();
+  await billedAs('photo', who.deviceId, async () => {
+    bill(0.01, 'gemini-3.8-flash');
+    bill(0.02, 'gemini-3.8-flash');
+    bill(0.04, 'claude-sonnet-5-20260901');
+  });
+  await billedAs('weekplan', who.deviceId, async () => bill(0.3, 'claude-opus-5'));
+  await billedAs('photo', null, async () => bill(5, 'claude-opus-5')); // nobody's: on nobody's line
+
+  const [email] = (await query<{ email: string }>('select email from accounts where id = $1', [who.id])).map((r) => r.email);
+  let person = (await people(email))[0];
+  for (let i = 0; i < 40 && person.byModel.length < 3; i++) {
+    await new Promise((r) => setTimeout(r, 25));
+    person = (await people(email))[0];
+  }
+  const line = (kind: string, model: string) => person.byModel.find((m) => m.kind === kind && m.model === model);
+  assert.deepEqual(line('photo', 'gemini-3.8-flash'), { kind: 'photo', model: 'gemini-3.8-flash', calls: 2, usd: 0.03 });
+  assert.equal(line('photo', 'claude-sonnet-5')?.usd, 0.04, 'the date stamp dropped from the name');
+  assert.equal(line('weekplan', 'claude-opus-5')?.usd, 0.3);
+  assert.equal(person.byModel.length, 3);
+  assert.equal(person.byModel[0].model, 'claude-opus-5', 'the dearest first');
+  assert.ok(Math.abs(person.usd - 0.37) < 1e-9, 'the same money as the month total, split');
 });

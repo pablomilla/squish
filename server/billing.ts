@@ -65,6 +65,9 @@ export function bill(usd: number | null, model: string): void {
     void recordCost(who.deviceId, who.kind, usd).catch(() => {
       /* a gap in a report, never a failed request */
     });
+    void recordDeviceModelCost(who.deviceId, who.kind, model, usd).catch(() => {
+      /* the same */
+    });
   }
   void recordModelCost(who.kind, model, usd).catch(() => {
     /* the same */
@@ -78,6 +81,16 @@ async function recordModelCost(kind: Spend, model: string, usd: number | null): 
     `insert into ai_costs (day, kind, model, calls, cost_usd) values (current_date, $1, $2, 1, $3)
      on conflict (day, kind, model) do update set calls = ai_costs.calls + 1, cost_usd = ai_costs.cost_usd + excluded.cost_usd`,
     [kind, modelName(model), usd.toFixed(6)],
+  );
+}
+
+/** The same, against the device it was for: which models one person's use went to, for the People list. */
+async function recordDeviceModelCost(deviceId: string, kind: Spend, model: string, usd: number | null): Promise<void> {
+  if (!hasDatabase() || !usd || !Number.isFinite(usd) || usd <= 0) return;
+  await query(
+    `insert into usage_models (device_id, day, kind, model, calls, cost_usd) values ($1, current_date, $2, $3, 1, $4)
+     on conflict (device_id, day, kind, model) do update set calls = usage_models.calls + 1, cost_usd = usage_models.cost_usd + excluded.cost_usd`,
+    [deviceId, kind, modelName(model), usd.toFixed(6)],
   );
 }
 

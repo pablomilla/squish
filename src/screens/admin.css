@@ -412,3 +412,4 @@
 .admin-models-actions { justify-content: space-between; align-items: center; gap: var(--s2); flex-wrap: wrap; }
 .admin-plan-costs { margin: var(--s4) 0 var(--s2); font-size: var(--text-label); }
 .admin-plan-table th[scope='row'] { white-space: nowrap; }
+.admin-person-models { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }

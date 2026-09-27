@@ -49,6 +49,8 @@ export interface Person {
   joined: string;
   used: Record<string, number>;
   usd: number;
+  /** This month's cost by feature and model, the dearest first. Use from before models were kept is in `usd` only. */
+  byModel: { kind: string; model: string; calls: number; usd: number }[];
 }
 
 export interface AdminAction {

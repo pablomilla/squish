@@ -121,6 +121,8 @@ export interface Person {
   joined: string;
   used: Record<string, number>;
   usd: number;
+  /** This month's cost by feature and model, the dearest first. Use from before models were kept is in `usd` only. */
+  byModel: { kind: string; model: string; calls: number; usd: number }[];
 }
 
 /**
@@ -160,6 +162,20 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
     [like, limit],
   );
 
+  // Split by model in a second read rather than the first: joined in, every
+  // model line would multiply the usage lines it was summed with.
+  const models = rows.length
+    ? await query<{ account_id: string; kind: string; model: string; calls: string; usd: string }>(
+        `select d.account_id, m.kind, m.model, sum(m.calls)::text as calls, sum(m.cost_usd)::text as usd
+           from usage_models m
+           join devices d on d.id = m.device_id
+          where d.account_id = any($1) and m.day >= date_trunc('month', current_date)
+          group by d.account_id, m.kind, m.model
+          order by sum(m.cost_usd) desc`,
+        [rows.map((row) => row.id)],
+      )
+    : [];
+
   return rows.map((row) => ({
     id: row.id,
     email: row.email,
@@ -169,6 +185,9 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
     joined: row.created_at.toISOString(),
     used: { photo: Number(row.photo), chat: Number(row.chat), recipe: Number(row.recipe), weekplan: Number(row.weekplan) },
     usd: Number(row.usd),
+    byModel: models
+      .filter((m) => m.account_id === row.id)
+      .map((m) => ({ kind: m.kind, model: m.model, calls: Number(m.calls), usd: Number(m.usd) })),
   }));
 }
 
