@@ -76,6 +76,31 @@ export const AMERICAN_WORDS: Record<string, string> = {
   aubergine: 'eggplant',
   aubergines: 'eggplants',
   coriander: 'cilantro',
+  // The American words in the app's own table of country words (localWords
+  // in src/lib/region.ts) — a test keeps the two in step.
+  'fizzy drink': 'soda',
+  'fizzy drinks': 'sodas',
+  'sweet shop': 'candy store',
+  'ice lolly': 'popsicle',
+  'ice lollies': 'popsicles',
+  'ice-lolly': 'popsicle',
+  mangetout: 'snow peas',
+  'cereal bar': 'granola bar',
+  'cereal bars': 'granola bars',
+  takeaway: 'takeout',
+  takeaways: 'takeouts',
+  'jacket potato': 'baked potato',
+  'jacket potatoes': 'baked potatoes',
+  'spring onion': 'green onion',
+  'spring onions': 'green onions',
+  'semi-skimmed milk': '2% milk',
+  'skimmed milk': 'skim milk',
+  'double cream': 'heavy cream',
+  'single cream': 'light cream',
+  'icing sugar': 'powdered sugar',
+  trainers: 'sneakers',
+  postcode: 'ZIP code',
+  postcodes: 'ZIP codes',
 };
 
 const PATTERN = new RegExp(`\\b(${Object.keys(AMERICAN_WORDS).sort((a, b) => b.length - a.length).join('|')})\\b`, 'gi');

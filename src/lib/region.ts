@@ -382,6 +382,9 @@ const WORDS: Record<string, Partial<Record<Region, string>>> = {
   postcodes: { US: 'ZIP codes', CA: 'postal codes', IE: 'Eircodes' },
 };
 
+/** The table itself, to read: for tests that keep other word lists in step with it. */
+export const COUNTRY_WORDS: Readonly<Record<string, Partial<Record<Region, string>>>> = WORDS;
+
 /** Abbreviations: "GP" is not shouted, so its replacement is written as it is, never in capitals. */
 const ABBREVIATIONS = new Set(['gp', 'gps']);
 

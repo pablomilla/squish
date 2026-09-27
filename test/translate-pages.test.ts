@@ -12,6 +12,7 @@ import { rewardWords } from '../server/friends';
 import { languageOfPath, pageInTheirWords, registerSiteStrings, siteRouter } from '../server/site';
 import { policyInTheirWords, privacyPage, registerPrivacyStrings, render, standalonePage } from '../server/privacy';
 import { speaker } from '../src/lib/i18n';
+import { COUNTRY_WORDS } from '../src/lib/region';
 import { AMERICAN_WORDS, standInAmerican } from './standInAmerican';
 
 /**
@@ -504,4 +505,13 @@ test('a policy that mentions a GP would say family doctor to Canadians, and say 
   assert.equal(pageInTheirWords(page, 'AU'), page);
   // The policy as it stands has no word that differs, so every English reader outside the US gets it as written.
   for (const region of ['CA', 'AU', 'NZ', 'IE'] as const) assert.equal(await privacyPage('en', region), await privacyPage('en', 'GB'), region);
+});
+
+test('the stand-in knows every American word in the app’s own table', () => {
+  for (const [british, local] of Object.entries(COUNTRY_WORDS)) {
+    if (!local.US) continue;
+    // "GP" is written in capitals; the rest as the table keeps them.
+    const word = british === 'gp' || british === 'gps' ? british.toUpperCase().replace('GPS', 'GPs') : british;
+    assert.equal(standInAmerican(word), local.US, `the stand-in has no "${british}" → "${local.US}"`);
+  }
 });
