@@ -1,5 +1,7 @@
 import './styles/global.css';
 import { chooseLanguage } from './boot/language';
+// Already loaded by the language step above, so there is nothing to gain by waiting for it.
+import { apiUrl } from './lib/origin';
 
 /*
  * The language first, then everything else.
@@ -12,14 +14,13 @@ import { chooseLanguage } from './boot/language';
 async function start(): Promise<void> {
   await chooseLanguage();
 
-  const [{ StrictMode }, { createRoot }, { default: App }, { startNative }, { arriveFromOldAddress }, { apiUrl }, { catchReferral }, { catchSquadInvite }] =
+  const [{ StrictMode }, { createRoot }, { default: App }, { startNative }, { arriveFromOldAddress }, { catchReferral }, { catchSquadInvite }] =
     await Promise.all([
       import('react'),
       import('react-dom/client'),
       import('./App'),
       import('./lib/native'),
       import('./lib/identity'),
-      import('./lib/origin'),
       import('./lib/referral'),
       import('./lib/squad'),
     ]);
