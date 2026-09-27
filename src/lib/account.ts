@@ -128,6 +128,13 @@ export async function signOut(): Promise<Done<Record<string, never>>> {
 export const changePassword = (current: string, next: string): Promise<Done<Record<string, never>>> =>
   ask('POST', '/api/account/password', { current, next });
 
+/**
+ * Ask to move the account to a new address. Nothing changes until the link
+ * sent there is used; the answer is the same whether or not the address is free.
+ */
+export const changeEmail = (password: string, email: string): Promise<Done<{ sent: boolean; to: string }>> =>
+  ask('POST', '/api/account/email', { password, email });
+
 export async function deleteAccount(password: string): Promise<Done<Record<string, never>>> {
   const answer = await ask<Record<string, never>>('DELETE', '/api/account', { password });
   // The device is detached rather than deleted, so it goes back to owning its

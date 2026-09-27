@@ -257,6 +257,15 @@ export async function signOutEverywhere(accountId: string, exceptDeviceId: strin
   return rows.length;
 }
 
+/**
+ * Make the password unusable, so the only way back in is a reset link sent to
+ * the account's address. For when the password may be known to whoever just
+ * took the account over.
+ */
+export async function lockPassword(accountId: string): Promise<void> {
+  await query('update accounts set password_hash = $2 where id = $1', [accountId, await hashPassword(randomBytes(32).toString('hex'))]);
+}
+
 export async function accountFor(id: string): Promise<Account | null> {
   await migrate();
   const rows = await query<{ id: string; email: string }>('select id, email from accounts where id = $1', [id]);

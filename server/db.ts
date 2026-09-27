@@ -609,6 +609,36 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index weekplan_jobs_owner on weekplan_jobs(owner, created_at);
     `,
   },
+  {
+    id: 20,
+    sql: `
+      -- Changing an account's email. A change waits for a link sent to the
+      -- new address, and is only made when somebody presses the button on
+      -- the page it opens (a mail scanner opening the link changes nothing).
+      -- The row is kept until it runs out, so the link still says "done"
+      -- when followed twice.
+      create table email_changes (
+        token_hash text primary key,
+        account_id text not null references accounts(id) on delete cascade,
+        new_email  text not null,
+        expires_at timestamptz not null,
+        created_at timestamptz not null default now()
+      );
+      create index email_changes_account on email_changes(account_id);
+
+      -- The way back, sent to the old address when a change is made: whoever
+      -- still reads that inbox can put the address back and lock the
+      -- account until its password is reset.
+      create table email_undos (
+        token_hash text primary key,
+        account_id text not null references accounts(id) on delete cascade,
+        old_email  text not null,
+        expires_at timestamptz not null,
+        created_at timestamptz not null default now()
+      );
+      create index email_undos_account on email_undos(account_id);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

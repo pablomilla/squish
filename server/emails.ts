@@ -33,7 +33,18 @@ import { localWords, type Region } from '../src/lib/region';
 import { registerStrings, speakerFor, translationsFor, type CatalogEntry } from './translate';
 import { DEFAULT_READER, type Reader } from './reader';
 
-export type EmailKey = 'verify' | 'reset' | 'signin' | 'password-changed' | 'password-reset' | 'partner-signin' | 'friend-reward' | 'test';
+export type EmailKey =
+  | 'verify'
+  | 'reset'
+  | 'signin'
+  | 'password-changed'
+  | 'password-reset'
+  | 'email-change'
+  | 'email-changed'
+  | 'email-change-taken'
+  | 'partner-signin'
+  | 'friend-reward'
+  | 'test';
 
 export interface Placeholder {
   name: string;
@@ -190,6 +201,76 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     ].join('\n'),
     button: { placeholder: 'app_link', label: 'Open Squish', fallback: false },
     placeholders: [TIME, APP],
+    required: [],
+    translated: true,
+  },
+
+  'email-change': {
+    key: 'email-change',
+    label: 'Confirm a new email',
+    when: 'When somebody asks to change their account to a new address — sent to the new one',
+    subject: 'Confirm your new email for Squish',
+    body: [
+      'Somebody — hopefully you — asked to move a Squish account to this address.',
+      '',
+      'To confirm it:',
+      '',
+      '{link}',
+      '',
+      'That link works for {hours} hours. Until it is used, the account keeps its old address.',
+      '',
+      "If this wasn't you, you can ignore this, and nothing will change.",
+    ].join('\n'),
+    button: { placeholder: 'link', label: 'Use this address', fallback: true },
+    placeholders: [
+      LINK('The confirmation link', 'https://app.squish.online/email-change?token=example'),
+      { name: 'hours', about: 'How many hours the link works for', sample: '24' },
+    ],
+    required: ['link'],
+    translated: true,
+  },
+
+  'email-changed': {
+    key: 'email-changed',
+    label: 'Email changed',
+    when: 'When an account moves to a new address — sent to the old one, only if it was confirmed',
+    subject: 'Your Squish email address was changed',
+    body: [
+      'The email address on your Squish account was changed to {new_email} on {time}.',
+      '',
+      'If that was you, there is nothing to do.',
+      '',
+      "If it wasn't, put your address back from here. That signs out every device and locks the account until you choose a new password:",
+      '',
+      '{undo_link}',
+      '',
+      'That link works for {days} days.',
+    ].join('\n'),
+    button: { placeholder: 'undo_link', label: "This wasn't me", fallback: true },
+    placeholders: [
+      { name: 'new_email', about: 'The address the account moved to', sample: 'sam@example.com' },
+      TIME,
+      { name: 'undo_link', about: 'The link that puts the old address back', sample: 'https://app.squish.online/email-change/undo?token=example', url: true },
+      { name: 'days', about: 'How many days the link works for', sample: '7' },
+    ],
+    required: ['undo_link'],
+    translated: true,
+  },
+
+  'email-change-taken': {
+    key: 'email-change-taken',
+    label: 'Address already in use',
+    when: 'When somebody asks to move their account to an address that already has one — sent to that address',
+    subject: 'This email already has a Squish account',
+    body: [
+      'Somebody asked to move a Squish account to this address, but this address already has a Squish account of its own, so nothing has changed.',
+      '',
+      'If that was you, sign in with this address instead.',
+      '',
+      "If it wasn't, you can ignore this.",
+    ].join('\n'),
+    button: null,
+    placeholders: [],
     required: [],
     translated: true,
   },

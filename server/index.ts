@@ -24,7 +24,8 @@ import { readJob, startJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
-import { acceptLanguage, acceptedTags, readerFromRequest, rememberReader } from './reader';
+import { confirmEmailChange, peekEmailChange, peekEmailUndo, requestEmailChange, undoEmailChange } from './emailChange';
+import { acceptLanguage, acceptedTags, readerFromRequest, readerOf, rememberReader } from './reader';
 import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
 import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
@@ -782,6 +783,179 @@ app.get('/verify', async (req, res) => {
         back: false,
       }).replace('<html lang="en-GB">', htmlTag(language, region)),
     );
+});
+
+/* ------------------------------------------------------------------ *
+ * Changing the email address (see server/emailChange.ts)
+ * ------------------------------------------------------------------ */
+
+const emailChangeLink = (req: Request, token: string): string => `${publicOrigin(req)}/email-change?token=${encodeURIComponent(token)}`;
+const emailUndoLink = (req: Request, token: string): string => `${publicOrigin(req)}/email-change/undo?token=${encodeURIComponent(token)}`;
+const resetLinkFor = (req: Request, token: string): string => `${publicOrigin(req)}/reset?token=${encodeURIComponent(token)}`;
+
+/**
+ * Ask to move the account to a new address. Body: { password, email }.
+ * Counted like a confirmation email, since that is what it sends.
+ */
+app.post('/api/account/email', requireAccount, meter('verify'), async (req, res) => {
+  const { password, email } = req.body ?? {};
+  if (typeof password !== 'string' || typeof email !== 'string') {
+    res.status(400).json({ error: 'missing', message: msg('Your password and the new address, please.') });
+    return;
+  }
+  if (!canSendMail()) {
+    res.status(503).json({ error: 'no_mail', message: msg('This Squish cannot send email yet.') });
+    return;
+  }
+  try {
+    const asked = await requestEmailChange(req.device!.accountId!, password, email, (token) => emailChangeLink(req, token), readerFromRequest(req));
+    if (asked.ok) {
+      res.json({ sent: true, to: asked.to });
+      return;
+    }
+    const message =
+      asked.reason === 'wrong'
+        ? msg('That is not the current password.')
+        : asked.reason === 'same'
+          ? msg('That is already the address on your account.')
+          : msg('That does not look like an email address.');
+    res.status(asked.reason === 'wrong' ? 401 : 400).json({ error: asked.reason, message });
+  } catch (error) {
+    logFailure('email change', error);
+    res.status(502).json({ error: 'not_sent', message: msg('That email did not go. Try again in a few minutes.') });
+  }
+});
+
+/** A page for an email change link, in the account's language, with no app and no script. */
+async function linkPage(
+  res: Response,
+  status: number,
+  accountId: string | null,
+  req: Request,
+  page: (t: (english: string, vars?: Record<string, string | number>) => string) => { title: string; body: string },
+): Promise<void> {
+  const reader = accountId ? await readerOf(accountId) : { language: acceptLanguage(req.get('accept-language')), region: 'GB' as const };
+  const { t } = await speakerFor(reader.language, reader.region);
+  const { title, body } = page(t);
+  res
+    .status(status)
+    .type('html')
+    .set('Cache-Control', 'no-store')
+    .send(standalonePage(body, title, t('Changing your email for Squish.'), { back: false }).replace('<html lang="en-GB">', htmlTag(reader.language, reader.region)));
+}
+
+/** The link's own token, from the address (GET) or the button's form (POST). */
+const linkToken = (req: Request): string => {
+  const value = req.method === 'POST' ? req.body?.token : req.query.token;
+  return typeof value === 'string' && value.length <= 200 ? value : '';
+};
+
+const expiredLink = (t: (english: string) => string) => ({
+  title: t('Link expired — Squish'),
+  body: `<h1>${escapeHtml(t('That link has run out'))}</h1>
+<p>${escapeHtml(t('Links to change an email address work for a day. Ask again from You → Account in Squish. You can close this page.'))}</p>`,
+});
+
+const form = (action: string, token: string, button: string): string =>
+  `<form method="post" action="${action}"><input type="hidden" name="token" value="${escapeHtml(token)}"><button type="submit" style="font:inherit;font-weight:600;padding:12px 22px;border:0;border-radius:999px;background:#6c4ef0;color:#fff;cursor:pointer">${escapeHtml(button)}</button></form>`;
+
+/*
+ * Opening a link does nothing by itself: mail scanners open links, and a
+ * scanner at a mistyped address must not be able to move somebody's account.
+ * The page asks, and the button does it.
+ */
+app.get('/email-change', async (req, res) => {
+  const token = linkToken(req);
+  const link = token ? await peekEmailChange(token).catch(() => ({ ok: false as const })) : { ok: false as const };
+  if (!link.ok) {
+    await linkPage(res, 410, null, req, expiredLink);
+    return;
+  }
+  await linkPage(res, 200, link.accountId, req, (t) =>
+    link.done
+      ? {
+          title: t('Email changed — Squish'),
+          body: `<h1>${escapeHtml(t('That is done'))}</h1>
+<p>${richHtml(t('Your Squish account uses <strong>{email}</strong> now. You can close this page.')).replace('{email}', escapeHtml(link.email))}</p>`,
+        }
+      : {
+          title: t('Change your email — Squish'),
+          body: `<h1>${escapeHtml(t('Use this address?'))}</h1>
+<p>${richHtml(t('Your Squish account will use <strong>{email}</strong> from now on, and your old address will be told.')).replace('{email}', escapeHtml(link.email))}</p>
+${form('/email-change', token, t('Use this address'))}`,
+        },
+  );
+});
+
+app.post('/email-change', express.urlencoded({ extended: false, limit: '2kb' }), rateLimit, async (req, res) => {
+  const token = linkToken(req);
+  const done = token
+    ? await confirmEmailChange(token, (undo) => emailUndoLink(req, undo), publicOrigin(req)).catch((error: unknown) => {
+        logFailure('email change confirm', error);
+        return { ok: false as const, reason: 'expired' as const };
+      })
+    : { ok: false as const, reason: 'expired' as const };
+  if (!done.ok && done.reason === 'expired') {
+    await linkPage(res, 410, null, req, expiredLink);
+    return;
+  }
+  if (!done.ok) {
+    await linkPage(res, 409, null, req, (t) => ({
+      title: t('Address in use — Squish'),
+      body: `<h1>${escapeHtml(t('That address is taken'))}</h1>
+<p>${escapeHtml(t('Another Squish account started using that address after you asked, so your account keeps its old one. You can close this page.'))}</p>`,
+    }));
+    return;
+  }
+  await linkPage(res, 200, done.accountId, req, (t) => ({
+    title: t('Email changed — Squish'),
+    body: `<h1>${escapeHtml(t('That is done'))}</h1>
+<p>${richHtml(t('Your Squish account uses <strong>{email}</strong> now. Sign in with it on any new phone.')).replace('{email}', escapeHtml(done.email))}</p>
+<p>${escapeHtml(t('You can close this page and carry on in Squish.'))}</p>`,
+  }));
+});
+
+app.get('/email-change/undo', async (req, res) => {
+  const token = linkToken(req);
+  const link = token ? await peekEmailUndo(token).catch(() => ({ ok: false as const })) : { ok: false as const };
+  if (!link.ok) {
+    await linkPage(res, 410, null, req, (t) => ({
+      title: t('Link expired — Squish'),
+      body: `<h1>${escapeHtml(t('That link has run out'))}</h1>
+<p>${escapeHtml(t('It worked for a week, or it has been used already. If somebody else has your account, write to support@squish.online from this address.'))}</p>`,
+    }));
+    return;
+  }
+  await linkPage(res, 200, link.accountId, req, (t) => ({
+    title: t('Put your email back — Squish'),
+    body: `<h1>${escapeHtml(t('Put your address back?'))}</h1>
+<p>${richHtml(t('Your Squish account will use <strong>{email}</strong> again. Every device will be signed out, and you will choose a new password from a link we send there — whoever changed the address may know the old one.')).replace('{email}', escapeHtml(link.email))}</p>
+${form('/email-change/undo', token, t('Put my address back'))}`,
+  }));
+});
+
+app.post('/email-change/undo', express.urlencoded({ extended: false, limit: '2kb' }), rateLimit, async (req, res) => {
+  const token = linkToken(req);
+  const done = token
+    ? await undoEmailChange(token, (reset) => resetLinkFor(req, reset)).catch((error: unknown) => {
+        logFailure('email change undo', error);
+        return { ok: false as const, reason: 'expired' as const };
+      })
+    : { ok: false as const, reason: 'expired' as const };
+  if (!done.ok) {
+    await linkPage(res, done.reason === 'taken' ? 409 : 410, null, req, (t) => ({
+      title: t('Could not put it back — Squish'),
+      body: `<h1>${escapeHtml(t('That could not be undone'))}</h1>
+<p>${escapeHtml(t('The link has run out or been used, or the address now belongs to another account. Write to support@squish.online from this address and we will sort it out.'))}</p>`,
+    }));
+    return;
+  }
+  await linkPage(res, 200, done.accountId, req, (t) => ({
+    title: t('Email put back — Squish'),
+    body: `<h1>${escapeHtml(t('Your address is back'))}</h1>
+<p>${richHtml(t('Your Squish account uses <strong>{email}</strong> again, and every device has been signed out.')).replace('{email}', escapeHtml(done.email))}</p>
+<p>${escapeHtml(t('We have sent a link to that address to choose a new password. Until you do, nobody can sign in — including whoever changed it.'))}</p>`,
+  }));
 });
 
 const escapeHtml = (text: string): string =>

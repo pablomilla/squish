@@ -386,7 +386,7 @@ export function siteRouter(appOrigin: () => string, distDir: string) {
       next();
       return;
     }
-    if (req.path.startsWith('/api/') || req.path === '/privacy' || req.path === '/verify') {
+    if (req.path.startsWith('/api/') || req.path === '/privacy' || req.path === '/verify' || req.path.startsWith('/email-change')) {
       next();
       return;
     }

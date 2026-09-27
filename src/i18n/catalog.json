@@ -1,5 +1,5 @@
 {
- "version": "13lj7sd-j1pe88",
+ "version": "0v65e6q-tbrb4s",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -216,6 +216,13 @@
    "text": "Clear",
    "where": [
     "src/screens/Home.tsx"
+   ]
+  },
+  {
+   "id": "01ayv79-j1arg2",
+   "text": "Put your email back — Squish",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -872,6 +879,13 @@
    ]
   },
   {
+   "id": "051suyb05lh7vo",
+   "text": "Your Squish account uses <strong>{email}</strong> again, and every device has been signed out.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "051uhdq0z8bvix",
    "text": "Today's a blank page — let's fill it in.",
    "where": [
@@ -1145,6 +1159,13 @@
    "text": "Rainbow, holographic, gold, chrome and more — coming when Squish Plus does. Nothing to buy yet.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "06phmst-k8c9mv",
+   "text": "Put your address back?",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -1641,6 +1662,13 @@
    ]
   },
   {
+   "id": "09ne6xb-fmpik9",
+   "text": "Put my address back",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "09osdm3-kzot36",
    "text": "Made on your phone. Nothing is uploaded.",
    "where": [
@@ -1745,6 +1773,13 @@
    "text": "About the {nutrient} of <b>{amount}</b>",
    "where": [
     "src/components/Comparison.tsx"
+   ]
+  },
+  {
+   "id": "0avewue-v51yqs",
+   "text": "You can close this page and carry on in Squish.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -2253,6 +2288,13 @@
    ]
   },
   {
+   "id": "0e8bdjs-xuciok",
+   "text": "Your Squish account will use <strong>{email}</strong> from now on, and your old address will be told.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0e97hiw0ny94qi",
    "text": "Adjust targets",
    "where": [
@@ -2431,6 +2473,13 @@
    ]
   },
   {
+   "id": "0fbcr0z-ivs8nz",
+   "text": "Could not put it back — Squish",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0fde1bx0qd7k2r",
    "text": "Potato, boiled",
    "where": [
@@ -2561,6 +2610,13 @@
    "text": "Your name",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0g92frl0wppu73",
+   "text": "Change your email — Squish",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -2725,6 +2781,13 @@
    "text": "the {name} look",
    "where": [
     "src/lib/rewards.ts"
+   ]
+  },
+  {
+   "id": "0he3j6p01wo1ci",
+   "text": "That does not look like an email address.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -2958,6 +3021,13 @@
    "text": "Beach day",
    "where": [
     "src/lib/scenes.ts"
+   ]
+  },
+  {
+   "id": "0ir4dw40n33ur2",
+   "text": "Email changed — Squish",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -3306,6 +3376,13 @@
    ]
   },
   {
+   "id": "0kqgk770etshbn",
+   "text": "That address is taken",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0kra76q0p8taff",
    "text": "Open Squish",
    "where": [
@@ -3400,6 +3477,13 @@
    ]
   },
   {
+   "id": "0lappad04heo9m",
+   "text": "Your password and the new address, please.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0lbb6ep0xgkan9",
    "text": "That isn't your password.",
    "where": [
@@ -3462,6 +3546,13 @@
    "text": "Mushrooms, fried",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0lnn08l088jjr7",
+   "text": "We have sent a link to that address to choose a new password. Until you do, nobody can sign in — including whoever changed it.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -4412,6 +4503,13 @@
    ]
   },
   {
+   "id": "0qlqd4t-fbtjka",
+   "text": "Your Squish account will use <strong>{email}</strong> again. Every device will be signed out, and you will choose a new password from a link we send there — whoever changed the address may know the old one.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0qoqync0ye4vmi",
    "text": "Insights",
    "where": [
@@ -4966,6 +5064,13 @@
    "text": "Snowy village",
    "where": [
     "src/lib/scenes.ts"
+   ]
+  },
+  {
+   "id": "0uf0fgm-sxxhyp",
+   "text": "Address in use — Squish",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -5917,6 +6022,13 @@
   {
    "id": "10s78m10dctpkg",
    "text": "That link has already been used, or is too old.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
+   "id": "10t91wr-smqwpw",
+   "text": "Changing your email for Squish.",
    "where": [
     "server/index.ts"
    ]
@@ -7088,6 +7200,13 @@
    ]
   },
   {
+   "id": "17tlh140vhpo77",
+   "text": "Use this address",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "17vr940-o603yy",
    "text": "Hummus",
    "where": [
@@ -7141,6 +7260,13 @@
    "text": "Chick",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "182fgx5-a25zee",
+   "text": "Your Squish account uses <strong>{email}</strong> now. Sign in with it on any new phone.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -7212,6 +7338,13 @@
    "text": "✨ Invite bonus: +{photos} photo analyses and +{questions} questions, until {date}.",
    "where": [
     "src/components/InviteCard.tsx"
+   ]
+  },
+  {
+   "id": "18mxlts-l2sdtz",
+   "text": "That could not be undone",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -7369,6 +7502,13 @@
    "text": "See all",
    "where": [
     "src/screens/Home.tsx"
+   ]
+  },
+  {
+   "id": "19pqvxe0dtjpdg",
+   "text": "That is already the address on your account.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -7533,7 +7673,8 @@
    "id": "1aqzcro-id1qtu",
    "text": "That is done",
    "where": [
-    "src/screens/ResetPassword.tsx"
+    "src/screens/ResetPassword.tsx",
+    "server/index.ts"
    ]
   },
   {
@@ -7605,6 +7746,13 @@
    "text": "Share the list ({n})",
    "where": [
     "src/components/ShoppingSheet.tsx"
+   ]
+  },
+  {
+   "id": "1b70x1w-1bujm7",
+   "text": "Change your email",
+   "where": [
+    "src/components/AccountCard.tsx"
    ]
   },
   {
@@ -8042,6 +8190,13 @@
    "text": "Walnuts",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1e845st-3x251z",
+   "text": "Your account uses {email} now.",
+   "where": [
+    "src/components/AccountCard.tsx"
    ]
   },
   {
@@ -8754,6 +8909,13 @@
    ]
   },
   {
+   "id": "1i9qiyq0ocxqo3",
+   "text": "Now <b>{email}</b>. We will send a link to the new address, and it changes when you use it. Your old address is told, with a way to undo it.",
+   "where": [
+    "src/components/AccountCard.tsx"
+   ]
+  },
+  {
    "id": "1idql43-2hdadq",
    "text": "Paste a recipe from anywhere on the web and I'll work out what one helping of it comes to.",
    "where": [
@@ -9330,6 +9492,13 @@
    ]
   },
   {
+   "id": "1ll96na-r364v1",
+   "text": "Email put back — Squish",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1llf0x50g6v1oo",
    "text": "One moment…",
    "where": [
@@ -9473,6 +9642,13 @@
    ]
   },
   {
+   "id": "1mergb6-4ti562",
+   "text": "That is not the current password.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1mfjyb602y33qh",
    "text": "Party hat",
    "where": [
@@ -9523,6 +9699,13 @@
    ]
   },
   {
+   "id": "1ms0bxw-pecrij",
+   "text": "It worked for a week, or it has been used already. If somebody else has your account, write to support@squish.online from this address.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1mttk4i0fvk72c",
    "text": "The meal you logged",
    "where": [
@@ -9542,6 +9725,13 @@
    "text": "Squish is made for people aged {age} and over. It works with calorie targets and diet feedback, which are not right for a body that is still growing.",
    "where": [
     "src/components/TooYoung.tsx"
+   ]
+  },
+  {
+   "id": "1n0f2l1-ml3a8s",
+   "text": "Change email",
+   "where": [
+    "src/components/AccountCard.tsx"
    ]
   },
   {
@@ -9643,10 +9833,24 @@
    ]
   },
   {
+   "id": "1nhzhtm-z83tk0",
+   "text": "Links to change an email address work for a day. Ask again from You → Account in Squish. You can close this page.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1niod5q-5v8y7r",
    "text": "Photo analysis and coaching run on {model}. Your photos go to the Squish API server and are not stored.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1nkdk9n01dbmjy",
+   "text": "Your Squish account uses <strong>{email}</strong> now. You can close this page.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -9959,6 +10163,13 @@
    "where": [
     "src/lib/foods.ts",
     "src/lib/region.ts"
+   ]
+  },
+  {
+   "id": "1pv2emq-3ey33j",
+   "text": "Another Squish account started using that address after you asked, so your account keeps its old one. You can close this page.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -10364,6 +10575,20 @@
    ]
   },
   {
+   "id": "1scmshx03clbih",
+   "text": "Use this address?",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
+   "id": "1sf4tjs-xyx5cj",
+   "text": "Check {email}: your address changes when you use the link there.",
+   "where": [
+    "src/components/AccountCard.tsx"
+   ]
+  },
+  {
    "id": "1sfqzn2-lh73ci",
    "text": "Get started",
    "where": [
@@ -10389,6 +10614,13 @@
    "text": "Your meal",
    "where": [
     "src/lib/estimate.ts"
+   ]
+  },
+  {
+   "id": "1skan0r-g9dle4",
+   "text": "The link has run out or been used, or the address now belongs to another account. Write to support@squish.online from this address and we will sort it out.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -10688,6 +10920,13 @@
    "text": "Bengali",
    "where": [
     "src/lib/language.ts"
+   ]
+  },
+  {
+   "id": "1ug7mdt-j06u1o",
+   "text": "Your address is back",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -11337,6 +11576,13 @@
    "text": "Plan a new week",
    "where": [
     "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
+   "id": "1yv3o01-o1yd7g",
+   "text": "New email",
+   "where": [
+    "src/components/AccountCard.tsx"
    ]
   },
   {

@@ -15,6 +15,7 @@ import { friendOffer, periodWords, type FriendOffer } from '../lib/friends';
 import { Sheet, useToast } from './ui';
 import PasswordField from './PasswordField';
 import {
+  changeEmail,
   changePassword,
   deleteAccount,
   requestReset,
@@ -33,13 +34,14 @@ import './account-card.css';
 import { plural, t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
 
-type Form = 'in' | 'up' | 'forgot' | 'password' | 'devices' | 'delete' | null;
+type Form = 'in' | 'up' | 'forgot' | 'password' | 'email' | 'devices' | 'delete' | null;
 
 const TITLES: Record<Exclude<Form, null>, string> = {
   in: t('Sign in'),
   up: t('Create an account'),
   forgot: t('Forgotten password'),
   password: t('Change your password'),
+  email: t('Change your email'),
   devices: t('Sign out your other devices'),
   delete: t('Delete your account'),
 };
@@ -79,7 +81,10 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
         if (!live) return;
         const before = seen.current;
         // Confirmed in another tab, or in the email app's browser, while this one waited.
-        if (before?.signedIn && before.verified === false && found.verified === true) toast(t('Email confirmed. Thank you!'), '✅');
+        if (before?.signedIn && found.signedIn && before.email && found.email && before.email !== found.email) {
+          // Moved to a new address from its link, in another tab or the email app's browser.
+          toast(t('Your account uses {email} now.', { email: found.email }), '✅');
+        } else if (before?.signedIn && before.verified === false && found.verified === true) toast(t('Email confirmed. Thank you!'), '✅');
         seen.current = found;
         setWho(found);
       });
@@ -123,6 +128,11 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('password')}>
               {t('Change password')}
             </button>
+            {who.mailReady && (
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('email')}>
+                {t('Change email')}
+              </button>
+            )}
             {Boolean(who.otherDevices) && (
               <button type="button" className="btn btn--sm btn--ghost" onClick={() => setForm('devices')}>
                 {plural(who.otherDevices ?? 0, { one: 'Sign out {n} other device', other: 'Sign out {n} other devices' })}
@@ -226,6 +236,16 @@ export default function AccountCard({ enabled }: { enabled: boolean }) {
             onDone={() => {
               setForm(null);
               toast(t('If that address has an account, a link is on its way.'), '📮');
+            }}
+          />
+        )}
+
+        {form === 'email' && (
+          <NewEmail
+            current={who.email ?? ''}
+            onDone={(to) => {
+              setForm(null);
+              toast(t('Check {email}: your address changes when you use the link there.', { email: to }), '📬');
             }}
           />
         )}
@@ -382,6 +402,51 @@ export function Forgot({ onDone }: { onDone: () => void }) {
       </div>
       <Trouble says={trouble} />
       <button type="submit" className="btn" disabled={busy || !email}>
+        {busy ? t('One moment…') : t('Send me a link')}
+      </button>
+    </form>
+  );
+}
+
+/**
+ * A new address, proved before it is used.
+ *
+ * The password is asked for so a phone left unlocked cannot move the account
+ * somewhere its owner will never see; and nothing changes until the link sent
+ * to the new address is used, so a typo cannot lock anybody out.
+ */
+function NewEmail({ current, onDone }: { current: string; onDone: (to: string) => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { busy, trouble, go } = useSubmit(() => changeEmail(password, email), (answer: { to: string }) => onDone(answer.to));
+
+  return (
+    <form
+      className="stack account-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void go();
+      }}
+    >
+      <p className="tiny muted">
+        {rich('Now <b>{email}</b>. We will send a link to the new address, and it changes when you use it. Your old address is told, with a way to undo it.', { email: current }, { b: (text) => <b>{text}</b> })}
+      </p>
+      <div className="field">
+        <label htmlFor="new-email">{t('New email')}</label>
+        <input
+          id="new-email"
+          className="input"
+          type="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+        />
+      </div>
+      <PasswordField id="email-password" label={t('Your password')} value={password} onChange={setPassword} autoComplete="current-password" />
+      <Trouble says={trouble} />
+      <button type="submit" className="btn" disabled={busy || !email || !password}>
         {busy ? t('One moment…') : t('Send me a link')}
       </button>
     </form>

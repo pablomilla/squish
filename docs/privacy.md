@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 26 September 2026**
+**Last updated: 27 September 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -65,6 +65,9 @@ Backup is on by default where this copy of Squish has a database.
   after two hours.
 - **Whether you have confirmed your email address**, and, until you do, a
   hashed confirmation link that expires after a week.
+- **If you change your email address:** the new address and a hashed link to
+  confirm it, for a day or until you use it; then, for a week, the old address
+  and a hashed link sent to it that puts it back.
 - **The language, country and time zone your app is set to**, as it last
   said, so the emails we send you are in your language and give times on
   your own clock. The time zone is your device's setting (for example
@@ -221,7 +224,7 @@ somebody else's service is down.
 
 ### Our email provider — the emails we send you
 
-Squish sends exactly four kinds of email to people who use it, and only
+Squish sends exactly five kinds of email to people who use it, and only
 these:
 
 - **A link to confirm your address**, when you make an account.
@@ -231,6 +234,10 @@ these:
 - **A thank-you for inviting a friend**, when somebody who joined with your
   invite has got going and you have earned the reward. It says what you got,
   never who the friend is.
+- **About changing your address**, when you ask to: a link to confirm the new
+  address, sent to it; a notice to your old address once it has changed, with
+  a link to put it back; or, if the new address already has a Squish account,
+  a note to that address saying nothing has changed.
 
 Each is written in the language you use Squish in, translated by Claude once
 for everybody as the app's wording is; nothing about you goes with that.
@@ -238,10 +245,11 @@ for everybody as the app's wording is; nothing about you goes with that.
 Partners are also sent a sign-in link for their page, when they ask for one
 or when we send them one (see above). That one is in English.
 
-Security notices and the thank-you only go to an address you have confirmed,
-so nobody can use Squish to send mail to someone else. A thank-you earned
-before you confirm is sent when you do, if it is still under a month old. There is no marketing, no newsletter, and
-nothing else. To send these, your address and the message pass through our
+Security notices, the notice that your address changed, and the thank-you
+only go to an address you have confirmed, so nobody can use Squish to send
+mail to someone else. A thank-you earned before you confirm is sent when you
+do, if it is still under a month old. There is no marketing, no newsletter,
+and nothing else. To send these, your address and the message pass through our
 email provider, [Resend](https://resend.com), who deliver them on our behalf
 and do not use them for anything else. Their handling is governed by their own
 privacy policy, at
