@@ -10,7 +10,7 @@ import { compose, EMAILS, resetWording, saveWording, wordingInTheirWords } from 
 import { describeDevice, when } from '../server/notices';
 import { rewardWords } from '../server/friends';
 import { languageOfPath, pageInTheirWords, registerSiteStrings, siteRouter } from '../server/site';
-import { privacyPage, registerPrivacyStrings, render, standalonePage } from '../server/privacy';
+import { policyInTheirWords, privacyPage, registerPrivacyStrings, render, standalonePage } from '../server/privacy';
 import { speaker } from '../src/lib/i18n';
 import { AMERICAN_WORDS, standInAmerican } from './standInAmerican';
 
@@ -492,10 +492,15 @@ test('an email that mentions a GP says family doctor to a Canadian reader, and k
   }
 });
 
-test('a policy that mentions a GP would say family doctor to Canadians; the real one has none yet', async () => {
+test('a policy that mentions a GP would say family doctor to Canadians, and say the British counts; the real one has none yet', async () => {
   const page = standalonePage(render('# Health\n\nIf you are unsure, talk to your **GP** before you start.'));
-  const canada = pageInTheirWords(page, 'CA');
-  assert.match(canada, /talk to your <strong>family doctor<\/strong> before you start/);
+  assert.match(pageInTheirWords(page, 'CA'), /talk to your <strong>family doctor<\/strong> before you start/);
+  const canada = policyInTheirWords(page, 'CA');
+  assert.match(canada, /<html lang="en-CA">/);
+  assert.match(canada, /<main>\n<p><em>This is the policy with Canadian words for a few things\. If it and the <a href="\/privacy\?lang=en&amp;country=GB">British English version<\/a> ever differ, the British English is what counts\.<\/em><\/p>/);
+  assert.match(canada, /family doctor/);
+  // No word differs: no note, and the British text itself.
+  assert.equal(policyInTheirWords(page, 'AU'), page);
   assert.equal(pageInTheirWords(page, 'AU'), page);
   // The policy as it stands has no word that differs, so every English reader outside the US gets it as written.
   for (const region of ['CA', 'AU', 'NZ', 'IE'] as const) assert.equal(await privacyPage('en', region), await privacyPage('en', 'GB'), region);

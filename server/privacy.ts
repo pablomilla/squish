@@ -212,6 +212,25 @@ const TRANSLATION_NOTE =
 const AMERICAN_NOTE =
   '<p><em>This is the policy with American spelling. If it and the <a href="/privacy?lang=en&amp;country=GB">British English version</a> ever differ, the British English is what counts.</em></p>';
 
+/**
+ * Said at the top of a version with a country's own words (a family doctor
+ * for a GP in Canada) — only when it has any, since otherwise it is the
+ * British text itself. English only: no other language gets these swaps.
+ */
+const LOCAL_WORDS: Partial<Record<Region, string>> = { CA: 'Canadian', AU: 'Australian', NZ: 'New Zealand', IE: 'Irish' };
+const localNote = (region: Region): string =>
+  `<p><em>This is the policy with ${LOCAL_WORDS[region] ?? 'local'} words for a few things. If it and the <a href="/privacy?lang=en&amp;country=GB">British English version</a> ever differ, the British English is what counts.</em></p>`;
+
+/**
+ * The policy page in a country's own words, with the note saying so — or,
+ * where none of its words differ there, exactly as written.
+ */
+export function policyInTheirWords(page: string, region: Region): string {
+  const local = pageInTheirWords(page, region);
+  if (local === page) return page;
+  return withNote(local, localNote(region)).replace('<html lang="en-GB">', `<html lang="en-${region}">`);
+}
+
 const withNote = (html: string, note = TRANSLATION_NOTE): string => html.replace('<main>\n', `<main>\n${note}\n`);
 
 let cached: string | null = null;
@@ -243,8 +262,9 @@ export async function privacyPage(language: Language = 'en', region: Region = 'G
   }
   const pack = packFor(language, region);
   // British English outside the US, in the country's own words where the
-  // policy has any: a family doctor in Canada, where Britain has a GP.
-  if (!pack) return language === 'en' ? pageInTheirWords(cached, region) : cached;
+  // policy has any — a family doctor in Canada, where Britain has a GP — and
+  // then saying so, as the American version does.
+  if (!pack) return language === 'en' ? policyInTheirWords(cached, region) : cached;
   const page = withNote(cached, language === 'en' ? AMERICAN_NOTE : TRANSLATION_NOTE);
   const words = await pageWords(pack, page);
   return translateHtml(page, words.lookup).replace('<html lang="en-GB">', htmlTag(language, region));

@@ -139,8 +139,10 @@ start-up.
 - The email confirmation page follows the account's country the same way.
 - So does the privacy policy: American for the US, with a note at the top
   that the British English version is the one that counts; elsewhere in
-  English, the country's own words from the same table, like the pages
-  (none of the policy's words differ today). The policy has no
+  English, the country's own words from the same table, like the pages, with
+  a note of its own ("This is the policy with Canadian words for a few
+  things…") whenever any word differs. None of the policy's words differ
+  today, so no reader outside the US sees a note yet. The policy has no
   script, so it cannot read the clock; every link to it says the language
   and, in English, the country outright — the website's
   (`/privacy?lang=en&country=GB`, the clock's guess included), the app's and

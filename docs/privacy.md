@@ -129,8 +129,9 @@ address (squish.online/?country=GB), so our server learns the country it
 guessed, as it would from your pick. The website never looks up where you
 actually are, and nothing remembers either choice but the address itself.
 This policy is translated too, for reading, and in the US it is shown with
-American spelling; if a translation or the American version and the British
-English ever differ, the British English is what counts.
+American spelling, and elsewhere with a country's own word where it has one
+(a family doctor in Canada, say); if any of those and the British English
+ever differ, the British English is what counts.
 
 Squish used to live at squish.online, and a browser keeps what a site saves
 under the address it was saved at. So if you used Squish there before it
