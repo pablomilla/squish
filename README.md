@@ -263,8 +263,8 @@ already has an account is refused, and the change is recorded under Settings.
 **Trying Gemini on your own meals.** Settings has a switch that sends meal photos from admin
 accounts — nobody else's — to Google's Gemini instead of Claude, to see what it is like day to day.
 It needs `GEMINI_API_KEY` in Render (a key from a Google AI Studio project with billing on; the free
-tier lets Google use what is sent), and the model is chosen on the same card (`gemini-2.5-flash` to
-start; check Google's list for newer). Everybody else stays on Claude whatever it says, because the
+tier lets Google use what is sent), and the model is chosen on the same card (`gemini-3.8-flash` to
+start — Google retires older models for new keys, and says which to use instead when it does). Everybody else stays on Claude whatever it says, because the
 privacy policy names Anthropic; a test holds the app to that. Labels and typed meals stay on Claude
 too. Gemini gets the same instructions, the same answer shape and the same food-table check as
 Claude, and the Review screen says "Read by Gemini", or "Gemini failed — read by Claude" with the

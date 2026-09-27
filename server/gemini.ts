@@ -47,8 +47,18 @@ export const hasGeminiKey = (): boolean => Boolean(apiKey());
 export const isGeminiModel = (model: string): boolean => model.startsWith('gemini-');
 
 /**
+ * The model to start with. Google retires models for new accounts as it
+ * releases new ones — gemini-2.5-flash answered a new key in September 2026
+ * with "no longer available to new users", naming this one instead — so it
+ * is only a starting point: the trial's card and --models choose any other.
+ */
+export const DEFAULT_GEMINI = 'gemini-3.8-flash';
+
+/**
  * USD per million tokens, as Google published them in 2025 — prices move,
  * so check https://ai.google.dev/pricing before trusting the cost column.
+ * The newer models are not here yet: add them from that page, and until
+ * then they are measured and logged with no cost.
  * Images are billed as input tokens; thinking is billed as output. A model
  * missing from here is benchmarked but shows no cost.
  */
@@ -106,7 +116,7 @@ export async function analysePhotoGemini(
   mediaType: string,
   slot?: MealSlot,
   hint?: string,
-  model = 'gemini-2.5-flash',
+  model = DEFAULT_GEMINI,
   crockery?: Crockery,
 ): Promise<DetailedAnalysis> {
   const key = apiKey();

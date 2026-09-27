@@ -77,7 +77,7 @@ Your photos and results stay out of git — they are meals from your kitchen, an
 
 | Flag | Default | What it does |
 | --- | --- | --- |
-| `--models a,b` | opus-5, sonnet-5, haiku-4-5, and gemini-2.5-flash when there is a Gemini key | Which models to compare — any `claude-…` or `gemini-…` model |
+| `--models a,b` | opus-5, sonnet-5, haiku-4-5, and gemini-3.8-flash when there is a Gemini key | Which models to compare — any `claude-…` or `gemini-…` model |
 | `--runs 3` | 1 | Repeat each photo, to see run-to-run spread |
 | `--sub 6.99` | 6.99 | Subscription price for the margin table, VAT included as on the stores |
 | `--yes` | off | Skip the "this spends money" prompt |
@@ -95,8 +95,8 @@ table is the model.
    this was written, what is sent on the free tier may be used to improve Google's products; these are
    photos from your kitchen, so check the current terms and use a billed project.
 2. Put it in `.env` beside your Anthropic key: `GEMINI_API_KEY=…`
-3. `npm run bench` now includes `gemini-2.5-flash`. Name others with `--models`, for example
-   `--models claude-opus-5,claude-sonnet-5,gemini-2.5-flash,gemini-2.5-pro`, and check Google's model
+3. `npm run bench` now includes `gemini-3.8-flash`. Name others with `--models`, for example
+   `--models claude-opus-5,claude-sonnet-5,gemini-3.8-flash`, and check Google's model
    list for anything newer.
 
 The cost column uses Google's prices as published in 2025 (`GEMINI_PRICING` in `server/gemini.ts`);

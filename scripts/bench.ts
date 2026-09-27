@@ -17,7 +17,7 @@ import { createInterface } from 'node:readline/promises';
 import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { analysePhotoDetailed, hasCredentials, type Crockery, type ModelUsage } from '../server/claude';
-import { GEMINI_PRICING, analysePhotoGemini, hasGeminiKey, isGeminiModel } from '../server/gemini';
+import { DEFAULT_GEMINI, GEMINI_PRICING, analysePhotoGemini, hasGeminiKey, isGeminiModel } from '../server/gemini';
 import type { MealSlot } from '../src/types';
 
 const BENCH_DIR = resolve(process.cwd(), 'bench');
@@ -26,7 +26,7 @@ const CLAUDE_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
  * Claude's three, and Gemini 2.5 Flash beside them when there is a key for
  * it (GEMINI_API_KEY in .env). Any Gemini model can be named with --models.
  */
-const defaultModels = (): string[] => [...CLAUDE_MODELS, ...(hasGeminiKey() ? ['gemini-2.5-flash'] : [])];
+const defaultModels = (): string[] => [...CLAUDE_MODELS, ...(hasGeminiKey() ? [DEFAULT_GEMINI] : [])];
 
 /** Store cut on subscriptions: 15% on the small-business rate, 30% standard. */
 const STORE_CUT = { small: 0.15, standard: 0.3 };
@@ -426,7 +426,7 @@ async function main(): Promise<void> {
     return;
   }
   if (!arg('models') && !hasGeminiKey()) {
-    console.log(dim('  Gemini is left out: add GEMINI_API_KEY to .env to compare gemini-2.5-flash as well.'));
+    console.log(dim(`  Gemini is left out: add GEMINI_API_KEY to .env to compare ${DEFAULT_GEMINI} as well.`));
   }
   const unpriced = models.filter((m) => isGeminiModel(m) && !GEMINI_PRICING[m]);
   if (unpriced.length) {

@@ -18,10 +18,10 @@
  */
 import { hasDatabase, migrate, query } from './db';
 import { isAdmin } from './admin';
-import { hasGeminiKey } from './gemini';
+import { DEFAULT_GEMINI, hasGeminiKey } from './gemini';
 import type { Device } from './identity';
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_GEMINI_MODEL = DEFAULT_GEMINI;
 
 export interface GeminiTrial {
   /** Admins' meal photos go to Gemini. */
@@ -53,7 +53,7 @@ export async function saveGeminiTrial(changes: { on?: unknown; model?: unknown }
   if (!hasDatabase()) return { ok: false, message: 'This Squish keeps no settings.' };
   if (changes.on !== undefined && typeof changes.on !== 'boolean') return { ok: false, message: 'On or off?' };
   if (changes.model !== undefined && !isGeminiName(changes.model)) {
-    return { ok: false, message: 'A Gemini model name, like gemini-2.5-flash.' };
+    return { ok: false, message: `A Gemini model name, like ${DEFAULT_GEMINI}.` };
   }
   await migrate();
   const save = (key: string, value: string) =>

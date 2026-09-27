@@ -68,7 +68,7 @@ when('only an admin, with the switch on and a key set, is read by Gemini', async
 });
 
 when('the switch refuses what is not a setting', async () => {
-  assert.deepEqual(await saveGeminiTrial({ model: 'claude-opus-5' }), { ok: false, message: 'A Gemini model name, like gemini-2.5-flash.' });
+  assert.deepEqual(await saveGeminiTrial({ model: 'claude-opus-5' }), { ok: false, message: `A Gemini model name, like ${DEFAULT_GEMINI_MODEL}.` });
   assert.deepEqual(await saveGeminiTrial({ on: 'yes please' }), { ok: false, message: 'On or off?' });
   await query(`insert into admin_settings (key, value) values ('gemini_model', 'not a model') on conflict (key) do update set value = excluded.value`);
   assert.equal((await readGeminiTrial()).model, DEFAULT_GEMINI_MODEL, 'a bad stored name is never used');
