@@ -18,10 +18,19 @@ import { speaker } from '../src/lib/i18n';
  * same store as the app, checked the same way, English wherever a
  * translation is missing — and never at the cost of a link.
  */
-const LANGS = ['ko', 'ga'];
-/** A stand-in for Claude that marks every string, keeping its tags and placeholders. */
-const korean = async (entries: { id: string; text?: string; one?: string; other?: string }[]) =>
-  Object.fromEntries(entries.map((e) => [e.id, e.text !== undefined ? `KO:${e.text}` : { other: `KO:${e.other}` }]));
+const LANGS = ['ko', 'ga', 'en-US'];
+/** American English, as the stand-in makes it: just the spelling, as the real one mostly is. */
+const american = (text: string) =>
+  text.replace(/fibre/g, 'fiber').replace(/Fibre/g, 'Fiber').replace(/colour/g, 'color').replace(/^Confirm your/, 'Confirm (US) your');
+/** A stand-in for Claude that marks every string, keeping its tags and placeholders — and spells American for en-US. */
+const korean = async (entries: { id: string; text?: string; one?: string; other?: string }[], pack?: string) =>
+  Object.fromEntries(
+    entries.map((e) =>
+      pack === 'en-US'
+        ? [e.id, e.text !== undefined ? american(e.text) : { one: american(e.one!), other: american(e.other!) }]
+        : [e.id, e.text !== undefined ? `KO:${e.text}` : { other: `KO:${e.other}` }],
+    ),
+  );
 
 let server: ReturnType<ReturnType<typeof express>['listen']> | null = null;
 let base = '';
@@ -36,6 +45,7 @@ before(async () => {
   registerPrivacyStrings();
   setTranslator(korean);
   await fillLanguage('ko');
+  await fillLanguage('en-US');
 
   process.env.SQUISH_SITE_ORIGIN = 'http://127.0.0.1';
   const app = express();
@@ -320,7 +330,7 @@ test('the page carries every country’s prices for the time zone guess, and say
     const block = /<script type="application\/json" id="prices-data">([^<]*)<\/script>/.exec(html);
     assert.ok(block, `no prices data on ${url}`);
     assert.match(html, /<script src="\/prices\.js" defer><\/script>/);
-    return { html, data: JSON.parse(block[1]) as { region: string; picked: boolean; prices: Record<string, Record<string, string>>; zones: Record<string, string[]> } };
+    return { html, data: JSON.parse(block[1]) as { region: string; picked: boolean; words: Record<string, string | null>; prices: Record<string, Record<string, string>>; zones: Record<string, string[]> } };
   };
 
   const guessed = await read(`${base}/`, { 'Accept-Language': 'en-US' });
@@ -339,28 +349,48 @@ test('the page carries every country’s prices for the time zone guess, and say
   const canadianFrench = await read(`${base}/fr/`, { 'Accept-Language': 'fr-CA' });
   assert.match(canadianFrench.data.prices.CA.monthly, /^9,99\s\$$/);
 
+  // Every page carries it, prices or not: the spelling may need the clock's guess too.
   const notFound = await (await fetch(`${base}/nope`)).text();
-  assert.doesNotMatch(notFound, /prices-data|prices\.js/, 'no prices, no script');
+  assert.match(notFound, /prices-data/);
+  assert.equal(guessed.data.words.US, 'en-US');
+  assert.equal(guessed.data.words.CA, null, 'Canada reads the British');
 });
 
 /* ---------------- American English ---------------- */
 
 test('an English email to somebody in the US is in American English; in Canada it stays British', async () => {
-  setTranslator(async (entries, pack) =>
-    Object.fromEntries(entries.map((e) => [e.id, pack === 'en-US' && e.text ? e.text.replace(/Confirm/g, 'Confirm (US)') : e.text ?? { one: e.one, other: e.other }])),
-  );
-  try {
-    const link = `${ORIGIN}/verify?token=x`;
-    const american = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'US', zone: 'America/Chicago' });
-    assert.equal(american.subject, 'Confirm (US) your email for Squish');
-    assert.match(american.html, /<html lang="en-US"/);
-    const canadian = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'CA', zone: 'America/Toronto' });
-    assert.equal(canadian.subject, 'Confirm your email for Squish');
-    assert.match(canadian.html, /<html lang="en-CA"/);
-    // The business's emails are British wherever they go.
-    const partner = await compose('partner-signin', 'p@example.com', { name: 'Sam', link, expiry: '30 minutes' }, ORIGIN, { language: 'en', region: 'US', zone: 'America/Chicago' });
-    assert.match(partner.html, /<html lang="en-GB"/);
-  } finally {
-    setTranslator(korean);
-  }
+  const link = `${ORIGIN}/verify?token=x`;
+  const american = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'US', zone: 'America/Chicago' });
+  assert.equal(american.subject, 'Confirm (US) your email for Squish');
+  assert.match(american.html, /<html lang="en-US"/);
+  const canadian = await compose('verify', 'a@example.com', { link, days: '7' }, ORIGIN, { language: 'en', region: 'CA', zone: 'America/Toronto' });
+  assert.equal(canadian.subject, 'Confirm your email for Squish');
+  assert.match(canadian.html, /<html lang="en-CA"/);
+  // The business's emails are British wherever they go.
+  const partner = await compose('partner-signin', 'p@example.com', { name: 'Sam', link, expiry: '30 minutes' }, ORIGIN, { language: 'en', region: 'US', zone: 'America/Chicago' });
+  assert.match(partner.html, /<html lang="en-GB"/);
+});
+
+test('the website is in American English for the US, and British everywhere else', async () => {
+  const us = await (await fetch(`${base}/`, { headers: { 'Accept-Language': 'en-US,en;q=0.9' } })).text();
+  assert.match(us, /<html lang="en-US" dir="ltr">/);
+  assert.match(us, /calories, protein, fiber and more/);
+  assert.doesNotMatch(us, /\bfibre\b/);
+
+  const canadian = await (await fetch(`${base}/`, { headers: { 'Accept-Language': 'en-CA' } })).text();
+  assert.match(canadian, /<html lang="en-GB" dir="ltr">/);
+  assert.match(canadian, /calories, protein, fibre and more/);
+
+  // A country picked under the plans decides the spelling too, in English only.
+  assert.match(await (await fetch(`${base}/?country=US`)).text(), /fiber and more/);
+  assert.match(await (await fetch(`${base}/?country=GB`, { headers: { 'Accept-Language': 'en-US' } })).text(), /fibre and more/);
+  assert.match(await (await fetch(`${base}/ko/?country=US`)).text(), /<html lang="ko"/, 'another language is itself in the US');
+});
+
+test('the clock’s guess comes back as a guess, which can be guessed again; a pick cannot', async () => {
+  const guess = await (await fetch(`${base}/?country=GB&guess`, { headers: { 'Accept-Language': 'en-US' } })).text();
+  assert.match(guess, /fibre and more/, 'the page is for the guessed country');
+  assert.match(guess, /"region":"GB","picked":false/);
+  const pick = await (await fetch(`${base}/?country=GB`)).text();
+  assert.match(pick, /"region":"GB","picked":true/);
 });

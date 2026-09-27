@@ -42,6 +42,7 @@ import {
 import { actions, adminEmail, allowances, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan } from './admin';
 import { htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
 import { isLanguage } from '../src/lib/language';
+import { isRegion } from '../src/lib/region';
 import {
   claimPartnerLink,
   emailTaken,
@@ -758,7 +759,9 @@ app.get('/verify', async (req, res) => {
   // In the account's language; for a link that has run out there is no
   // account to ask, so the browser's.
   const language = done.ok && isLanguage(done.language) ? done.language : acceptLanguage(req.get('accept-language'));
-  const { t } = await speakerFor(language);
+  // And its country: American English for an American account.
+  const region = done.ok && isRegion(done.region) ? done.region : 'GB';
+  const { t } = await speakerFor(language, region);
   const body = done.ok
     ? `<h1>${escapeHtml(t('That is confirmed'))}</h1>
 <p>${richHtml(t('<strong>{email}</strong> is yours, as far as Squish is concerned. If anything important happens on your account — a new sign-in, a changed password — this is where we will tell you.')).replace('{email}', escapeHtml(done.email))}</p>
@@ -772,7 +775,7 @@ app.get('/verify', async (req, res) => {
     .send(
       standalonePage(body, done.ok ? t('Confirmed — Squish') : t('Link expired — Squish'), t('Confirming your email for Squish.'), {
         back: false,
-      }).replace('<html lang="en-GB">', htmlTag(language)),
+      }).replace('<html lang="en-GB">', htmlTag(language, region)),
     );
 });
 

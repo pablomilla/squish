@@ -112,6 +112,16 @@ start-up.
   and every country's prices come on the page in a JSON block, so the script
   asks nothing of anybody. It is what puts pounds in front of somebody in
   Britain with a browser set to American English.
+- In English the country decides the spelling too: American for the US
+  (`packFor`, as in the app), British everywhere else, `<html lang>` to
+  match. Spelling cannot be swapped in the browser the way a price can, so
+  when the clock names a country that reads the page in other words,
+  `prices.js` asks for it again once, as `?country=GB&guess`. A guess can be
+  guessed again (so a shared link still suits whoever opens it); a country
+  picked from the list cannot. Every page carries the data for this, not
+  only those with prices. Another language is the same in every country.
+- The email confirmation page follows the account's country the same way.
+  The privacy policy stays British: it is the text Squish is held to.
 - The screenshots are pictures of the English app.
 
 ## What it costs

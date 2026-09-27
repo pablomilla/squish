@@ -1,16 +1,20 @@
 /*
- * Prices for the country this device's clock is set to.
+ * Prices, and in English the spelling, for the country this device's clock
+ * is set to.
  *
  * The server shows prices for the country the browser's language names —
  * "en-US" is America — which is wrong for the many people in Britain whose
  * browser came set to American English. The time zone is a better guess:
  * almost nobody sets their clock to another country's time. So if it is one
  * of the six countries Squish sells in, and nobody picked a country from
- * the list under the plans, this shows that country's prices instead.
+ * the list under the plans, this shows that country's prices instead — and
+ * if that country spells differently (America, or not), asks for the page
+ * again as that country reads it.
  *
  * Everything it needs is on the page, written by the server in the page's
  * own language (the #prices-data block). The time zone is read here and
- * goes nowhere: no request, no cookie, nothing stored.
+ * goes nowhere: no cookie, nothing stored, and the only request is the page
+ * again, which says the country but not the time zone.
  */
 (function () {
   var block = document.getElementById('prices-data');
@@ -41,6 +45,17 @@
     });
   });
   if (!region || region === data.region || !data.prices[region]) return;
+
+  // A country that reads this page in other words — in English, American in
+  // the US, British elsewhere — needs the page again, written that way. Once:
+  // the page that comes back is for that country, so this stops there.
+  if (data.words && data.words[region] !== data.words[data.region]) {
+    var url = new URL(location.href);
+    url.searchParams.set('country', region);
+    url.searchParams.set('guess', '');
+    location.replace(url.toString());
+    return;
+  }
 
   var prices = data.prices[region];
   var marked = document.querySelectorAll('[data-price]');

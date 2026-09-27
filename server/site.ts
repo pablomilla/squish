@@ -42,7 +42,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { idOf, localeFor, RTL_LANGUAGES } from '../src/lib/i18n';
-import { LANGUAGE_LIST, isLanguage, type Language, type Pack } from '../src/lib/language';
+import { LANGUAGE_LIST, isLanguage, packFor, type Language, type Pack } from '../src/lib/language';
 import { REGION_LIST, REGIONS, TIME_ZONES, detectRegion, isRegion, type Region } from '../src/lib/region';
 import { stringsOf, translateHtml, type Lookup } from './htmlWords';
 import { fillLanguage, registerStrings, speakerFor, translationsFor } from './translate';
@@ -129,9 +129,9 @@ export async function pageWords(language: Pack, html: string): Promise<{ lookup:
 /** How a page and a search engine name each language; Chinese is the simplified script. */
 export const hreflang = (language: Language): string => (language === 'zh' ? 'zh-Hans' : language);
 
-/** The <html> tag for a language: its name, and its direction. The English is British. */
-export const htmlTag = (language: Language): string =>
-  `<html lang="${language === 'en' ? 'en-GB' : hreflang(language)}" dir="${RTL_LANGUAGES.has(language) ? 'rtl' : 'ltr'}">`;
+/** The <html> tag for a language: its name, and its direction. The English is British, but in the US. */
+export const htmlTag = (language: Language, region: Region = 'GB'): string =>
+  `<html lang="${language === 'en' ? (packFor('en', region) ? 'en-US' : 'en-GB') : hreflang(language)}" dir="${RTL_LANGUAGES.has(language) ? 'rtl' : 'ltr'}">`;
 
 /**
  * `/es/support` → Spanish, `/support`; `/support` → no language said. Only
@@ -188,13 +188,15 @@ function alternates(page: string): string {
  * ------------------------------------------------------------------ */
 
 /**
- * Which country's prices to show: the one picked (`?country=US`), else the
- * first the browser's languages name. Whether it was picked matters to the
- * cache in front: a page that depends on the header has to say so.
+ * Which country the page is for — its prices, and in English its spelling:
+ * the one picked (`?country=US`), else the first the browser's languages
+ * name. `?country=GB&guess` is prices.js's better guess from the device's
+ * clock, which may be guessed again; a pick may not. Whether it was picked
+ * matters to the cache in front: a page that depends on the header says so.
  */
-export function regionFor(asked: unknown, acceptLanguageHeader: string | undefined): { region: Region; picked: boolean } {
+export function regionFor(asked: unknown, guessed: boolean, acceptLanguageHeader: string | undefined): { region: Region; picked: boolean } {
   const code = typeof asked === 'string' ? asked.toUpperCase() : '';
-  if (isRegion(code)) return { region: code, picked: true };
+  if (isRegion(code)) return { region: code, picked: !guessed };
   return { region: detectRegion(acceptedTags(acceptLanguageHeader)), picked: false };
 }
 
@@ -212,7 +214,8 @@ export function sitePrice(amount: number, region: Region, language: Language): s
 }
 
 /**
- * The prices in, and the links to every other country's under the plans.
+ * The prices in, the links to every other country's under the plans, and
+ * what site/prices.js needs to guess better from the device's clock.
  *
  * Each price is marked (`data-price`), and the page carries every country's
  * prices, already written in its language, with the table of time zones, for
@@ -221,7 +224,6 @@ export function sitePrice(amount: number, region: Region, language: Language): s
  * in the browser and goes nowhere.
  */
 async function withPrices(html: string, region: Region, language: Language, picked: boolean): Promise<string> {
-  if (!/\{(free|monthly|yearly)\}/.test(html)) return html;
   const pricesIn = (r: Region) => ({
     free: sitePrice(0, r, language),
     monthly: sitePrice(REGIONS[r].price.monthly, r, language),
@@ -240,6 +242,9 @@ async function withPrices(html: string, region: Region, language: Language, pick
   const data = {
     region,
     picked,
+    // Which words each country reads this page in: in English, American in
+    // the US. A guess from the clock that changes them reloads the page.
+    words: Object.fromEntries(REGION_LIST.map((r) => [r.id, packFor(language, r.id)])),
     prices: Object.fromEntries(REGION_LIST.map((r) => [r.id, pricesIn(r.id)])),
     zones: TIME_ZONES,
   };
@@ -269,15 +274,17 @@ async function page(
   try {
     let html = await readFile(file, 'utf8');
     let complete = true;
-    if (language !== 'en') {
-      const words = await pageWords(language, html);
+    // Another language, or American English for English in the US.
+    const pack = packFor(language, region);
+    if (pack) {
+      const words = await pageWords(pack, html);
       html = translateHtml(html, words.lookup);
       complete = words.complete;
     }
     const name = file.slice(SITE_DIR.length + 1).replace(/\.html$/, '');
     const pagePath = name === 'index' ? '' : name;
     html = html
-      .replace(/<html lang="[^"]*">/, htmlTag(language))
+      .replace(/<html lang="[^"]*">/, htmlTag(language, region))
       .replace('<!--languages-->', languageLinks(language, pagePath));
     if (name !== '404') html = html.replace('</head>', `  ${alternates(pagePath)}\n</head>`);
     if (prefixed || language !== 'en') html = localLinks(html, language);
@@ -356,7 +363,7 @@ export function siteRouter(appOrigin: () => string, distDir: string) {
     }
     // Unsaid, the browser's first choice — so the page varies by what it asks.
     const language = said.language ?? acceptLanguage(req.get('accept-language'));
-    const prices = regionFor(req.query.country, req.get('accept-language'));
+    const prices = regionFor(req.query.country, req.query.guess !== undefined, req.get('accept-language'));
     if (!said.language || !prices.picked) res.vary('Accept-Language');
 
     void (async () => {

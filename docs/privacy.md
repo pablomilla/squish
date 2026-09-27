@@ -119,12 +119,15 @@ app.squish.online.
 
 It shows itself in the language your browser asks for first, or the one you
 pick at the bottom of the page, which becomes part of the address
-(squish.online/es/). Prices are shown in the currency of the country your
-browser's language names (English as spoken in Australia, say), or the
-country your device's clock is set to, or the one you pick under the prices.
-The clock is read by the page in your browser and is not sent anywhere; the
-website never looks up where you actually are. Nothing remembers either
-choice but the address itself.
+(squish.online/es/). Prices — and, in English, American or British
+spelling — follow the country your browser's language names (English as
+spoken in Australia, say), or the country your device's clock is set to, or
+the one you pick under the prices. The clock is read by the page in your
+browser; your time zone is never sent. When the clock names a country that
+spells differently, the page asks for itself again with that country in the
+address (squish.online/?country=GB), so our server learns the country it
+guessed, as it would from your pick. The website never looks up where you
+actually are, and nothing remembers either choice but the address itself.
 This policy is translated too, for reading; if a translation and the English
 ever differ, the English is what counts.
 

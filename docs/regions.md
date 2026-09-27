@@ -96,8 +96,9 @@ The app itself is translated too — see docs/translation.md. Choosing a
 language on the first screen or on You → About you switches both the app and
 its AI, and restarts Squish in it.
 
-English in the US is American English: every screen, badge ("Fiber friend")
-and email, from an American word set made the same way as a translation.
+English in the US is American English: every screen, badge ("Fiber friend"),
+email and page of the website, from an American word set made the same way as
+a translation.
 Everywhere else English is the British source — Canada included, whose
 spelling ("colour", "fibre") is British; its food words (fries, cookies, pop)
 still follow the country. Changing country into or out of the US, in English,
