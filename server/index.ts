@@ -1473,7 +1473,9 @@ app.put('/api/admin/gemini', requireAdmin, async (req, res) => {
       res.status(400).json({ error: 'bad_setting', message: saved.message });
       return;
     }
-    await recordAdminAction(await adminEmail(req.device!), saved.trial.on ? 'gemini trial on' : 'gemini trial off', null, saved.trial.model);
+    const who = await adminEmail(req.device!);
+    await recordAdminAction(who, saved.trial.on ? 'gemini trial on' : 'gemini trial off', null, saved.trial.model);
+    console.log(`[squish] gemini trial switched ${saved.trial.on ? 'on' : 'off'} by ${who} — model ${saved.trial.model}${saved.trial.keySet ? '' : ', but no GEMINI_API_KEY is set'}`);
     res.json(saved.trial);
   } catch (error) {
     logFailure('admin gemini save', error);

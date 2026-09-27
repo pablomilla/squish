@@ -73,8 +73,13 @@ export async function photoReader(device: Device | undefined): Promise<{ reader:
   try {
     if (!device?.accountId) return { reader: 'claude' };
     const trial = await readGeminiTrial();
-    if (!trial.on) return { reader: 'claude' };
-    if (!(await isAdmin(device))) return { reader: 'claude' };
+    const admin = await isAdmin(device);
+    if (!admin) return { reader: 'claude' };
+    // An admin's photo is the one place the trial could apply: say plainly why it did not.
+    if (!trial.on) {
+      console.info('[squish] gemini trial: off, so this admin photo was read by Claude — turn it on in Dashboard → Settings');
+      return { reader: 'claude' };
+    }
     if (!trial.keySet) {
       console.warn('[squish] gemini trial: the switch is on but GEMINI_API_KEY is not set in Render — reading with Claude');
       return { reader: 'claude' };
@@ -88,7 +93,7 @@ export async function photoReader(device: Device | undefined): Promise<{ reader:
 /** One line at start-up: whether the trial is on, and whether it can be. */
 export async function describeGeminiTrial(): Promise<string> {
   const trial = await readGeminiTrial();
-  if (!trial.on) return `Gemini trial: off${trial.keySet ? ' (key set)' : ''}`;
+  if (!trial.on) return `Gemini trial: off${trial.keySet ? ' (key set)' : ' (no GEMINI_API_KEY)'} — turn it on in Dashboard → Settings`;
   return trial.keySet
     ? `Gemini trial: on — admins' meal photos go to ${trial.model}`
     : 'Gemini trial: on, but GEMINI_API_KEY is not set — nothing goes to Gemini';
