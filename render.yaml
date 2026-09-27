@@ -63,6 +63,11 @@ services:
         sync: false
       - key: SQUISH_FOOD_TABLE_COFID_URL
         sync: false
+      # "off" asks the AI for every figure of every food again, table or not.
+      # Unset, a food the table can answer carries only calories and free
+      # sugar in the AI's answer (see "Table first" in server/claude.ts).
+      - key: SQUISH_TABLE_FIRST
+        sync: false
       # "off" stops the server translating new interface strings into every
       # language after a deploy; they are then translated when first asked for.
       - key: SQUISH_I18N_WARM

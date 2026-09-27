@@ -393,9 +393,16 @@ export async function ensureFoodTable(): Promise<void> {
 }
 
 let loaded: Promise<TableFood[]> | null = null;
+let supplied: TableFood[] | null = null;
+
+/** For tests: this table, in memory, in place of the database's; null goes back to the database. */
+export function useTableForTests(foods: TableFood[] | null): void {
+  supplied = foods;
+}
 
 /** Every food in the table, read once per process (and again after an import). Empty without one. */
 export function tableFoods(): Promise<TableFood[]> {
+  if (supplied) return Promise.resolve(supplied);
   if (!foodTableOn()) return Promise.resolve([]);
   loaded ??= (async () => {
     await migrate();

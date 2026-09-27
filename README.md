@@ -365,9 +365,17 @@ portion. Otherwise the AI's figures stand. The server downloads each table itsel
 time it starts without it, and keeps it in Postgres — the USDA's as a CSV zip, CoFID as the Excel
 workbook linked from its gov.uk page (read by `server/xlsx.ts`); each one's failure leaves the other
 working, and is retried at the next start. `SQUISH_FOOD_TABLE=off` turns it all off, and
-`SQUISH_FOOD_TABLE_COFID_URL` points straight at the workbook if gov.uk moves it. Each analysis logs how many of its foods matched (`[squish] food table: 2 of 3 foods …`), which
-is the number to watch before trusting the table further — for instance, to stop asking the AI for
-figures the table already has. Nutrition data for matched foods: McCance and Widdowson's Composition
+`SQUISH_FOOD_TABLE_COFID_URL` points straight at the workbook if gov.uk moves it. Each analysis logs how many of its foods matched (`[squish] food table: 2 of 3 foods …`).
+
+**And the AI is not asked for figures the table already has.** With a table loaded, a food the AI
+names in table words carries only two numbers in its answer: its calories, which is how a match is
+checked, and the free-sugar share, which no table measures. A dish or a branded product still gets
+every figure in the same answer. A named food the table then cannot answer is filled in by one short
+text-only question to the cheaper text model, with no photo. Whether that saves money depends on how
+often named foods match, so every analysis logs the split and the output tokens
+(`[squish] table first: 2 from the table, 1 filled in, 1 from the first answer · 640+180 output
+tokens`), and the AI usage dashboard's cost per analysis shows the effect over time.
+`SQUISH_TABLE_FIRST=off` goes back to asking for everything. Nutrition labels are never affected. Nutrition data for matched foods: McCance and Widdowson's Composition
 of Foods Integrated Dataset, which contains public sector information licensed under the Open
 Government Licence v3.0; and U.S. Department of Agriculture, Agricultural Research Service, FoodData
 Central (public domain).

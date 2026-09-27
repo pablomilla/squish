@@ -13,6 +13,7 @@ import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } fro
 import { bill } from './billing';
 import { regionNote } from './region';
 import { groundMeal } from './grounding';
+import { tableFoods } from './foodTable';
 import { readTranslation, translateRequest, type CatalogEntry } from './translate';
 import type { Pack } from '../src/lib/language';
 import { AISLES, isAisle } from '../src/lib/shopping';
@@ -117,6 +118,14 @@ const NUTRIENT_PROPS = {
   },
 } as const;
 
+/** Everything about one item's nutrition, for the portion stated. */
+const ITEM_NUTRIENTS = {
+  type: 'object',
+  properties: NUTRIENT_PROPS,
+  required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'satFat', 'sugar', 'freeSugar', 'sodium', 'micros'],
+  additionalProperties: false,
+} as const;
+
 export const MEAL_SCHEMA = {
   type: 'object',
   properties: {
@@ -179,12 +188,7 @@ export const MEAL_SCHEMA = {
             description:
               "The food as a food composition table lists it, in English whatever language the rest is in, with how it was prepared as eaten: 'banana, raw', 'rice, white, cooked', 'egg, whole, hard-boiled', 'chicken breast, meat only, roasted', 'cheddar cheese', 'whole milk', 'olive oil'. An empty string for a mixed dish, a restaurant or takeaway dish, or a branded product.",
           },
-          nutrients: {
-            type: 'object',
-            properties: NUTRIENT_PROPS,
-            required: ['calories', 'protein', 'carbs', 'fat', 'fibre', 'satFat', 'sugar', 'freeSugar', 'sodium', 'micros'],
-            additionalProperties: false,
-          },
+          nutrients: ITEM_NUTRIENTS,
         },
         required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'aisle', 'lookup', 'nutrients'],
         additionalProperties: false,
@@ -408,6 +412,131 @@ export function priceUsage(model: string, counts: TokenCounts): number | null {
   return (input * rate.input + counts.outputTokens * rate.output) / 1_000_000;
 }
 
+/*
+ * Table first.
+ *
+ * Once a food table is loaded, a plain food's nutrition comes from it — so
+ * asking the model for all fifteen figures of a banana, only to throw them
+ * away, is paying for output nobody uses. For an item it names in a table's
+ * words (a `lookup`), the model gives just two: its calories, which is how a
+ * table match is checked (server/foodMatch.ts), and the share of sugar that
+ * is free sugar, which no table measures. A dish, a takeaway or a branded
+ * product still gets everything, in the same answer.
+ *
+ * A named food the table then cannot answer is filled in by a short
+ * text-only question to the cheaper text model (`fillFigures`), with no
+ * photo. Whether this saves money overall depends on how often named foods
+ * match — every analysis logs the split, and SQUISH_TABLE_FIRST=off goes back
+ * to asking for everything.
+ */
+const TABLE_FIRST_RULE = `- nutrients: for an item with a lookup, give only calories and freeSugar — its other figures come from a food table, so leave them out. For an item without a lookup, give all of them.`;
+
+/** The meal schema with an item's nutrients all optional, so a table food can carry just two. */
+export function briefSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const copy = structuredClone(schema) as { properties: { items: { items: { properties: { nutrients: Record<string, unknown> } } } } };
+  const item = copy.properties.items.items.properties;
+  item.nutrients = {
+    ...item.nutrients,
+    required: [],
+    description: 'Only calories and freeSugar for an item with a lookup; everything for an item without one.',
+  };
+  return copy as unknown as Record<string, unknown>;
+}
+
+/** Whether to ask table first: a table to answer from, and not a label (whose printed figures are the truth). */
+async function tableFirst(system: string): Promise<boolean> {
+  if (system === LABEL_SYSTEM || process.env.SQUISH_TABLE_FIRST === 'off') return false;
+  try {
+    return (await tableFoods()).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Nutrition the table did not supply and the model was not asked for. */
+const missingFigures = (item: NonNullable<ModelMeal['items']>[number]): boolean =>
+  !item.source && (['protein', 'carbs', 'fat'] as const).some((key) => typeof item.nutrients?.[key] !== 'number');
+
+const FILL_SYSTEM = `You are the nutrition engine behind Squish, a food-tracking app. You are given foods from one meal, each with its portion and weight, and return each one's nutrition for that portion, in the same order.
+
+Rules:
+- Nutrition values are for the portion stated, not per 100 g.
+- Count fibre inside total carbohydrate, and give sugar as total sugars.
+- freeSugar is the added-and-juice share of sugar, counted inside it: 0 for fruit, vegetables and plain milk.
+- satFat is the saturated share of fat, counted inside it, and is never larger than fat.
+- micros are per portion, estimated the way a food composition table would have them, with fortification where they live (below).`;
+
+const FILL_SCHEMA = {
+  type: 'object',
+  properties: {
+    items: { type: 'array', items: { type: 'object', properties: { nutrients: ITEM_NUTRIENTS }, required: ['nutrients'], additionalProperties: false } },
+  },
+  required: ['items'],
+  additionalProperties: false,
+} as const;
+
+interface CallCost {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number | null;
+  latencyMs: number;
+}
+
+/**
+ * The full figures for the named foods the table could not answer: one
+ * text-only question to the text model (the main model if that fails), no
+ * photo. Nothing to fill, nothing asked.
+ */
+async function fillFigures(meal: ModelMeal): Promise<{ meal: ModelMeal; filled: number; cost: CallCost | null }> {
+  const items = meal.items ?? [];
+  const needing = items.map((item, index) => ({ item, index })).filter(({ item }) => missingFigures(item));
+  if (!needing.length) return { meal, filled: 0, cost: null };
+
+  const prompt = [
+    `These foods are part of a meal read as "${meal.title ?? 'a meal'}". Give each one's nutrition for the portion stated, in this order:`,
+    ...needing.map(({ item }, n) => `${n + 1}. ${item.name ?? 'Food'} — ${item.portion ?? 'a portion'}${item.grams ? `, ${Math.round(item.grams)} g` : ''}${item.lookup ? ` (${item.lookup})` : ''}`),
+  ].join('\n');
+
+  const ask = async (model: string) => {
+    const startedAt = Date.now();
+    const response = await getClient().messages.create({
+      model,
+      max_tokens: 4000,
+      system: `${FILL_SYSTEM}\n\n${regionNote('meal')}`,
+      messages: [{ role: 'user', content: prompt }],
+      ...tuningFor(model, FILL_SCHEMA as unknown as Record<string, unknown>),
+    });
+    if (response.stop_reason === 'refusal') throw new Error('The model declined to fill in the figures.');
+    const text = response.content.filter((block): block is Anthropic.TextBlock => block.type === 'text').map((block) => block.text).join('');
+    const parsed = JSON.parse(text) as { items?: { nutrients?: Partial<Nutrients> }[] };
+    if ((parsed.items ?? []).length !== needing.length) throw new Error('The figures came back for the wrong number of foods.');
+    const cost: CallCost = {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      costUsd: billed(priceUsage(model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens })),
+      latencyMs: Date.now() - startedAt,
+    };
+    return { figures: parsed.items!, cost };
+  };
+
+  let answer: Awaited<ReturnType<typeof ask>>;
+  try {
+    answer = await ask(TEXT_MODEL);
+  } catch (error) {
+    if (TEXT_MODEL === MODEL) throw error;
+    console.warn(`[squish] ${TEXT_MODEL} could not fill the figures — asking ${MODEL}:`, error instanceof Error ? error.message : error);
+    answer = await ask(MODEL);
+  }
+
+  const next = [...items];
+  needing.forEach(({ item, index }, n) => {
+    const figures = answer.figures[n].nutrients ?? {};
+    // The model's own free-sugar call from the first answer stands if the fill left it out.
+    next[index] = { ...item, nutrients: { ...figures, freeSugar: figures.freeSugar ?? item.nutrients?.freeSugar } };
+  });
+  return { meal: { ...meal, items: next }, filled: needing.length, cost: answer.cost };
+}
+
 async function requestMeal(
   content: Anthropic.ContentBlockParam[],
   fallbackSlot?: MealSlot,
@@ -416,13 +545,14 @@ async function requestMeal(
   schema: Record<string, unknown> = MEAL_SCHEMA,
 ): Promise<DetailedAnalysis> {
   const startedAt = Date.now();
+  const brief = await tableFirst(system);
   const response = await getClient().messages.create({
     model,
     max_tokens: 8000,
     // Where they live goes last, after the rules every country shares.
-    system: `${system}\n\n${regionNote(system === LABEL_SYSTEM ? 'label' : system === RECIPE_SYSTEM ? 'recipe' : 'meal')}`,
+    system: `${system}${brief ? `\n${TABLE_FIRST_RULE}` : ''}\n\n${regionNote(system === LABEL_SYSTEM ? 'label' : system === RECIPE_SYSTEM ? 'recipe' : 'meal')}`,
     messages: [{ role: 'user', content }],
-    ...tuningFor(model, schema),
+    ...tuningFor(model, brief ? briefSchema(schema) : schema),
   });
   const latencyMs = Date.now() - startedAt;
 
@@ -438,28 +568,42 @@ async function requestMeal(
   const inputTokens = response.usage.input_tokens;
   const outputTokens = response.usage.output_tokens;
 
+  const costUsd = billed(
+    priceUsage(model, {
+      inputTokens,
+      outputTokens,
+      cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
+    }),
+  );
+
   // A label's figures are printed, and are the truth; everything else is
-  // checked against the food table where it names a plain food.
+  // checked against the food table where it names a plain food, and in
+  // table-first mode the named foods it could not answer are filled in.
   const read = JSON.parse(text) as ModelMeal;
-  const parsed = system === LABEL_SYSTEM ? read : await groundMeal(read);
+  let parsed = system === LABEL_SYSTEM ? read : await groundMeal(read);
+  let fill: CallCost | null = null;
+  if (brief) {
+    const done = await fillFigures(parsed);
+    parsed = done.meal;
+    fill = done.cost;
+    const fromTable = parsed.items?.filter((item) => item.source).length ?? 0;
+    console.info(
+      `[squish] table first: ${fromTable} from the table, ${done.filled} filled in, ${(parsed.items?.length ?? 0) - fromTable - done.filled} from the first answer` +
+        ` · ${outputTokens}${fill ? `+${fill.outputTokens}` : ''} output tokens`,
+    );
+  }
 
   return {
     analysis: toAnalysis(parsed, fallbackSlot),
     raw: parsed,
     usage: {
       model: response.model,
-      inputTokens,
-      outputTokens,
+      inputTokens: inputTokens + (fill?.inputTokens ?? 0),
+      outputTokens: outputTokens + (fill?.outputTokens ?? 0),
       cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
-      costUsd: billed(
-        priceUsage(model, {
-          inputTokens,
-          outputTokens,
-          cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
-          cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
-        }),
-      ),
-      latencyMs,
+      costUsd: costUsd === null ? null : costUsd + (fill?.costUsd ?? 0),
+      latencyMs: latencyMs + (fill?.latencyMs ?? 0),
     },
   };
 }
