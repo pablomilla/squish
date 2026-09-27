@@ -3,7 +3,9 @@ import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, useToast } from '../components/ui';
 import { Credentials, Forgot } from '../components/AccountCard';
-import { signIn, type Arrived } from '../lib/account';
+import { signIn, signUp, type Arrived } from '../lib/account';
+import { friendOffer, periodWords, type FriendOffer } from '../lib/friends';
+import { planNow } from '../lib/plan';
 import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
@@ -22,8 +24,13 @@ import './onboarding.css';
 import { t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
 
-const STEPS = ['welcome', 'name', 'about', 'goal', 'activity', 'plan'] as const;
-type Step = (typeof STEPS)[number];
+/**
+ * The steps, in order. Where this Squish keeps anything on the server, the
+ * last is making an account: after the plan, when there is something worth
+ * keeping, and before the first meal, because the free AI analyses need one.
+ */
+const ALL_STEPS = ['welcome', 'name', 'about', 'goal', 'activity', 'plan', 'account'] as const;
+type Step = (typeof ALL_STEPS)[number];
 
 const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string; mood: Mood; say: string }> = {
   lose: { title: t('Lose weight'), blurb: t('A gentle deficit, plenty of protein'), emoji: '🌱', mood: 'proud', say: t('Slow and steady — I’ll cheer every step.') },
@@ -95,6 +102,19 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   const moveTo = (region: Region) =>
     setDraft((d) => retuneForUnits({ ...d, region, energy: undefined }, REGIONS[region].units));
   const [signing, setSigning] = useState<'in' | 'forgot' | null>(null);
+  // Signed in from the welcome screen already: nothing to make at the end.
+  const [signedIn, setSignedIn] = useState(false);
+  const STEPS: readonly Step[] = accounts && !signedIn ? ALL_STEPS : ALL_STEPS.filter((s) => s !== 'account');
+  // Came by a friend's invite: the account step says what it gets them.
+  const [offer, setOffer] = useState<FriendOffer | null>(null);
+  useEffect(() => {
+    if (!accounts) return;
+    let live = true;
+    void friendOffer().then((found) => live && setOffer(found));
+    return () => {
+      live = false;
+    };
+  }, [accounts]);
   // Somebody who has said they are under 18. Held here only, never saved.
   const [tooYoung, setTooYoung] = useState(false);
   const toast = useToast();
@@ -107,11 +127,18 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
    */
   const arrived = async (who: Arrived) => {
     setSigning(null);
+    setSignedIn(true);
     const found = await pullDiary();
     const profile = (found?.state as { profile?: Partial<Profile> } | null)?.profile;
     if (found && profile?.onboarded) {
       adoptBackup(found);
       toast(profile.name ? t('Welcome back, {name}. Your diary is here.', { name: profile.name }) : t('Welcome back. Your diary is here.'), '🫧');
+      return;
+    }
+    // Signed in at the end, having just set up: what they made here is the account's diary now.
+    if (step === 'account') {
+      finish();
+      toast(who.email ? t('Signed in as {email}.', { email: who.email }) : t('Signed in.'), '🫧');
       return;
     }
     toast(
@@ -124,6 +151,28 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   };
 
   const index = STEPS.indexOf(step);
+
+  const finish = () => {
+    completeOnboarding(draft);
+    // English, into or out of the US: American or British spelling is loaded at start.
+    if (packFor(languageOf(draft), regionOf(draft)) !== startedWith()) location.reload();
+  };
+
+  /** Account made at the end of setting up: straight into the app, told what it got them. */
+  const madeAccount = (made: Arrived) => {
+    finish();
+    const taste = planNow().plan === 'free' ? planNow().left.photo : 0;
+    toast(
+      [
+        t('Account made.'),
+        taste > 0 ? t('Your {n} free AI analyses are ready.', { n: taste }) : '',
+        made.verificationSent ? t('Check your email to confirm the address.') : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+      '🫧',
+    );
+  };
   const targets = useMemo(() => computeTargets(draft), [draft]);
   const set = (patch: Partial<Profile>) => setDraft((d) => ({ ...d, ...patch }));
   const next = () => {
@@ -373,6 +422,44 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
               )}
             </div>
           )}
+
+          {step === 'account' && (
+            <div className="stack">
+              <Buddy mood="excited" say={t('Then I can keep your diary safe.')}>
+                <h1>{name ? t('Save your plan, {name}', { name }) : t('Save your plan')}</h1>
+              </Buddy>
+              <ul className="onboard-perks">
+                <li>
+                  <span aria-hidden="true">📸</span> {t('Unlocks your free AI meal analyses')}
+                </li>
+                <li>
+                  <span aria-hidden="true">📱</span> {t('A new phone is a sign-in, not a fresh start')}
+                </li>
+                <li>
+                  <span aria-hidden="true">🛟</span> {t('Your diary back if this phone is lost')}
+                </li>
+              </ul>
+              {offer && (
+                <p className="small account-offer">
+                  {t('🎁 A friend invited you: make an account, use Squish on {days} different days, and you both get {period} of Squish Plus.', {
+                    days: offer.qualifyDays,
+                    period: periodWords(offer.rewardDays),
+                  })}
+                </p>
+              )}
+              <Credentials
+                submit={t('Create account')}
+                hint={t('Four words you will remember beats one word with a number on the end.')}
+                onSubmit={signUp}
+                onDone={madeAccount}
+                footer={
+                  <button type="button" className="linkish tiny" onClick={() => setSigning('in')}>
+                    {t('I already have an account')}
+                  </button>
+                }
+              />
+            </div>
+          )}
         </div>
 
         <div className="onboard-actions">
@@ -381,16 +468,13 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
               {t('Back')}
             </button>
           )}
-          {step === 'plan' ? (
-            <button
-              type="button"
-              className="btn grow"
-              onClick={() => {
-                completeOnboarding(draft);
-                // English, into or out of the US: American or British spelling is loaded at start.
-                if (packFor(languageOf(draft), regionOf(draft)) !== startedWith()) location.reload();
-              }}
-            >
+          {step === 'account' ? (
+            // The form above is the way on; this is the way round it.
+            <button type="button" className="btn btn--quiet grow" onClick={finish}>
+              {t('Not now')}
+            </button>
+          ) : step === STEPS[STEPS.length - 1] ? (
+            <button type="button" className="btn grow" onClick={finish}>
               {t("Let's go")}
             </button>
           ) : (

@@ -1,5 +1,5 @@
 {
- "version": "0yvntsk0w9m035",
+ "version": "18ejo6i-9adxi7",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -692,6 +692,13 @@
    "text": "{grams} g for each pound you weigh, to help build muscle.",
    "where": [
     "src/lib/planExplained.ts"
+   ]
+  },
+  {
+   "id": "03np36x-usl80u",
+   "text": "Then I can keep your diary safe.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -1991,7 +1998,8 @@
    "id": "0c9wfke-e2f7ri",
    "text": "Not now",
    "where": [
-    "src/components/Paywall.tsx"
+    "src/components/Paywall.tsx",
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -2022,6 +2030,7 @@
    "text": "Four words you will remember beats one word with a number on the end.",
    "where": [
     "src/components/AccountCard.tsx",
+    "src/screens/Onboarding.tsx",
     "src/screens/ResetPassword.tsx"
    ]
   },
@@ -3094,6 +3103,13 @@
    ]
   },
   {
+   "id": "0j45eps03ignar",
+   "text": "A new phone is a sign-in, not a fresh start",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0j53ecn0swqj1o",
    "text": "Its own notes, kept in this browser with everything else. Delete any of them.",
    "where": [
@@ -3434,6 +3450,13 @@
    ]
   },
   {
+   "id": "0kwqc4v-7bt9j0",
+   "text": "Save your plan, {name}",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "0kxpsyn08xd2qa",
    "text": "Squish needs permission to use the microphone. You can allow it in your browser settings.",
    "where": [
@@ -3753,7 +3776,8 @@
    "id": "0mfp3qa-7mjsgp",
    "text": "Create account",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -4810,7 +4834,8 @@
    "id": "0sht4gz0v04r5c",
    "text": "🎁 A friend invited you: make an account, use Squish on {days} different days, and you both get {period} of Squish Plus.",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -6919,6 +6944,13 @@
    ]
   },
   {
+   "id": "1624t1y0m5ytt3",
+   "text": "Save your plan",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "164dvp90n1enul",
    "text": "Corn kernels",
    "where": [
@@ -7766,7 +7798,8 @@
    "id": "1aw6lq50v7gwyb",
    "text": "Account made.",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -7914,7 +7947,8 @@
    "id": "1btpvt503tz6i4",
    "text": "Your {n} free AI analyses are ready.",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -8541,7 +8575,8 @@
    "id": "1ftkkga0xpur2j",
    "text": "Check your email to confirm the address.",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -8692,6 +8727,13 @@
    "text": "AI meal analyses",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1gses4i0cvvo6y",
+   "text": "Unlocks your free AI meal analyses",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -9074,7 +9116,8 @@
    "id": "1iz3cdq-jqydad",
    "text": "Signed in.",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -11243,6 +11286,13 @@
    ]
   },
   {
+   "id": "1vjp4qg0kav4rx",
+   "text": "Signed in as {email}.",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
    "id": "1vlb8k8-z9pn9h",
    "text": "I ate this",
    "where": [
@@ -11332,6 +11382,13 @@
    "text": "Estimated from what you logged, so treat these as a rough guide. Anything logged without a figure for a vitamin is not counted towards it.",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "1w9ypu7-s8d953",
+   "text": "Your diary back if this phone is lost",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
