@@ -1,5 +1,5 @@
 {
- "version": "0i7f52r0hbq6ki",
+ "version": "11doeaf-ql71pm",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -7784,6 +7784,13 @@
    ]
   },
   {
+   "id": "1b1e2ut01bhp5v",
+   "text": "Keep it",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "1b25te2-30jwqz",
    "one": "{n} orange",
    "other": "{n} oranges",
@@ -9660,6 +9667,7 @@
    "id": "1m39vvm0msw8if",
    "text": "Throw it away",
    "where": [
+    "src/components/WeekPlanSheet.tsx",
     "src/screens/Home.tsx",
     "src/screens/Review.tsx"
    ]

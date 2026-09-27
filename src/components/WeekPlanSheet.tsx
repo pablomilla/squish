@@ -54,6 +54,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
   const [cooking, setCooking] = useState<'quick' | 'normal' | 'batch'>('normal');
   const [preferences, setPreferences] = useState('');
   const [left, setLeft] = useState<Set<string>>(new Set());
+  const [discarding, setDiscarding] = useState(false);
 
   // Closing never throws a plan away: one that arrived is kept (lib/api.ts) and shown next time.
   const close = () => onClose();
@@ -305,23 +306,40 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
               </ul>
             </section>
           ))}
-          <div className="week-actions">
-            <button type="button" className="btn btn--block" onClick={() => keep(stage.plan)}>
-              {t('Add to my plans')}
-            </button>
-            <button
-              type="button"
-              className="btn--quiet small"
-              onClick={() => {
-                // The one way a plan is thrown away, so it asks first: it was one of the month's.
-                if (!window.confirm(t('Throw this plan away? It still counts as one of this month’s plans.'))) return;
-                clearReadyWeekPlan();
-                setStage({ kind: 'ask' });
-              }}
-            >
-              {t('Start again')}
-            </button>
-          </div>
+          {discarding ? (
+            // Asked here, in Squish's own words, not in a browser box headed with the web address.
+            <div className="week-discard" role="alertdialog" aria-labelledby="week-discard-q">
+              <p className="small" id="week-discard-q">
+                {t('Throw this plan away? It still counts as one of this month’s plans.')}
+              </p>
+              <div className="row" style={{ gap: 10 }}>
+                <button type="button" className="btn btn--sm btn--ghost grow" onClick={() => setDiscarding(false)}>
+                  {t('Keep it')}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--danger grow"
+                  onClick={() => {
+                    clearReadyWeekPlan();
+                    setDiscarding(false);
+                    setStage({ kind: 'ask' });
+                  }}
+                >
+                  {t('Throw it away')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="week-actions">
+              <button type="button" className="btn btn--block" onClick={() => keep(stage.plan)}>
+                {t('Add to my plans')}
+              </button>
+              {/* The one way a plan is thrown away, so it asks first: it was one of the month's. */}
+              <button type="button" className="btn--quiet small" onClick={() => setDiscarding(true)}>
+                {t('Start again')}
+              </button>
+            </div>
+          )}
           <p className="tiny muted center">{t('Plans count for nothing until you tap “I ate this”. Untick anything you don’t fancy.')}</p>
         </div>
       )}
