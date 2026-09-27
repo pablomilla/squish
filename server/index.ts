@@ -21,6 +21,7 @@ import { MAX_TOOL_ROUNDS, chatStep, cleanMessages, cleanNotes, toolRounds, type 
 import { hasDatabase } from './db';
 import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, type Device, type Spend } from './identity';
 import { checkAnswer, signQuestion, withoutQuestion } from './clarify';
+import { ensureFoodTable } from './foodTable';
 import { handOver, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
@@ -2598,6 +2599,9 @@ const server = app.listen(PORT, () => {
   console.log(`🫧  Squish on http://localhost:${PORT}`);
   // Weekly plans a previous instance was making when it stopped: pick them up.
   startSweeping();
+  // The food table, the first time there is none (server/foodTable.ts). In
+  // the background: until it is loaded, meals are read exactly as before.
+  setTimeout(() => void ensureFoodTable().catch((error: unknown) => logFailure('food table import', error)), 10_000).unref();
   // New interface strings, into every language, before most people open the app.
   if (hasCredentials() && process.env.SQUISH_I18N_WARM !== 'off') setTimeout(() => void warmAll(), 5000);
   const source = credentialSource();

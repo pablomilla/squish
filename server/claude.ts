@@ -6,12 +6,13 @@
  * never has to parse prose into numbers.
  */
 import Anthropic from '@anthropic-ai/sdk';
-import type { AnalysisResult, MealSlot, Micros, Nutrients } from '../src/types';
+import type { FoodSource, AnalysisResult, MealSlot, Micros, Nutrients } from '../src/types';
 import { MICROS } from '../src/types';
 import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../src/lib/nutrition';
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
 import { regionNote } from './region';
+import { groundMeal } from './grounding';
 import { readTranslation, translateRequest, type CatalogEntry } from './translate';
 import type { Pack } from '../src/lib/language';
 import { AISLES, isAisle } from '../src/lib/shopping';
@@ -173,6 +174,11 @@ export const MEAL_SCHEMA = {
             enum: AISLE_IDS,
             description: 'The part of a supermarket this is bought from, for the shopping list',
           },
+          lookup: {
+            type: 'string',
+            description:
+              "The food as a food composition table lists it, in English whatever language the rest is in, with how it was prepared as eaten: 'banana, raw', 'rice, white, cooked', 'egg, whole, hard-boiled', 'chicken breast, meat only, roasted', 'cheddar cheese', 'whole milk', 'olive oil'. An empty string for a mixed dish, a restaurant or takeaway dish, or a branded product.",
+          },
           nutrients: {
             type: 'object',
             properties: NUTRIENT_PROPS,
@@ -180,7 +186,7 @@ export const MEAL_SCHEMA = {
             additionalProperties: false,
           },
         },
-        required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'aisle', 'nutrients'],
+        required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'aisle', 'lookup', 'nutrients'],
         additionalProperties: false,
       },
     },
@@ -207,6 +213,7 @@ Rules:
 - satFat is the saturated share of fat, counted inside it, and is never larger than fat. It is what the app judges a meal on, so it is worth getting right: butter, cream, cheese, coconut, fatty red meat and pastry are mostly saturated; olive oil, rapeseed, nuts, seeds, avocado and oily fish are mostly not.
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
 - ultraProcessed asks how the food was made, not whether it is good for someone. A home-cooked shepherd's pie is false however much fat is in it; a diet cola is true however few calories are in it.
+- lookup names a plain food the way a food composition table would, in English, with how it was prepared as eaten ("rice, white, cooked", not just "rice"; "banana, raw"), so its nutrition per gram can be taken from the table. Leave it empty for anything a table cannot answer: a mixed or composite dish, a restaurant or takeaway dish, a branded product. Your own nutrition figures are still needed for every item.
 - aisle is the part of a supermarket the item is bought from. A meal can be planned for later and put on a shopping list, which is sorted by it whatever language the names are in; a cooked dish is under the aisle of its main ingredient, and a takeaway or restaurant dish under "other".
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
 - question is for the one thing you could not tell that would move the calories by about 50 kcal or more: which dressing or sauce, what it was cooked in, whole or skimmed milk, sugar in a drink, a portion hidden from view. Read the meal on your best guess anyway — the question is a way to make it better, not a reason to leave it unfinished — and give 2 to 4 short choices, your best guess first. Ask only one, never about something plainly visible or already described, and leave question and choices empty when nothing would change the numbers that much. Most meals need no question.
@@ -266,6 +273,10 @@ export interface ModelMeal {
     ultraProcessed?: boolean;
     /** Where it is bought: every analysis and weekly plan gives one. */
     aisle?: string;
+    /** The food in a food table's words, for matching (server/grounding.ts); empty for a dish. */
+    lookup?: string;
+    /** Set by the matching, not the model: the table the per-gram figures came from. */
+    source?: FoodSource;
     nutrients?: Partial<Nutrients>;
   }[];
 }
@@ -281,6 +292,7 @@ export function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): Analysis
     ultraProcessed: item.ultraProcessed === true,
     ...(isAisle(item.aisle) ? { aisle: item.aisle } : {}),
     nutrients: coerceNutrients(item.nutrients),
+    ...(item.source ? { source: item.source } : {}),
   }));
 
   const nutrients = items.reduce<Nutrients>(
@@ -426,7 +438,10 @@ async function requestMeal(
   const inputTokens = response.usage.input_tokens;
   const outputTokens = response.usage.output_tokens;
 
-  const parsed = JSON.parse(text) as ModelMeal;
+  // A label's figures are printed, and are the truth; everything else is
+  // checked against the food table where it names a plain food.
+  const read = JSON.parse(text) as ModelMeal;
+  const parsed = system === LABEL_SYSTEM ? read : await groundMeal(read);
 
   return {
     analysis: toAnalysis(parsed, fallbackSlot),
@@ -534,6 +549,7 @@ Rules:
 - If the photo is not a nutrition label — a plate of food, a barcode alone, a blurry mess — return an empty items array, a score of 0, and say so kindly in coachNote.
 - confidence is "low" when the print is small, angled, or partly out of frame.
 - question is an empty string and choices an empty list: a label is read, not guessed at.
+- lookup is an empty string: the label's own figures are the ones to use.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the language given below.`;
 
 export async function analyseLabel(

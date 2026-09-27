@@ -23,6 +23,7 @@
  *   GEMINI_BASE_URL   optional, for a proxy or the tests' stand-in
  */
 import type { MealSlot } from '../src/types';
+import { groundMeal } from './grounding';
 import { MEAL_SCHEMA, mealSystem, photoPrompt, toAnalysis, type Crockery, type DetailedAnalysis, type ModelMeal } from './claude';
 
 const BASE_URL = (): string => (process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com').replace(/\/+$/, '');
@@ -134,7 +135,8 @@ export async function analysePhotoGemini(
 
   const usage = payload.usageMetadata ?? {};
   return {
-    analysis: toAnalysis(JSON.parse(text) as ModelMeal, slot),
+    // Checked against the food table as Claude's readings are, so the two are compared like for like.
+    analysis: toAnalysis(await groundMeal(JSON.parse(text) as ModelMeal), slot),
     usage: {
       model: payload.modelVersion ?? model,
       inputTokens: usage.promptTokenCount ?? 0,

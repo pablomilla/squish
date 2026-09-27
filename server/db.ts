@@ -683,6 +683,27 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 24,
+    sql: `
+      -- A food composition table: what 100 g of a plain food contains, from a
+      -- government source rather than the AI's memory (server/foodTable.ts).
+      -- Loaded by the server itself the first time it starts without one.
+      create table food_table (
+        source text not null,
+        id     text not null,
+        name   text not null,
+        per100 jsonb not null,
+        primary key (source, id)
+      );
+      create table food_table_imports (
+        source      text primary key,
+        foods       integer not null,
+        url         text not null,
+        imported_at timestamptz not null default now()
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

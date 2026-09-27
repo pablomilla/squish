@@ -55,6 +55,10 @@ services:
       # (free, so capped; default 30).
       - key: SQUISH_DAILY_CLARIFY
         sync: false
+      # "off" stops the server loading and using the USDA food table (see
+      # server/foodTable.ts); it downloads it itself, once, when unset.
+      - key: SQUISH_FOOD_TABLE
+        sync: false
       # "off" stops the server translating new interface strings into every
       # language after a deploy; they are then translated when first asked for.
       - key: SQUISH_I18N_WARM

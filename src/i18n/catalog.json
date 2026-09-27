@@ -1,5 +1,5 @@
 {
- "version": "1wrg8cu0n2th5x",
+ "version": "0rqucb8-52vg6u",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -7116,6 +7116,13 @@
    "text": "2% milk",
    "where": [
     "src/lib/region.ts"
+   ]
+  },
+  {
+   "id": "177pj4t-y71ext",
+   "text": "Nutrition per gram from {table}: {food}",
+   "where": [
+    "src/screens/Review.tsx"
    ]
   },
   {

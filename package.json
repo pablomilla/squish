@@ -48,6 +48,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tsx": "^4.23.13",
+    "yauzl": "^2.10.0",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -58,6 +59,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@types/yauzl": "^3.4.0",
     "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^10.0.5",
     "cors": "^2.8.6",

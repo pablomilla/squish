@@ -418,6 +418,13 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
                       </div>
                     )}
 
+                    {/* Said only when it is so: a food from the table says which one. */}
+                    {item.source && (
+                      <p className="tiny muted item-source">
+                        {t('Nutrition per gram from {table}: {food}', { table: 'USDA FoodData Central', food: item.source.name })}
+                      </p>
+                    )}
+
                     <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                       <button
                         type="button"

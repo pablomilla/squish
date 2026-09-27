@@ -90,6 +90,19 @@ export interface FoodItem {
    */
   aisle?: Aisle;
   nutrients: Nutrients;
+  /**
+   * Where the nutrition per gram came from, when it was a food composition
+   * table rather than the AI's own estimate: which table, and the food in it.
+   * The portion is still the AI's (or the person's) — only the per-gram
+   * figures are the table's.
+   */
+  source?: FoodSource;
+}
+
+export interface FoodSource {
+  table: 'usda';
+  id: string;
+  name: string;
 }
 
 export interface MealEntry {

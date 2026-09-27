@@ -351,6 +351,20 @@ only trusted when it is present and sane, otherwise the local scorer runs.
 The key stays on the server, and each analysis endpoint degrades to the offline estimator rather
 than failing.
 
+**Plain foods are checked against a food table.** For each item the AI also names the food the way
+a food composition table would ("banana, raw", "rice, white, cooked"), and leaves that empty for a
+mixed dish, a takeaway or a branded product. Where the name matches a row of the USDA's FoodData
+Central table, the nutrition per gram is the table's, scaled to the AI's portion, and the Review
+screen says so under the item. The match is cautious (`server/foodMatch.ts`): every word must be in
+the row, the row's own name ("Rice" in "Rice, white, cooked") must be words the AI used, raw and
+cooked must agree, and the result must land within a factor of two of the AI's own calories for the
+portion. Otherwise the AI's figures stand. The server downloads the table itself (about 7 MB, once)
+the first time it starts without one and keeps it in Postgres; `SQUISH_FOOD_TABLE=off` turns it all
+off. Each analysis logs how many of its foods matched (`[squish] food table: 2 of 3 foods …`), which
+is the number to watch before trusting the table further — for instance, to stop asking the AI for
+figures the table already has. Nutrition data for matched foods: U.S. Department of Agriculture,
+Agricultural Research Service, FoodData Central (public domain).
+
 **The nutritionist runs its tools in the browser.** It is the one unusual piece of architecture in
 here, and it follows from where the food lives: every diary is in `localStorage` and the server has
 never held a meal. So `server/nutritionist-tools.ts` *declares* the tools and
