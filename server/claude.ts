@@ -14,7 +14,9 @@ import { bill } from './billing';
 import { regionNote } from './region';
 import { readTranslation, translateRequest, type CatalogEntry } from './translate';
 import type { Pack } from '../src/lib/language';
-import { isAisle } from '../src/lib/shopping';
+import { AISLES, isAisle } from '../src/lib/shopping';
+
+const AISLE_IDS = AISLES.map((a) => a.id);
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
 
 const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
@@ -104,7 +106,7 @@ const NUTRIENT_PROPS = {
   },
 } as const;
 
-const MEAL_SCHEMA = {
+export const MEAL_SCHEMA = {
   type: 'object',
   properties: {
     title: { type: 'string', description: 'Short friendly name for the whole meal, max 5 words' },
@@ -146,6 +148,11 @@ const MEAL_SCHEMA = {
             description:
               'NOVA group 4: industrially formulated from refined substances and additives rather than cooked from food. True for crisps, confectionery, soft drinks, mass-produced biscuits and pastries, breakfast cereals, instant noodles, reconstituted meat, formulated powders. False for anything cooked from ingredients, whole foods, plain dairy, bread from a bakery, and for a restaurant or home-cooked dish.',
           },
+          aisle: {
+            type: 'string',
+            enum: AISLE_IDS,
+            description: 'The part of a supermarket this is bought from, for the shopping list',
+          },
           nutrients: {
             type: 'object',
             properties: NUTRIENT_PROPS,
@@ -153,7 +160,7 @@ const MEAL_SCHEMA = {
             additionalProperties: false,
           },
         },
-        required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'nutrients'],
+        required: ['name', 'emoji', 'portion', 'grams', 'liquid', 'ultraProcessed', 'aisle', 'nutrients'],
         additionalProperties: false,
       },
     },
@@ -180,6 +187,7 @@ Rules:
 - satFat is the saturated share of fat, counted inside it, and is never larger than fat. It is what the app judges a meal on, so it is worth getting right: butter, cream, cheese, coconut, fatty red meat and pastry are mostly saturated; olive oil, rapeseed, nuts, seeds, avocado and oily fish are mostly not.
 - If the image is not food at all, return an empty items array, a score of 0, and say so kindly in coachNote.
 - ultraProcessed asks how the food was made, not whether it is good for someone. A home-cooked shepherd's pie is false however much fat is in it; a diet cola is true however few calories are in it.
+- aisle is the part of a supermarket the item is bought from. A meal can be planned for later and put on a shopping list, which is sorted by it whatever language the names are in; a cooked dish is under the aisle of its main ingredient, and a takeaway or restaurant dish under "other".
 - confidence is "low" when the photo is blurry, partly hidden, or the dish could be made many ways.
 - coachNote is written in Squish's voice: warm, playful, encouraging, never moralising about "bad" food, in the language given below.`;
 
@@ -217,7 +225,7 @@ function coerceNutrients(raw: Partial<Nutrients> | undefined): Nutrients {
   };
 }
 
-interface ModelMeal {
+export interface ModelMeal {
   /** Recipes only: how many servings the whole thing makes. */
   servings?: number;
   title?: string;
@@ -232,13 +240,13 @@ interface ModelMeal {
     grams?: number;
     liquid?: boolean;
     ultraProcessed?: boolean;
-    /** Weekly plans only. */
+    /** Where it is bought: every analysis and weekly plan gives one. */
     aisle?: string;
     nutrients?: Partial<Nutrients>;
   }[];
 }
 
-function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult {
+export function toAnalysis(parsed: ModelMeal, fallbackSlot?: MealSlot): AnalysisResult {
   const items = (parsed.items ?? []).map((item, index) => ({
     id: `ai-${Date.now()}-${index}`,
     name: item.name?.trim() || 'Food',

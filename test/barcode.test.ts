@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { toAnalysis } from '../server/barcode';
+import { FIELDS, lookupBarcode, nameFor, toAnalysis } from '../server/barcode';
 import { looksLikeBarcode } from '../src/lib/gtin';
 
 /**
@@ -133,4 +133,35 @@ test('a product with no saturates figure is left blank, not called nought', () =
   const item = toAnalysis({ product_name: 'Mystery', serving_quantity: '15', nutriments: noSat }, '3017620422003')!.items[0];
 
   assert.equal(item.nutrients.satFat, undefined);
+});
+
+test('the name is in the reader’s language where the database has one, and its own otherwise', () => {
+  const product = { product_name: 'Nutella', product_name_es: 'Crema de cacao con avellanas', product_name_en: 'Nutella hazelnut spread', nutriments: NUTELLA };
+  assert.equal(nameFor(product, '1', 'es'), 'Crema de cacao con avellanas');
+  assert.equal(nameFor(product, '1', 'en'), 'Nutella hazelnut spread', 'English too, over a French main name');
+  assert.equal(nameFor(product, '1', 'de'), 'Nutella', 'no German name: the product’s own');
+  assert.equal(nameFor({ product_name: '  ', product_name_de: ' ' }, '42', 'de'), 'Item 42');
+  assert.equal(toAnalysis(product, '1', 'snack', 'es')!.items[0].name, 'Crema de cacao con avellanas');
+  assert.equal(toAnalysis(product, '1', 'snack', 'es')!.title, 'Crema de cacao con avellanas');
+  // Every language Squish speaks is asked for, in the one request.
+  for (const field of ['product_name', 'product_name_es', 'product_name_zh', 'product_name_cy', 'product_name_mi']) assert.ok(FIELDS.split(',').includes(field), field);
+});
+
+test('one read of a product serves every language after it', async () => {
+  const code = '5000159484695';
+  const asked: string[] = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (url: string | URL) => {
+    asked.push(String(url));
+    return new Response(JSON.stringify({ status: 1, product: { product_name: 'Twix', product_name_fr: 'Twix barre chocolatée', nutriments: NUTELLA } }), { status: 200 });
+  }) as typeof fetch;
+  try {
+    assert.equal((await lookupBarcode(code, 'snack', 'fr')).items[0].name, 'Twix barre chocolatée');
+    assert.equal((await lookupBarcode(code, 'lunch', 'pl')).items[0].name, 'Twix', 'no Polish name: its own');
+    assert.equal((await lookupBarcode(code, 'lunch', 'pl')).slot, 'lunch');
+    assert.equal(asked.length, 1, 'the database is read once, whoever asks after');
+    assert.match(asked[0], /fields=[^&]*product_name_fr/);
+  } finally {
+    globalThis.fetch = real;
+  }
 });

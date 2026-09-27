@@ -118,10 +118,21 @@ restarts Squish so the spelling changes with it; in setup, at the end.
 The "Your plan" card explains protein and body fat per pound for anybody who
 weighs themselves in pounds or stones, and per kilogram otherwise.
 
+## Shopping aisles and barcodes, in any language
+
+Every item the AI names — from a photo, a description, a recipe or a weekly
+plan — comes with the supermarket aisle it is bought from, so the shopping
+list sorts a Spanish "pechuga de pollo" under meat and fish rather than guessing
+from an English name and giving up. Only food typed in by hand from the
+built-in list is still sorted by its (English) name.
+
+A scanned barcode shows the product's name in the person's language where Open
+Food Facts has one ("Crema de cacao con avellanas"), else the product's own
+name. Every language is asked for in the one request, so nothing about the
+person goes with the barcode, and a product read once serves whoever scans it
+next, in whichever language.
+
 ## Not yet
 
-- A meal planned from a photo or description (rather than a weekly plan) in
-  another language has no aisle, so it lands under "Other" on the list.
-- Barcode lookups return Open Food Facts' own product names.
 - Store prices are set here, not read from the stores. The website shows the
   same ones, in the visitor's currency (see docs/translation.md).

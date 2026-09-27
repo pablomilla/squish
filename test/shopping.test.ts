@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { aisleOf, listAsText, shopAmount, shoppingList } from '../src/lib/shopping';
+import { AISLES, aisleOf, listAsText, shopAmount, shoppingList } from '../src/lib/shopping';
+import { MEAL_SCHEMA, toAnalysis } from '../server/claude';
 import type { FoodItem, MealEntry } from '../src/types';
 
 /**
@@ -78,4 +79,30 @@ test('ticks and hand-added lines live in the store, and "done shopping" clears w
   s.clearShoppingTicked();
   assert.deepEqual(useSquish.getState().shopping, { ticked: [], extras: [foil] });
   useSquish.getState().resetAll();
+});
+
+test('a meal from a photo or a description knows its aisles, whatever language it is named in', () => {
+  // What the model is asked for: an aisle on every item, from the shopping list's own.
+  const itemSchema = MEAL_SCHEMA.properties.items.items;
+  assert.ok((itemSchema.required as readonly string[]).includes('aisle'));
+  assert.deepEqual(itemSchema.properties.aisle.enum, AISLES.map((a) => a.id));
+
+  // A meal described in Spanish, planned for later.
+  const analysis = toAnalysis({
+    title: 'Pollo con arroz',
+    items: [
+      { name: 'Pechuga de pollo', portion: '1 pechuga', grams: 160, aisle: 'meat-fish', nutrients: nut },
+      { name: 'Arroz basmati', portion: '1 ración', grams: 180, aisle: 'cupboard', nutrients: nut },
+      { name: 'Pimiento rojo', portion: '1 pimiento', grams: 150, aisle: 'fruit-veg', nutrients: nut },
+      { name: 'Algo raro', portion: '1', grams: 10, aisle: 'the moon', nutrients: nut },
+    ],
+  });
+  const lines = shoppingList([plan('2026-09-28', 'Pollo con arroz', analysis.items)], '2026-09-28', '2026-09-28');
+  const aisle = (name: string) => lines.find((l) => l.name === name)?.aisle;
+  assert.equal(aisle('Pechuga de pollo'), 'meat-fish');
+  assert.equal(aisle('Arroz basmati'), 'cupboard');
+  assert.equal(aisle('Pimiento rojo'), 'fruit-veg');
+  assert.equal(aisle('Algo raro'), 'other', 'an aisle that is not one is dropped, and the name guessed from');
+  // Before, all of these went by the English name guess, and so to "Other".
+  assert.equal(aisleOf('Pechuga de pollo'), 'other');
 });

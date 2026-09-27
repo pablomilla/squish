@@ -110,7 +110,7 @@ import {
   type CoachContext,
 } from './claude';
 import { cleanWeekRequest } from './weekplan';
-import { withPlace } from './region';
+import { currentPlace, withPlace } from './region';
 import { msg } from '../src/lib/i18n';
 import { isTranslatable, languagePack, speakerFor, setTranslator, warmAll } from './translate';
 
@@ -1879,7 +1879,8 @@ app.get('/api/barcode/:code', async (req, res) => {
     // lookupBarcode rejects anything that is not plain digits regardless.
     const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
     const slot = Array.isArray(req.query.slot) ? req.query.slot[0] : req.query.slot;
-    res.json(await lookupBarcode(String(code), asSlot(slot)));
+    // The product's name in their language, where the database has it.
+    res.json(await lookupBarcode(String(code), asSlot(slot), currentPlace().language));
   } catch (error) {
     if (error instanceof BarcodeError) {
       res.status(error.status).json({ error: error.message });

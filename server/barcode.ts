@@ -13,13 +13,23 @@
 import type { AnalysisResult, FoodItem, MealSlot, MicroKey, Micros, Nutrients } from '../src/types';
 import { scaleMicros, sumNutrients } from '../src/lib/nutrition';
 import { looksLikeBarcode } from '../src/lib/gtin';
+import { LANGUAGES, type Language } from '../src/lib/language';
 
 const API = 'https://world.openfoodfacts.org/api/v2/product';
 const AGENT = 'Squish/1.0 (https://github.com/pablomilla/squish)';
 
+/**
+ * The product's name in each language Squish speaks, where volunteers have
+ * given one: a Spanish reader scanning Nutella sees "Crema de cacao con
+ * avellanas" if the database has it. Asked for all at once, so a product is
+ * read once whoever scans it next.
+ */
+const NAME_FIELDS = (Object.keys(LANGUAGES) as Language[]).map((language) => `product_name_${language}` as const);
+
 /** Only what we use — their full record is enormous. */
-const FIELDS = [
+export const FIELDS = [
   'product_name',
+  ...NAME_FIELDS,
   'quantity',
   'serving_size',
   'serving_quantity',
@@ -33,7 +43,8 @@ const MAX_PER_MINUTE = 12;
 const CACHE_MAX = 500;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-const cache = new Map<string, { at: number; result: AnalysisResult | null }>();
+/** The product as read, not a result: its name depends on who is asking. Null is "no such product". */
+const cache = new Map<string, { at: number; product: OffProduct | null }>();
 let windowStart = 0;
 let callsThisWindow = 0;
 
@@ -151,7 +162,10 @@ const scale = (per100: Nutrients, grams: number): Nutrients => {
 };
 
 interface OffProduct {
+  /** In the product's own main language, whichever that is. */
   product_name?: string;
+  /** The same, in a given language, where somebody has written it. */
+  [name: `product_name_${string}`]: string | undefined;
   /** Their NOVA classification, 1 to 4. Group 4 is ultra-processed. */
   nova_group?: number | string;
   serving_size?: string;
@@ -160,7 +174,12 @@ interface OffProduct {
   nutriments?: Nutriments;
 }
 
-export function toAnalysis(product: OffProduct, code: string, slot?: MealSlot): AnalysisResult | null {
+/** The name in their language where the database has one, else its own, else the barcode. */
+export function nameFor(product: OffProduct, code: string, language: Language = 'en'): string {
+  return product[`product_name_${language}`]?.trim() || product.product_name?.trim() || `Item ${code}`;
+}
+
+export function toAnalysis(product: OffProduct, code: string, slot?: MealSlot, language: Language = 'en'): AnalysisResult | null {
   const per100 = product.nutriments ? nutrientsPer100(product.nutriments) : null;
   if (!per100) return null;
 
@@ -171,7 +190,7 @@ export function toAnalysis(product: OffProduct, code: string, slot?: MealSlot): 
   const grams = usable ? Math.round(servingG) : 100;
   const liquid = product.serving_quantity_unit === 'ml';
 
-  const name = product.product_name?.trim() || `Item ${code}`;
+  const name = nameFor(product, code, language);
   const item: FoodItem = {
     id: `off-${code}`,
     name,
@@ -196,13 +215,14 @@ export function toAnalysis(product: OffProduct, code: string, slot?: MealSlot): 
   };
 }
 
-export async function lookupBarcode(code: string, slot?: MealSlot): Promise<AnalysisResult> {
+export async function lookupBarcode(code: string, slot?: MealSlot, language: Language = 'en'): Promise<AnalysisResult> {
   if (!looksLikeBarcode(code)) throw new BarcodeError(400, 'That does not look like a barcode.');
 
   const hit = cache.get(code);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) {
-    if (!hit.result) throw new BarcodeError(404, notFound);
-    return { ...hit.result, slot: slot ?? hit.result.slot };
+    const known = hit.product && toAnalysis(hit.product, code, slot, language);
+    if (!known) throw new BarcodeError(404, notFound);
+    return known;
   }
 
   takeSlot();
@@ -229,25 +249,25 @@ export async function lookupBarcode(code: string, slot?: MealSlot): Promise<Anal
     throw new BarcodeError(404, notFound);
   }
 
-  const analysis = toAnalysis(body.product, code, slot);
+  const analysis = toAnalysis(body.product, code, slot, language);
   if (!analysis) {
     // The product is known but nobody has filled in its nutrition. Not worth
     // caching as a miss — someone may add it tomorrow.
     throw new BarcodeError(422, 'That product is in the database, but without any nutrition on it yet.');
   }
 
-  remember(code, analysis);
+  remember(code, body.product);
   return analysis;
 }
 
 const notFound = 'No such product in the database — it is a public one, so it may just not be added yet.';
 
-function remember(code: string, result: AnalysisResult | null): void {
+function remember(code: string, product: OffProduct | null): void {
   if (cache.size >= CACHE_MAX) {
     const oldest = cache.keys().next().value;
     if (oldest) cache.delete(oldest);
   }
-  cache.set(code, { at: Date.now(), result });
+  cache.set(code, { at: Date.now(), product });
 }
 
 /** Test seam: the cache would otherwise leak between cases. */
