@@ -16,7 +16,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { randomBytes } from 'node:crypto';
-import { geminiGenerate, isGeminiModel, toGeminiSchema, type GeminiPart, type GeminiResponse } from './gemini';
+import { GeminiRunaway, geminiGenerate, isGeminiModel, toGeminiSchema, type GeminiPart, type GeminiResponse } from './gemini';
 
 let client: Anthropic | null = null;
 export const anthropic = (): Anthropic => (client ??= new Anthropic());
@@ -192,6 +192,23 @@ export function fromGemini(model: string, payload: GeminiResponse): Anthropic.Me
   } as unknown as Anthropic.Message;
 }
 
+/**
+ * Ask Gemini, and once more if it gets stuck repeating itself — caught early,
+ * so the second try costs about what the first would have. Stuck twice, it is
+ * a failure like any other and the route's backup is asked.
+ */
 async function askGemini(params: Params, signal?: AbortSignal): Promise<Anthropic.Message> {
-  return fromGemini(params.model, await geminiGenerate(params.model, geminiRequest(params), signal));
+  const request = geminiRequest(params);
+  try {
+    return fromGemini(params.model, await geminiGenerate(params.model, request, signal));
+  } catch (error) {
+    if (!(error instanceof GeminiRunaway) || signal?.aborted) throw error;
+    console.warn(`[squish] ${params.model}: ${error.message} — stopped early, asking once more`);
+    try {
+      return fromGemini(params.model, await geminiGenerate(params.model, request, signal));
+    } catch (again) {
+      if (again instanceof GeminiRunaway) throw new Error(`${again.message}, twice`);
+      throw again;
+    }
+  }
 }

@@ -19,6 +19,8 @@ const analysePhotoGemini = (image: string, type: string, slot?: 'breakfast', hin
 
 let requests: { url: string; key: string | undefined; body: Record<string, unknown> }[] = [];
 let answer: { status: number; body: unknown } = { status: 200, body: {} };
+/** Streamed answers, one per request in turn: each a list of chunks sent as server-sent events, as Gemini streams. */
+let streams: unknown[][] = [];
 let api: Server;
 
 before(async () => {
@@ -27,6 +29,13 @@ before(async () => {
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
       requests.push({ url: req.url ?? '', key: req.headers['x-goog-api-key'] as string | undefined, body: JSON.parse(body) });
+      const stream = streams.shift();
+      if (stream) {
+        res.setHeader('content-type', 'text/event-stream');
+        for (const chunk of stream) res.write(`data: ${JSON.stringify(chunk)}\r\n\r\n`);
+        res.end();
+        return;
+      }
       res.statusCode = answer.status;
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify(answer.body));
@@ -79,7 +88,7 @@ test('a photo goes with the same instructions as Claude’s, and comes back in t
   assert.equal(analysis.items[0].aisle, 'cupboard');
 
   const [sent] = requests;
-  assert.equal(sent.url, '/v1beta/models/gemini-2.5-flash:generateContent');
+  assert.equal(sent.url, '/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse');
   assert.equal(sent.key, 'gm-test', 'the key in a header, not the address');
   const body = sent.body as { systemInstruction: { parts: { text: string }[] }; contents: { parts: Record<string, unknown>[] }[]; generationConfig: Record<string, unknown> };
   assert.match(body.systemInstruction.parts[0].text, /nutrition engine behind Squish/);
@@ -98,13 +107,13 @@ test('a refusal, a cut-off answer or an error is a failed attempt, with the reas
   answer = replyWith(MEAL);
   const cut = answer.body as { candidates: { finishReason: string; content: { parts: { text: string }[] } }[] };
   cut.candidates[0].finishReason = 'MAX_TOKENS';
-  // As seen on Nutrition5k: stuck on one character until the output limit, then cut off.
-  cut.candidates[0].content.parts[0].text = `{"title": "Porridge", "items": [{"grams": 250${' '.repeat(5000)}`;
-  await assert.rejects(
-    analysePhotoGemini('aGVsbG8=', 'image/jpeg'),
-    /cut off at 5045 characters, stuck repeating " " 5000 times/,
-    'a runaway answer says so, and a backup is asked',
-  );
+  cut.candidates[0].content.parts[0].text = '{"title": "Porri';
+  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /cut off at 16 characters/, 'an answer that hit its limit says so, and a backup is asked');
+  // As seen on Nutrition5k: a number followed by thousands of zeros. Stopped as soon as it starts, asked once more, stuck again: a failure.
+  requests = [];
+  cut.candidates[0].content.parts[0].text = `{"title": "Porridge", "items": [{"grams": 120.${'0'.repeat(5000)}`;
+  await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /stuck repeating "0", twice/);
+  assert.equal(requests.length, 2, 'one more try, not more');
   cut.candidates[0].finishReason = 'STOP';
   cut.candidates[0].content.parts[0].text = '{"title": "Porri';
   await assert.rejects(analysePhotoGemini('aGVsbG8=', 'image/jpeg'), /it ended "\{\\"title\\": \\"Porri"/, 'a broken answer shows how it ended');
@@ -118,6 +127,27 @@ test('a refusal, a cut-off answer or an error is a failed attempt, with the reas
   assert.ok(Math.abs(cost('2026-09-27T12:00:00Z')! - (2000 * 0.75 + 1000 * 3.75) / 1e6) < 1e-12, '3.8 Flash at its introductory price');
   assert.ok(Math.abs(cost('2026-12-31T23:59:00Z')! - (2000 * 0.75 + 1000 * 3.75) / 1e6) < 1e-12, 'up to the last day of 2026');
   assert.ok(Math.abs(cost('2027-01-01T00:00:00Z')! - (2000 * 1.5 + 1000 * 7.5) / 1e6) < 1e-12, 'and the standard price from New Year, by itself');
+});
+
+test('streamed: pieces put back together, and a runaway stopped early and asked once more', async () => {
+  const text = JSON.stringify(MEAL);
+  const piece = (t: string, extra: Record<string, unknown> = {}) => ({ candidates: [{ content: { parts: [{ text: t }] }, ...extra }] });
+  const good = [
+    { candidates: [{ content: { parts: [{ text: 'Looking at the bowl…', thought: true }] } }] },
+    piece(text.slice(0, 40)),
+    piece(text.slice(40, 200)),
+    piece(text.slice(200), { finishReason: 'STOP' }),
+    { usageMetadata: { promptTokenCount: 1800, candidatesTokenCount: 700, thoughtsTokenCount: 1300 } },
+  ];
+  // The first try runs away on zeros, and is cut short well before the limit; the second answers.
+  const runaway = [piece('{"title": "Porridge", "items": [{"grams": 120.'), ...Array.from({ length: 30 }, () => piece('0'.repeat(100)))];
+  streams = [runaway, good];
+  requests = [];
+  const { analysis, usage } = await analysePhotoGemini('aGVsbG8=', 'image/jpeg', 'breakfast');
+  assert.equal(requests.length, 2);
+  assert.equal(analysis.title, 'Porridge and berries', 'the answer, joined from its pieces, thinking left out');
+  assert.equal(usage.outputTokens, 2000, 'the usage from the last chunk');
+  streams = [];
 });
 
 test('the nutritionist in Gemini’s shape: tools declared, lookups asked for and answered, Claude’s thinking left out', () => {

@@ -120,18 +120,109 @@ export function priceGemini(model: string, usage: GeminiResponse['usageMetadata'
   return (input * rate.input + output * rate.output) / 1_000_000;
 }
 
-/** One generateContent call. A refusal or an error status is thrown with Google's reason. */
+/**
+ * Gemini now and then gets stuck inside a structured answer, writing the same
+ * character over and over — on Nutrition5k, a number followed by fourteen
+ * thousand zeros — until it runs out of room. Streamed, that is caught within
+ * a second of starting, rather than after paying for the whole runaway.
+ */
+export class GeminiRunaway extends Error {
+  readonly repeated: string;
+  constructor(repeated: string) {
+    super(`Gemini got stuck repeating ${JSON.stringify(repeated)}`);
+    this.repeated = repeated;
+  }
+}
+
+/** Longer than any honest run in an answer: indentation is a few spaces, a number a few digits. */
+const RUNAWAY = /(.)\1{199}$/s;
+
+/**
+ * One call, streamed (streamGenerateContent, as server-sent events), gathered
+ * into the same response a single call returns. A body that is plain JSON —
+ * one response, or a list of them — is read too, which is what the tests'
+ * stand-ins send. A refusal or an error status is thrown with Google's reason.
+ */
 export async function geminiGenerate(model: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<GeminiResponse> {
   const key = apiKey();
   if (!key) throw new Error('No GEMINI_API_KEY set.');
-  const timeout = AbortSignal.timeout(300_000);
-  const response = await fetch(`${BASE_URL()}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+  const stop = new AbortController();
+  const signals = [stop.signal, AbortSignal.timeout(300_000), ...(signal ? [signal] : [])];
+  const response = await fetch(`${BASE_URL()}/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify(body),
-    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    signal: AbortSignal.any(signals),
   });
-  const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
-  if (!response.ok) throw new Error(`Gemini ${response.status}: ${payload.error?.message ?? 'no explanation'}`);
-  return payload;
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as GeminiResponse | GeminiResponse[];
+    const error = Array.isArray(payload) ? payload[0]?.error : payload.error;
+    throw new Error(`Gemini ${response.status}: ${error?.message ?? 'no explanation'}`);
+  }
+
+  const merged: GeminiResponse = {};
+  let answer = '';
+  const take = (chunk: GeminiResponse) => {
+    if (chunk.error) throw new Error(`Gemini: ${chunk.error.message ?? 'no explanation'}`);
+    if (chunk.promptFeedback) merged.promptFeedback = chunk.promptFeedback;
+    if (chunk.usageMetadata) merged.usageMetadata = chunk.usageMetadata;
+    if (chunk.modelVersion) merged.modelVersion = chunk.modelVersion;
+    const candidate = chunk.candidates?.[0];
+    if (!candidate) return;
+    const into = ((merged.candidates ??= [{ content: { parts: [] } }])[0].content ??= { parts: [] });
+    for (const part of candidate.content?.parts ?? []) {
+      into.parts ??= [];
+      const last = into.parts[into.parts.length - 1];
+      // Text arrives in pieces: join each run of thinking or of answer back into one part.
+      if (typeof part.text === 'string' && last && typeof last.text === 'string' && !last.functionCall && Boolean(last.thought) === Boolean(part.thought)) {
+        last.text += part.text;
+        if (part.thoughtSignature) last.thoughtSignature = part.thoughtSignature;
+      } else {
+        into.parts.push({ ...part });
+      }
+      if (typeof part.text === 'string' && !part.thought) {
+        answer += part.text;
+        const stuck = RUNAWAY.exec(answer.slice(-200));
+        if (stuck) {
+          stop.abort();
+          throw new GeminiRunaway(stuck[1]);
+        }
+      }
+    }
+    if (candidate.finishReason) merged.candidates![0].finishReason = candidate.finishReason;
+  };
+
+  const raw = response.body ? response.body.getReader() : null;
+  if (!raw) return merged;
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let plain = '';
+  let sse = false;
+  try {
+    for (;;) {
+      const { value, done } = await raw.read();
+      if (done) break;
+      const text = decoder.decode(value, { stream: true });
+      if (!sse && !plain && /^\s*data:/.test(text)) sse = true;
+      if (!sse) {
+        plain += text;
+        continue;
+      }
+      buffer += text;
+      let end: number;
+      while ((end = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, end).trim();
+        buffer = buffer.slice(end + 1);
+        if (line.startsWith('data:')) take(JSON.parse(line.slice(5)) as GeminiResponse);
+      }
+    }
+  } finally {
+    raw.releaseLock();
+  }
+  if (sse && buffer.trim().startsWith('data:')) take(JSON.parse(buffer.trim().slice(5)) as GeminiResponse);
+  if (!sse && plain.trim()) {
+    const parsed = JSON.parse(plain) as GeminiResponse | GeminiResponse[];
+    for (const chunk of Array.isArray(parsed) ? parsed : [parsed]) take(chunk);
+  }
+  return merged;
 }
