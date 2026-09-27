@@ -1,5 +1,5 @@
 {
- "version": "0rqucb8-52vg6u",
+ "version": "1477zke0l3lxic",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -3480,6 +3480,7 @@
    "id": "0l8hqi20aw18kx",
    "text": "Got it",
    "where": [
+    "src/components/PolicyNotice.tsx",
     "src/screens/Capture.tsx"
    ]
   },
@@ -4922,6 +4923,13 @@
    "text": "They go on the card you share — pick them there.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0t5yz7i0bl1lqc",
+   "text": "Your photos, meals and questions can now be read by Google’s Gemini as well as Anthropic’s Claude — for some jobs, and as a backup when Claude cannot answer. Google do not use them to improve their products.",
+   "where": [
+    "src/components/PolicyNotice.tsx"
    ]
   },
   {
@@ -8283,6 +8291,13 @@
    ]
   },
   {
+   "id": "1eg1qap-an2g8h",
+   "text": "Our privacy policy has changed",
+   "where": [
+    "src/components/PolicyNotice.tsx"
+   ]
+  },
+  {
    "id": "1egrlga0gmy3r5",
    "text": "Squad code",
    "where": [
@@ -9838,6 +9853,13 @@
    "text": "Describe it instead",
    "where": [
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "1n6u7hs-mca5fw",
+   "text": "Read the policy",
+   "where": [
+    "src/components/PolicyNotice.tsx"
    ]
   },
   {

@@ -110,3 +110,6 @@
 .home-today-row { display: flex; align-items: center; gap: 14px; }
 .home-today-row .home-ring-wrap { flex: none; margin: 4px 0; }
 .home-today-bars { flex: 1; min-width: 0; }
+
+/* The privacy notice: its "Read the policy" is a link dressed as a button. */
+.policy-notice a.btn { text-decoration: none; }

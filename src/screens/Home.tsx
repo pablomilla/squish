@@ -24,6 +24,7 @@ import { sceneInUse } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
 import { useSubscribed } from '../components/useSubscribed';
 import FriendNudge from '../components/FriendNudge';
+import PolicyNotice from '../components/PolicyNotice';
 import SquadStrip from '../components/squad/SquadStrip';
 import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
@@ -166,6 +167,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           rest of the time the squad sits lower down, with the other social bits. */}
       {cheered && <SquadStrip onOpenYou={() => go({ name: 'you' })} />}
 
+
+      {/* Once, to people who were here before the privacy policy last changed. */}
+      <PolicyNotice />
 
       {/* A meal that was analysed and never saved. It is offered back rather
           than logged: nobody asked for it to go in the diary, and a tracker

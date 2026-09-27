@@ -4,7 +4,7 @@
  *
  * Admins' routes are for trying things on their own meals; everybody's are
  * what is proven. On everybody's side a job that carries somebody's data can
- * only use Claude until the privacy policy names Google — the server holds
+ * only use Claude until SQUISH_GEMINI_FOR_EVERYONE is on — the server holds
  * to that whatever is sent, and this screen says so rather than offering it.
  */
 import { useEffect, useState } from 'react';
@@ -42,7 +42,7 @@ export default function Models() {
     const m = model(id);
     if (!m) return 'unknown';
     if (!m.ready) return m.provider === 'google' ? 'no GEMINI_API_KEY' : 'no Anthropic key';
-    if (m.provider === 'google' && audience === 'everyone' && personal && !settings.everyoneMayUseGemini) return 'needs the privacy policy';
+    if (m.provider === 'google' && audience === 'everyone' && personal && !settings.everyoneMayUseGemini) return 'not on for everybody';
     return null;
   };
 
@@ -78,7 +78,7 @@ export default function Models() {
         then the second backup, so a bad hour at one company is a slower answer rather than a guess. Admins&rsquo; choices apply to your own
         accounts only, to try a model on your own meals; everybody else gets theirs.
         {!settings.everyoneMayUseGemini &&
-          ' For everybody, jobs with their data stay on Claude until the privacy policy names Google (then SQUISH_GEMINI_FOR_EVERYONE=on in Render).'}
+          ' For everybody, jobs with their data stay on Claude until Gemini is switched on for everybody (SQUISH_GEMINI_FOR_EVERYONE=on in Render). The privacy policy already names Google.'}
       </p>
 
       <div className="admin-models-list">

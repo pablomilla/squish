@@ -277,11 +277,12 @@ same thing and read the same way, the nutritionist's diary lookups included. Gem
 `GEMINI_API_KEY` in Render (a Google AI Studio project with billing on; the free tier lets Google use
 what is sent) — without it, a Gemini model on a route is skipped.
 
-**Everybody's route keeps their data with Anthropic** until the privacy policy names Google: the
-server refuses to save Gemini there for any job carrying somebody's meals, photos or questions, and
-steps over it if it is written there anyway. Once the policy is changed, set
-`SQUISH_GEMINI_FOR_EVERYONE=on` in Render and those models can be chosen for everybody too.
-Translating the app's own words carries nobody's data and may use either.
+**Everybody's route keeps their data with Anthropic until you switch Gemini on for them.** The
+privacy policy names both Anthropic and Google (Google through the paid Gemini API only), and the app
+told everybody who was already using it when that changed. Even so, the server refuses to save Gemini
+on everybody's route for any job carrying somebody's meals, photos or questions, and steps over it if
+it is written there anyway, until `SQUISH_GEMINI_FOR_EVERYONE=on` is set in Render. Translating the
+app's own words carries nobody's data and may use either.
 
 **The easy way to hand out Plus** is an invite code, made in the dashboard. Give it a length, a
 limit on how many people can use it and a note saying who it is for; the dashboard suggests a code

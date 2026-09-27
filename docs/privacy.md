@@ -17,7 +17,9 @@ contact address is at the bottom.
   it back if you lose the device.
 - Meal photos are part of that copy.
 - Photos, meal descriptions and anything you say to the nutritionist are sent
-  to Anthropic, who run the AI that reads them.
+  to an AI company to be read: Anthropic, whose Claude reads most of them, or
+  Google, whose Gemini we use for some of the work and as a backup when Claude
+  cannot answer.
 - We do not use analytics, advertising, or trackers of any kind, and we do not
   sell or share your data with anyone not named here.
 - You can export everything, and you can delete everything, from inside the
@@ -165,12 +167,13 @@ person from spending everyone else's allowance.
 
 ## Who else sees it
 
-Three companies process data on our behalf. We have no other recipients, and we
+Four companies process data on our behalf. We have no other recipients, and we
 do not sell data to anybody.
 
-### Anthropic — the AI
+### Anthropic and Google — the AI
 
-Sent to Anthropic's Claude API, and only when you do one of these things:
+Sent to Anthropic's Claude API or Google's Gemini API, and only when you do
+one of these things:
 
 | When you | What is sent |
 |---|---|
@@ -189,11 +192,27 @@ your device's language and clock settings, made on the device, and you
 confirm or change it when you set up.
 
 Separately, the app's own wording (buttons, headings, help text) is translated
-by Claude once for everybody; nothing about you goes with that.
+by the same AI once for everybody; nothing about you goes with that.
 
-Anthropic process it to produce the answer and return it. Their handling is
-governed by their own terms and privacy policy, at
+**Which of the two reads it.** Each kind of request above goes to one AI
+first, chosen by us for how well and how cheaply it does that job; most go to
+Claude. If that one is down, overloaded or gives an answer that makes no
+sense, the same request is sent to the other instead, so that your meal is
+read rather than guessed at. A request goes to a second company only when the
+first has failed to answer it. Which AI does which job can change as the
+models improve; this section is kept up to date if the companies change.
+
+**Anthropic** process what they are sent to produce the answer and return it.
+Their handling is governed by their own terms and privacy policy, at
 [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy).
+
+**Google** are used through the paid Gemini API. On the paid service, Google
+do not use what we send — photos included — or the answers, to improve their
+products, and they keep them only for a limited time, to detect misuse of the
+service and meet their legal obligations. They process it on our behalf under
+their data processing terms. Their handling is governed by the
+[Gemini API terms](https://ai.google.dev/gemini-api/terms) and Google's
+privacy policy, at [policies.google.com/privacy](https://policies.google.com/privacy).
 
 The nutritionist is the one to be aware of: answering "am I getting enough
 protein?" means sending a slice of your diary along with the question.
@@ -240,7 +259,7 @@ these:
   a link to put it back; or, if the new address already has a Squish account,
   a note to that address saying nothing has changed.
 
-Each is written in the language you use Squish in, translated by Claude once
+Each is written in the language you use Squish in, translated by the AI once
 for everybody as the app's wording is; nothing about you goes with that.
 
 Partners are also sent a sign-in link for their page, when they ask for one
@@ -271,8 +290,11 @@ to sees a request from our server, not from you — your address is not passed o
 <!--
   Worth confirming once, and re-checking if a provider changes: that the data
   processing terms are in place with Anthropic (part of their commercial terms
-  for API customers) and with Resend (their DPA, on their legal pages). This
-  section says those terms carry the safeguards for US transfers.
+  for API customers), with Google (the Gemini API key must belong to a Google
+  Cloud project with billing turned on — the free tier lets Google use what
+  is sent — and the project's data processing terms accepted in the Cloud
+  console), and with Resend (their DPA, on their legal pages). This section
+  says those terms carry the safeguards for US transfers.
 -->
 
 Our server and the companies above are not in the UK, so here is where
@@ -281,10 +303,10 @@ your data goes when it leaves your device:
 - **Your backup and account** are stored in Germany, in the EU. UK law treats
   the EU as protecting personal data to the same standard as the UK, so no
   extra safeguards are needed.
-- **Anthropic and Resend** are in the United States. What goes to them — what
-  you ask the AI, and the emails we send you — is covered by the data
-  protection terms each of them has with us, which include the safeguards UK
-  law requires when personal data leaves the UK.
+- **Anthropic, Google and Resend** are in the United States. What goes to
+  them — what you ask the AI, and the emails we send you — is covered by the
+  data protection terms each of them has with us, which include the
+  safeguards UK law requires when personal data leaves the UK.
 
 The barcode and password checks above send nothing that identifies you, so
 where those services are makes no difference to you.

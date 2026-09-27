@@ -1,11 +1,11 @@
 /**
  * Google's Gemini: the wire, the prices and the schema dialect.
  *
- * **Privacy first.** The privacy policy tells people their meals go to
- * Anthropic. A person's data may only come here when server/routing.ts sends
- * it: an admin's own requests, on a route an admin chose, or — once the policy
- * names Google and SQUISH_GEMINI_FOR_EVERYONE is set — everybody's. The
- * benchmark (`npm run bench`) uses it on the owner's own photos.
+ * **Privacy first.** The privacy policy names Google, through the paid Gemini
+ * API only. A person's data may only come here when server/routing.ts sends
+ * it: an admin's own requests, on a route an admin chose, or — once
+ * SQUISH_GEMINI_FOR_EVERYONE is set — everybody's. The benchmark
+ * (`npm run bench`) uses it on the owner's own photos.
  *
  * Nothing here knows about meals. server/providers.ts turns a request built
  * for Claude into one for Gemini and the answer back, so every feature asks

@@ -93,3 +93,18 @@ test('a page reached from an email does not send people into an empty Squish', a
   const verify = route.slice(route.indexOf("app.get('/verify'"), route.indexOf('const escapeHtml'));
   assert.match(verify, /back: false/, 'the confirmation page links back into the app again');
 });
+
+test('the policy names every company the AI can send somebody’s data to', () => {
+  const policy = readFileSync('docs/privacy.md', 'utf8');
+  // Everything a route can choose (server/pricing.ts) is Anthropic's or Google's; both must be named, with their terms.
+  assert.match(policy, /Anthropic's Claude API or Google's Gemini API/);
+  assert.match(policy, /ai\.google\.dev\/gemini-api\/terms/);
+  assert.match(policy, /paid Gemini API/, 'the free tier lets Google use what is sent: the policy promises the paid one');
+  assert.match(policy, /Four companies process data on our behalf/);
+  // And the app tells people who were here before, as the policy promises it will.
+  const notice = readFileSync('src/components/PolicyNotice.tsx', 'utf8');
+  const changed = /POLICY_CHANGED = '(\d{4}-\d{2}-\d{2})'/.exec(notice)?.[1];
+  const [, day, month, year] = /Last updated: (\d+) (\w+) (\d{4})/.exec(policy) ?? [];
+  const updated = new Date(`${day} ${month} ${year} UTC`).toISOString().slice(0, 10);
+  assert.ok(changed && changed <= updated, 'the notice is for a change the policy has made');
+});

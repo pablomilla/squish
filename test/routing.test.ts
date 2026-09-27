@@ -19,8 +19,8 @@ import {
 
 /**
  * Which model answers each job, what backs it up, and the line nobody's data
- * crosses: to Google, only on an admin's own route, until the privacy policy
- * says otherwise.
+ * crosses: to Google, only on an admin's own route, until Gemini is switched
+ * on for everybody.
  */
 
 const enabled = hasDatabase();
@@ -79,13 +79,13 @@ test('stopping on purpose, or a failure that would happen anywhere, is not tried
   await assert.rejects(withModels('coach', async (m) => Promise.reject(new Error(`${m} down`)), { models: ['a', 'b'] }), /b down/, 'every model down: the last reason');
 });
 
-test('for everybody, a job with their data stays on Claude until the privacy policy names Google', () => {
-  assert.match(refusal('gemini-3.8-flash', 'photo', 'everyone')!, /privacy policy/);
+test('for everybody, a job with their data stays on Claude until Gemini is switched on for everybody', () => {
+  assert.match(refusal('gemini-3.8-flash', 'photo', 'everyone')!, /SQUISH_GEMINI_FOR_EVERYONE/);
   assert.equal(refusal('gemini-3.8-flash', 'photo', 'admins'), null, 'an admin may try it on their own meals');
   assert.equal(refusal('gemini-3.8-flash', 'translate', 'everyone'), null, 'the app’s own words are nobody’s data');
   assert.match(refusal('gpt-9', 'photo', 'admins')!, /price/, 'only models with a price, so every call is costed');
   process.env.SQUISH_GEMINI_FOR_EVERYONE = 'on';
-  assert.equal(refusal('gemini-3.8-flash', 'chat', 'everyone'), null, 'once the policy is changed and the switch set');
+  assert.equal(refusal('gemini-3.8-flash', 'chat', 'everyone'), null, 'once the switch is set');
   delete process.env.SQUISH_GEMINI_FOR_EVERYONE;
   for (const f of FEATURES) assert.ok(f.defaults.every((m) => m.startsWith('claude-')), `${f.id} starts on Claude`);
   assert.ok(FEATURES.every((f) => f.defaults.length >= 2), 'and every job has a backup from the start');
@@ -127,7 +127,7 @@ when('routes are saved whole or not at all, and everybody’s refuses Google', a
   routes.photo.everyone = ['gemini-3.8-flash', 'claude-opus-5'];
   const refused = await saveRoutes(routes);
   assert.equal(refused.ok, false);
-  assert.match(refused.ok ? '' : refused.message, /privacy policy/);
+  assert.match(refused.ok ? '' : refused.message, /SQUISH_GEMINI_FOR_EVERYONE/);
 
   routes.photo.everyone = ['claude-opus-5', 'claude-sonnet-5'];
   routes.photo.admins = ['gemini-3.8-flash', 'claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];

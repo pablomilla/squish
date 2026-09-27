@@ -11,11 +11,13 @@
  * There are two routes per feature: one for admins, one for everybody else.
  * Admins try things on their own meals; everybody gets what has been proven.
  *
- * **The privacy line.** The privacy policy says a person's meals, photos and
- * questions go to Anthropic. So on everybody's route a feature that carries
- * personal data can only use Claude — enforced when a route is saved and
- * again when it is used — until SQUISH_GEMINI_FOR_EVERYONE=on is set, which
- * should happen only once the policy names Google. Translating the app's own
+ * **The privacy line.** The privacy policy (docs/privacy.md) names Anthropic
+ * and Google, and says how each is used. Even so, sending everybody's meals,
+ * photos and questions to Google is a switch somebody throws on purpose: on
+ * everybody's route a feature that carries personal data can only use Claude
+ * — enforced when a route is saved and again when it is used — until
+ * SQUISH_GEMINI_FOR_EVERYONE=on is set in Render. A policy that stopped
+ * naming Google would mean turning it off again. Translating the app's own
  * words carries nobody's data, so it may use any model.
  *
  * Kept in admin_settings (`model_routes`), changed on Dashboard → Settings,
@@ -81,14 +83,14 @@ export const isFeature = (value: unknown): value is Feature => typeof value === 
 
 export type Routes = Record<Feature, Record<Audience, string[]>>;
 
-/** Only once the privacy policy names Google. */
+/** Everybody's personal data may go to Gemini: set on purpose, and only while the privacy policy names Google. */
 export const everyoneMayUseGemini = (): boolean => process.env.SQUISH_GEMINI_FOR_EVERYONE === 'on';
 
 /** Why a model cannot go on a route, or null if it can. */
 export function refusal(model: string, feature: Feature, audience: Audience): string | null {
   if (!PRICED_MODELS.includes(model)) return `${model} is not a model Squish has a price for.`;
   if (isGeminiModel(model) && audience === 'everyone' && FEATURE.get(feature)!.personal && !everyoneMayUseGemini()) {
-    return `The privacy policy names Anthropic only, so ${FEATURE.get(feature)!.label.toLowerCase()} for everybody stay with Claude until it names Google (then set SQUISH_GEMINI_FOR_EVERYONE=on).`;
+    return `Gemini is not switched on for everybody, so ${FEATURE.get(feature)!.label.toLowerCase()} for everybody stay with Claude. To allow it, set SQUISH_GEMINI_FOR_EVERYONE=on in Render.`;
   }
   return null;
 }
