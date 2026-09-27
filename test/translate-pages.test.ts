@@ -394,3 +394,15 @@ test('the clock’s guess comes back as a guess, which can be guessed again; a p
   const pick = await (await fetch(`${base}/?country=GB`)).text();
   assert.match(pick, /"region":"GB","picked":true/);
 });
+
+test('the clock is read in the head, before the page is drawn, so a reload never shows the wrong page', async () => {
+  const html = await (await fetch(`${base}/`, { headers: { 'Accept-Language': 'en-US' } })).text();
+  const head = html.slice(0, html.indexOf('</head>'));
+  const data = head.indexOf('id="prices-data"');
+  const guess = head.indexOf('<script>/*\n * The country this device’s clock is set to'.replace('’', "'"));
+  assert.ok(data > 0, 'the data is in the head');
+  assert.ok(guess > data, 'and the guess runs straight after it, inline');
+  assert.match(head, /root\.style\.visibility = 'hidden'/, 'hidden before it goes');
+  assert.match(head, /setTimeout\(function \(\) \{\n\s+root\.style\.visibility = '';/, 'and never left hidden');
+  assert.ok(!html.slice(html.indexOf('</head>')).includes('prices-data'), 'once, not again in the body');
+});

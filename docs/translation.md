@@ -106,8 +106,8 @@ start-up.
   `src/lib/region.ts` — the same one the paywall shows — in its currency,
   written the page's language's way. The server picks the country from one
   chosen under the plans (`?country=AU`), else the one the browser's
-  languages name (`en-AU`), else Britain. Then `site/prices.js`, unless a
-  country was chosen, swaps in the country the device's clock is set to, if
+  languages name (`en-AU`), else Britain. Then, unless a country was chosen,
+  `site/guess.js` and `site/prices.js` swap in the country the device's clock is set to, if
   it is one of the six — the table is `TIME_ZONES` in `src/lib/region.ts`,
   and every country's prices come on the page in a JSON block, so the script
   asks nothing of anybody. It is what puts pounds in front of somebody in
@@ -115,8 +115,13 @@ start-up.
 - In English the country decides the spelling too: American for the US
   (`packFor`, as in the app), British everywhere else, `<html lang>` to
   match. Spelling cannot be swapped in the browser the way a price can, so
-  when the clock names a country that reads the page in other words,
-  `prices.js` asks for it again once, as `?country=GB&guess`. A guess can be
+  when the clock names a country that reads the page in other words, the
+  page asks for itself again once, as `?country=GB&guess`. That is
+  `site/guess.js`, which the server inlines in the head straight after the
+  data: it runs before anything is drawn and hides the page while the right
+  one comes, so the wrong spelling is never on screen (and shows it again
+  after three seconds if the page is somehow still there). Where only the
+  prices differ it leaves its guess on `<html data-guess>` for `prices.js`. A guess can be
   guessed again (so a shared link still suits whoever opens it); a country
   picked from the list cannot. Every page carries the data for this, not
   only those with prices. Another language is the same in every country.

@@ -248,10 +248,33 @@ async function withPrices(html: string, region: Region, language: Language, pick
     prices: Object.fromEntries(REGION_LIST.map((r) => [r.id, pricesIn(r.id)])),
     zones: TIME_ZONES,
   };
-  // Data, not code: a JSON block runs nothing, and "<" is escaped so nothing in it can end the tag.
-  const island = `<script type="application/json" id="prices-data">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>\n  <script src="/prices.js" defer></script>\n`;
-  return filled.replace('</body>', `  ${island}</body>`);
+  // In the head, so guess.js can act before anything is drawn. The data is
+  // data, not code: a JSON block runs nothing, and "<" is escaped so nothing
+  // in it can end the tag.
+  const island = [
+    `<script type="application/json" id="prices-data">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`,
+    `<script>${guessScript()}</script>`,
+    '<script src="/prices.js" defer></script>',
+  ].join('\n  ');
+  return filled.replace('</head>', `  ${island}\n</head>`);
 }
+
+/**
+ * site/guess.js, to put inline at the top of each page: it has to run before
+ * the page is drawn, and an inline script does without waiting for a request.
+ * Read once; "</" is escaped so nothing in it can end the script tag.
+ */
+let guessCode: string | null = null;
+const guessScript = (): string => {
+  if (guessCode === null) {
+    try {
+      guessCode = readFileSync(join(SITE_DIR, 'guess.js'), 'utf8').replace(/<\//g, '<\\/');
+    } catch {
+      guessCode = '';
+    }
+  }
+  return guessCode;
+};
 
 const pages = new Map<string, string>();
 
