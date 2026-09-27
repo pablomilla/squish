@@ -26,8 +26,11 @@ potato is a kūmara in New Zealand — on the stickers and Home scenes that use
 those words, and in the coach's tips. Canada spells the British way but talks
 the North American way: math ("I'll do the math"), two weeks (the "Two weeks"
 badge, a "Fortnight" elsewhere), takeout, green onions, 2% milk, and a family
-doctor where Britain, Ireland, Australia and New Zealand have a GP. The
-website uses the same table on its English pages outside the US. The
+doctor where Britain, Ireland, Australia and New Zealand have a GP. Ireland
+talks much as Britain does, but an ice lolly is an ice pop there, trainers are
+runners, a postcode is an Eircode, and the milk is low-fat rather than
+semi-skimmed. The website uses the same table on its English pages outside
+the US. The
 built-in food table carries local names and local sizes (a US can of cola is
 355 ml, an Australian one 375, a schooner of beer 425), and the British name
 stays on each food as a search word.

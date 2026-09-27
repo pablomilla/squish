@@ -347,9 +347,9 @@ const WORDS: Record<string, Partial<Record<Region, string>>> = {
   // icy pole in one and an ice block in the other.
   sweets: { US: 'candy', CA: 'candy', AU: 'lollies', NZ: 'lollies' },
   'sweet shop': { US: 'candy store', CA: 'candy store', AU: 'lolly shop', NZ: 'lolly shop' },
-  'ice lolly': { US: 'popsicle', CA: 'popsicle', AU: 'icy pole', NZ: 'ice block' },
-  'ice lollies': { US: 'popsicles', CA: 'popsicles', AU: 'icy poles', NZ: 'ice blocks' },
-  'ice-lolly': { US: 'popsicle', CA: 'popsicle', AU: 'icy-pole', NZ: 'ice-block' },
+  'ice lolly': { US: 'popsicle', CA: 'popsicle', AU: 'icy pole', NZ: 'ice block', IE: 'ice pop' },
+  'ice lollies': { US: 'popsicles', CA: 'popsicles', AU: 'icy poles', NZ: 'ice blocks', IE: 'ice pops' },
+  'ice-lolly': { US: 'popsicle', CA: 'popsicle', AU: 'icy-pole', NZ: 'ice-block', IE: 'ice-pop' },
   'sweet potato': { NZ: 'kūmara' },
   'sweet potatoes': { NZ: 'kūmara' },
   mangetout: { US: 'snow peas', CA: 'snow peas', AU: 'snow peas', NZ: 'snow peas' },
@@ -366,7 +366,7 @@ const WORDS: Record<string, Partial<Record<Region, string>>> = {
   'jacket potatoes': { US: 'baked potatoes', CA: 'baked potatoes' },
   'spring onion': { US: 'green onion', CA: 'green onion' },
   'spring onions': { US: 'green onions', CA: 'green onions' },
-  'semi-skimmed milk': { US: '2% milk', CA: '2% milk' },
+  'semi-skimmed milk': { US: '2% milk', CA: '2% milk', IE: 'low-fat milk' },
   'skimmed milk': { US: 'skim milk', CA: 'skim milk' },
   'double cream': { US: 'heavy cream', CA: 'whipping cream' },
   'single cream': { US: 'light cream', CA: 'table cream' },
@@ -375,6 +375,11 @@ const WORDS: Record<string, Partial<Record<Region, string>>> = {
   // Australia and New Zealand have GPs too.
   gp: { US: 'doctor', CA: 'family doctor' },
   gps: { US: 'doctors', CA: 'family doctors' },
+  // Ireland talks much as Britain does, but an ice lolly is an ice pop,
+  // trainers are runners and a postcode is an Eircode.
+  trainers: { US: 'sneakers', CA: 'running shoes', AU: 'runners', IE: 'runners' },
+  postcode: { US: 'ZIP code', CA: 'postal code', IE: 'Eircode' },
+  postcodes: { US: 'ZIP codes', CA: 'postal codes', IE: 'Eircodes' },
 };
 
 /** Abbreviations: "GP" is not shouted, so its replacement is written as it is, never in capitals. */
@@ -401,7 +406,7 @@ const matchCase = (original: string, word: string) =>
  */
 export function localWords(text: string, region: Region = current.region): string {
   // Only English has British words to swap; a translation already uses its own.
-  if (region === 'GB' || region === 'IE' || uiLanguage() !== 'en') return text;
+  if (region === 'GB' || uiLanguage() !== 'en') return text;
   // Nor, once it has loaded, does American English: its pack has chosen the
   // words already, and swapping again would make its "chips" into "fries".
   if (region === 'US' && hasTranslations()) return text;
@@ -434,6 +439,10 @@ export interface LocalFood {
  * one 375, and a pint of beer is 568 ml only on one side of the Atlantic.
  */
 export const LOCAL_FOODS: Partial<Record<Region, Record<string, LocalFood>>> = {
+  // Irish shops sell low-fat milk, not semi-skimmed.
+  IE: {
+    milk: { name: msg('Low-fat milk') },
+  },
   US: {
     oats: { name: msg('Rolled oats (oatmeal), dry') },
     'greek-yog': { name: msg('Greek yogurt, 2%') },

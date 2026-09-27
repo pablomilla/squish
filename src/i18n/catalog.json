@@ -1,5 +1,5 @@
 {
- "version": "1wrwr6p-clh1b0",
+ "version": "0swzi74026lx0n",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -4127,6 +4127,13 @@
    "text": "Log something today and we start a new streak together.",
    "where": [
     "src/screens/Insights.tsx"
+   ]
+  },
+  {
+   "id": "0p2mm46-8yvhux",
+   "text": "Low-fat milk",
+   "where": [
+    "src/lib/region.ts"
    ]
   },
   {

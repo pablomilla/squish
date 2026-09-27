@@ -1,2 +1,2 @@
 // Written by scripts/i18n-extract.ts — do not edit. The app asks the server for this version of the catalog.
-export const CATALOG_VERSION = '1wrwr6p-clh1b0';
+export const CATALOG_VERSION = '0swzi74026lx0n';

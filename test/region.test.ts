@@ -236,3 +236,24 @@ test('a GP is a family doctor in Canada, written as words, not shouted', () => {
   assert.equal(localWords('your GP', 'US'), 'your doctor');
   for (const region of ['GB', 'IE', 'AU', 'NZ'] as const) assert.equal(localWords('your GP', region), 'your GP');
 });
+
+test('in Ireland an ice lolly is an ice pop, trainers are runners and semi-skimmed milk is low-fat', () => {
+  assert.equal(localWords('Ice lolly', 'IE'), 'Ice pop');
+  assert.equal(localWords('Ice-lolly stand', 'IE'), 'Ice-pop stand');
+  assert.equal(localWords('two ice lollies', 'IE'), 'two ice pops');
+  assert.equal(localWords('Semi-skimmed milk', 'IE'), 'Low-fat milk');
+  assert.equal(localWords('your trainers and postcode', 'IE'), 'your runners and Eircode');
+  // Much else is as in Britain.
+  assert.equal(localWords('Sweets, crisps, a fortnight and your GP', 'IE'), 'Sweets, crisps, a fortnight and your GP');
+  assert.equal(localWords('Ice lolly', 'GB'), 'Ice lolly');
+});
+
+test('Irish stickers, scenes and milk use the Irish words when shown', () => {
+  setCurrentRegion({ region: 'IE' });
+  assert.equal(stickerById('ice-lolly')!.name, 'Ice pop');
+  assert.equal(sceneById('ice-lolly-stand')!.name, 'Ice-pop stand');
+  assert.equal(stickerById('sweets')!.name, 'Sweets');
+  assert.equal(toFoodItem(foodById('milk')!).name, 'Low-fat milk');
+  setCurrentRegion({ region: 'GB' });
+  assert.equal(toFoodItem(foodById('milk')!).name, 'Semi-skimmed milk');
+});
