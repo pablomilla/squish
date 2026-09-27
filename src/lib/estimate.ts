@@ -10,6 +10,7 @@ import type { AnalysisResult, FoodItem, MealSlot } from '../types';
 import { FOODS, searchFoods, toFoodItem, type FoodRecord } from './foods';
 import { qualityScore, round1, sumNutrients, ultraProcessedShare } from './nutrition';
 import { t } from './i18n';
+import { localWords } from './region';
 
 const NUMBER_WORDS: Record<string, number> = {
   a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
@@ -98,7 +99,7 @@ function titleFrom(items: FoodItem[], fallback: string): string {
 
 function noteFor(result: { score: number; items: FoodItem[] }): string {
   const { score, items } = result;
-  if (!items.length) return t("I could not place that one — try searching the food list and I'll do the maths.");
+  if (!items.length) return localWords(t("I could not place that one — try searching the food list and I'll do the maths."));
   if (score >= 75) return t('Lovely balance — plenty of protein and fibre in there. High five!');
   if (score >= 55) return t('Nicely balanced. A handful of veg alongside would top it off.');
   if (score >= 38) return t('Tasty! Maybe pair it with something green or a protein boost later.');

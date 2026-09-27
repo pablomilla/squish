@@ -355,6 +355,22 @@ const WORDS: Record<string, Partial<Record<Region, string>>> = {
   mangetout: { US: 'snow peas', CA: 'snow peas', AU: 'snow peas', NZ: 'snow peas' },
   'cereal bar': { US: 'granola bar', CA: 'granola bar', AU: 'muesli bar', NZ: 'muesli bar' },
   'cereal bars': { US: 'granola bars', CA: 'granola bars', AU: 'muesli bars', NZ: 'muesli bars' },
+  // Canada spells the British way but talks the North American way: math,
+  // two weeks, takeout, green onions — while Australia and New Zealand keep
+  // the British words.
+  maths: { US: 'math', CA: 'math' },
+  fortnight: { US: 'two weeks', CA: 'two weeks' },
+  takeaway: { US: 'takeout', CA: 'takeout' },
+  takeaways: { US: 'takeouts', CA: 'takeouts' },
+  'jacket potato': { US: 'baked potato', CA: 'baked potato' },
+  'jacket potatoes': { US: 'baked potatoes', CA: 'baked potatoes' },
+  'spring onion': { US: 'green onion', CA: 'green onion' },
+  'spring onions': { US: 'green onions', CA: 'green onions' },
+  'semi-skimmed milk': { US: '2% milk', CA: '2% milk' },
+  'skimmed milk': { US: 'skim milk', CA: 'skim milk' },
+  'double cream': { US: 'heavy cream', CA: 'whipping cream' },
+  'single cream': { US: 'light cream', CA: 'table cream' },
+  'icing sugar': { US: 'powdered sugar' },
 };
 
 const WORD_PATTERN = new RegExp(

@@ -27,7 +27,7 @@ import FriendNudge from '../components/FriendNudge';
 import SquadStrip from '../components/squad/SquadStrip';
 import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
-import { energyValue, formatEnergy } from '../lib/region';
+import { energyValue, formatEnergy, localWords } from '../lib/region';
 import { plural, t } from '../lib/i18n';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
@@ -273,7 +273,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
               </button>
             }
           >
-            {t("Nothing logged yet today — snap a meal and I'll do the maths.")}
+            {localWords(t("Nothing logged yet today — snap a meal and I'll do the maths."))}
           </EmptyState>
         ) : (
           <div className="stack">

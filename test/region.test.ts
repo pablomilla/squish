@@ -21,6 +21,7 @@ import { equivalentFor } from '../src/lib/equivalents';
 import { formatWeight, imperialLabel, stonePoundsToKg } from '../src/lib/units';
 import { stickerById } from '../src/lib/shareDecor';
 import { sceneById } from '../src/lib/scenes';
+import { achievementById } from '../src/lib/achievements';
 
 /**
  * Regions: the six countries, and the things that change between them —
@@ -204,4 +205,27 @@ test('sticker and scene names follow the country when shown, not when loaded', (
   assert.equal(sceneById('ice-lolly-stand')!.name, 'Icy-pole stand');
   setCurrentRegion({ region: 'NZ' });
   assert.equal(sticker.name, 'Ice block');
+});
+
+test('Canada spells the British way but says math, two weeks and takeout', () => {
+  assert.equal(localWords("snap a meal and I'll do the maths.", 'CA'), "snap a meal and I'll do the math.");
+  assert.equal(localWords('Fortnight', 'CA'), 'Two weeks');
+  assert.equal(localWords('a takeaway and a jacket potato', 'CA'), 'a takeout and a baked potato');
+  assert.equal(localWords('Semi-skimmed milk and spring onions', 'CA'), '2% milk and green onions');
+  assert.equal(localWords('double cream or single cream', 'CA'), 'whipping cream or table cream');
+  assert.equal(localWords('icing sugar', 'CA'), 'icing sugar', 'Canadians say icing sugar');
+  assert.equal(localWords('How can I eat more fibre?', 'CA'), 'How can I eat more fibre?', 'and spell fibre');
+  for (const region of ['GB', 'IE', 'AU', 'NZ'] as const) {
+    assert.equal(localWords("the maths, a fortnight, a takeaway", region), 'the maths, a fortnight, a takeaway', `${region} keeps them`);
+  }
+});
+
+test('the two-week badge is "Two weeks" in Canada, and a fortnight elsewhere, when shown', () => {
+  const badge = achievementById('streak-14')!;
+  assert.equal(badge.title, 'Fortnight');
+  setCurrentRegion({ region: 'CA' });
+  assert.equal(badge.title, 'Two weeks');
+  setCurrentRegion({ region: 'AU' });
+  assert.equal(badge.title, 'Fortnight');
+  assert.equal(badge.description, 'Two weeks of logging');
 });

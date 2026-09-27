@@ -24,6 +24,7 @@ import { addDays, isoDate, weekOf } from './date';
 import { addNutrients, EMPTY } from './nutrition';
 import { bestStreak, dayScore } from './selectors';
 import { t } from './i18n';
+import { localWords } from './region';
 
 export type AchievementGroup = 'showing-up' | 'eating-well' | 'variety' | 'trying' | 'friends';
 
@@ -50,7 +51,8 @@ export const ACHIEVEMENTS: Entry[] = [
   a('showing-up', 'streak-3', t('Three in a row'), t('Log meals three days running'), '🔥'),
   a('showing-up', 'streak-7', t('Full week'), t('Seven days of logging'), '🗓️'),
   a('showing-up', 'days-10', t('Ten days'), t('Log on ten days — any ten'), '🔟'),
-  a('showing-up', 'streak-14', t('Fortnight'), t('Two weeks of logging'), '🌿'),
+  // Titled when shown, not when loaded: "Two weeks" in North America, where nobody says fortnight.
+  { ...a('showing-up', 'streak-14', '', t('Two weeks of logging'), '🌿'), get title() { return localWords(t('Fortnight')); } },
   a('showing-up', 'streak-30', t('Squish regular'), t('Thirty days of logging'), '🏆'),
   a('showing-up', 'welcome-back', t('Welcome back'), t('Log again after a week or more away'), '👋'),
   a('showing-up', 'days-50', t('Fifty days'), t('Log on fifty days in all'), '🌟'),
