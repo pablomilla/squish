@@ -162,6 +162,14 @@ async function store(language: Pack, found: Map<string, Translation>): Promise<v
 
 export type Translator = (entries: CatalogEntry[], language: Pack) => Promise<Record<string, unknown>>;
 
+/**
+ * A batch whose translation ran past the answer's length. Some scripts take
+ * far more tokens per word than English (Punjabi's Gurmukhi, Bengali, Tamil),
+ * so a batch that fits in one language can overflow in another; the batch is
+ * split and tried again rather than given up on.
+ */
+export class TranslationTooLong extends Error {}
+
 let translator: Translator | null = null;
 
 /** The Claude-backed translator is set by index.ts when there are credentials; tests set their own. */
@@ -176,17 +184,34 @@ export function setTranslator(next: Translator | null): void {
 async function translateEntries(language: Pack, entries: CatalogEntry[]): Promise<Map<string, Translation>> {
   const added = new Map<string, Translation>();
   if (!translator) return added;
-  for (let i = 0; i < entries.length; i += BATCH) {
-    const batch = entries.slice(i, i + BATCH);
+  const ask = translator;
+
+  /** One batch; halves of it, and halves of those, if its translation runs long. */
+  const translate = async (batch: CatalogEntry[]): Promise<void> => {
+    let answer: Record<string, unknown>;
     try {
-      const answer = await translator(batch, language);
-      const good = new Map<string, Translation>();
-      for (const entry of batch) {
-        const value = answer[entry.id];
-        if (acceptable(entry, value, language)) good.set(entry.id, value);
+      answer = await ask(batch, language);
+    } catch (error) {
+      if (error instanceof TranslationTooLong && batch.length > 1) {
+        const half = Math.ceil(batch.length / 2);
+        await translate(batch.slice(0, half));
+        await translate(batch.slice(half));
+        return;
       }
-      await store(language, good);
-      for (const [id, value] of good) added.set(id, value);
+      throw error;
+    }
+    const good = new Map<string, Translation>();
+    for (const entry of batch) {
+      const value = answer[entry.id];
+      if (acceptable(entry, value, language)) good.set(entry.id, value);
+    }
+    await store(language, good);
+    for (const [id, value] of good) added.set(id, value);
+  };
+
+  for (let i = 0; i < entries.length; i += BATCH) {
+    try {
+      await translate(entries.slice(i, i + BATCH));
     } catch (error) {
       console.error(`Translating into ${language} failed:`, error instanceof Error ? error.message : error);
       break;

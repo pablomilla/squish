@@ -23,7 +23,7 @@ import { claimHandoff, deviceFor, refund, registerDevice, spend, startHandoff, t
 import { checkAnswer, signQuestion, withoutQuestion } from './clarify';
 import { ensureFoodTable } from './foodTable';
 import { analysePhotoGemini } from './gemini';
-import { photoReader, readGeminiTrial, saveGeminiTrial } from './modelTrial';
+import { describeGeminiTrial, photoReader, readGeminiTrial, saveGeminiTrial } from './modelTrial';
 import { handOver, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
@@ -2145,7 +2145,11 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
     const reader = await photoReader(req.device);
     if (reader.reader === 'gemini') {
       try {
-        const { analysis } = await analysePhotoGemini(data, type, mealSlot, note, reader.model, plate);
+        const { analysis, usage } = await analysePhotoGemini(data, type, mealSlot, note, reader.model, plate);
+        console.info(
+          `[squish] gemini trial: read by ${usage.model} in ${(usage.latencyMs / 1000).toFixed(1)}s` +
+            ` · ${analysis.items.length} food${analysis.items.length === 1 ? '' : 's'}${usage.costUsd === null ? '' : ` · $${usage.costUsd.toFixed(4)}`}`,
+        );
         res.json(await signQuestion({ ...analysis, trial: { reader: 'gemini', model: reader.model } }));
         return;
       } catch (error) {
@@ -2640,6 +2644,7 @@ const server = app.listen(PORT, () => {
   console.log(`🫧  Squish on http://localhost:${PORT}`);
   // Weekly plans a previous instance was making when it stopped: pick them up.
   startSweeping();
+  if (hasDatabase()) void describeGeminiTrial().then((line) => console.log(`    ${line}`)).catch(() => {});
   // The food table, the first time there is none (server/foodTable.ts). In
   // the background: until it is loaded, meals are read exactly as before.
   setTimeout(() => void ensureFoodTable().catch((error: unknown) => logFailure('food table import', error)), 10_000).unref();

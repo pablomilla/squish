@@ -11,6 +11,7 @@ import {
   readTranslation,
   translateRequest,
   setTranslator,
+  TranslationTooLong,
   wanted,
   type CatalogEntry,
   type Translator,
@@ -23,13 +24,13 @@ import {
 before(async () => {
   if (hasDatabase()) {
     await migrate();
-    await query(`delete from ui_translations where language in ('pl', 'cy', 'de')`);
+    await query(`delete from ui_translations where language in ('pl', 'cy', 'de', 'pa')`);
   }
 });
 after(async () => {
   setTranslator(null);
   if (hasDatabase()) {
-    await query(`delete from ui_translations where language in ('pl', 'cy', 'de')`);
+    await query(`delete from ui_translations where language in ('pl', 'cy', 'de', 'pa')`);
     await closeDatabase();
   }
 });
@@ -131,4 +132,35 @@ test('American English is asked for as a light rewrite, not a translation', () =
   assert.match(content, /Never change units/);
   assert.match(content, /Plural categories: one, other/);
   assert.doesNotMatch(content, /Translate into/);
+});
+
+test('a batch that runs long in a script heavy with tokens is split until it fits, and all of it is translated', async () => {
+  if (!CATALOG.entries.length) return;
+  const sizes: number[] = [];
+  // Punjabi: anything over eight strings is more than one answer can hold.
+  const punjabi: Translator = async (entries) => {
+    sizes.push(entries.length);
+    if (entries.length > 8) throw new TranslationTooLong('ran long');
+    return Object.fromEntries(
+      entries.map((entry) => [entry.id, entry.text !== undefined ? entry.text : { one: entry.one, other: entry.other }]),
+    );
+  };
+  setTranslator(punjabi);
+  await fillLanguage('pa');
+  setTranslator(null);
+  const answered = sizes.filter((n) => n <= 8);
+  assert.equal(answered.reduce((a, b) => a + b, 0), wanted().length, 'every string, in batches small enough');
+  assert.ok(sizes.some((n) => n > 8), 'the full batch was tried first');
+});
+
+test('any other failure still stops the run, leaving the rest for next time', async () => {
+  if (!CATALOG.entries.length) return;
+  let calls = 0;
+  setTranslator(async () => {
+    calls += 1;
+    throw new Error('overloaded');
+  });
+  await fillLanguage('cy');
+  setTranslator(null);
+  assert.equal(calls, 1);
 });

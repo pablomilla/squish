@@ -14,7 +14,7 @@ import { bill } from './billing';
 import { regionNote } from './region';
 import { groundMeal } from './grounding';
 import { tableFoods } from './foodTable';
-import { readTranslation, translateRequest, type CatalogEntry } from './translate';
+import { readTranslation, translateRequest, TranslationTooLong, type CatalogEntry } from './translate';
 import type { Pack } from '../src/lib/language';
 import { AISLES, isAisle } from '../src/lib/shopping';
 import { msg } from '../src/lib/i18n';
@@ -1054,9 +1054,9 @@ export async function planWeek(req: WeekPlanRequest, signal?: AbortSignal): Prom
  */
 export async function translateBatch(entries: CatalogEntry[], language: Pack): Promise<Record<string, unknown>> {
   const response = await getClient().messages.create(translateRequest(entries, language, MODEL));
-  if (response.stop_reason === 'refusal' || response.stop_reason === 'max_tokens') {
-    throw new Error(`translation stopped: ${response.stop_reason}`);
-  }
+  // Too long for one answer: the caller splits the batch and asks again.
+  if (response.stop_reason === 'max_tokens') throw new TranslationTooLong(`translation of ${entries.length} strings into ${language} ran long`);
+  if (response.stop_reason === 'refusal') throw new Error('translation stopped: refusal');
   const text = response.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)

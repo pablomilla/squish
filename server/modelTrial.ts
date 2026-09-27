@@ -65,16 +65,31 @@ export async function saveGeminiTrial(changes: { on?: unknown; model?: unknown }
 
 /**
  * Who reads this device's meal photo. Claude unless every condition holds —
- * and Claude too if anything goes wrong finding out.
+ * and Claude too if anything goes wrong finding out. With the switch on but
+ * no key, it says so in the log: that is the one way the trial can look on
+ * and quietly do nothing.
  */
 export async function photoReader(device: Device | undefined): Promise<{ reader: 'claude' } | { reader: 'gemini'; model: string }> {
   try {
-    if (!hasGeminiKey() || !device?.accountId) return { reader: 'claude' };
+    if (!device?.accountId) return { reader: 'claude' };
     const trial = await readGeminiTrial();
     if (!trial.on) return { reader: 'claude' };
     if (!(await isAdmin(device))) return { reader: 'claude' };
+    if (!trial.keySet) {
+      console.warn('[squish] gemini trial: the switch is on but GEMINI_API_KEY is not set in Render — reading with Claude');
+      return { reader: 'claude' };
+    }
     return { reader: 'gemini', model: trial.model };
   } catch {
     return { reader: 'claude' };
   }
+}
+
+/** One line at start-up: whether the trial is on, and whether it can be. */
+export async function describeGeminiTrial(): Promise<string> {
+  const trial = await readGeminiTrial();
+  if (!trial.on) return `Gemini trial: off${trial.keySet ? ' (key set)' : ''}`;
+  return trial.keySet
+    ? `Gemini trial: on — admins' meal photos go to ${trial.model}`
+    : 'Gemini trial: on, but GEMINI_API_KEY is not set — nothing goes to Gemini';
 }
