@@ -82,7 +82,9 @@ In English outside the US, the wording also goes through the app's table of
 country words (`localWords`): an email that says "talk to your GP" says
 "talk to your family doctor" to a reader in Canada. None of the default
 wordings has such a word today; it matters for wording edited in the
-dashboard.
+dashboard. Unlike the privacy policy, a country-worded email carries no note
+about which version counts, on purpose: that matters for a legal text, and in
+a reset or security email it would only get in the way.
 
 The partner and test emails go to the business and stay English.
 
