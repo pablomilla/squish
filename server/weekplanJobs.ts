@@ -22,7 +22,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { hasDatabase, migrate, query } from './db';
-import { billedAs } from './billing';
+import { billedAs, modelName } from './billing';
 import { audienceOf, servedAs } from './routing';
 import type { WeekPlan } from './claude';
 import type { WeekPlanRequest } from './weekplan';
@@ -88,6 +88,51 @@ const theWorker = (): Worker => {
 
 const newId = (): string => randomBytes(18).toString('base64url');
 
+/**
+ * What a job's calls cost, added to the job as each is priced — by whichever
+ * run makes them, so a try cut off by a restart still counts — along with the
+ * model that answered last, which for a plan that was made is the one that
+ * made it. `settled` waits for the writes still on their way, so a finished
+ * job's cost is complete before it is added to the running totals.
+ */
+function costKeeper(id: string): { tally: (usd: number | null, model: string) => void; settled: () => Promise<unknown> } {
+  const pending = new Set<Promise<unknown>>();
+  const tally = (usd: number | null, model: string) => {
+    const cost = usd && Number.isFinite(usd) && usd > 0 ? usd.toFixed(6) : '0';
+    const write = query(
+      `update weekplan_jobs
+          set model = $2::text,
+              costs = coalesce(costs, '{}'::jsonb) || jsonb_build_object($2::text, coalesce((costs->>$2::text)::numeric, 0) + $3::numeric)
+        where id = $1`,
+      [id, modelName(model), cost],
+    ).catch(() => {
+      /* a gap in a report, never a failed plan */
+    });
+    pending.add(write);
+    void write.finally(() => pending.delete(write));
+  };
+  return { tally, settled: () => Promise.allSettled([...pending]) };
+}
+
+/**
+ * A finished job's cost, added to the day's totals by model, plan length and
+ * outcome: kept after the job itself is gone. Called once per job, by
+ * whatever finished it.
+ */
+async function keepPlanCost(id: string): Promise<void> {
+  await query(
+    `insert into weekplan_costs (day, model, days, outcome, plans, cost_usd)
+     select current_date, coalesce(j.model, 'none'), coalesce((j.ask->>'days')::numeric, 0)::int,
+            case when j.status = 'done' then 'made' else 'failed' end, 1,
+            coalesce((select sum(value::numeric) from jsonb_each_text(j.costs)), 0)
+       from weekplan_jobs j
+      where j.id = $1 and j.status in ('done', 'failed')
+     on conflict (day, model, days, outcome)
+       do update set plans = weekplan_costs.plans + 1, cost_usd = weekplan_costs.cost_usd + excluded.cost_usd`,
+    [id],
+  ).catch((error: unknown) => console.warn('[squish] could not keep a weekly plan cost:', error instanceof Error ? error.message : error));
+}
+
 /** Start a plan: answered at once with the job's id, made in the background. */
 /**
  * Start a plan: answered at once with the job's id, made in the background.
@@ -141,6 +186,7 @@ function runInMemory(id: string, deviceId: string | null, ask: WeekPlanRequest, 
 function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanRequest, place: Place): void {
   const w = theWorker();
   const stop = new AbortController();
+  const costs = costKeeper(id);
   running.set(id, { run, stop });
 
   const beat = setInterval(() => {
@@ -164,7 +210,7 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
       const audience = await audienceOf(deviceId).catch(() => 'everyone' as const);
       outcome = {
         status: 'done',
-        plan: await servedAs(audience, () => billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, stop.signal)))),
+        plan: await servedAs(audience, () => billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, stop.signal)), costs.tally)),
       };
     } catch (error) {
       // Stopped on purpose: the job is somebody else's now (or ours to hand over).
@@ -174,6 +220,7 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
       clearInterval(beat);
       if (running.get(id)?.run === run) running.delete(id);
     }
+    await costs.settled();
     const kept = await query(
       `update weekplan_jobs set status = $3, plan = $4, error = $5, finished_at = now()
         where id = $1 and run = $2 and status = 'working' returning 1`,
@@ -182,6 +229,7 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
       console.error('[squish] could not save a weekly plan:', error instanceof Error ? error.message : error);
       return [];
     });
+    if (kept.length) await keepPlanCost(id);
     if (kept.length && outcome.status === 'failed') await w.onFail(deviceId).catch(() => {});
   })();
 }
@@ -199,13 +247,16 @@ export async function sweepJobs(): Promise<void> {
 
   // Too long, however lively: a stream that has hung. Its instance sees the
   // status change at its next beat and stops.
-  const expired = await query<{ device_id: string | null }>(
+  const expired = await query<{ id: string; device_id: string | null }>(
     `update weekplan_jobs set status = 'failed', error = $1, finished_at = now()
       where status = 'working' and created_at < now() - make_interval(secs => $2)
-      returning device_id`,
+      returning id, device_id`,
     [w.cutOff, STALE_MS / 1000],
   );
-  for (const row of expired) await w.onFail(row.device_id).catch(() => {});
+  for (const row of expired) {
+    await keepPlanCost(row.id);
+    await w.onFail(row.device_id).catch(() => {});
+  }
 
   for (;;) {
     const run = newId();
@@ -228,7 +279,10 @@ export async function sweepJobs(): Promise<void> {
           where id = $1 and run = $2 and status = 'working' returning 1`,
         [claimed.id, run, w.cutOff],
       );
-      if (failed.length) await w.onFail(claimed.device_id).catch(() => {});
+      if (failed.length) {
+        await keepPlanCost(claimed.id);
+        await w.onFail(claimed.device_id).catch(() => {});
+      }
       console.warn(`[squish] weekplan ${claimed.id} cut off ${claimed.attempts - 1} times — failed, question given back`);
       continue;
     }
@@ -388,29 +442,69 @@ export interface PlanRecord {
   /** How long it took, or has taken so far. */
   seconds: number;
   error: string | null;
+  /** The model that answered last: for a plan that was made, the one that made it. */
+  model: string | null;
+  /** What it cost in all, in dollars; null for plans from before costs were kept. */
+  costUsd: number | null;
+  /** Every model asked and what each came to, the one that made it last. */
+  costs: { model: string; usd: number }[];
 }
 
-/** The latest plans asked for, for the dashboard: how each went, and why not. */
-export async function recentPlans(limit = 20): Promise<PlanRecord[]> {
+/** The latest plans asked for, for the dashboard: how each went, and why not, what made it and what it cost. */
+export async function recentPlans(limit = 50): Promise<PlanRecord[]> {
   if (!hasDatabase()) return [];
   await migrate();
-  const rows = await query<{ created_at: Date; email: string | null; days: string | null; status: Job['status']; seen: boolean; attempts: number; seconds: string; error: string | null }>(
+  const rows = await query<{
+    created_at: Date; email: string | null; days: string | null; status: Job['status']; seen: boolean; attempts: number;
+    seconds: string; error: string | null; model: string | null; costs: Record<string, number | string> | null;
+  }>(
     `select j.created_at, a.email, j.ask->>'days' as days, j.status, j.delivered_at is not null as seen, j.attempts, j.error,
-            extract(epoch from coalesce(j.finished_at, now()) - j.created_at)::text as seconds
+            extract(epoch from coalesce(j.finished_at, now()) - j.created_at)::text as seconds, j.model, j.costs
        from weekplan_jobs j
        left join accounts a on a.id = j.owner
       order by j.created_at desc
       limit $1`,
     [limit],
   );
-  return rows.map((row) => ({
-    at: row.created_at.toISOString(),
-    email: row.email,
-    days: row.days === null ? null : Number(row.days),
-    status: row.status,
-    seen: row.seen,
-    attempts: row.attempts,
-    seconds: Math.round(Number(row.seconds)),
-    error: row.error,
-  }));
+  return rows.map((row) => {
+    const costs = Object.entries(row.costs ?? {})
+      .map(([model, usd]) => ({ model, usd: Number(usd) }))
+      .sort((a, b) => Number(a.model === row.model) - Number(b.model === row.model));
+    return {
+      at: row.created_at.toISOString(),
+      email: row.email,
+      days: row.days === null ? null : Number(row.days),
+      status: row.status,
+      seen: row.seen,
+      attempts: row.attempts,
+      seconds: Math.round(Number(row.seconds)),
+      error: row.error,
+      model: row.model,
+      costUsd: row.costs === null ? null : costs.reduce((sum, c) => sum + c.usd, 0),
+      costs,
+    };
+  });
+}
+
+export interface PlanCost {
+  model: string;
+  days: number;
+  outcome: 'made' | 'failed';
+  plans: number;
+  usd: number;
+}
+
+/** Plans finished over the last `days` days, by the model that made them, their length and how they went. */
+export async function planCosts(days = 30): Promise<PlanCost[]> {
+  if (!hasDatabase()) return [];
+  await migrate();
+  const rows = await query<{ model: string; days: number; outcome: 'made' | 'failed'; plans: string; usd: string }>(
+    `select model, days, outcome, sum(plans)::text as plans, sum(cost_usd)::text as usd
+       from weekplan_costs
+      where day > current_date - $1::int
+      group by model, days, outcome
+      order by outcome desc, days, model`,
+    [days],
+  );
+  return rows.map((row) => ({ model: row.model, days: row.days, outcome: row.outcome, plans: Number(row.plans), usd: Number(row.usd) }));
 }

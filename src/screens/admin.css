@@ -410,3 +410,5 @@
 .admin-model-slot { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); align-items: center; gap: 8px; }
 .admin-model-slot select { width: 100%; min-width: 0; font-size: var(--text-small, 0.9rem); padding-block: 6px; }
 .admin-models-actions { justify-content: space-between; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.admin-plan-costs { margin: var(--s4) 0 var(--s2); font-size: var(--text-label); }
+.admin-plan-table th[scope='row'] { white-space: nowrap; }

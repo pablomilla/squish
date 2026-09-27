@@ -756,6 +756,28 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 28,
+    sql: `
+      -- What each weekly plan cost and which model made it. On the job, for
+      -- the dashboard's list of the latest plans: every model it was asked
+      -- (a backup, a try cut off by a restart), and what each came to.
+      alter table weekplan_jobs add column model text, add column costs jsonb;
+
+      -- And kept once the job is gone (jobs go after a day): one line a day
+      -- for each model, plan length and outcome, so an average plan's cost
+      -- can be read over weeks. Never whose or what was planned.
+      create table weekplan_costs (
+        day      date not null,
+        model    text not null,
+        days     integer not null,
+        outcome  text not null,
+        plans    integer not null default 0,
+        cost_usd numeric(12, 6) not null default 0,
+        primary key (day, model, days, outcome)
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

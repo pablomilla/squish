@@ -24,6 +24,8 @@ interface Billed {
   /** Whose it is; null for work nobody's device is waiting on, still counted by model. */
   deviceId: string | null;
   kind: Spend;
+  /** Told of every call too, for work that keeps its own account of what it cost (a weekly plan). */
+  tally?: (usd: number | null, model: string) => void;
 }
 
 const store = new AsyncLocalStorage<Billed>();
@@ -38,8 +40,13 @@ export function billedTo(deviceId: string, kind: Spend, body: () => void): void 
  * background and perhaps on another instance after a restart — so it is
  * counted as what it is rather than as whatever request started it.
  */
-export function billedAs<T>(kind: Spend, deviceId: string | null, body: () => Promise<T>): Promise<T> {
-  return store.run({ deviceId, kind }, body);
+export function billedAs<T>(
+  kind: Spend,
+  deviceId: string | null,
+  body: () => Promise<T>,
+  tally?: (usd: number | null, model: string) => void,
+): Promise<T> {
+  return store.run({ deviceId, kind, tally }, body);
 }
 
 /**
@@ -53,6 +60,7 @@ export function billedAs<T>(kind: Spend, deviceId: string | null, body: () => Pr
 export function bill(usd: number | null, model: string): void {
   const who = store.getStore();
   if (!who) return;
+  who.tally?.(usd, model);
   if (who.deviceId) {
     void recordCost(who.deviceId, who.kind, usd).catch(() => {
       /* a gap in a report, never a failed request */

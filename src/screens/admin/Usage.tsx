@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import { PLUS } from '../../lib/plan';
-import { fetchWeekPlans, type Finance, type Metrics, type Overview, type PlanRecord } from '../../lib/admin';
+import { fetchWeekPlans, type Finance, type Metrics, type Overview, type PlanCost, type PlanRecord } from '../../lib/admin';
 import { Chart } from './charts';
 import { KINDS, KIND_COLOR, KIND_LABEL, count, isGemini, longDay, modelLabel, monthName, perCall, pounds, shortDay } from './format';
 import { Tile } from './Tiles';
@@ -212,20 +212,28 @@ function ByModel({ month }: { month: Finance['month'] }) {
 
 const minutes = (seconds: number) => (seconds < 90 ? `${seconds} s` : `${Math.round(seconds / 60)} min`);
 const STATUS: Record<PlanRecord['status'], string> = { done: 'Made', failed: 'Failed', working: 'Being made' };
+/** Dollars as Google and Anthropic bill them: to the tenth of a cent under a dollar. */
+const dollars = (usd: number) => `$${usd.toFixed(usd < 1 ? 3 : 2)}`;
 
 /**
- * The latest weekly plans, one line each: when, whose, how it went and how
- * long it took. A plan takes minutes and runs in the background, so this is
- * the one place that says what happened to one somebody never saw — a failure
- * with its reason, or a restart part-way (more than one try). Never what was
- * planned.
+ * The latest weekly plans, one line each: when, whose, how it went, how long
+ * it took, which model made it and what it cost. A plan takes minutes and
+ * runs in the background, so this is the one place that says what happened to
+ * one somebody never saw — a failure with its reason, or a restart part-way
+ * (more than one try). Never what was planned.
+ *
+ * Below them, the average plan over the last few weeks by length and model,
+ * kept after the plans themselves are gone.
  */
 function WeekPlans() {
-  const [plans, setPlans] = useState<PlanRecord[] | null>(null);
+  const [found, setFound] = useState<{ plans: PlanRecord[]; costs: PlanCost[]; costDays: number; usdToGbp: number } | null>(null);
   useEffect(() => {
-    void fetchWeekPlans().then((found) => setPlans(found?.plans ?? []));
+    void fetchWeekPlans().then((answer) => setFound(answer ?? { plans: [], costs: [], costDays: 30, usdToGbp: 0.78 }));
   }, []);
-  if (!plans) return null;
+  if (!found) return null;
+  const { plans, costs, costDays, usdToGbp } = found;
+  const inPounds = (usd: number) => pounds(Math.round(usd * usdToGbp * 10000) / 100);
+  const money = (usd: number) => `${inPounds(usd)} (${dollars(usd)})`;
 
   return (
     <section className="card card--quiet">
@@ -250,16 +258,89 @@ function WeekPlans() {
                 {plan.days !== null && ` · ${plan.days} days`} · {minutes(plan.seconds)}
                 {plan.attempts > 1 && ` · ${plan.attempts} tries`}
               </p>
+              <PlanSpend plan={plan} money={money} />
               {plan.error && <p className="tiny">{plan.error}</p>}
             </div>
           ))}
         </div>
       )}
+
+      <h4 className="admin-plan-costs">Cost per plan, last {costDays} days</h4>
+      <PlanCosts costs={costs} money={money} inPounds={inPounds} />
+
       <p className="tiny muted admin-note">
         Kept for a day. A plan counts against the month when it is seen, and one not seen yet is handed over the next
         time the planner is opened. A failed plan gives its question back. More than one try means the server
-        restarted while it was being made — a deploy — and another picked it up.
+        restarted while it was being made — a deploy — and another picked it up. A plan’s cost is every call
+        made for it, a backup’s and a cut-off try’s included; the averages are kept after the plans are gone.
       </p>
     </section>
+  );
+}
+
+/** Which model made a plan and what it cost — every model asked, when there was more than one. */
+function PlanSpend({ plan, money }: { plan: PlanRecord; money: (usd: number) => string }) {
+  if (plan.costUsd === null) return <p className="tiny muted">Model and cost not recorded (asked for before they were kept).</p>;
+  const lead = plan.status === 'done' ? 'Made by' : plan.status === 'failed' ? 'Last tried' : 'On';
+  const cost = plan.status === 'working' ? `${money(plan.costUsd)} so far` : money(plan.costUsd);
+  return (
+    <p className="tiny">
+      {plan.model ? `${lead} ${modelLabel(plan.model)}` : plan.status === 'working' ? 'Nothing billed yet' : 'No model answered'}
+      {(plan.model || plan.costUsd > 0) && ` · ${cost}`}
+      {plan.costs.length > 1 && (
+        <span className="muted"> — {plan.costs.map((c) => `${modelLabel(c.model)} ${money(c.usd)}`).join(', ')}</span>
+      )}
+    </p>
+  );
+}
+
+/** Finished plans over the last few weeks, by length and model: how many, what one costs on average, and in all. */
+function PlanCosts({ costs, money, inPounds }: { costs: PlanCost[]; money: (usd: number) => string; inPounds: (usd: number) => string }) {
+  const made = costs.filter((c) => c.outcome === 'made');
+  const failed = costs.filter((c) => c.outcome === 'failed');
+  if (!costs.length) return <p className="tiny muted">No plans finished since their costs started being kept.</p>;
+  const all = made.reduce((sum, c) => ({ plans: sum.plans + c.plans, usd: sum.usd + c.usd }), { plans: 0, usd: 0 });
+  const lost = failed.reduce((sum, c) => ({ plans: sum.plans + c.plans, usd: sum.usd + c.usd }), { plans: 0, usd: 0 });
+  return (
+    <table className="data-table admin-plan-table">
+      <thead>
+        <tr>
+          <th scope="col">Plan</th>
+          <th scope="col">Model</th>
+          <th scope="col">Plans</th>
+          <th scope="col">Each</th>
+          <th scope="col">In all</th>
+        </tr>
+      </thead>
+      <tbody>
+        {made.map((c) => (
+          <tr key={`${c.days}|${c.model}`}>
+            <th scope="row">{c.days === 1 ? '1 day' : `${c.days} days`}</th>
+            <td>{c.model === 'none' ? '—' : modelLabel(c.model)}</td>
+            <td>{count(c.plans)}</td>
+            <td>{money(c.usd / c.plans)}</td>
+            <td>{inPounds(c.usd)}</td>
+          </tr>
+        ))}
+        {all.plans > 0 && (
+          <tr className="data-total">
+            <th scope="row">Made</th>
+            <td />
+            <td>{count(all.plans)}</td>
+            <td>{money(all.usd / all.plans)}</td>
+            <td>{inPounds(all.usd)}</td>
+          </tr>
+        )}
+        {lost.plans > 0 && (
+          <tr className="data-total">
+            <th scope="row">Failed</th>
+            <td />
+            <td>{count(lost.plans)}</td>
+            <td>{money(lost.usd / lost.plans)}</td>
+            <td>{inPounds(lost.usd)}</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
   );
 }

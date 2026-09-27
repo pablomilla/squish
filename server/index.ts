@@ -28,7 +28,7 @@ import { PRICED_MODELS, rateFor } from './pricing';
 import {
   FEATURES, currentAudience, describeRoutes, everyoneMayUseGemini, readRoutes, recentFailures, saveRoutes, servedAs, servedBy, type Feature,
 } from './routing';
-import { handOver, latestMadePlan, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
+import { handOver, latestMadePlan, planCosts, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
@@ -1532,10 +1532,13 @@ app.put('/api/admin/models', requireAdmin, async (req, res) => {
   }
 });
 
-/** The latest weekly plans: how each went, and why not. No plan's contents. */
+/** How far back the dashboard's average cost of a weekly plan looks. */
+const COST_DAYS = 30;
+/** The latest weekly plans: how each went, and why not, and what each cost. No plan's contents. */
 app.get('/api/admin/weekplans', requireAdmin, async (_req, res) => {
   try {
-    res.json({ plans: await recentPlans() });
+    const [plans, costs, settings] = await Promise.all([recentPlans(), planCosts(COST_DAYS), readSettings()]);
+    res.json({ plans, costs, costDays: COST_DAYS, usdToGbp: settings.usdToGbp });
   } catch (error) {
     logFailure('admin weekplans', error);
     res.status(503).json({ error: 'unavailable', message: msg('Could not read those just now.') });

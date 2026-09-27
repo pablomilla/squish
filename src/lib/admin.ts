@@ -125,9 +125,25 @@ export interface PlanRecord {
   attempts: number;
   seconds: number;
   error: string | null;
+  /** The model that answered last: for a plan that was made, the one that made it. */
+  model: string | null;
+  /** What it cost in all, in dollars; null for plans from before costs were kept. */
+  costUsd: number | null;
+  /** Every model asked and what each came to, the one that made it last. */
+  costs: { model: string; usd: number }[];
 }
 
-export const fetchWeekPlans = (): Promise<{ plans: PlanRecord[] } | null> => ask('/api/admin/weekplans');
+/** Finished plans over the last few weeks, by the model that made them, their length and how they went. */
+export interface PlanCost {
+  model: string;
+  days: number;
+  outcome: 'made' | 'failed';
+  plans: number;
+  usd: number;
+}
+
+export const fetchWeekPlans = (): Promise<{ plans: PlanRecord[]; costs: PlanCost[]; costDays: number; usdToGbp: number } | null> =>
+  ask('/api/admin/weekplans');
 
 export type GaveBack = { ok: true; left: number } | { ok: false; message: string };
 
