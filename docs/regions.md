@@ -134,5 +134,9 @@ next, in whichever language.
 
 ## Not yet
 
-- Store prices are set here, not read from the stores. The website shows the
-  same ones, in the visitor's currency (see docs/translation.md).
+- Store prices are set here (`price` in `src/lib/region.ts`), not read from
+  the stores. That waits for in-app purchase: the phone apps will then show
+  the price the App Store or Google Play gives them, as both stores expect.
+  Until then, and for the website and the web app after, keep this table the
+  same as the prices set in App Store Connect and the Play Console — the
+  upgrade screen, the website and the dashboard's sums all read it.
