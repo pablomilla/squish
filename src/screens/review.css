@@ -58,3 +58,6 @@
 
 /* Where a food's per-gram figures came from, when it was the food table. */
 .item-source { margin: 10px 0 0; }
+
+/* The Gemini trial's reason for failing, under the badges (admins only). */
+.review-trial-error { margin: -4px 0 10px; overflow-wrap: anywhere; }

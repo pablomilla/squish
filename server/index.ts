@@ -2158,7 +2158,7 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
         // The meal still gets read — by Claude — and the admin sees why Gemini did not.
         console.warn('[squish] gemini trial failed — read by Claude instead:', error instanceof Error ? error.message : error);
         const analysis = await analysePhoto(data, type, mealSlot, note, plate);
-        res.json(await signQuestion({ ...analysis, trial: { reader: 'claude', geminiError: error instanceof Error ? error.message.slice(0, 200) : 'Gemini failed' } }));
+        res.json(await signQuestion({ ...analysis, trial: { reader: 'claude', geminiError: error instanceof Error ? error.message.slice(0, 400) : 'Gemini failed' } }));
         return;
       }
     }

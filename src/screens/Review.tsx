@@ -297,6 +297,13 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         )}
       </div>
 
+      {/* Written out, not only in the badge's tooltip: a phone cannot hover. Admins only, during the trial. */}
+      {analysis.trial?.reader === 'claude' && (
+        <p className="tiny muted review-trial-error" dir="auto">
+          Why Gemini failed: {analysis.trial.geminiError}
+        </p>
+      )}
+
       {/* Why it scores what it does, updating as items change. Folded: the
           meal is the point of this screen, the reasons are for whoever asks. */}
       <MealQuality meal={{ nutrients: totals, items }} folded />

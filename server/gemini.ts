@@ -129,8 +129,8 @@ export async function analysePhotoGemini(
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: toGeminiSchema(brief ? briefSchema(MEAL_SCHEMA) : MEAL_SCHEMA),
-        // Room for thinking and the answer, as the Claude side has.
-        maxOutputTokens: 8000,
+        // Room for thinking and the answer: Gemini's thinking counts against this too.
+        maxOutputTokens: 16000,
       },
     }),
     signal: AbortSignal.timeout(120_000),
