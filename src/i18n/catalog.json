@@ -1,6 +1,13 @@
 {
- "version": "1uuoeqg0o3iaxm",
+ "version": "1kd8pah0i5gxlc",
  "entries": [
+  {
+   "id": "002e354-48nrsl",
+   "text": "Gaining {amount} by {when} is quick",
+   "where": [
+    "src/lib/targetMessage.ts"
+   ]
+  },
   {
    "id": "002qykb-b3422i",
    "text": "Daily target",
@@ -315,7 +322,7 @@
    "id": "01x02pr0wnc8tm",
    "text": "{weight} is below a healthy weight for your height. Squish will plan towards it gently, but a goal a little higher is kinder to your body.",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -4238,6 +4245,13 @@
    ]
   },
   {
+   "id": "0o6c5cj-6x0rwi",
+   "text": "Gaining {amount} is a big goal — and a reachable one",
+   "where": [
+    "src/lib/targetMessage.ts"
+   ]
+  },
+  {
    "id": "0o8ec13-g1oqvr",
    "text": "Reach your water goal",
    "where": [
@@ -4603,7 +4617,7 @@
    "id": "0prxk8v-1ketmr",
    "text": "At {pace} a week, that is about {weeks} weeks — around {when}.",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -4652,7 +4666,7 @@
    "id": "0pzmxj0-spt1f5",
    "text": "Gaining {amount} is a realistic goal",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -6058,6 +6072,13 @@
    ]
   },
   {
+   "id": "0ydbnul0im5gqi",
+   "text": "At {pace} a week, that is about {weeks} weeks. Quick losses are harder to keep up and cost more muscle — a notch slower tends to last.",
+   "where": [
+    "src/lib/targetMessage.ts"
+   ]
+  },
+  {
    "id": "0ye8ewg0j5a7ab",
    "text": "Connected",
    "where": [
@@ -6487,6 +6508,13 @@
    "text": "<b>{monthly}</b> a month, or <b>{yearly}</b> a year",
    "where": [
     "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "11bji9a-jqj300",
+   "text": "Losing {amount} is very doable",
+   "where": [
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -7032,6 +7060,13 @@
    ]
   },
   {
+   "id": "145hia3-8s500q",
+   "text": "Even the first 5% — {amount} — is known to help blood pressure and blood sugar.",
+   "where": [
+    "src/lib/targetMessage.ts"
+   ]
+  },
+  {
    "id": "146657i0f8fgw5",
    "text": "I eat",
    "where": [
@@ -7179,6 +7214,13 @@
    "text": "Your name can be letters, spaces, hyphens and apostrophes, up to 20.",
    "where": [
     "src/components/squad/SquadForms.tsx"
+   ]
+  },
+  {
+   "id": "15emdgz-gshdbv",
+   "text": "About {weeks} weeks at {pace} a week — around {when}. Take it in stages: your first milestone is {milestone}, about {mweeks} weeks away.",
+   "where": [
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -9048,7 +9090,14 @@
    "id": "1fueu6z-bpl31q",
    "text": "Steady is what lasts: small changes you can keep up, week after week.",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/lib/targetMessage.ts"
+   ]
+  },
+  {
+   "id": "1fx415s0mw5ycl",
+   "text": "{amount} is a big goal — and a reachable one",
+   "where": [
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -9574,7 +9623,7 @@
    "id": "1ii6rir-yao2se",
    "text": "Losing {amount} is a realistic goal",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -10036,7 +10085,7 @@
    "id": "1ky5yxn-kff7k8",
    "text": "Let’s aim a little higher",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -10291,6 +10340,13 @@
     "src/components/WeekPlanSheet.tsx",
     "src/screens/Home.tsx",
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "1m43gfn0al84r8",
+   "text": "Losing {amount} by {when} is ambitious",
+   "where": [
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -11329,6 +11385,13 @@
    ]
   },
   {
+   "id": "1s3bao2-vwbitt",
+   "text": "At {pace} a week, that is about {years} years — a long road, so take it in stages. Your first milestone, {milestone}, is about {mweeks} weeks away.",
+   "where": [
+    "src/lib/targetMessage.ts"
+   ]
+  },
+  {
    "id": "1s75mvg-6wsh9q",
    "text": "Vitamin B12",
    "where": [
@@ -11550,6 +11613,13 @@
    "text": "Digestive biscuit",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1tc65500tjvuv7",
+   "text": "Plenty of protein and some strength work make it muscle rather than fat.",
+   "where": [
+    "src/lib/targetMessage.ts"
    ]
   },
   {
@@ -12264,6 +12334,13 @@
    ]
   },
   {
+   "id": "1xmiltb-vfnqwu",
+   "text": "Gaining {amount} is very doable",
+   "where": [
+    "src/lib/targetMessage.ts"
+   ]
+  },
+  {
    "id": "1xn5r17-riy27c",
    "text": "{food} added",
    "where": [
@@ -12480,6 +12557,13 @@
    "text": "New email",
    "where": [
     "src/components/AccountCard.tsx"
+   ]
+  },
+  {
+   "id": "1yyv1mn0zbbdf4",
+   "text": "At {pace} a week, that is about {weeks} weeks. Much faster than this mostly adds fat — a slower build keeps it muscle.",
+   "where": [
+    "src/lib/targetMessage.ts"
    ]
   },
   {

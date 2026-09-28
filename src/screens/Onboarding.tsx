@@ -19,6 +19,7 @@ import { MacroBars } from '../components/charts';
 import { LanguageField, RegionField } from '../components/fields';
 import { BirthdayWheel, GoalWeightRuler, HeightWheel, WeightWheel } from '../components/Dials';
 import { ageOn, startingBirthDate } from '../lib/birthday';
+import { paceTier, targetMessage, type PaceTier } from '../lib/targetMessage';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
@@ -65,16 +66,11 @@ const ACTIVITY_COPY: Record<Activity, { emoji: string; example: string; mood: Mo
  * How quick a pace is, as an animal: easier to feel than a number. Gaining
  * is slower at every level, because muscle is built slower than fat is lost.
  */
-type PaceTier = 'steady' | 'brisk' | 'fast';
 const PACE_TIERS: { tier: PaceTier; emoji: string; label: string }[] = [
   { tier: 'steady', emoji: '🦥', label: t('Steady') },
   { tier: 'brisk', emoji: '🐇', label: t('Brisk') },
   { tier: 'fast', emoji: '🐆', label: t('Fast') },
 ];
-function paceTier(kgPerWeek: number, goal: Goal): PaceTier {
-  const [steady, brisk] = goal === 'gain' ? [0.25, 0.5] : [0.35, 0.7];
-  return kgPerWeek <= steady + 1e-9 ? 'steady' : kgPerWeek <= brisk + 1e-9 ? 'brisk' : 'fast';
-}
 
 /** The same floors the targets are never set below (lib/nutrition.ts). */
 const floorFor = (sex: Sex) => (sex === 'male' ? 1500 : 1200);
@@ -788,40 +784,22 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
 }
 
 /**
- * After the goal weight: how much, how long, and a line showing the way —
- * a moment to see it as doable. Honest when it is not: a goal below a
- * healthy weight for their height is not called realistic.
+ * After the goal weight: how much, how long, and a line showing the way.
+ * What it says depends on what they chose (lib/targetMessage.ts): a small
+ * goal, a big one, a rushed one, or one below a healthy weight each hear
+ * something different, and honest.
  */
 function TargetMoment({ profile, weeks, date }: { profile: Profile; weeks: number; date: Date }) {
-  const change = Math.abs(profile.weightKg - profile.targetWeightKg);
-  const amount = formatWeight(change, profile.units);
-  const bmi = profile.targetWeightKg / (profile.heightCm / 100) ** 2;
-  const low = profile.goal === 'lose' && bmi < 18.5;
+  const say = targetMessage(profile, weeks, date);
   return (
     <div className="stack onboard-target">
       <div className="center">
-        <Squish mood={low ? 'thinking' : 'proud'} size={120} />
-        <h1 style={{ marginTop: 6 }}>
-          {low
-            ? t('Let’s aim a little higher')
-            : profile.goal === 'gain'
-              ? t('Gaining {amount} is a realistic goal', { amount })
-              : t('Losing {amount} is a realistic goal', { amount })}
-        </h1>
-        <p className="muted">
-          {low
-            ? t('{weight} is below a healthy weight for your height. Squish will plan towards it gently, but a goal a little higher is kinder to your body.', {
-                weight: formatWeight(profile.targetWeightKg, profile.units),
-              })
-            : t('At {pace} a week, that is about {weeks} weeks — around {when}.', {
-                pace: formatPace(profile.pace, profile.units),
-                weeks: Math.max(1, Math.round(weeks)),
-                when: aroundWhen(date),
-              })}
-        </p>
+        <Squish mood={say.mood} size={120} key={say.mood} />
+        <h1 style={{ marginTop: 6 }}>{say.headline}</h1>
+        <p className="muted">{say.detail}</p>
       </div>
       <WeightPath from={formatWeight(profile.weightKg, profile.units)} to={formatWeight(profile.targetWeightKg, profile.units)} when={aroundWhen(date)} down={profile.goal === 'lose'} />
-      <p className="small center">{t('Steady is what lasts: small changes you can keep up, week after week.')}</p>
+      <p className="small center">{say.footer}</p>
     </div>
   );
 }
