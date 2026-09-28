@@ -1,5 +1,5 @@
 {
- "version": "1gpt3n6-785nyx",
+ "version": "1hde2jf-x1zcog",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -4362,13 +4362,6 @@
    "text": "Fibre friend",
    "where": [
     "src/lib/achievements.ts"
-   ]
-  },
-  {
-   "id": "0oe4wmy0a90y1v",
-   "text": "Ask about your week",
-   "where": [
-    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -10304,13 +10297,6 @@
    ]
   },
   {
-   "id": "1lxyoo0-o3uush",
-   "text": "How was my week, and what’s the one thing to change?",
-   "where": [
-    "src/screens/Insights.tsx"
-   ]
-  },
-  {
    "id": "1lzx6nu09dnedq",
    "text": "You've got this",
    "where": [
@@ -12232,7 +12218,8 @@
    "id": "1x3ey9n-b6du3o",
    "text": "Ask the nutritionist",
    "where": [
-    "src/components/AskLink.tsx"
+    "src/components/AskLink.tsx",
+    "src/screens/Insights.tsx"
    ]
   },
   {

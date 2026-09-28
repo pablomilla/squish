@@ -254,14 +254,8 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
           onClick={() => setOpen('weight')}
         />
         <MenuRow icon="🏆" label={t('Achievements')} value={`${ACHIEVEMENTS.filter((a) => unlocked[a.id]).length}/${ACHIEVEMENTS.length}`} onClick={() => setOpen('badges')} />
-        {go && (
-          <MenuRow
-            icon="💬"
-            label={t('Ask about your week')}
-            value=""
-            onClick={() => go({ name: 'ask', question: t('How was my week, and what’s the one thing to change?') })}
-          />
-        )}
+        {/* Opens the nutritionist without a question: the chart may be a month or all time, so they say what they want to know. */}
+        {go && <MenuRow icon="💬" label={t('Ask the nutritionist')} value="" onClick={() => go({ name: 'ask' })} />}
       </nav>
 
       <Sheet open={open === 'streak'} onClose={() => setOpen(null)} title={t('Streak and this week')}>
