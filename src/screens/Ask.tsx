@@ -46,12 +46,13 @@ interface Bubble {
  * survive is the handful of notes it writes about you, which are listed on
  * the You screen and can be deleted one by one.
  */
-export default function Ask({ onClose, question, tab: startTab }: { onClose: () => void; question?: string; tab?: 'ask' | 'plan' }) {
+export default function Ask({ onClose, question, draft: startDraft, tab: startTab }: { onClose: () => void; question?: string; draft?: string; tab?: 'ask' | 'plan' }) {
   const toast = useToast();
   const { profile, targets, meals, nutritionistNotes } = useSquish();
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [wire, setWire] = useState<ChatMessage[]>([]);
-  const [draft, setDraft] = useState('');
+  // A suggestion tapped on Home arrives typed in, not sent: it costs nothing until they send it.
+  const [draft, setDraft] = useState(startDraft ?? '');
   const [thinking, setThinking] = useState(false);
   const [lookups, setLookups] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);

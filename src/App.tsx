@@ -260,7 +260,7 @@ function Shell() {
       {route.name === 'add' && (
         <AddFood slot={route.slot} date={route.date} initialTab={route.tab} onCancel={home} onReady={openReview} />
       )}
-      {route.name === 'ask' && <Ask key={`${route.question ?? ''}|${route.tab ?? ''}`} onClose={home} question={route.question} tab={route.tab} />}
+      {route.name === 'ask' && <Ask key={`${route.question ?? ''}|${route.draft ?? ''}|${route.tab ?? ''}`} onClose={home} question={route.question} draft={route.draft} tab={route.tab} />}
       {route.name === 'admin' && <Admin onClose={() => setRoute({ name: 'you' })} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
       </Suspense>

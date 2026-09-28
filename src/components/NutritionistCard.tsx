@@ -29,7 +29,7 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
   const today = isoDate();
   // Whether the nutritionist has a plan on the go, so the button can open it rather than offer a new one.
   const planned = plans.some((p) => p.note === NUTRITIONIST_PLAN_NOTE && p.date >= today && p.date <= addDays(today, 7));
-  const questions = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 1), [meals, targets, today]);
+  const suggestion = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 1)[0], [meals, targets, today]);
 
   return (
     <section className="card nutri-card" aria-labelledby="nutri-title">
@@ -37,24 +37,22 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
         <Squish mood="thinking" size={36} bob={false} label="" />
         <div className="nutri-head-text">
           <h3 id="nutri-title">{t('Your nutritionist')}</h3>
+          {access.label && <p className="tiny">{access.label}</p>}
         </div>
-        {access.label && <span className="badge nutri-badge">{access.label}</span>}
-      </div>
-      <div className="nutri-questions">
-        {questions.map((question) => (
-          <button key={question} type="button" className="nutri-q" onClick={() => go({ name: 'ask', question })}>
-            {question}
-          </button>
-        ))}
-      </div>
-      <div className="nutri-actions">
-        <button type="button" className="nutri-ask" onClick={() => go({ name: 'ask' })}>
-          <SparkIcon size={16} /> {t('Ask anything…')}
-        </button>
         <button type="button" className="nutri-plan" onClick={() => go({ name: 'ask', tab: 'plan' })}>
           <CalendarIcon size={16} /> {planned ? t('My meal plan') : t('Plan my week')}
         </button>
       </div>
+      {/* Today's suggested question, whole, in the box: tapped, it is typed in
+          ready to send or change, never sent, so nothing is spent by accident. */}
+      <button
+        type="button"
+        className="nutri-ask"
+        onClick={() => go(suggestion ? { name: 'ask', draft: suggestion } : { name: 'ask' })}
+      >
+        <SparkIcon size={16} />
+        <span>{suggestion ?? t('Ask anything…')}</span>
+      </button>
     </section>
   );
 }
