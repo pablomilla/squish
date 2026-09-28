@@ -20,8 +20,8 @@
  * Both buttons are drawn to their owners' guidelines: Apple's black with its
  * logo, Google's white with its "G".
  */
-import { useEffect, useRef, useState } from 'react';
-import { providerSetup, signInWith, type Arrived, type ProviderSetup } from '../lib/account';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { providerSetup, providersKnown, signInWith, type Arrived, type ProviderSetup } from '../lib/account';
 import { apiUrl, isNative } from '../lib/origin';
 import { t } from '../lib/i18n';
 import './sign-in-with.css';
@@ -65,9 +65,19 @@ const googleReturn = (): string => new URL(apiUrl('/api/auth/return'), window.lo
 
 export type SignedInWith = Arrived & { created?: boolean };
 
-export default function SignInWith({ onDone, onTrouble }: { onDone: (who: SignedInWith) => void; onTrouble: (message: string) => void }) {
-  const [providers, setProviders] = useState<ProviderSetup | null>(null);
+/**
+ * `email`, where given, is the email form: kept behind a "Continue with
+ * email" button beneath Apple and Google, so the three choices fit on one
+ * screen, and shown as it is wherever neither is offered.
+ */
+export default function SignInWith({ onDone, onTrouble, email }: { onDone: (who: SignedInWith) => void; onTrouble: (message: string) => void; email?: ReactNode }) {
+  const [providers, setProviders] = useState<ProviderSetup | null>(() => providersKnown() ?? null);
   const [busy, setBusy] = useState(false);
+  const [withEmail, setWithEmail] = useState(false);
+  const form = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (withEmail) form.current?.querySelector('input')?.focus();
+  }, [withEmail]);
   // Held in refs so the provider scripts, set up once, always call the latest.
   const done = useRef(onDone);
   const trouble = useRef(onTrouble);
@@ -150,7 +160,7 @@ export default function SignInWith({ onDone, onTrouble }: { onDone: (who: Signed
     }
   };
 
-  if (!providers || (!providers.google && !providers.apple)) return null;
+  if (!providers || (!providers.google && !providers.apple)) return email ?? null;
 
   return (
     <div className="sign-in-with" aria-busy={busy}>
@@ -176,9 +186,17 @@ export default function SignInWith({ onDone, onTrouble }: { onDone: (who: Signed
           {t('Continue with Google')}
         </button>
       )}
-      <p className="sign-in-or tiny muted" aria-hidden="true">
-        <span>{t('or with your email')}</span>
-      </p>
+      {email !== undefined && !withEmail ? (
+        <button type="button" className="email-button" onClick={() => setWithEmail(true)} disabled={busy}>
+          <span aria-hidden="true">✉️</span>
+          {t('Continue with email')}
+        </button>
+      ) : (
+        <p className="sign-in-or tiny muted" aria-hidden="true">
+          <span>{t('or with your email')}</span>
+        </p>
+      )}
+      {withEmail && <div ref={form}>{email}</div>}
     </div>
   );
 }

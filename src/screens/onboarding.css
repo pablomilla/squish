@@ -183,3 +183,36 @@ input[type='range'] { width: 100%; accent-color: var(--brand); height: 28px; -we
 .onboard-macros b { font-size: var(--text-label); }
 /* On a short phone the plan itself matters more than Squish: the confetti still cheers. */
 @media (max-height: 720px) { .onboard-plan-squish { display: none; } }
+
+/* ---------- A short screen ----------
+   A small phone, or a big one with the browser's bars showing: every step
+   still fits above Back and Continue. Squish and the titles shrink, the gaps
+   close up and the dials show three rows rather than five. */
+@media (max-height: 740px) {
+  .onboard-progress { margin-bottom: 12px; }
+  .onboarding .stack > * + * { margin-top: 8px; }
+  .onboarding h1, .onboard-head h1, .buddy-words h1, .onboard-target h1 { font-size: 26px; }
+  .onboarding .buddy-squish { width: 64px !important; height: 64px !important; }
+  .buddy-words { gap: 6px; padding-top: 0; }
+  .bubble { padding: 6px 11px; }
+  .onboard-foot { padding-top: 10px; padding-bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px)); }
+  .onboarding .btn { padding-block: 13px; }
+  .onboarding .chip { padding-block: 7px; }
+  .onboarding .choice { padding-block: 11px; }
+  .eat-questions { gap: 18px; }
+
+  /* The four tiles say what the welcome's sentence says, so it can go. */
+  .onboard-intro { display: none; }
+  .onboard-hello-squish { width: 112px !important; height: 112px !important; }
+  .onboard-features { margin-top: 14px; gap: 8px; }
+  .onboard-feature { padding: 9px 12px; }
+
+  .onboard-perks { gap: 6px; }
+  .onboard-perks li { padding: 7px 12px; }
+  .onboarding .input { padding-block: 11px; }
+  .onboarding .stack .btn--quiet { padding-block: 6px; }
+
+  .onboarding .wheel { height: 132px; }
+  .onboarding .wheel::before { inset: 44px 0 auto; }
+  .onboarding .wheel-scroll { padding-block: 44px; }
+}

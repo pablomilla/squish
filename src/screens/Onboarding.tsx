@@ -3,7 +3,7 @@ import Squish from '../components/Squish';
 import Wordmark from '../components/Wordmark';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { Credentials, Forgot } from '../components/AccountCard';
-import { signIn, signUp, type Arrived } from '../lib/account';
+import { providerSetup, signIn, signUp, type Arrived } from '../lib/account';
 import { friendOffer, periodWords, type FriendOffer } from '../lib/friends';
 import { planNow } from '../lib/plan';
 import { PLUS } from '../lib/subscription';
@@ -150,6 +150,8 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
   const [offer, setOffer] = useState<FriendOffer | null>(null);
   useEffect(() => {
     if (!accounts) return;
+    // Asked now, so the last step knows at once whether Apple and Google are offered.
+    void providerSetup();
     let live = true;
     void friendOffer().then((found) => live && setOffer(found));
     return () => {
@@ -312,7 +314,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
           {step === 'welcome' && (
             <div className="onboard-hero">
               <div className="onboard-hello">
-                <Squish mood="excited" size={165} heart />
+                <Squish mood="excited" size={165} heart className="onboard-hello-squish" />
                 <p className="bubble bubble--below" aria-hidden="true">
                   {t('Hi! I’m Squish.')}
                 </p>
@@ -321,7 +323,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                 <Wordmark width={230} />
               </h1>
               <p className="onboard-tag">{t('Your little health buddy.')}</p>
-              <p className="muted center" style={{ maxWidth: 300, margin: '10px auto 0' }}>
+              <p className="muted center onboard-intro" style={{ maxWidth: 300, margin: '10px auto 0' }}>
                 {t('Snap your meal, get instant nutrition insights, and build habits that feel kind. Small steps, big progress.')}
               </p>
               <div className="onboard-features">
@@ -694,18 +696,23 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                   })}
                 </p>
               )}
-              <SignInWith onDone={enteredWith} onTrouble={(message) => toast(message, '⚠️')} />
-              <Credentials
-                submit={t('Create account')}
-                hint={t('Four words you will remember beats one word with a number on the end.')}
-                onSubmit={signUp}
-                onDone={madeAccount}
-                footer={
-                  <button type="button" className="linkish tiny" onClick={() => setSigning('in')}>
-                    {t('I already have an account')}
-                  </button>
+              <SignInWith
+                onDone={enteredWith}
+                onTrouble={(message) => toast(message, '⚠️')}
+                email={
+                  <Credentials
+                    submit={t('Create account')}
+                    hint={t('Four words you will remember beats one word with a number on the end.')}
+                    onSubmit={signUp}
+                    onDone={madeAccount}
+                  />
                 }
               />
+              <div className="account-form-footer">
+                <button type="button" className="linkish tiny" onClick={() => setSigning('in')}>
+                  {t('I already have an account')}
+                </button>
+              </div>
               <p className="tiny muted center">
                 {rich('By making an account you agree to our <terms>terms of use</terms>. How we look after your data is in the <privacy>privacy policy</privacy>.', {}, {
                   terms: (text) => (

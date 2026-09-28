@@ -1,5 +1,5 @@
 {
- "version": "1kd8pah0i5gxlc",
+ "version": "0oudloo-51f2ks",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -3418,6 +3418,13 @@
    "where": [
     "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0k5s3pg-nctx9a",
+   "text": "Continue with email",
+   "where": [
+    "src/components/SignInWith.tsx"
    ]
   },
   {

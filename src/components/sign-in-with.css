@@ -14,5 +14,11 @@
   font-size: 15px; font-weight: 500; font-family: Roboto, Arial, sans-serif;
 }
 .google-button:disabled { opacity: 0.6; }
+.email-button {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px;
+  padding: 11px 16px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong);
+  font-size: 15px; font-weight: 600;
+}
+.email-button:disabled { opacity: 0.6; }
 .sign-in-or { display: flex; align-items: center; gap: 10px; margin: 4px 0 0; }
 .sign-in-or::before, .sign-in-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }

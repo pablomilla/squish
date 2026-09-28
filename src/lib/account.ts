@@ -128,10 +128,13 @@ export interface ProviderSetup {
   apple: { clientId: string; redirectUri: string } | null;
 }
 let setup: Promise<ProviderSetup | null> | null = null;
+let known: ProviderSetup | null | undefined;
 export function providerSetup(): Promise<ProviderSetup | null> {
-  setup ??= ask<ProviderSetup>('GET', '/api/account/providers').then((answer) => (answer.ok ? { google: answer.google, apple: answer.apple } : null));
+  setup ??= ask<ProviderSetup>('GET', '/api/account/providers').then((answer) => (known = answer.ok ? { google: answer.google, apple: answer.apple } : null));
   return setup;
 }
+/** The same, if it has already been asked: undefined while nobody knows yet. */
+export const providersKnown = (): ProviderSetup | null | undefined => known;
 
 /**
  * Signed in with Google or Apple: hand the ID token to the server, which
