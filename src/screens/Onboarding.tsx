@@ -30,6 +30,7 @@ import type { Units } from '../lib/units';
 import './onboarding.css';
 import { t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
+import { legalHref } from '../lib/legal';
 
 /**
  * The steps, in order. Some are left out for some people (`stepsFor`): the
@@ -676,6 +677,20 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                   </button>
                 }
               />
+              <p className="tiny muted center">
+                {rich('By making an account you agree to our <terms>terms of use</terms>. How we look after your data is in the <privacy>privacy policy</privacy>.', {}, {
+                  terms: (text) => (
+                    <a href={legalHref('/terms')} target="_blank" rel="noopener noreferrer">
+                      {text}
+                    </a>
+                  ),
+                  privacy: (text) => (
+                    <a href={legalHref('/privacy')} target="_blank" rel="noopener noreferrer">
+                      {text}
+                    </a>
+                  ),
+                })}
+              </p>
             </div>
           )}
         </div>

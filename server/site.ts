@@ -81,10 +81,10 @@ export const siteHost = (): string | null => siteOrigin()?.hostname.toLowerCase(
  * company's name. The policy is one page with no state, so it can always be
  * sent to the one address people should see it at.
  */
-export function privacyRedirect(host: string | undefined): string | null {
+export function privacyRedirect(host: string | undefined, path: '/privacy' | '/terms' = '/privacy'): string | null {
   const site = siteOrigin();
   if (!site) return null;
-  return host?.toLowerCase() === site.hostname.toLowerCase() ? null : `${site.origin}/privacy`;
+  return host?.toLowerCase() === site.hostname.toLowerCase() ? null : `${site.origin}${path}`;
 }
 
 /** Whether this request is for the website rather than the app. */
@@ -178,8 +178,8 @@ export function pageInTheirWords(html: string, region: Region): string {
 }
 
 /** The privacy policy's address for a page: its language, and in English its country. */
-export const privacyHref = (language: Language, region: Region): string =>
-  language === 'en' ? `/privacy?lang=en&amp;country=${region}` : `/privacy?lang=${language}`;
+export const privacyHref = (language: Language, region: Region, path: '/privacy' | '/terms' = '/privacy'): string =>
+  language === 'en' ? `${path}?lang=en&amp;country=${region}` : `${path}?lang=${language}`;
 
 /** The switcher in the footer: every language, each in its own name. */
 function languageLinks(current: Language, page: string): string {
@@ -338,6 +338,7 @@ async function page(
     // The policy in the page's language, and in English its country's spelling —
     // said outright, since the policy cannot guess from the clock as the page can.
     html = html.replace(/href="\/privacy"/g, `href="${privacyHref(language, region)}"`);
+    html = html.replace(/href="\/terms"/g, `href="${privacyHref(language, region, '/terms')}"`);
     if (prefixed) {
       html = html.replace(/<link rel="canonical" href="([^"]*)" \/>/, (_whole, href: string) => {
         const url = new URL(href);
@@ -386,7 +387,7 @@ export function siteRouter(appOrigin: () => string, distDir: string) {
       next();
       return;
     }
-    if (req.path.startsWith('/api/') || req.path === '/privacy' || req.path === '/verify' || req.path.startsWith('/email-change')) {
+    if (req.path.startsWith('/api/') || req.path === '/privacy' || req.path === '/terms' || req.path === '/verify' || req.path.startsWith('/email-change')) {
       next();
       return;
     }

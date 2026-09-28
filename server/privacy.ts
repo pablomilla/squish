@@ -198,19 +198,62 @@ ${back ? '<a class="back" href="/">← Back to Squish</a>' : ''}
 </html>`;
 
 /**
- * Said at the top of the policy in any other language. The policy is
- * translated for reading; the English is the one Squish is held to.
+ * A document served as a page: the privacy policy, and the terms of use.
+ * Each is a markdown file in docs/, the one thing anybody edits, rendered
+ * here, translated for reading, and never the version that counts in
+ * anything but English.
  */
-const TRANSLATION_NOTE =
-  '<p><em>This is a translation, to make the policy easier to read. If it and the <a href="/privacy?lang=en">English version</a> ever differ, the English is what counts.</em></p>';
+interface Doc {
+  source: string;
+  /** Where it is served, for its notes' links. */
+  path: string;
+  /** What it calls itself in a note ("the policy", "the terms"). */
+  noun: string;
+  /** How a note starts, and refers back: "This is the policy … if it", "These are the terms … if they". */
+  thisIs: string;
+  it: string;
+  title: string;
+  description: string;
+  /** Where its strings are said to come from, for the translation store. */
+  where: string;
+}
+
+const PRIVACY: Doc = {
+  source: SOURCE,
+  path: '/privacy',
+  noun: 'policy',
+  thisIs: 'This is the policy',
+  it: 'it',
+  title: 'Privacy — Squish',
+  description: 'What Squish keeps, where it goes, and how to get rid of it.',
+  where: 'site/privacy',
+};
+
+const TERMS: Doc = {
+  source: resolve(process.cwd(), 'docs/terms.md'),
+  path: '/terms',
+  noun: 'terms',
+  thisIs: 'These are the terms',
+  it: 'they',
+  title: 'Terms of use — Squish',
+  description: 'The terms for using Squish and Squish Plus, written to be read.',
+  where: 'site/terms',
+};
 
 /**
- * Said at the top of the American version, which is the same policy with
+ * Said at the top of the document in any other language. It is translated
+ * for reading; the English is the one Squish is held to.
+ */
+const translationNote = (doc: Doc) =>
+  `<p><em>This is a translation, to make the ${doc.noun} easier to read. If it and the <a href="${doc.path}?lang=en">English version</a> ever differ, the English is what counts.</em></p>`;
+
+/**
+ * Said at the top of the American version, which is the same text with
  * American spelling and words — rewritten, so the British is still the text
  * that counts.
  */
-const AMERICAN_NOTE =
-  '<p><em>This is the policy with American spelling. If it and the <a href="/privacy?lang=en&amp;country=GB">British English version</a> ever differ, the British English is what counts.</em></p>';
+const americanNote = (doc: Doc) =>
+  `<p><em>${doc.thisIs} with American spelling. If ${doc.it} and the <a href="${doc.path}?lang=en&amp;country=GB">British English version</a> ever differ, the British English is what counts.</em></p>`;
 
 /**
  * Said at the top of a version with a country's own words (a family doctor
@@ -218,29 +261,34 @@ const AMERICAN_NOTE =
  * British text itself. English only: no other language gets these swaps.
  */
 const LOCAL_WORDS: Partial<Record<Region, string>> = { CA: 'Canadian', AU: 'Australian', NZ: 'New Zealand', IE: 'Irish' };
-const localNote = (region: Region): string =>
-  `<p><em>This is the policy with ${LOCAL_WORDS[region] ?? 'local'} words for a few things. If it and the <a href="/privacy?lang=en&amp;country=GB">British English version</a> ever differ, the British English is what counts.</em></p>`;
+const localNote = (doc: Doc, region: Region): string =>
+  `<p><em>${doc.thisIs} with ${LOCAL_WORDS[region] ?? 'local'} words for a few things. If ${doc.it} and the <a href="${doc.path}?lang=en&amp;country=GB">British English version</a> ever differ, the British English is what counts.</em></p>`;
+
+const withNote = (html: string, note: string): string => html.replace('<main>\n', `<main>\n${note}\n`);
 
 /**
- * The policy page in a country's own words, with the note saying so — or,
- * where none of its words differ there, exactly as written.
+ * The page in a country's own words, with the note saying so — or, where
+ * none of its words differ there, exactly as written.
  */
-export function policyInTheirWords(page: string, region: Region): string {
+function inTheirWords(doc: Doc, page: string, region: Region): string {
   const local = pageInTheirWords(page, region);
   if (local === page) return page;
-  return withNote(local, localNote(region)).replace('<html lang="en-GB">', `<html lang="en-${region}">`);
+  return withNote(local, localNote(doc, region)).replace('<html lang="en-GB">', `<html lang="en-${region}">`);
 }
 
-const withNote = (html: string, note = TRANSLATION_NOTE): string => html.replace('<main>\n', `<main>\n${note}\n`);
+/** The privacy policy in a country's own words (kept by this name for the tests). */
+export const policyInTheirWords = (page: string, region: Region): string => inTheirWords(PRIVACY, page, region);
 
-let cached: string | null = null;
+const cached = new Map<string, string>();
 
-/** The policy's strings, to translate with everything else at start-up. */
-export function registerPrivacyStrings(): number {
-  if (!existsSync(SOURCE)) return 0;
-  const page = standalonePage(render(readFileSync(SOURCE, 'utf8')));
-  const strings = [...new Set([...stringsOf(withNote(page)), ...stringsOf(withNote(page, AMERICAN_NOTE))])];
-  registerStrings(strings.map((text) => ({ id: idOf(text), text, where: ['site/privacy'] })));
+const pageOf = (doc: Doc, markdown: string): string => standalonePage(render(markdown), doc.title, doc.description);
+
+/** A document's strings, to translate with everything else at start-up. */
+function registerDoc(doc: Doc): number {
+  if (!existsSync(doc.source)) return 0;
+  const page = pageOf(doc, readFileSync(doc.source, 'utf8'));
+  const strings = [...new Set([...stringsOf(withNote(page, translationNote(doc))), ...stringsOf(withNote(page, americanNote(doc)))])];
+  registerStrings(strings.map((text) => ({ id: idOf(text), text, where: [doc.where] })));
   return strings.length;
 }
 
@@ -252,20 +300,30 @@ export function registerPrivacyStrings(): number {
  * without a deploy. Null where the file is missing, which the route turns
  * into an honest 404 rather than a blank page claiming to be a policy.
  */
-export async function privacyPage(language: Language = 'en', region: Region = 'GB'): Promise<string | null> {
-  if (!cached) {
+async function docPage(doc: Doc, language: Language, region: Region): Promise<string | null> {
+  let english = cached.get(doc.path);
+  if (!english) {
     try {
-      cached = standalonePage(render(await readFile(SOURCE, 'utf8')));
+      english = pageOf(doc, await readFile(doc.source, 'utf8'));
+      cached.set(doc.path, english);
     } catch {
       return null;
     }
   }
   const pack = packFor(language, region);
   // British English outside the US, in the country's own words where the
-  // policy has any — a family doctor in Canada, where Britain has a GP — and
+  // text has any — a family doctor in Canada, where Britain has a GP — and
   // then saying so, as the American version does.
-  if (!pack) return language === 'en' ? policyInTheirWords(cached, region) : cached;
-  const page = withNote(cached, language === 'en' ? AMERICAN_NOTE : TRANSLATION_NOTE);
+  if (!pack) return language === 'en' ? inTheirWords(doc, english, region) : english;
+  const page = withNote(english, language === 'en' ? americanNote(doc) : translationNote(doc));
   const words = await pageWords(pack, page);
   return translateHtml(page, words.lookup).replace('<html lang="en-GB">', htmlTag(language, region));
 }
+
+/** The policy's strings, to translate with everything else at start-up. */
+export const registerPrivacyStrings = (): number => registerDoc(PRIVACY);
+/** The terms' strings, the same. */
+export const registerTermsStrings = (): number => registerDoc(TERMS);
+
+export const privacyPage = (language: Language = 'en', region: Region = 'GB'): Promise<string | null> => docPage(PRIVACY, language, region);
+export const termsPage = (language: Language = 'en', region: Region = 'GB'): Promise<string | null> => docPage(TERMS, language, region);

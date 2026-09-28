@@ -30,7 +30,7 @@ import {
 } from './routing';
 import { handOver, latestMadePlan, planCosts, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
-import { privacyPage, registerPrivacyStrings, standalonePage } from './privacy';
+import { privacyPage, registerPrivacyStrings, registerTermsStrings, standalonePage, termsPage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
 import { adminChangeEmail, confirmEmailChange, peekEmailChange, peekEmailUndo, requestEmailChange, undoEmailChange } from './emailChange';
 import { acceptLanguage, acceptedTags, readerFromRequest, readerOf, rememberReader } from './reader';
@@ -51,8 +51,8 @@ import {
 } from './invites';
 import { actions, adminEmail, allowances, returnUse, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan, heardCounts, noteHeard } from './admin';
 import { htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
-import { isLanguage } from '../src/lib/language';
-import { detectRegion, isRegion } from '../src/lib/region';
+import { isLanguage, type Language } from '../src/lib/language';
+import { detectRegion, isRegion, type Region } from '../src/lib/region';
 import {
   claimPartnerLink,
   emailTaken,
@@ -2242,6 +2242,7 @@ if (hasCredentials()) setTranslator(translateBatch);
 // The website's and the privacy policy's English, translated alongside the app's.
 registerSiteStrings();
 registerPrivacyStrings();
+registerTermsStrings();
 app.get('/api/i18n/:language', async (req, res) => {
   const { language } = req.params;
   if (!isTranslatable(language)) {
@@ -2776,30 +2777,37 @@ app.use(siteRouter(() => publicOrigin(), DIST));
  *
  * Registered before the static handler so it wins over the app's catch-all.
  */
-app.get('/privacy', async (req, res) => {
-  const elsewhere = privacyRedirect(req.hostname);
-  if (elsewhere) {
-    // With the query: `?lang=es` from an email's footer goes along.
-    const query = req.originalUrl.indexOf('?');
-    res.redirect(301, query < 0 ? elsewhere : `${elsewhere}${req.originalUrl.slice(query)}`);
-    return;
-  }
-  // `?lang=` and `?country=` where a link said (the website's, an email's,
-  // the app's); else the browser's first choice. The country only matters in
-  // English, where the US reads it with American spelling.
-  const asked = req.query.lang;
-  const language = isLanguage(asked) ? asked : acceptLanguage(req.get('accept-language'));
-  const country = typeof req.query.country === 'string' ? req.query.country.toUpperCase() : '';
-  const region = isRegion(country) ? country : detectRegion(acceptedTags(req.get('accept-language')));
-  if (!isLanguage(asked) || !isRegion(country)) res.vary('Accept-Language');
-  const html = await privacyPage(language, region);
-  if (!html) {
-    logFailure('privacy policy', new Error(`could not read docs/privacy.md from ${process.cwd()}`));
-    res.status(404).type('text/plain').send('The privacy policy is missing from this deployment.');
-    return;
-  }
-  res.type('html').send(html);
-});
+/** Both documents are served the same way: see the privacy policy's note above. */
+function legalRoute(path: '/privacy' | '/terms', page: (language: Language, region: Region) => Promise<string | null>) {
+  return async (req: Request, res: Response): Promise<void> => {
+    const elsewhere = privacyRedirect(req.hostname, path);
+    if (elsewhere) {
+      // With the query: `?lang=es` from an email's footer goes along.
+      const query = req.originalUrl.indexOf('?');
+      res.redirect(301, query < 0 ? elsewhere : `${elsewhere}${req.originalUrl.slice(query)}`);
+      return;
+    }
+    // `?lang=` and `?country=` where a link said (the website's, an email's,
+    // the app's); else the browser's first choice. The country only matters in
+    // English, where the US reads it with American spelling.
+    const asked = req.query.lang;
+    const language = isLanguage(asked) ? asked : acceptLanguage(req.get('accept-language'));
+    const country = typeof req.query.country === 'string' ? req.query.country.toUpperCase() : '';
+    const region = isRegion(country) ? country : detectRegion(acceptedTags(req.get('accept-language')));
+    if (!isLanguage(asked) || !isRegion(country)) res.vary('Accept-Language');
+    const html = await page(language, region);
+    if (!html) {
+      logFailure(path.slice(1), new Error(`could not read docs${path}.md from ${process.cwd()}`));
+      res.status(404).type('text/plain').send(`The ${path === '/terms' ? 'terms of use are' : 'privacy policy is'} missing from this deployment.`);
+      return;
+    }
+    res.type('html').send(html);
+  };
+}
+
+app.get('/privacy', legalRoute('/privacy', privacyPage));
+/** The terms of use: the same, for the same reasons — both stores want a URL for them too. */
+app.get('/terms', legalRoute('/terms', termsPage));
 
 /* ------------------------------------------------------------------ *
  * The built app, when there is one (production)

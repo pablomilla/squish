@@ -593,6 +593,15 @@ export default function You({ go }: { go: (route: Route) => void }) {
             ),
           })}
         </p>
+        <p className="tiny muted" style={{ marginTop: 6 }}>
+          {rich('<link>Terms of use</link> — what Squish is, what it is not, and how Plus works.', {}, {
+            link: (text) => (
+              <a href={apiUrl(`/terms?lang=${languageOf(profile)}&country=${regionOf(profile)}`)} target="_blank" rel="noopener noreferrer">
+                {text}
+              </a>
+            ),
+          })}
+        </p>
       </section>
 
       <p className="script center you-footer">{t('Small steps. Big progress. ♡')}</p>

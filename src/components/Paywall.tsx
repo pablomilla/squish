@@ -24,6 +24,7 @@ import NutritionistPitch from './NutritionistPitch';
 import './paywall.css';
 import { plural, t, uiLocale } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
+import { legalHref } from '../lib/legal';
 
 /*
  * Whole sentences for each kind, rather than one sentence with the kind
@@ -161,6 +162,21 @@ export default function Paywall({
 
           <p className="tiny muted">
             {t('Free for ever, either way: logging by hand, food search, your whole diary, the charts, streaks and export.')}
+          </p>
+
+          <p className="tiny muted paywall-legal">
+            {rich('<terms>Terms of use</terms> · <privacy>Privacy policy</privacy>', {}, {
+              terms: (text) => (
+                <a href={legalHref('/terms')} target="_blank" rel="noopener noreferrer">
+                  {text}
+                </a>
+              ),
+              privacy: (text) => (
+                <a href={legalHref('/privacy')} target="_blank" rel="noopener noreferrer">
+                  {text}
+                </a>
+              ),
+            })}
           </p>
 
           <button type="button" className="btn btn--block" onClick={onClose}>

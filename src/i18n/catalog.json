@@ -1,5 +1,5 @@
 {
- "version": "0v8liwi00iqw44",
+ "version": "0mchduk04s60bs",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -5890,6 +5890,13 @@
    ]
   },
   {
+   "id": "0x6sovf006boh6",
+   "text": "<terms>Terms of use</terms> · <privacy>Privacy policy</privacy>",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "0x8zvs901luqaz",
    "text": "{season}, with Squish Plus",
    "where": [
@@ -8321,6 +8328,13 @@
    "text": "Paste the address of a recipe page.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "1bkn0ha-um9h0x",
+   "text": "By making an account you agree to our <terms>terms of use</terms>. How we look after your data is in the <privacy>privacy policy</privacy>.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -11011,6 +11025,13 @@
    "text": "That account did not share an email address, which Squish needs. Try another way to sign in.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "1qjedyl0qhcdj2",
+   "text": "<link>Terms of use</link> — what Squish is, what it is not, and how Plus works.",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
