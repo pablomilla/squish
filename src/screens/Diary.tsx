@@ -21,7 +21,7 @@ import AskLink from '../components/AskLink';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
 import { GLASS_ML, dayVerdict } from '../lib/nutrition';
-import { WeightField } from '../components/fields';
+import { DailyWeightWheel } from '../components/Dials';
 import './diary.css';
 import { describePortion, saltLabel } from '../lib/units';
 import { formatEnergy } from '../lib/region';
@@ -289,11 +289,18 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
 
       <Sheet open={checking === 'weight'} onClose={() => setChecking(null)} title={t('Weight')}>
         <div className="stack">
-          {/* The shared field, so stones stay stones — the diary used to be the
-              one place that insisted on plain pounds. */}
-          <WeightField label={t('Weight')} kg={day?.weightKg ?? profile.weightKg} units={profile.units} onChange={(kg) => setWeight(date, kg)} />
-          <button type="button" className="btn btn--block" onClick={() => setChecking(null)}>
-            {t('Done')}
+          {/* A wheel, like setting up: stones stay stones, and kilograms turn to the tenth. */}
+          <DailyWeightWheel kg={day?.weightKg ?? profile.weightKg} units={profile.units} onChange={(kg) => setWeight(date, kg)} />
+          {/* Saves what the wheel shows, so the same weight as last time can be logged without turning it. */}
+          <button
+            type="button"
+            className="btn btn--block"
+            onClick={() => {
+              if (day?.weightKg === undefined) setWeight(date, profile.weightKg);
+              setChecking(null);
+            }}
+          >
+            {day?.weightKg === undefined ? t('Log this weight') : t('Done')}
           </button>
         </div>
       </Sheet>

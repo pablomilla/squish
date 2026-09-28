@@ -53,3 +53,10 @@
 /* A date of birth: three wheels, the month the widest. */
 .dial-trio { display: grid; grid-template-columns: 0.8fr 1.4fr 1fr; gap: 8px; }
 .dial-birthday .tiny { margin: 6px 0 0; }
+
+/* Whole kilograms and tenths, read as one number: "72" and ".4 kg" meet on a single band. */
+.dial-pair--weight { gap: 0; max-width: 260px; margin: 0 auto; width: 100%; }
+.dial-pair--weight .dial:first-child .wheel-row { justify-items: end; padding-right: 2px; }
+.dial-pair--weight .dial:last-child .wheel-row { justify-items: start; padding-left: 2px; }
+.dial-pair--weight .dial:first-child .wheel::before { border-radius: var(--r-md) 0 0 var(--r-md); border-right: 0; }
+.dial-pair--weight .dial:last-child .wheel::before { border-radius: 0 var(--r-md) var(--r-md) 0; border-left: 0; }

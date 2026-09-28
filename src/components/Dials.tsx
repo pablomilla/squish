@@ -179,6 +179,42 @@ export function WeightWheel({ label, kg, units, onChange }: { label: string; kg:
   return <Wheel label={label} options={options} value={kg} onChange={onChange} />;
 }
 
+/**
+ * A day's weigh-in as wheels. In kilograms, a tenth matters from one day to
+ * the next, so whole kilograms and tenths turn separately; pounds, and stones
+ * and pounds, are fine enough already at a pound a row.
+ */
+export function DailyWeightWheel({ kg, units, onChange }: { kg: number; units: Units; onChange: (kg: number) => void }) {
+  const tenthsOf = (value: number) => Math.round(value * 10);
+  // Each wheel changes its own part of the latest weight, so turning both at once cannot undo either.
+  const latest = useRef(tenthsOf(kg));
+  useEffect(() => {
+    latest.current = tenthsOf(kg);
+  }, [kg]);
+  const wholes = useMemo<Option[]>(
+    () => Array.from({ length: WEIGHT_KG_RANGE.max - WEIGHT_KG_RANGE.min + 1 }, (_, i) => ({ value: WEIGHT_KG_RANGE.min + i, label: String(WEIGHT_KG_RANGE.min + i) })),
+    [],
+  );
+  const tenths = useMemo<Option[]>(() => Array.from({ length: 10 }, (_, i) => ({ value: i, label: `.${i} kg` })), []);
+
+  if (units !== 'metric') return <WeightWheel label={t('Weight')} kg={kg} units={units} onChange={onChange} />;
+
+  const whole = Math.floor(tenthsOf(kg) / 10);
+  const tenth = tenthsOf(kg) % 10;
+  const change = (part: { whole?: number; tenth?: number }) => {
+    const w = part.whole ?? Math.floor(latest.current / 10);
+    const d = part.tenth ?? latest.current % 10;
+    latest.current = w * 10 + d;
+    onChange(latest.current / 10);
+  };
+  return (
+    <div className="dial-pair dial-pair--weight">
+      <Wheel quiet label={t('Weight in whole kilograms')} options={wholes} value={whole} onChange={(w) => change({ whole: w })} />
+      <Wheel quiet label={t('Tenths of a kilogram')} options={tenths} value={tenth} onChange={(d) => change({ tenth: d })} />
+    </div>
+  );
+}
+
 /** The space between two marks on the ruler, in pixels. */
 const GAP = 10;
 

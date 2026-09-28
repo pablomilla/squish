@@ -1,5 +1,5 @@
 {
- "version": "1ort9la0q81fcg",
+ "version": "0qyqfu501nawb2",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1297,6 +1297,13 @@
    ]
   },
   {
+   "id": "079qnyh02pppxj",
+   "text": "Tenths of a kilogram",
+   "where": [
+    "src/components/Dials.tsx"
+   ]
+  },
+  {
    "id": "07beyph0bnbt11",
    "text": "1 cup cooked",
    "where": [
@@ -2203,6 +2210,13 @@
    "where": [
     "src/lib/outfit.ts",
     "src/lib/scenes.ts"
+   ]
+  },
+  {
+   "id": "0cy5b5o072jli5",
+   "text": "Weight in whole kilograms",
+   "where": [
+    "src/components/Dials.tsx"
    ]
   },
   {
@@ -3389,6 +3403,13 @@
    "text": "1 bagel",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0jyb8z90j3jgzu",
+   "text": "Log this weight",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -7472,6 +7493,7 @@
    "text": "Weight",
    "where": [
     "src/components/CheckinTiles.tsx",
+    "src/components/Dials.tsx",
     "src/screens/Diary.tsx",
     "src/screens/Home.tsx",
     "src/screens/Insights.tsx",
