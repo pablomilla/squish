@@ -1,5 +1,5 @@
 .onboarding { background: linear-gradient(180deg, var(--brand-soft) 0%, var(--bg) 42%); overflow-x: clip; /* the confetti drifts past the edges */ }
-.onboarding .screen { padding-bottom: 28px; display: flex; flex-direction: column; }
+.onboarding .screen { padding-bottom: 0; display: flex; flex-direction: column; min-height: 100dvh; }
 
 /* One bar that fills as you go, rather than a row of dashes to count. */
 .onboard-progress { height: 6px; border-radius: 3px; background: var(--surface-sunk); margin-bottom: 20px; overflow: hidden; }
@@ -29,8 +29,28 @@
 .choice-emoji { font-size: 22px; }
 .choice b { display: block; }
 
-.onboard-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 24px; }
-.onboard-signin { width: 100%; margin-top: 6px; }
+/* Back and Continue stay in reach on every step, however long it is: pinned
+   to the bottom, above the phone's home bar, with the step scrolling behind. */
+.onboard-foot {
+  position: sticky; bottom: 0; z-index: 5; margin: auto -16px 0;
+  padding: 18px 16px max(22px, calc(env(safe-area-inset-bottom) + 12px));
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 0%, transparent), var(--bg) 18px);
+}
+.onboard-actions { display: flex; gap: 10px; }
+.onboard-signin { width: 100%; margin-top: 4px; }
+
+/* The goal: three tiles in a row, so its weight and pace fit beneath them. */
+.goal-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.goal-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px;
+  border-radius: var(--r-lg); background: var(--surface); border: 2px solid var(--line);
+  font-size: var(--text-label); text-align: center; line-height: 1.2;
+  transition: border-color 0.16s ease, transform 0.16s var(--ease);
+}
+.goal-tile:active { transform: scale(0.97); }
+.goal-tile.is-on { border-color: var(--brand); background: var(--brand-soft); }
+.goal-tile-emoji { font-size: 24px; }
+.goal-blurb { margin: 0; }
 
 input[type='range'] { width: 100%; accent-color: var(--brand); height: 28px; -webkit-appearance: auto; appearance: auto; }
 .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

@@ -30,6 +30,7 @@ import {
 import { t, uiLocale } from '../lib/i18n';
 import { ageOn, birthDateOf, daysIn } from '../lib/birthday';
 import { currentRegion } from '../lib/region';
+import { primeTicks, tick } from '../lib/tick';
 import './dials.css';
 
 interface Option {
@@ -86,10 +87,14 @@ export function Wheel({
     const at = clamp(Math.round(el.scrollTop / ROW), 0, options.length - 1);
     if (at === centre) return;
     setCentre(at);
+    tick();
     if (at !== selected) onChange(options[at].value);
   };
 
-  const step = (by: number) => onChange(options[clamp(selected + by, 0, options.length - 1)].value);
+  const step = (by: number) => {
+    tick();
+    onChange(options[clamp(selected + by, 0, options.length - 1)].value);
+  };
 
   return (
     <div className="dial">
@@ -105,7 +110,9 @@ export function Wheel({
           aria-labelledby={id}
           aria-activedescendant={`${id}-${selected}`}
           onScroll={onScroll}
+          onPointerDown={primeTicks}
           onKeyDown={(event) => {
+            primeTicks();
             const by = { ArrowUp: -1, ArrowDown: 1, PageUp: -10, PageDown: 10 }[event.key];
             if (by !== undefined) step(by);
             else if (event.key === 'Home') onChange(options[0].value);
@@ -233,7 +240,10 @@ export function Ruler({
     const el = box.current;
     if (!el) return;
     const at = clamp(Math.round(el.scrollLeft / GAP), 0, count);
-    if (at !== index) onChange(valueAt(at));
+    if (at !== index) {
+      tick();
+      onChange(valueAt(at));
+    }
     // Lined up exactly on a mark once it stops.
     window.clearTimeout(settle.current);
     settle.current = window.setTimeout(() => el.scrollTo({ left: at * GAP, behavior: 'smooth' }), 140);
@@ -257,10 +267,13 @@ export function Ruler({
         aria-valuenow={value}
         aria-valuetext={describe(value)}
         onScroll={onScroll}
+        onPointerDown={primeTicks}
         onKeyDown={(event) => {
+          primeTicks();
           const by = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: major, PageDown: -major }[event.key];
           if (by === undefined) return;
           event.preventDefault();
+          tick();
           onChange(valueAt(clamp(index + by * (event.shiftKey ? major : 1), 0, count)));
         }}
       >

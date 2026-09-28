@@ -316,7 +316,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
           {step === 'welcome' && (
             <div className="onboard-hero">
               <div className="onboard-hello">
-                <Squish mood="excited" size={190} heart />
+                <Squish mood="excited" size={165} heart />
                 <p className="bubble bubble--below" aria-hidden="true">
                   {t('Hi! I’m Squish.')}
                 </p>
@@ -432,23 +432,27 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                 <h1>{t('What are we aiming for?')}</h1>
               </Buddy>
 
-              {(Object.keys(GOAL_COPY) as Goal[]).map((goal) => (
-                <button
-                  key={goal}
-                  type="button"
-                  className={`choice ${draft.goal === goal ? 'is-on' : ''}`}
-                  onClick={() => set({ goal })}
-                  aria-pressed={draft.goal === goal}
-                >
-                  <span className="choice-emoji" aria-hidden="true">
-                    {GOAL_COPY[goal].emoji}
-                  </span>
-                  <span>
+              {/* Three tiles in a row, so the goal, its weight and its pace fit on one screen. */}
+              <div className="goal-tiles">
+                {(Object.keys(GOAL_COPY) as Goal[]).map((goal) => (
+                  <button
+                    key={goal}
+                    type="button"
+                    className={`goal-tile ${draft.goal === goal ? 'is-on' : ''}`}
+                    onClick={() => set({ goal })}
+                    aria-pressed={draft.goal === goal}
+                    aria-describedby={draft.goal === goal ? 'goal-blurb' : undefined}
+                  >
+                    <span className="goal-tile-emoji" aria-hidden="true">
+                      {GOAL_COPY[goal].emoji}
+                    </span>
                     <b>{GOAL_COPY[goal].title}</b>
-                    <span className="muted small"> {GOAL_COPY[goal].blurb}</span>
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+              <p className="tiny muted center goal-blurb" id="goal-blurb">
+                {GOAL_COPY[draft.goal].blurb}
+              </p>
 
               {draft.goal !== 'maintain' && (
                 <>
@@ -485,11 +489,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                           ? t('That is quick. Much faster than this mostly adds fat rather than muscle.')
                           : t('That is quick. Faster is harder to keep up and more likely to cost muscle — most people do better a notch slower.')}
                       </p>
-                    ) : (
-                      <p className="tiny muted">
-                        {t('Steady beats speedy — {pace} a week is the sweet spot for most people.', { pace: draft.units === 'metric' ? formatPace(0.5, 'metric') : formatPace(0.45359237, 'imperial') })}
-                      </p>
-                    )}
+                    ) : null}
                   </div>
                   <GoalNote projection={projection} target={formatWeight(draft.targetWeightKg, draft.units)} onSwitch={(goal) => set({ goal })} />
                 </>
@@ -715,6 +715,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
         </div>
 
         {step !== 'building' && (
+          <div className="onboard-foot">
           <div className="onboard-actions">
             {index > 0 && (
               <button type="button" className="btn btn--ghost" onClick={back}>
@@ -746,11 +747,12 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
               </button>
             )}
           </div>
-        )}
-        {step === 'welcome' && accounts && (
-          <button type="button" className="btn btn--quiet onboard-signin" onClick={() => setSigning('in')}>
-            {t('I already have an account')}
-          </button>
+          {step === 'welcome' && accounts && (
+            <button type="button" className="btn btn--quiet onboard-signin" onClick={() => setSigning('in')}>
+              {t('I already have an account')}
+            </button>
+          )}
+          </div>
         )}
 
         <Sheet

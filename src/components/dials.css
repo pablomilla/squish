@@ -28,12 +28,12 @@
 .wheel-row.is-on { color: var(--ink); font-size: 19px; font-weight: 600; }
 
 /* The goal weight: what it is, big, over a ruler that slides beneath a fixed mark. */
-.goal-ruler { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 4px; }
+.goal-ruler { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 0; }
 .goal-ruler-what { margin: 0; }
-.goal-ruler-value { margin: 0 0 10px; font-size: 34px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.goal-ruler-value { margin: 0 0 6px; font-size: 30px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 .ruler { position: relative; width: 100%; }
 .ruler::after {
-  content: ''; position: absolute; left: 50%; bottom: 0; width: 3px; height: 72px;
+  content: ''; position: absolute; left: 50%; bottom: 0; width: 3px; height: 58px;
   margin-left: -1.5px; border-radius: 2px; background: var(--ink); pointer-events: none;
 }
 .ruler-scroll {
@@ -45,7 +45,7 @@
 .ruler-scroll::-webkit-scrollbar { display: none; }
 .ruler-scroll:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .ruler-marks {
-  position: relative; height: 84px; margin-inline: 50%;
+  position: relative; height: 66px; margin-inline: 50%;
   background-repeat: repeat-x; background-position: left bottom, left bottom; background-size: 100% 62%, 100% 36%;
 }
 .ruler-shade { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--brand) 18%, transparent); }

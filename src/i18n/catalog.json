@@ -1,5 +1,5 @@
 {
- "version": "1e76tmq-kliru1",
+ "version": "0j2614f06b7hsd",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -2043,13 +2043,6 @@
    "text": "I have a code",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "0c70vis-scw4ir",
-   "text": "Steady beats speedy — {pace} a week is the sweet spot for most people.",
-   "where": [
-    "src/screens/Onboarding.tsx"
    ]
   },
   {
