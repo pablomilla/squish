@@ -13,6 +13,7 @@ export function Sheet({
   children,
   footer,
   wide = false,
+  keepMounted = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -21,6 +22,8 @@ export function Sheet({
   footer?: ReactNode;
   /** Wider on a desk-sized screen; the same as any other sheet on a phone. */
   wide?: boolean;
+  /** Kept, hidden, while shut: for content that has to go on listening, or opens sheets of its own, when nobody is looking at it. */
+  keepMounted?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -35,10 +38,10 @@ export function Sheet({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open && !keepMounted) return null;
 
   return createPortal(
-    <div className="sheet-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sheet-backdrop" hidden={!open} onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={wide ? 'sheet sheet--wide' : 'sheet'} role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-grip" />
         {title && (

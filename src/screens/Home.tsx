@@ -167,7 +167,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
       {/* A cheer from the squad brings it up here until it has been seen; the
           rest of the time the squad sits lower down, with the other social bits. */}
-      {cheered && <SquadStrip onOpenYou={() => go({ name: 'you' })} />}
+      {cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
 
 
       {/* Once, to people who were here before the privacy policy last changed. */}
@@ -411,8 +411,8 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       </section>
 
 
-      <FriendNudge onOpenYou={() => go({ name: 'you' })} />
-      {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you' })} />}
+      <FriendNudge onOpenYou={() => go({ name: 'you', open: 'friends' })} />
+      {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
 
       <p className="script home-footer">{t('Good food. Brighter days. ♡')}</p>
 

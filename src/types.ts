@@ -286,6 +286,9 @@ export interface Draft {
   editingId?: string;
 }
 
+/** The sheets You opens, one per row. */
+export type YouSheet = 'plan' | 'food' | 'appearance' | 'plates' | 'reminders' | 'notes' | 'usage' | 'friends' | 'account' | 'data';
+
 /**
  * Where the app is. Kept here rather than beside the router so a component can
  * name a destination without importing the thing that renders it.
@@ -294,7 +297,8 @@ export type Route =
   | { name: 'home' }
   | { name: 'meals' }
   | { name: 'insights' }
-  | { name: 'you' }
+  /** `open` goes straight to one of its sheets, as a link to somebody's squad does. */
+  | { name: 'you'; open?: YouSheet }
   /** `shot` opens straight into that mode — a barcode is two taps, not three. */
   | { name: 'capture'; slot?: MealSlot; date?: string; shot?: 'plate' | 'label' | 'barcode' }
   | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites' }

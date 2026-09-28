@@ -192,6 +192,7 @@ a { color: var(--brand-ink); }
   display: flex; align-items: flex-end; justify-content: center;
   animation: fade-in 0.2s ease both; backdrop-filter: blur(2px);
 }
+.sheet-backdrop[hidden] { display: none; }
 .sheet {
   width: 100%; max-width: var(--max-w); max-height: 88dvh; overflow-y: auto;
   background: var(--bg); border-radius: var(--r-xl) var(--r-xl) 0 0;

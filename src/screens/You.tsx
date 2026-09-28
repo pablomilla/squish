@@ -7,9 +7,9 @@ import InviteCard from '../components/InviteCard';
 import SquadCard from '../components/squad/SquadCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
 import { HeightField, LanguageField, RegionField, WeightField } from '../components/fields';
-import { LANGUAGES, languageOf, packFor } from '../lib/language';
+import { languageOf, packFor } from '../lib/language';
 import { REGIONS, energyUnitOf, energyValue, formatEnergy, regionOf, toKcal, type EnergyUnit } from '../lib/region';
-import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, imperialLabel, retuneForUnits, saltGrams, saltLabel, saltShown, showsSodium, sodiumFromShown, sodiumMg, weightUnitLabel } from '../lib/units';
+import { PACE_CHOICES, formatWeight, formatWeightDelta, paceIn, paceToKg, imperialLabel, retuneForUnits, saltGrams, saltLabel, saltShown, showsSodium, sodiumFromShown, sodiumMg, weightUnitLabel } from '../lib/units';
 import { disableReminders, enableReminders, explainBlocker, reminderSupport, type ReminderBlocker } from '../lib/reminders';
 import { adaptiveSuggestion } from '../lib/adaptive';
 import { ShareIcon, SparkIcon, TrashIcon } from '../components/icons';
@@ -32,8 +32,8 @@ import { bestStreak, series, streakOf, summarise } from '../lib/selectors';
 import { shareStory } from '../lib/shareStory';
 import ShareSheet from '../components/ShareSheet';
 import { AimFields, EatingFields } from '../components/EatingFields';
-import { AIMS, AVOIDS, DIETS, OBSTACLES } from '../lib/eating';
-import type { Activity, Goal, Route, Sex } from '../types';
+import { DIETS } from '../lib/eating';
+import type { Activity, Goal, Route, Sex, YouSheet } from '../types';
 import './you.css';
 import { plural, t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
@@ -41,7 +41,7 @@ import { slotName } from '../lib/words';
 import { BirthdayWheel } from '../components/Dials';
 import { ageOn, startingBirthDate } from '../lib/birthday';
 
-export default function You({ go }: { go: (route: Route) => void }) {
+export default function You({ go, opening }: { go: (route: Route) => void; opening?: YouSheet }) {
   const toast = useToast();
   const { profile, targets, meals, days, theme, comparisons, look, setLook, reminders, setReminders, setProfile, setTargets, recalcTargets, applyBurnFactor, resetAll, unlocked, nutritionistNotes, forgetNote } =
     useSquish();
@@ -102,6 +102,8 @@ export default function You({ go }: { go: (route: Route) => void }) {
     }
   };
   const [confirmReset, setConfirmReset] = useState(false);
+  const [open, setOpen] = useState<YouSheet | null>(opening ?? null);
+  const close = () => setOpen(null);
   const [status, setStatus] = useState<AiStatus | null>(null);
 
   useEffect(() => {
@@ -128,7 +130,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
   return (
     <div className="screen you">
       <header className="you-head">
-        <Squish mood="proud" size={104} />
+        <Squish mood="proud" size={72} />
         <div>
           <h1>{profile.name || t('You')}</h1>
           <p className="muted small">
@@ -138,30 +140,56 @@ export default function You({ go }: { go: (route: Route) => void }) {
         </div>
       </header>
 
+      {/* Everything on You is a row that opens its own sheet, so the whole of it fits on one screen. */}
+      <nav className="you-menu" aria-label={t('You')}>
+        {/* Only where the server says so, and it decides again on every request: hiding this is a convenience, never the lock. */}
+        {standing.admin && <MenuRow icon="📊" label={t('Dashboard')} value={t('Open')} onClick={() => go({ name: 'admin' })} />}
+        <MenuRow icon="🎯" label={t('Your plan')} value={t('{energy} a day', { energy: formatEnergy(targets.calories) })} note={learned ? t('Suggestion') : undefined} onClick={() => setOpen('plan')} />
+        <MenuRow
+          icon="🧍"
+          label={t('About you')}
+          value={`${profile.goal === 'lose' ? t('Lose weight') : profile.goal === 'gain' ? t('Build up') : t('Stay steady')} · ${formatWeight(profile.weightKg, profile.units)}`}
+          onClick={() => setEditing(true)}
+        />
+        <MenuRow icon="🥗" label={t('Food and goals')} value={DIETS.find((d) => d.key === (profile.diet ?? 'any'))?.label ?? ''} onClick={() => setOpen('food')} />
+      </nav>
+      <nav className="you-menu" aria-label={t('Settings')}>
+        <MenuRow icon="🎨" label={t('Appearance')} value={theme === 'light' ? t('Light') : theme === 'dark' ? t('Dark') : t('Auto')} onClick={() => setOpen('appearance')} />
+        <MenuRow icon="🍽️" label={t('Your plates')} value={measured ? t('{n} cm plate', { n: profile.plateCm ?? 27 }) : t('Not set')} onClick={() => setOpen('plates')} />
+        <MenuRow icon="🔔" label={t('Meal reminders')} value={reminders.on ? t('On') : t('Off')} onClick={() => setOpen('reminders')} />
+        <MenuRow
+          icon="🧠"
+          label={t('Nutritionist’s notes')}
+          value={nutritionistNotes.length ? plural(nutritionistNotes.length, { one: '{n} note', other: '{n} notes' }) : t('None yet')}
+          onClick={() => setOpen('notes')}
+        />
+      </nav>
+      <nav className="you-menu" aria-label={t('Account')}>
+        {standing.known && !standing.off && (
+          <>
+            <MenuRow icon="⭐" label={t('Plan and usage')} value={subscribed ? PLUS : t('Free')} onClick={() => setOpen('usage')} />
+            <MenuRow icon="💌" label={t('Friends')} value={t('Invites and squads')} onClick={() => setOpen('friends')} />
+          </>
+        )}
+        {backup.kind !== 'off' && (
+          <MenuRow
+            icon="🔐"
+            label={t('Account and backup')}
+            value={standing.known ? (standing.account ? t('Signed in') : t('Not signed in')) : ''}
+            note={backup.kind === 'conflict' ? t('Paused') : backup.kind === 'too_big' ? t('Too large') : undefined}
+            onClick={() => setOpen('account')}
+          />
+        )}
+        <MenuRow icon="📦" label={t('Your data')} value={t('Export, privacy')} onClick={() => setOpen('data')} />
+      </nav>
+
       {/*
         Only where the server says so, and the server decides again on every
         request — hiding this is a convenience, never the lock. First on the
         page, because whoever sees it is here for it most often.
       */}
-      {standing.admin && (
-        <section className="card card--quiet">
-          <div className="card-title">
-            <h3>{t('Dashboard')}</h3>
-          </div>
-          <p className="tiny muted">{t('Who is signed up, what they are on, and what it is costing.')}</p>
-          <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={() => go({ name: 'admin' })}>
-            {t('Open the dashboard')}
-          </button>
-        </section>
-      )}
 
-      <section className="card card--hero">
-        <div className="card-title">
-          <h3>{t('Your plan')}</h3>
-          <button type="button" className="btn--quiet small" onClick={() => setEditingTargets(true)}>
-            {t('Adjust')}
-          </button>
-        </div>
+      <Sheet open={open === 'plan'} onClose={close} title={t('Your plan')}>
         <div className="you-plan">
           <div className="pill-stat">
             <span className="tiny muted">{t('Daily target')}</span>
@@ -247,46 +275,18 @@ export default function You({ go }: { go: (route: Route) => void }) {
             </button>
           </p>
         )}
-      </section>
+        <button type="button" className="btn btn--soft btn--block" style={{ marginTop: 14 }} onClick={() => { setOpen(null); setEditingTargets(true); }}>
+          {t('Adjust targets')}
+        </button>
+      </Sheet>
 
-      <section className="card">
-        <div className="card-title">
-          <h3>{t('About you')}</h3>
-          <button type="button" className="btn--quiet small" onClick={() => setEditing(true)}>
-            {t('Edit')}
-          </button>
-        </div>
-        <Row label={t('Goal')} value={profile.goal === 'lose' ? t('Lose weight') : profile.goal === 'gain' ? t('Build up') : t('Stay steady')} />
-        <Row label={t('Pace')} value={profile.goal === 'maintain' ? '—' : t('{pace} / week', { pace: formatPace(profile.pace, profile.units) })} />
-        <Row label={t('Weight')} value={formatWeight(profile.weightKg, profile.units)} />
-        <Row label={t('Goal weight')} value={formatWeight(profile.targetWeightKg, profile.units)} />
-        <Row label={t('Height')} value={formatHeight(profile.heightCm, profile.units)} />
-        <Row label={t('Country')} value={`${REGIONS[regionOf(profile)].flag} ${t(REGIONS[regionOf(profile)].name)}`} />
-        <Row label={t('Language')} value={LANGUAGES[languageOf(profile)].native} />
-        <Row label={t('Age')} value={`${profile.age}`} />
-        <Row label={t('Activity')} value={ACTIVITY_LABEL[profile.activity]} />
-      </section>
 
-      <FoodAndGoals />
 
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('Squish AI')}</h3>
-          <span className={`badge ${status?.ai ? 'badge--good' : 'badge--warn'}`}>
-            <SparkIcon size={13} /> {status?.ai ? t('Connected') : t('Offline mode')}
-          </span>
-        </div>
-        <p className="small muted">
-          {status?.ai
-            ? t('Photo analysis and coaching run on {model}. Your photos go to the Squish API server and are not stored.', { model: status.model })
-            : t('No API key on the server, so meals are estimated from the built-in food table. Add ANTHROPIC_API_KEY to the server environment for real photo analysis.')}
-        </p>
-      </section>
+      <FoodAndGoals open={open === 'food'} onClose={close} />
 
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('Appearance')}</h3>
-        </div>
+
+
+      <Sheet open={open === 'appearance'} onClose={close} title={t('Appearance')}>
         <Segmented
           label={t('Theme')}
           value={theme}
@@ -395,12 +395,9 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 
         <ShareCardLink />
-      </section>
+      </Sheet>
 
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('Your plates')}</h3>
-        </div>
+      <Sheet open={open === 'plates'} onClose={close} title={t('Your plates')}>
         {/* The single cheapest thing anyone can do for portion accuracy. A
             phone with a depth sensor measures the food; a photo has to measure
             it against something, and the plate is the ruler already in shot.
@@ -469,13 +466,9 @@ export default function You({ go }: { go: (route: Route) => void }) {
         <p className="tiny muted" style={{ marginTop: 8 }}>
           {t('A standard dinner plate is about 27 cm; a side plate 20 cm. Only tell Squish a size you have actually measured — a wrong one makes portions worse, not better.')}
         </p>
-      </section>
+      </Sheet>
 
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('Meal reminders')}</h3>
-          {reminders.on && <span className="badge badge--good">{t('On')}</span>}
-        </div>
+      <Sheet open={open === 'reminders'} onClose={close} title={t('Meal reminders')}>
 
         {blocker === null ? (
           <p className="tiny muted">{t('Checking…')}</p>
@@ -521,13 +514,9 @@ export default function You({ go }: { go: (route: Route) => void }) {
             )}
           </>
         )}
-      </section>
+      </Sheet>
 
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('What the nutritionist remembers')}</h3>
-          {nutritionistNotes.length > 0 && <span className="badge">{nutritionistNotes.length}</span>}
-        </div>
+      <Sheet open={open === 'notes'} onClose={close} title={t('Nutritionist’s notes')}>
 
         {nutritionistNotes.length === 0 ? (
           <p className="tiny muted">
@@ -553,22 +542,43 @@ export default function You({ go }: { go: (route: Route) => void }) {
             </div>
           </>
         )}
-      </section>
+      </Sheet>
 
-      <PlanCard standing={standing} />
-
-      <InviteCard />
-
-      <SquadCard />
-
-      <AccountCard enabled={backup.kind !== 'off'} />
-
-      <BackupCard />
-
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('Your data')}</h3>
+      {/* Kept mounted while shut: these listen — for a friend who got going, for
+          somebody asked to make an account elsewhere — and open sheets of their own. */}
+      <Sheet open={open === 'usage'} onClose={close} title={t('Plan and usage')} keepMounted>
+        <div className="you-sheet-single">
+          <PlanCard standing={standing} />
         </div>
+      </Sheet>
+
+      <Sheet open={open === 'friends'} onClose={close} title={t('Friends')} keepMounted>
+        <div className="stack">
+          <InviteCard />
+          <SquadCard />
+        </div>
+      </Sheet>
+
+      <Sheet open={open === 'account'} onClose={close} title={t('Account and backup')} keepMounted>
+        <div className="stack">
+          <AccountCard enabled={backup.kind !== 'off'} />
+          <BackupCard />
+        </div>
+      </Sheet>
+
+      <Sheet open={open === 'data'} onClose={close} title={t('Your data')}>
+        <div className="row-between" style={{ marginBottom: 6 }}>
+          <h4 className="small">{t('Squish AI')}</h4>
+          <span className={`badge ${status?.ai ? 'badge--good' : 'badge--warn'}`}>
+            <SparkIcon size={13} /> {status?.ai ? t('Connected') : t('Offline mode')}
+          </span>
+        </div>
+        <p className="small muted">
+          {status?.ai
+            ? t('Photo analysis and coaching run on {model}. Your photos go to the Squish API server and are not stored.', { model: status.model })
+            : t('No API key on the server, so meals are estimated from the built-in food table. Add ANTHROPIC_API_KEY to the server environment for real photo analysis.')}
+        </p>
+        <div className="divider" style={{ margin: '16px 0 12px' }} />
         <p className="small muted">
           {backup.kind === 'off'
             ? t('Everything lives in this browser. Nothing is uploaded except the photo you choose to analyse.')
@@ -578,7 +588,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
           <button type="button" className="btn btn--ghost grow" onClick={exportData}>
             {t('Export JSON')}
           </button>
-          <button type="button" className="btn btn--danger grow" onClick={() => setConfirmReset(true)}>
+          <button type="button" className="btn btn--danger grow" onClick={() => { setOpen(null); setConfirmReset(true); }}>
             {t('Reset')}
           </button>
         </div>
@@ -605,9 +615,8 @@ export default function You({ go }: { go: (route: Route) => void }) {
             ),
           })}
         </p>
-      </section>
+      </Sheet>
 
-      <p className="script center you-footer">{t('Small steps. Big progress. ♡')}</p>
 
       <Sheet open={editing} onClose={() => setEditing(false)} title={t('About you')}>
         <div className="stack">
@@ -870,12 +879,19 @@ export default function You({ go }: { go: (route: Route) => void }) {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function MenuRow({ icon, label, value, note, onClick }: { icon: string; label: string; value: string; note?: string; onClick: () => void }) {
   return (
-    <div className="list-row">
-      <span className="grow small muted">{label}</span>
-      <b className="small">{value}</b>
-    </div>
+    <button type="button" className="you-row" onClick={onClick}>
+      <span className="you-row-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="you-row-label">{label}</span>
+      {note && <span className="badge badge--warn">{note}</span>}
+      <span className="you-row-value">{value}</span>
+      <span className="you-row-more" aria-hidden="true">
+        ›
+      </span>
+    </button>
   );
 }
 
@@ -1345,41 +1361,19 @@ function ShareCardLink() {
  * How they eat and what they want, as told in onboarding: the meal plans, the
  * nutritionist and the daily nudge all read it, so it is worth keeping right.
  */
-function FoodAndGoals() {
+function FoodAndGoals({ open, onClose }: { open: boolean; onClose: () => void }) {
   const profile = useSquish((s) => s.profile);
   const setProfile = useSquish((s) => s.setProfile);
-  const [editing, setEditing] = useState(false);
-  const labels = <K extends string>(options: { key: K; label: string }[], keys: K[] | undefined) =>
-    (keys ?? []).map((key) => options.find((o) => o.key === key)?.label ?? key);
-  const avoids = [...labels(AVOIDS, profile.avoid), ...(profile.avoidOther?.trim() ? [profile.avoidOther.trim()] : [])];
-  const aims = labels(AIMS, profile.aims);
-  const obstacles = labels(OBSTACLES, profile.obstacles);
-  const none = t('Nothing said');
-
   return (
-    <section className="card">
-      <div className="card-title">
-        <h3>{t('Food and goals')}</h3>
-        <button type="button" className="btn--quiet small" onClick={() => setEditing(true)}>
-          {t('Edit')}
+    <Sheet open={open} onClose={onClose} title={t('Food and goals')}>
+      <div className="stack">
+        <p className="tiny muted">{t('Meal plans, the nutritionist and your daily nudge all go by this. Allergies are never planned in.')}</p>
+        <EatingFields value={profile} onChange={(patch) => setProfile(patch)} />
+        <AimFields value={profile} onChange={(patch) => setProfile(patch)} />
+        <button type="button" className="btn" onClick={onClose}>
+          {t('Done')}
         </button>
       </div>
-      <Row label={t('I eat')} value={DIETS.find((d) => d.key === (profile.diet ?? 'any'))?.label ?? ''} />
-      <Row label={t('Never')} value={avoids.length ? listWords(avoids) : none} />
-      <Row label={t('After')} value={aims.length ? listWords(aims) : none} />
-      <Row label={t('In the way')} value={obstacles.length ? listWords(obstacles) : none} />
-      <p className="tiny muted" style={{ marginTop: 8 }}>
-        {t('Meal plans, the nutritionist and your daily nudge all go by this. Allergies are never planned in.')}
-      </p>
-      <Sheet open={editing} onClose={() => setEditing(false)} title={t('Food and goals')}>
-        <div className="stack">
-          <EatingFields value={profile} onChange={(patch) => setProfile(patch)} />
-          <AimFields value={profile} onChange={(patch) => setProfile(patch)} />
-          <button type="button" className="btn" onClick={() => setEditing(false)}>
-            {t('Done')}
-          </button>
-        </div>
-      </Sheet>
-    </section>
+    </Sheet>
   );
 }

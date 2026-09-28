@@ -253,7 +253,7 @@ function Shell() {
       {route.name === 'home' && <Home go={go} />}
       {route.name === 'meals' && <Diary go={go} onEditMeal={editMeal} />}
       {route.name === 'insights' && <Insights go={go} />}
-      {route.name === 'you' && <You go={go} />}
+      {route.name === 'you' && <You go={go} opening={route.open} key={route.open ?? ''} />}
       {route.name === 'capture' && (
         <Capture slot={route.slot} date={route.date} shot={route.shot} onCancel={home} onAnalysed={openReview} go={go} />
       )}

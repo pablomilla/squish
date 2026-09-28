@@ -1,5 +1,5 @@
 {
- "version": "0oudloo-51f2ks",
+ "version": "1bvsnwf0bkbd64",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -244,13 +244,6 @@
    "text": "What is food quality?",
    "where": [
     "src/screens/Diary.tsx"
-   ]
-  },
-  {
-   "id": "01diicx-xcy93n",
-   "text": "Country",
-   "where": [
-    "src/screens/You.tsx"
    ]
   },
   {
@@ -1019,6 +1012,14 @@
    ]
   },
   {
+   "id": "05ljxq6-e11qdc",
+   "one": "{n} note",
+   "other": "{n} notes",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "05od6630ozwytx",
    "text": "Maintenance plus what your pace needs. A pound of body fat is roughly {fat}, so {pace} a week is about {energy} a day.",
    "where": [
@@ -1399,8 +1400,7 @@
    "text": "Height",
    "where": [
     "src/components/Dials.tsx",
-    "src/components/fields.tsx",
-    "src/screens/You.tsx"
+    "src/components/fields.tsx"
    ]
   },
   {
@@ -1617,6 +1617,13 @@
    ]
   },
   {
+   "id": "090f05d-ubuc9l",
+   "text": "Not signed in",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "093g990-pjssnp",
    "text": "your body burns",
    "where": [
@@ -1666,6 +1673,13 @@
    "text": "Remove",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "09cjw2f-rpu3m1",
+   "text": "Invites and squads",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -2104,13 +2118,6 @@
     "src/components/AccountCard.tsx",
     "src/screens/Onboarding.tsx",
     "src/screens/ResetPassword.tsx"
-   ]
-  },
-  {
-   "id": "0cl7n79-p3t2pt",
-   "text": "Small steps. Big progress. ♡",
-   "where": [
-    "src/screens/You.tsx"
    ]
   },
   {
@@ -3062,6 +3069,13 @@
    ]
   },
   {
+   "id": "0i37kzd065wg4o",
+   "text": "None yet",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "0i3d4n0-v9j1bm",
    "text": "Worth saying: a reading this low is more often a few unlogged snacks than a slow metabolism. I have only gone part of the way, and it is your call.",
    "where": [
@@ -3319,6 +3333,13 @@
    "text": "That code was not one we know. You can try another on the You screen.",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0ji854c-gdz6c6",
+   "text": "Nutritionist’s notes",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -3590,6 +3611,13 @@
     "src/components/AddSheet.tsx",
     "src/screens/AddFood.tsx",
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "0ktdb8o07p4rvg",
+   "text": "Settings",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -4083,6 +4111,13 @@
    ]
   },
   {
+   "id": "0n6hn1l-c98d34",
+   "text": "Open",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "0n7n2xp-1q8nxk",
    "text": "Join with a code",
    "where": [
@@ -4447,7 +4482,8 @@
    "id": "0oyp43g05y6y35",
    "text": "Account",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -4775,13 +4811,6 @@
    ]
   },
   {
-   "id": "0qqneps-xg7frg",
-   "text": "Who is signed up, what they are on, and what it is costing.",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "0qqr6iw-97ppdh",
    "text": "Sex (for the energy formula)",
    "where": [
@@ -4912,7 +4941,8 @@
    "id": "0rov14q0fw5eht",
    "text": "Friends",
    "where": [
-    "src/lib/achievements.ts"
+    "src/lib/achievements.ts",
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -5047,6 +5077,13 @@
    "text": "Anything else",
    "where": [
     "src/components/EatingFields.tsx"
+   ]
+  },
+  {
+   "id": "0sfzlrp-8dul1f",
+   "text": "Account and backup",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -5903,6 +5940,13 @@
    "text": "You can sign in with your new password now.",
    "where": [
     "src/screens/ResetPassword.tsx"
+   ]
+  },
+  {
+   "id": "0x4tbmc01n9scy",
+   "text": "{energy} a day",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -7004,13 +7048,6 @@
    ]
   },
   {
-   "id": "13mcq4c-8p475r",
-   "text": "Age",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "13nokqb-jlbuvd",
    "text": "Current password",
    "where": [
@@ -7053,13 +7090,6 @@
    ]
   },
   {
-   "id": "13w89vu-c1onep",
-   "text": "Open the dashboard",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "1413gw70-uc8gn",
    "text": "That goal is below your weight now. Did you mean to lose weight?",
    "where": [
@@ -7077,8 +7107,7 @@
    "id": "146657i0f8fgw5",
    "text": "I eat",
    "where": [
-    "src/components/EatingFields.tsx",
-    "src/screens/You.tsx"
+    "src/components/EatingFields.tsx"
    ]
   },
   {
@@ -7339,7 +7368,8 @@
    "id": "15swkac0gwn70t",
    "text": "Signed in",
    "where": [
-    "src/components/AccountCard.tsx"
+    "src/components/AccountCard.tsx",
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -7556,8 +7586,7 @@
    "id": "16us7mj-tipf58",
    "text": "Language",
    "where": [
-    "src/components/fields.tsx",
-    "src/screens/You.tsx"
+    "src/components/fields.tsx"
    ]
   },
   {
@@ -8181,13 +8210,6 @@
    ]
   },
   {
-   "id": "1ag7tzj0vqa8ti",
-   "text": "{pace} / week",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "1ahb4gz-79xorf",
    "text": "Say it instead of typing. Your browser handles the speech, and some browsers send it to their own servers to do it.",
    "where": [
@@ -8199,13 +8221,6 @@
    "text": "Know the numbers already? Pop them straight in.",
    "where": [
     "src/screens/AddFood.tsx"
-   ]
-  },
-  {
-   "id": "1akqxyh0jpoej4",
-   "text": "After",
-   "where": [
-    "src/screens/You.tsx"
    ]
   },
   {
@@ -8716,13 +8731,6 @@
    "text": "Maintenance plus what your pace needs. A kilogram of body fat is roughly {fat}, so {pace} a week is about {energy} a day.",
    "where": [
     "src/lib/planExplained.ts"
-   ]
-  },
-  {
-   "id": "1dny5gp-fm6iev",
-   "text": "Never",
-   "where": [
-    "src/screens/You.tsx"
    ]
   },
   {
@@ -9414,6 +9422,13 @@
    ]
   },
   {
+   "id": "1hjlzzl-njw57u",
+   "text": "Export, privacy",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "1hk232h-stt1tu",
    "text": "Packs",
    "where": [
@@ -9550,8 +9565,7 @@
    "id": "1i1lcq9-z44c0k",
    "text": "Edit",
    "where": [
-    "src/screens/Diary.tsx",
-    "src/screens/You.tsx"
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -10673,13 +10687,6 @@
    ]
   },
   {
-   "id": "1nqnq8u0t227w6",
-   "text": "Adjust",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "1nsb1lg0tpncju",
    "text": "Squish is for people aged {age} and over, so your age has not been changed.",
    "where": [
@@ -10691,6 +10698,13 @@
    "text": "Chicken curry",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1ntesau-2s73u4",
+   "text": "Not set",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -10745,13 +10759,6 @@
    ]
   },
   {
-   "id": "1nzjthm-s02h6p",
-   "text": "Pace",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "1o0glig0ff8aty",
    "text": "Chef’s hat",
    "where": [
@@ -10790,13 +10797,6 @@
   {
    "id": "1o83xd0-5txir0",
    "text": "Food and goals",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "1oa7bmk-yzrg6g",
-   "text": "What the nutritionist remembers",
    "where": [
     "src/screens/You.tsx"
    ]
@@ -10859,13 +10859,6 @@
   {
    "id": "1p0lji209igduz",
    "text": "{name}, part of {plus}",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "1p0s1kf-ksyuwu",
-   "text": "Nothing said",
    "where": [
     "src/screens/You.tsx"
    ]
@@ -11534,13 +11527,6 @@
    ]
   },
   {
-   "id": "1swfwlu00vu5b2",
-   "text": "In the way",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "1sx7g1502bubrn",
    "text": "I got lost looking things up. Ask me again?",
    "where": [
@@ -11598,6 +11584,13 @@
    "text": "Let's go",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "1tam2wd06v4eho",
+   "text": "Suggestion",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -12514,6 +12507,13 @@
    "text": "You do not need one. It is for two things: moving to a new phone without starting again, and getting your diary back if this one is lost.",
    "where": [
     "src/components/AccountCard.tsx"
+   ]
+  },
+  {
+   "id": "1ym89gl-whogy8",
+   "text": "{n} cm plate",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
