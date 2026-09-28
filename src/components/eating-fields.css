@@ -2,3 +2,4 @@
 .field-label { font-size: var(--text-label); font-weight: 500; color: var(--ink-2); }
 .eat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .eat-chips .chip { padding: 9px 13px; }
+.eat-questions { display: flex; flex-direction: column; gap: 28px; }

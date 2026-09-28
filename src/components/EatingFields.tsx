@@ -115,8 +115,9 @@ export interface AimAnswers {
 
 /** What they are after and what gets in the way. */
 export function AimFields({ value, onChange }: { value: AimAnswers; onChange: (patch: AimAnswers) => void }) {
+  // Two questions, not one long list: a clear gap between them.
   return (
-    <>
+    <div className="eat-questions">
       <ChipChoices<Aim> label={t('What would you like from Squish?')} options={AIMS} value={value.aims ?? []} onChange={(aims) => onChange({ aims })} />
       <ChipChoices<Obstacle>
         label={t('What usually gets in the way?')}
@@ -124,6 +125,6 @@ export function AimFields({ value, onChange }: { value: AimAnswers; onChange: (p
         value={value.obstacles ?? []}
         onChange={(obstacles) => onChange({ obstacles })}
       />
-    </>
+    </div>
   );
 }
