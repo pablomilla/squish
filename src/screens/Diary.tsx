@@ -3,8 +3,9 @@ import type { Route } from '../types';
 import type { MealEntry, MealSlot } from '../types';
 import { MealThumb } from '../components/MealCard';
 import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
+import CheckinSheets from '../components/CheckinSheets';
 import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
-import { Sheet, Stepper, useToast } from '../components/ui';
+import { Sheet, useToast } from '../components/ui';
 import { BasketIcon, CalendarIcon, CameraIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
@@ -20,8 +21,7 @@ import WeekPlanSheet from '../components/WeekPlanSheet';
 import AskLink from '../components/AskLink';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
-import { GLASS_ML, dayVerdict } from '../lib/nutrition';
-import { DailyWeightWheel } from '../components/Dials';
+import { dayVerdict } from '../lib/nutrition';
 import './diary.css';
 import { describePortion, saltLabel } from '../lib/units';
 import { formatEnergy } from '../lib/region';
@@ -39,7 +39,7 @@ const SLOTS: { key: MealSlot; label: string; plan: string; addTo: string; snap: 
 
 export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; onEditMeal: (meal: MealEntry) => void }) {
   const toast = useToast();
-  const { meals, days, targets, removeMeal, setWater, setSteps, setWeight, profile, plans } = useSquish();
+  const { meals, days, targets, removeMeal, setWater, setSteps, profile, plans } = useSquish();
   const [date, setDate] = useState(isoDate());
   const [selected, setSelected] = useState<MealEntry | null>(null);
   const [picking, setPicking] = useState(false);
@@ -260,50 +260,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         </div>
       </Sheet>
 
-      <Sheet open={checking === 'water'} onClose={() => setChecking(null)} title={t('Water')}>
-        <div className="stack">
-          <div className="row-between">
-            <span className="small">
-              💧 {t('Water')}
-              <span className="tiny muted"> · {GLASS_ML} ml</span>
-            </span>
-            <Stepper value={day?.water ?? 0} min={0} max={20} onChange={(v) => setWater(date, v)} suffix={t('glasses')} />
-          </div>
-          <button type="button" className="btn btn--block" onClick={() => setChecking(null)}>
-            {t('Done')}
-          </button>
-        </div>
-      </Sheet>
-
-      <Sheet open={checking === 'steps'} onClose={() => setChecking(null)} title={t('Steps')}>
-        <div className="stack">
-          <div className="row-between">
-            <span className="small">👟 {t('Steps')}</span>
-            <Stepper value={day?.steps ?? 0} step={500} min={0} max={50000} onChange={(v) => setSteps(date, v)} />
-          </div>
-          <button type="button" className="btn btn--block" onClick={() => setChecking(null)}>
-            {t('Done')}
-          </button>
-        </div>
-      </Sheet>
-
-      <Sheet open={checking === 'weight'} onClose={() => setChecking(null)} title={t('Weight')}>
-        <div className="stack">
-          {/* A wheel, like setting up: stones stay stones, and kilograms turn to the tenth. */}
-          <DailyWeightWheel kg={day?.weightKg ?? profile.weightKg} units={profile.units} onChange={(kg) => setWeight(date, kg)} />
-          {/* Saves what the wheel shows, so the same weight as last time can be logged without turning it. */}
-          <button
-            type="button"
-            className="btn btn--block"
-            onClick={() => {
-              if (day?.weightKg === undefined) setWeight(date, profile.weightKg);
-              setChecking(null);
-            }}
-          >
-            {day?.weightKg === undefined ? t('Log this weight') : t('Done')}
-          </button>
-        </div>
-      </Sheet>
+      <CheckinSheets date={date} open={checking} onClose={() => setChecking(null)} />
 
       <Sheet open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.title}>
         {selected && (

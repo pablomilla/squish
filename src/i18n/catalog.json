@@ -1,5 +1,5 @@
 {
- "version": "0qyqfu501nawb2",
+ "version": "0etyar40cm1jtc",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -223,13 +223,6 @@
    "text": "Delete my account",
    "where": [
     "src/components/AccountCard.tsx"
-   ]
-  },
-  {
-   "id": "01aeugy0jmnsv4",
-   "text": "Clear",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -733,8 +726,7 @@
    "id": "03oekdz-t1fury",
    "text": "Add {n} steps",
    "where": [
-    "src/components/CheckinTiles.tsx",
-    "src/screens/Home.tsx"
+    "src/components/CheckinTiles.tsx"
    ]
   },
   {
@@ -3409,7 +3401,7 @@
    "id": "0jyb8z90j3jgzu",
    "text": "Log this weight",
    "where": [
-    "src/screens/Diary.tsx"
+    "src/components/CheckinSheets.tsx"
    ]
   },
   {
@@ -3680,14 +3672,6 @@
    "text": "Ground beef, 95% lean",
    "where": [
     "src/lib/region.ts"
-   ]
-  },
-  {
-   "id": "0l53ry50g1qsd0",
-   "one": "{n} glass of water",
-   "other": "{n} glasses of water",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -6296,7 +6280,7 @@
    "id": "0zltaly0hjqzw1",
    "text": "Last logged {weight} on {date}.",
    "where": [
-    "src/screens/Home.tsx"
+    "src/components/CheckinSheets.tsx"
    ]
   },
   {
@@ -7014,8 +6998,7 @@
    "id": "13cn9g1-se3vlu",
    "text": "Done",
    "where": [
-    "src/screens/Diary.tsx",
-    "src/screens/Home.tsx",
+    "src/components/CheckinSheets.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -7475,13 +7458,6 @@
    ]
   },
   {
-   "id": "16fgh7s-47oau7",
-   "text": "Today's weight",
-   "where": [
-    "src/screens/Home.tsx"
-   ]
-  },
-  {
    "id": "16h6pn3-qnmodc",
    "text": "Good evening!",
    "where": [
@@ -7492,10 +7468,9 @@
    "id": "16i5exl-nn19zt",
    "text": "Weight",
    "where": [
+    "src/components/CheckinSheets.tsx",
     "src/components/CheckinTiles.tsx",
     "src/components/Dials.tsx",
-    "src/screens/Diary.tsx",
-    "src/screens/Home.tsx",
     "src/screens/Insights.tsx",
     "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
@@ -7944,13 +7919,6 @@
    "text": "Something with protein or fibre — eggs, beans, yoghurt, veg or wholegrains — lifts the score most.",
    "where": [
     "src/lib/dayExplained.ts"
-   ]
-  },
-  {
-   "id": "18rko4h0-o290b",
-   "text": "{done}/{target} glasses",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -8971,7 +8939,7 @@
    "id": "1exo4zb-aa3bzt",
    "text": "Weigh yourself at the same time of day — first thing is the steadiest.",
    "where": [
-    "src/screens/Home.tsx"
+    "src/components/CheckinSheets.tsx"
    ]
   },
   {
@@ -10522,8 +10490,8 @@
    "id": "1mxszis0yrw9bv",
    "text": "Steps",
    "where": [
+    "src/components/CheckinSheets.tsx",
     "src/components/CheckinTiles.tsx",
-    "src/screens/Diary.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -10626,10 +10594,9 @@
    "id": "1nfo14g0e74euo",
    "text": "Water",
    "where": [
+    "src/components/CheckinSheets.tsx",
     "src/components/CheckinTiles.tsx",
     "src/lib/shareDecor.ts",
-    "src/screens/Diary.tsx",
-    "src/screens/Home.tsx",
     "src/screens/Insights.tsx",
     "src/screens/You.tsx"
    ]
@@ -10729,7 +10696,7 @@
    "id": "1nvikaj-gv9ujb",
    "text": "glasses",
    "where": [
-    "src/screens/Diary.tsx",
+    "src/components/CheckinSheets.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -10981,13 +10948,6 @@
    ]
   },
   {
-   "id": "1prnxj80wt0ry8",
-   "text": "{drunk} of {target} — a glass is {ml} ml",
-   "where": [
-    "src/screens/Home.tsx"
-   ]
-  },
-  {
    "id": "1puxlau-73haf3",
    "text": "Chicken salad sandwich",
    "where": [
@@ -11190,7 +11150,6 @@
    "id": "1qufeyg-kbo5dt",
    "text": "Movement",
    "where": [
-    "src/screens/Home.tsx",
     "src/screens/Insights.tsx"
    ]
   },

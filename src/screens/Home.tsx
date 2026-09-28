@@ -5,18 +5,18 @@ import NutritionistCard from '../components/NutritionistCard';
 import type { Route } from '../types';
 import Squish from '../components/Squish';
 import { MealThumb } from '../components/MealCard';
-import CheckinTiles from '../components/CheckinTiles';
+import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
+import CheckinSheets from '../components/CheckinSheets';
 import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing } from '../components/charts';
 import { CameraIcon, ChevronIcon, HeartIcon, PenIcon, SearchIcon, FlameIcon } from '../components/icons';
-import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
-import { formatWeight, saltLabel } from '../lib/units';
+import { saltLabel } from '../lib/units';
 import { useSquish } from '../store/useSquish';
 import Comparison from '../components/Comparison';
 import { equivalentFor, progressWords, seedFrom, type GoodNutrient } from '../lib/equivalents';
 import { friendlyDate, greeting, isoDate, partOfDay, timeOfDayWords } from '../lib/date';
 import { habitCount, habitsOn, mealsOn, moodFor, streakOf, totalsOn } from '../lib/selectors';
-import { GLASS_ML, overTargets, pct, remaining, waterVolume } from '../lib/nutrition';
+import { overTargets, pct, remaining } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
 import { sceneInUse } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
@@ -32,10 +32,9 @@ import { aboutOf } from '../lib/eating';
 
 export default function Home({ go }: { go: (route: Route) => void }) {
   const today = isoDate();
-  const { profile, targets, meals, days, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
+  const { profile, targets, meals, days, setWater, setSteps, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
     useSquish();
-  const [weighing, setWeighing] = useState(false);
-  const [tracking, setTracking] = useState<'water' | 'steps' | null>(null);
+  const [checking, setChecking] = useState<Checkin | null>(null);
   const [detail, setDetail] = useState(false);
   const inbox = useCheerInbox();
   const squad = useSquad();
@@ -52,13 +51,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const plannedToday = useMemo(() => plansOn(plans, today), [plans, today]);
   const streak = useMemo(() => streakOf(meals, today), [meals, today]);
   const habits = habitsOn(meals, days, targets, today);
-  const lastWeighIn = useMemo(
-    () =>
-      Object.values(days)
-        .filter((entry) => entry.weightKg && entry.date !== today)
-        .sort((a, b) => b.date.localeCompare(a.date))[0] as { date: string; weightKg: number } | undefined,
-    [days, today],
-  );
 
   const situation = {
     hour: new Date().getHours(),
@@ -250,10 +242,10 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           steps={day?.steps ?? 0}
           weightKg={day?.weightKg}
           units={profile.units}
-          stepsAdd={1000}
+          stepsAdd={500}
           onWater={(glasses) => setWater(today, glasses)}
           onSteps={(steps) => setSteps(today, steps)}
-          onOpen={(which) => (which === 'weight' ? setWeighing(true) : setTracking(which))}
+          onOpen={setChecking}
         />
       </section>
 
@@ -296,82 +288,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </div>
       </Sheet>
 
-      <Sheet open={tracking === 'water'} onClose={() => setTracking(null)} title={t('Water')}>
-        <div className="stack">
-          <b className="small">{t('{done}/{target} glasses', { done: day?.water ?? 0, target: targets.water })}</b>
-          <div className="glasses">
-            {Array.from({ length: targets.water }, (_, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`glass ${i < (day?.water ?? 0) ? 'is-full' : ''}`}
-                aria-label={plural(i + 1, { one: '{n} glass of water', other: '{n} glasses of water' })}
-                onClick={() => setWater(today, i + 1 === (day?.water ?? 0) ? i : i + 1)}
-              />
-            ))}
-          </div>
-          <p className="tiny muted">
-            {t('{drunk} of {target} — a glass is {ml} ml', { drunk: waterVolume(day?.water ?? 0), target: waterVolume(targets.water), ml: GLASS_ML })}
-          </p>
-          <button type="button" className="btn btn--block" onClick={() => setTracking(null)}>
-            {t('Done')}
-          </button>
-        </div>
-      </Sheet>
-
-      <Sheet open={tracking === 'steps'} onClose={() => setTracking(null)} title={t('Movement')}>
-        <div className="stack">
-          <b className="small">
-            {(day?.steps ?? 0).toLocaleString()} / {targets.steps.toLocaleString()}
-          </b>
-          <div className="macro-track" style={{ marginTop: 10 }}>
-            <span
-              className="macro-fill"
-              style={{ width: `${Math.min(100, ((day?.steps ?? 0) / targets.steps) * 100)}%`, background: 'var(--mint)' }}
-            />
-          </div>
-          <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
-            {[1000, 2500, 5000].map((add) => (
-              <button
-                key={add}
-                type="button"
-                className="chip"
-                aria-label={t('Add {n} steps', { n: add })}
-                onClick={() => setSteps(today, (day?.steps ?? 0) + add)}
-              >
-                +{add >= 1000 ? `${add / 1000}k` : add}
-              </button>
-            ))}
-            {(day?.steps ?? 0) > 0 && (
-              <button type="button" className="chip" onClick={() => setSteps(today, 0)}>
-                {t('Clear')}
-              </button>
-            )}
-          </div>
-          <button type="button" className="btn btn--block" onClick={() => setTracking(null)}>
-            {t('Done')}
-          </button>
-        </div>
-      </Sheet>
-
-      <Sheet open={weighing} onClose={() => setWeighing(false)} title={t("Today's weight")}>
-        <div className="stack">
-          <WeightField
-            label={t('Weight')}
-            kg={day?.weightKg ?? profile.weightKg}
-            units={profile.units}
-            onChange={(kg) => setWeight(today, kg)}
-          />
-          <p className="tiny muted">
-            {lastWeighIn
-              ? t('Last logged {weight} on {date}.', { weight: formatWeight(lastWeighIn.weightKg, profile.units), date: friendlyDate(lastWeighIn.date) })
-              : t('Weigh yourself at the same time of day — first thing is the steadiest.')}
-          </p>
-          <button type="button" className="btn btn--block" onClick={() => setWeighing(false)}>
-            {t('Done')}
-          </button>
-        </div>
-      </Sheet>
+      <CheckinSheets date={today} open={checking} onClose={() => setChecking(null)} />
     </div>
   );
 }
