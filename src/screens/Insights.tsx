@@ -12,7 +12,7 @@ import type { Route } from '../types';
 import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS } from '../lib/achievements';
 import { unlocksLine } from '../lib/rewards';
 import { daysBetween, isoDate, lastDays, shortDate, weekOf } from '../lib/date';
-import { bestStreak, habitCount, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
+import { bestStreak, habitCount, habitTally, habitsOn, mealsOn, series, streakForgaveADay, streakOf, summarise, totalsOn, weightSeries } from '../lib/selectors';
 import { MACRO_LABEL, OVER, addOptional, ceilingLimit, isCeiling, round1 } from '../lib/nutrition';
 import { formatWeight, formatWeightDelta, saltGrams, saltLabel, saltShown, saltShownFromSalt, saltUnit } from '../lib/units';
 import { currentEnergyUnit, energyValue, fibreWord, formatEnergy } from '../lib/region';
@@ -70,6 +70,8 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
   );
   const week = weekOf(today);
   const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);
+  // Counted across the whole week: moved here from Home, which is now one screen.
+  const tally = habitTally(meals, days, targets, week);
   const streak = streakOf(meals, today);
   const forgave = streakForgaveADay(meals, today);
   const best = bestStreak(meals);
@@ -234,7 +236,31 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
           <ShareIcon size={18} /> {streak >= 2 ? t('Share my streak') : t('Share a card')}
         </button>
         <div className="divider" />
+        <div className="row-between" style={{ marginBottom: 8 }}>
+          <h4 className="small">{t('This week')}</h4>
+          <span className="tiny muted">{t('{n}/7 days logged', { n: loggedThisWeek.filter(Boolean).length })}</span>
+        </div>
         <StreakDots dates={week} done={loggedThisWeek} />
+        <p className="tiny muted habit-caption" style={{ marginTop: 12 }}>{t('Targets hit, out of seven days')}</p>
+        <div className="habit-grid">
+          {(
+            [
+              { key: 'meals', label: t('Meals') },
+              { key: 'protein', label: t('Protein') },
+              { key: 'water', label: t('Water') },
+              { key: 'movement', label: t('Movement') },
+            ] as const
+          ).map(({ key, label }) => (
+            <div
+              key={key}
+              className={`habit ${tally[key] >= 5 ? 'is-on' : ''}`}
+              aria-label={t('{habit} target met on {n} of 7 days', { habit: label, n: tally[key] })}
+            >
+              <span className="tiny">{label}</span>
+              <b>{tally[key]}/7</b>
+            </div>
+          ))}
+        </div>
       </section>
 
       {go && (

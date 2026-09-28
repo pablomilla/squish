@@ -1,8 +1,4 @@
 .home { display: flex; flex-direction: column; gap: var(--s3); }
-/* Sections breathe more than the cards inside them. */
-.home > section + section { margin-top: var(--s2); }
-.home-top { display: flex; align-items: center; justify-content: space-between; }
-.home-top h1 { font-size: var(--text-display); }
 .home-streak {
   display: flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: var(--r-pill);
   background: var(--peach-soft); color: var(--warn); font-weight: 600;
@@ -11,27 +7,26 @@
 
 /* Squish leans into the card's right padding: the artwork has air of its own
    around it, so the words get that space back rather than the gap doing. */
-.home-hero { display: flex; align-items: center; gap: 0; padding: var(--s4) var(--s3); }
+.home-hero { display: flex; align-items: center; gap: 0; padding: var(--s3); }
 .home-hero-text { flex: 1; min-width: 0; }
 .home-hero .squish { margin-right: calc(var(--s3) * -1); flex-shrink: 0; }
-.home-mood { margin-top: var(--s3); font-size: 22px; color: var(--brand-ink); line-height: 1.2; }
 
 .home-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--s2); margin: var(--s2) 0 var(--s5); }
 .home-ring-caption { margin-top: -2px; }
 
-.home-actions { display: flex; flex-direction: column; gap: var(--s2); }
-.home-actions-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
-.home-actions-row > * { min-width: 0; }
+/* All four ways to log in one row: the photo wide and coloured, the rest beside it. */
+.home-actions { display: grid; grid-template-columns: 1.9fr 1fr 1fr 1fr; gap: var(--s2); }
+.home-actions > * { min-width: 0; }
 .action {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  padding: var(--s3) var(--s2); border-radius: var(--r-md); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: var(--s2) var(--s1); border-radius: var(--r-md); background: var(--surface);
   border: 1px solid var(--line); font-size: var(--text-label); font-weight: 500; color: var(--ink);
   transition: transform 0.16s var(--ease);
 }
 .action:active { transform: scale(0.97); }
 /* The photo is the point of the app, so it gets the width and the colour. */
 .action--primary {
-  flex-direction: row; gap: var(--s2); padding: var(--s4); border-radius: var(--r-pill);
+  flex-direction: row; gap: var(--s2); padding: var(--s2) var(--s3); border-radius: var(--r-md);
   background: var(--brand); color: var(--on-brand); border-color: transparent;
   font-size: var(--text-body); font-weight: 600; box-shadow: 0 8px 20px rgba(107, 95, 224, 0.28);
 }
@@ -52,17 +47,6 @@
 .glass.is-full { background: var(--brand-soft-2); border-color: var(--brand); }
 .glass:active { transform: scale(0.9); }
 
-.habit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2); }
-.habit-caption { margin-bottom: var(--s2); }
-.habit {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s2) var(--s1);
-  border-radius: var(--r-md); background: var(--surface-2); color: var(--ink-2);
-}
-.habit.is-on { background: var(--mint-soft); color: var(--good); }
-.habit b { color: var(--ink); font-size: var(--text-body); }
-.habit.is-on b { color: var(--good); }
-
-.home-footer { text-align: center; font-size: 22px; color: var(--ink-3); margin: var(--s3) 0 var(--s2); }
 
 .weigh-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -83,7 +67,7 @@
 /* A Home scene: the place fills the card like `cover`, pinned to the bottom
    right, so a narrower or shorter card loses sky and quiet zone rather than
    scenery. Squish stands on the scene's ground, which sits 72/690 of the
-   picture's height above the bottom edge. The handwritten line sits directly
+   picture's height above the bottom edge. The greeting sits directly
    on the scene, in the ink the designer measured against each quiet zone. */
 .home-hero.home-hero--scene {
   background-color: var(--brand-soft);
@@ -94,22 +78,75 @@
   align-items: stretch;
   /* Taller than the plain card: at its usual height Squish filled it and
      stood in front of nearly everything the scene is for. */
-  min-height: 204px;
+  min-height: 150px;
 }
 :root[data-theme='dark'] .home-hero.home-hero--scene { background-image: var(--scene-dark); }
-.home-hero--scene .home-mood { color: #2b2340; }
-:root[data-theme='dark'] .home-hero--scene .home-mood { color: #b3aaff; }
+.home-hero--scene .home-hello, .home-hero--scene .home-greeting { color: #2b2340; }
+:root[data-theme='dark'] .home-hero--scene .home-hello, :root[data-theme='dark'] .home-hero--scene .home-greeting { color: #b3aaff; }
 .home-hero--scene .home-hero-text { align-self: center; }
 .home-hero--scene .squish { align-self: flex-end; margin-bottom: calc(var(--s4) * -1 + 4px); }
 
 /* The day's detail, folded: sugar, salt, the comparison, the macro split. */
-.home-more { margin-top: 10px; }
+.home-more { margin-top: 6px; }
 .home-more > summary { cursor: pointer; color: var(--brand-ink); font-weight: 600; padding: 4px 0; }
 .home-more[open] > summary { margin-bottom: 8px; }
 .home-planned-head { margin-top: 6px; }
 .home-today-row { display: flex; align-items: center; gap: 14px; }
-.home-today-row .home-ring-wrap { flex: none; margin: 4px 0; }
+.home-today-row .home-ring-wrap { flex: none; margin: 0; gap: 4px; }
 .home-today-bars { flex: 1; min-width: 0; }
 
 /* The privacy notice: its "Read the policy" is a link dressed as a button. */
 .policy-notice a.btn { text-decoration: none; }
+
+/* Today's meals, planned ones and ideas, as one row of the Today card. */
+.home-strip { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.home-strip-meals {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px;
+  border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); text-align: left;
+}
+.home-strip-meals svg { flex: none; color: var(--ink-3); }
+.home-strip-meals .badge { flex: none; }
+.home-strip-thumbs { display: flex; flex: none; }
+.home-strip-thumb { width: 30px; height: 30px; border-radius: 9px; object-fit: cover; border: 2px solid var(--surface); background: var(--surface); display: grid; place-items: center; font-size: 16px; }
+.home-strip-thumb + .home-strip-thumb { margin-left: -10px; }
+.home-strip-words { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-label); font-weight: 500; }
+.home-ideas-chip { flex: none; }
+
+/* Water, steps and weight: three tiles, each a tap from its detail, with a
+   plus for the thing done most often. */
+.home-checkins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.checkin { position: relative; min-width: 0; }
+.checkin-main {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
+  padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); text-align: left;
+}
+.checkin-label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.checkin-main b { white-space: nowrap; }
+.checkin-plus {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--brand-soft); color: var(--brand-ink); font-size: 18px; font-weight: 700; line-height: 1;
+}
+.checkin-plus:active { transform: translateY(-50%) scale(0.92); }
+
+/* The greeting and the streak, inside the hero. */
+.home-hello { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.home-hello h1 { font-size: 26px; line-height: 1.1; }
+.home-greeting { margin: 0 0 2px; color: var(--ink-2); }
+.home-hello .home-streak { flex: none; padding: 5px 10px; gap: 4px; }
+.home-hello .home-streak b { font-size: 16px; }
+.home-hero--scene .home-hero-text { align-self: stretch; }
+.home-more-link { display: block; margin-top: 6px; color: var(--brand-ink); font-weight: 600; text-align: left; }
+
+/* Tighter on Home than elsewhere, so the day fits on one screen. */
+.home-hero .speech { padding: 10px 13px; font-size: var(--text-label); line-height: 1.35; }
+.home-today-bars .macro-bars--compact { gap: 6px; }
+.home-today-bars .macro-bar-head { margin-bottom: 3px; }
+.home-actions .action--primary { flex-direction: column; gap: 4px; font-size: var(--text-label); }
+.home-actions .action { white-space: nowrap; }
+.home { gap: 10px; }
+.home-actions .action { padding-block: 6px; }
+.checkin-main { padding-block: 6px; }
+.home-strip { margin-top: 8px; }
+.home-checkins { margin-top: 8px; }
+.card.nutri-card { padding-block: 12px; }

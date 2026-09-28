@@ -12,20 +12,21 @@
 .nutri-head h3 { margin: 0; color: inherit; }
 .nutri-head p { margin: 2px 0 0; opacity: 0.85; }
 .card.nutri-card .nutri-badge { flex: none; background: rgb(255 255 255 / 0.22); color: #fff; }
-.nutri-questions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.nutri-questions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .nutri-q {
-  text-align: left; padding: 10px 14px; border-radius: 16px 16px 16px 4px;
+  text-align: left; padding: 9px 14px; border-radius: 16px 16px 16px 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   background: rgb(255 255 255 / 0.16); color: inherit; font-weight: 600; font-size: var(--text-label);
   transition: transform 0.12s var(--ease), background 0.12s var(--ease);
 }
 .nutri-q:active { transform: scale(0.98); background: rgb(255 255 255 / 0.24); }
-.nutri-actions { display: flex; gap: 8px; margin-top: 10px; }
+.nutri-actions { display: flex; gap: 8px; margin-top: 8px; }
 .nutri-ask {
-  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; padding: 11px 14px;
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; padding: 10px 14px;
   border-radius: 999px; background: var(--surface); color: var(--ink-3); font-size: var(--text-label); white-space: nowrap; overflow: hidden;
 }
 .nutri-plan {
-  display: flex; align-items: center; gap: 6px; flex: none; padding: 11px 14px; border-radius: 999px;
+  display: flex; align-items: center; gap: 6px; flex: none; padding: 10px 14px; border-radius: 999px;
   background: rgb(255 255 255 / 0.2); color: #fff; font-weight: 700; font-size: var(--text-label); white-space: nowrap;
 }
 .nutri-plan:active, .nutri-ask:active { transform: scale(0.98); }
@@ -42,3 +43,5 @@
 .ask-link-label { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; font-weight: 700; color: var(--brand-ink); text-transform: uppercase; letter-spacing: 0.04em; }
 .ask-link-badge { font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0; padding: 1px 8px; border-radius: 999px; background: var(--surface); color: var(--ink-2); }
 .ask-link-q { font-weight: 600; font-size: var(--text-label); line-height: 1.3; }
+
+.card.nutri-card { padding-block: 14px; }

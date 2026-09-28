@@ -1,23 +1,20 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import TodayPlanning from '../components/TodayPlanning';
-import PlanCard from '../components/PlanCard';
-import ShoppingSheet from '../components/ShoppingSheet';
 import { plansOn } from '../lib/planner';
 import NutritionistCard from '../components/NutritionistCard';
 import type { Route } from '../types';
 import Squish from '../components/Squish';
-import EmptyState from '../components/EmptyState';
-import MealCard from '../components/MealCard';
-import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing, StreakDots } from '../components/charts';
-import { BasketIcon, CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
+import { MealThumb } from '../components/MealCard';
+import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing } from '../components/charts';
+import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
 import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
 import { formatWeight, saltLabel } from '../lib/units';
 import { useSquish } from '../store/useSquish';
 import Comparison from '../components/Comparison';
 import { equivalentFor, progressWords, seedFrom, type GoodNutrient } from '../lib/equivalents';
-import { friendlyDate, greeting, isoDate, partOfDay, timeOfDayWords, weekOf } from '../lib/date';
-import { habitCount, habitsOn, habitTally, mealsOn, moodFor, statusLine, streakOf, totalsOn } from '../lib/selectors';
+import { friendlyDate, greeting, isoDate, partOfDay, timeOfDayWords } from '../lib/date';
+import { habitCount, habitsOn, mealsOn, moodFor, streakOf, totalsOn } from '../lib/selectors';
 import { GLASS_ML, overTargets, pct, remaining, waterVolume } from '../lib/nutrition';
 import { coachNudge } from '../lib/api';
 import { sceneInUse } from '../lib/scenes';
@@ -28,7 +25,7 @@ import PolicyNotice from '../components/PolicyNotice';
 import SquadStrip from '../components/squad/SquadStrip';
 import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
-import { energyValue, formatEnergy, localWords } from '../lib/region';
+import { energyValue, formatEnergy } from '../lib/region';
 import { plural, t } from '../lib/i18n';
 import { aboutOf } from '../lib/eating';
 
@@ -37,7 +34,8 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const { profile, targets, meals, days, setWater, setSteps, setWeight, lastCoachNote, rememberCoachNote, pendingMeal, setPendingMeal } =
     useSquish();
   const [weighing, setWeighing] = useState(false);
-  const [shopping, setShopping] = useState(false);
+  const [tracking, setTracking] = useState<'water' | 'steps' | null>(null);
+  const [detail, setDetail] = useState(false);
   const inbox = useCheerInbox();
   const squad = useSquad();
   const cheered = inbox.length > 0 && squad.kind === 'in';
@@ -53,10 +51,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   const plannedToday = useMemo(() => plansOn(plans, today), [plans, today]);
   const streak = useMemo(() => streakOf(meals, today), [meals, today]);
   const habits = habitsOn(meals, days, targets, today);
-  const week = weekOf(today);
-  // Counted across the whole week, which is what the card is headed — these
-  // used to show today's status inside a card called "This week".
-  const tally = useMemo(() => habitTally(meals, days, targets, week), [meals, days, targets, week]);
   const lastWeighIn = useMemo(
     () =>
       Object.values(days)
@@ -64,7 +58,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         .sort((a, b) => b.date.localeCompare(a.date))[0] as { date: string; weightKg: number } | undefined,
     [days, today],
   );
-  const loggedThisWeek = week.map((d) => mealsOn(meals, d).length > 0);
 
   const situation = {
     hour: new Date().getHours(),
@@ -138,17 +131,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
   return (
     <div className="screen home">
-      <header className="home-top">
-        <div>
-          <p className="tiny muted">{greeting()}</p>
-          <h1>{profile.name ? t('Hi {name}', { name: profile.name }) : t('Hello there')}</h1>
-        </div>
-        <div className="home-streak" title={t('Logging streak')}>
-          <FlameIcon size={18} />
-          <b>{streak}</b>
-          <span className="tiny">{plural(streak, { one: 'day', other: 'days' })}</span>
-        </div>
-      </header>
 
       <section
         className={`home-hero card card--brand${scene ? ' home-hero--scene' : ''}`}
@@ -158,17 +140,27 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             : undefined
         }
       >
+        {/* The greeting and the streak ride in the hero rather than above it, so Home fits on one screen. */}
         <div className="home-hero-text">
+          <div className="home-hello">
+            <div>
+              <p className="tiny home-greeting">{greeting()}</p>
+              <h1>{profile.name ? t('Hi {name}', { name: profile.name }) : t('Hello there')}</h1>
+            </div>
+            <div className="home-streak" title={t('Logging streak')}>
+              <FlameIcon size={16} />
+              <b>{streak}</b>
+              <span className="tiny">{plural(streak, { one: 'day', other: 'days' })}</span>
+            </div>
+          </div>
           <p className="speech speech--right" dir="auto">{nudge ?? fallbackNudge}</p>
-          <p className="script home-mood">{statusLine(situation)}</p>
         </div>
-        <Squish mood={mood} size={132} />
+        <Squish mood={mood} size={88} />
       </section>
 
       {/* A cheer from the squad brings it up here until it has been seen; the
           rest of the time the squad sits lower down, with the other social bits. */}
       {cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
-
 
       {/* Once, to people who were here before the privacy policy last changed. */}
       <PolicyNotice />
@@ -197,11 +189,13 @@ export default function Home({ go }: { go: (route: Route) => void }) {
         </section>
       )}
 
-      <section className="card card--hero home-today">
-        <div className="card-title">
-          <h3>{t('Today')}</h3>
-          <span className="badge">{plural(todaysMeals.length, { one: '{n} meal', other: '{n} meals' })}</span>
-        </div>
+      {/*
+        The whole day in one card, so Home fits on one screen: the numbers,
+        a row for what has been eaten and planned (the diary has them in
+        full), and the day's check-ins, each a tap from its detail.
+      */}
+      {/* Headed by the ring rather than a title: "Today" is what Home is. */}
+      <section className="card card--hero home-today" aria-label={t('Today')}>
 
         {/* Ring and macros side by side, as in the diary, so the whole card and
             the buttons to log with fit on the first screen of a phone. The
@@ -209,33 +203,78 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             pills that used to sit beside the ring said it twice. */}
         <div className="home-today-row">
           <div className="home-ring-wrap">
-            <ProgressRing value={totals.calories} target={targets.calories} size={140} />
+            <ProgressRing value={totals.calories} target={targets.calories} size={120} />
             <p className="tiny muted home-ring-caption">
               {t('{eaten} of {target}', { eaten: energyValue(totals.calories), target: formatEnergy(targets.calories) })}
             </p>
           </div>
           <div className="home-today-bars">
             <MacroBars totals={totals} targets={targets} compact />
+            {totals.calories > 0 && (
+              <button type="button" className="home-more-link tiny" onClick={() => setDetail(true)}>
+                {t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })} ›
+              </button>
+            )}
           </div>
         </div>
         {/* Anything over a limit is said up front; the rest of the detail is a
             tap away, so the ring and the buttons to log with share a screen. */}
         <OverTargetNote over={overTargets(totals, targets)} />
-        {totals.calories > 0 && (
-          <details className="home-more">
-            <summary className="small">{t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })}</summary>
-            {dayComparison && (
-              <Comparison
-                equivalent={dayComparison.equivalent}
-                variant="day"
-                tail={progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}
-              />
-            )}
-            <MinorNutrients totals={totals} targets={targets} />
-            <div className="divider" />
-            <MacroSplitBar totals={totals} />
-          </details>
+
+        {(todaysMeals.length > 0 || plannedToday.length > 0) && (
+          <div className="home-strip">
+            <button type="button" className="home-strip-meals" onClick={() => go({ name: 'meals' })}>
+              {todaysMeals.length > 0 && (
+                <span className="home-strip-thumbs">
+                  {todaysMeals.slice(-3).reverse().map((meal) => (
+                    <MealThumb key={meal.id} meal={meal} className="home-strip-thumb" />
+                  ))}
+                </span>
+              )}
+              <span className="home-strip-words" dir="auto">
+                {todaysMeals.length > 0
+                  ? todaysMeals.slice().reverse().map((meal) => meal.title).join(', ')
+                  : plural(plannedToday.length, { one: '{n} meal planned for today', other: '{n} meals planned for today' })}
+              </span>
+              {todaysMeals.length > 0 && plannedToday.length > 0 && <span className="badge">{t('+{n} planned', { n: plannedToday.length })}</span>}
+              <ChevronIcon size={16} />
+            </button>
+            <TodayPlanning go={go} />
+          </div>
         )}
+
+        <div className="home-checkins">
+          <div className="checkin">
+            <button type="button" className="checkin-main" onClick={() => setTracking('water')}>
+              <span className="tiny muted checkin-label">
+                <DropIcon size={14} /> {t('Water')}
+              </span>
+              <b className="small">{t('{done}/{target}', { done: day?.water ?? 0, target: targets.water })}</b>
+            </button>
+            <button type="button" className="checkin-plus" aria-label={t('Add a glass of water')} onClick={() => setWater(today, (day?.water ?? 0) + 1)}>
+              +
+            </button>
+          </div>
+          <div className="checkin">
+            <button type="button" className="checkin-main" onClick={() => setTracking('steps')}>
+              <span className="tiny muted checkin-label">
+                <ShoeIcon size={14} /> {t('Steps')}
+              </span>
+              <b className="small">{shortSteps(day?.steps ?? 0)}</b>
+            </button>
+            <button type="button" className="checkin-plus" aria-label={t('Add {n} steps', { n: 1000 })} onClick={() => setSteps(today, (day?.steps ?? 0) + 1000)}>
+              +
+            </button>
+          </div>
+          <div className="checkin">
+            <button type="button" className="checkin-main" onClick={() => setWeighing(true)}>
+              <span className="tiny muted checkin-label">
+                <span aria-hidden="true">⚖️</span> {t('Weight')}
+              </span>
+              <b className="small">{day?.weightKg ? formatWeight(day.weightKg, profile.units) : t('Log')}</b>
+            </button>
+          </div>
+        </div>
       </section>
 
       <section className="home-actions">
@@ -243,81 +282,43 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           <CameraIcon size={22} />
           {t('Snap a meal')}
         </button>
-        <div className="home-actions-row">
-          <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'describe' })}>
-            <PenIcon size={20} />
-            {t('Describe')}
-          </button>
-          <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'search' })}>
-            <SearchIcon size={20} />
-            {t('Search')}
-          </button>
-          <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'favourites' })}>
-            <HeartIcon size={20} />
-            {t('Saved')}
-          </button>
-        </div>
+        <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'describe' })}>
+          <PenIcon size={20} />
+          {t('Describe')}
+        </button>
+        <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'search' })}>
+          <SearchIcon size={20} />
+          {t('Search')}
+        </button>
+        <button type="button" className="action" onClick={() => go({ name: 'add', tab: 'favourites' })}>
+          <HeartIcon size={20} />
+          {t('Saved')}
+        </button>
       </section>
 
       <NutritionistCard go={go} />
 
-      {/* What has been eaten today, and what is still planned for later —
-          together, and right under the numbers they add up to. */}
-      <section className="card home-meals">
-        <div className="card-title">
-          <h3>{t("Today's meals")}</h3>
-          <button type="button" className="btn--quiet small" onClick={() => go({ name: 'meals' })}>
-            {t('See all')}
-          </button>
+      <FriendNudge onOpenYou={() => go({ name: 'you', open: 'friends' })} />
+      {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
+
+      <Sheet open={detail} onClose={() => setDetail(false)} title={t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })}>
+        <div className="stack">
+            {dayComparison && (
+            <Comparison
+              equivalent={dayComparison.equivalent}
+              variant="day"
+              tail={progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}
+            />
+          )}
+          <MinorNutrients totals={totals} targets={targets} />
+          <div className="divider" />
+          <MacroSplitBar totals={totals} />
         </div>
-        {todaysMeals.length === 0 && plannedToday.length === 0 ? (
-          <EmptyState
-            mood="calm"
-            action={
-              <button type="button" className="btn btn--soft btn--sm" onClick={() => go({ name: 'capture' })}>
-                {t('Snap your first meal')}
-              </button>
-            }
-          >
-            {localWords(t("Nothing logged yet today — snap a meal and I'll do the maths."))}
-          </EmptyState>
-        ) : (
-          <div className="stack">
-            {todaysMeals.slice().reverse().map((meal) => (
-              <MealCard key={meal.id} meal={meal} onClick={() => go({ name: 'meals' })} />
-            ))}
-            {plannedToday.length > 0 && (
-              <>
-                <div className="row-between home-planned-head">
-                  <span className="tiny muted">{t('Still planned for today')}</span>
-                  <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
-                    <BasketIcon size={15} /> {t('Shopping list')}
-                  </button>
-                </div>
-                {plannedToday.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} showSlot />
-                ))}
-              </>
-            )}
-          </div>
-        )}
-      </section>
-      <TodayPlanning go={go} />
+      </Sheet>
 
-
-
-
-
-      <p className="section-label">{t('Daily check-ins')}</p>
-
-      <section className="home-trackers">
-        <div className="card card--quiet tracker">
-          <div className="row-between">
-            <span className="row tiny muted" style={{ gap: 6 }}>
-              <DropIcon size={16} /> {t('Water')}
-            </span>
-            <b className="small">{t('{done}/{target} glasses', { done: day?.water ?? 0, target: targets.water })}</b>
-          </div>
+      <Sheet open={tracking === 'water'} onClose={() => setTracking(null)} title={t('Water')}>
+        <div className="stack">
+          <b className="small">{t('{done}/{target} glasses', { done: day?.water ?? 0, target: targets.water })}</b>
           <div className="glasses">
             {Array.from({ length: targets.water }, (_, i) => (
               <button
@@ -332,17 +333,17 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           <p className="tiny muted">
             {t('{drunk} of {target} — a glass is {ml} ml', { drunk: waterVolume(day?.water ?? 0), target: waterVolume(targets.water), ml: GLASS_ML })}
           </p>
+          <button type="button" className="btn btn--block" onClick={() => setTracking(null)}>
+            {t('Done')}
+          </button>
         </div>
+      </Sheet>
 
-        <div className="card card--quiet tracker">
-          <div className="row-between">
-            <span className="row tiny muted" style={{ gap: 6 }}>
-              <ShoeIcon size={16} /> {t('Movement')}
-            </span>
-            <b className="small">
-              {(day?.steps ?? 0).toLocaleString()} / {targets.steps.toLocaleString()}
-            </b>
-          </div>
+      <Sheet open={tracking === 'steps'} onClose={() => setTracking(null)} title={t('Movement')}>
+        <div className="stack">
+          <b className="small">
+            {(day?.steps ?? 0).toLocaleString()} / {targets.steps.toLocaleString()}
+          </b>
           <div className="macro-track" style={{ marginTop: 10 }}>
             <span
               className="macro-fill"
@@ -367,56 +368,11 @@ export default function Home({ go }: { go: (route: Route) => void }) {
               </button>
             )}
           </div>
+          <button type="button" className="btn btn--block" onClick={() => setTracking(null)}>
+            {t('Done')}
+          </button>
         </div>
-      </section>
-
-      <button type="button" className="card card--quiet weigh-row" onClick={() => setWeighing(true)}>
-        <span className="row" style={{ gap: 8 }}>
-          <span aria-hidden="true">⚖️</span>
-          <span className="small">{t('Weight')}</span>
-        </span>
-        <span className="row" style={{ gap: 6 }}>
-          <b className="small">{day?.weightKg ? formatWeight(day.weightKg, profile.units) : t('Tap to log')}</b>
-          <ChevronIcon size={16} />
-        </span>
-      </button>
-
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('This week')}</h3>
-          <span className="tiny muted">{t('{n}/7 days logged', { n: loggedThisWeek.filter(Boolean).length })}</span>
-        </div>
-        <StreakDots dates={week} done={loggedThisWeek} />
-        <div className="divider" />
-        <p className="tiny muted habit-caption">{t('Targets hit, out of seven days')}</p>
-        <div className="habit-grid">
-          {(
-            [
-              { key: 'meals', label: t('Meals') },
-              { key: 'protein', label: t('Protein') },
-              { key: 'water', label: t('Water') },
-              { key: 'movement', label: t('Movement') },
-            ] as const
-          ).map(({ key, label }) => (
-            <div
-              key={key}
-              className={`habit ${tally[key] >= 5 ? 'is-on' : ''}`}
-              aria-label={t('{habit} target met on {n} of 7 days', { habit: label, n: tally[key] })}
-            >
-              <span className="tiny">{label}</span>
-              <b>{tally[key]}/7</b>
-            </div>
-          ))}
-        </div>
-      </section>
-
-
-      <FriendNudge onOpenYou={() => go({ name: 'you', open: 'friends' })} />
-      {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
-
-      <p className="script home-footer">{t('Good food. Brighter days. ♡')}</p>
-
-      <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
+      </Sheet>
 
       <Sheet open={weighing} onClose={() => setWeighing(false)} title={t("Today's weight")}>
         <div className="stack">
@@ -436,7 +392,13 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           </button>
         </div>
       </Sheet>
-
     </div>
   );
+}
+
+/** Steps as a tile can hold them: 850, 2.5k, 12k. */
+function shortSteps(steps: number): string {
+  if (steps < 1000) return steps.toLocaleString();
+  const k = steps / 1000;
+  return `${k < 10 ? Math.round(k * 10) / 10 : Math.round(k)}k`;
 }

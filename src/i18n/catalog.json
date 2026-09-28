@@ -1,5 +1,5 @@
 {
- "version": "1bvsnwf0bkbd64",
+ "version": "02mxw8k0yp6xrd",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -522,7 +522,7 @@
    "id": "02vduh700-q8n0",
    "text": "Targets hit, out of seven days",
    "where": [
-    "src/screens/Home.tsx"
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -685,6 +685,13 @@
    "text": "That goal is above your weight now. Did you mean to build up?",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "03ku5h70hvti0o",
+   "text": "Add a glass of water",
+   "where": [
+    "src/screens/Home.tsx"
    ]
   },
   {
@@ -1208,7 +1215,6 @@
    "other": "{n} meals",
    "where": [
     "src/components/diary/SearchSheet.tsx",
-    "src/screens/Home.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -1251,7 +1257,7 @@
    "id": "06v1hvv-j4dvb9",
    "text": "Meals",
    "where": [
-    "src/screens/Home.tsx"
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -2018,6 +2024,13 @@
    ]
   },
   {
+   "id": "0byynno0aqyurn",
+   "text": "+{n} planned",
+   "where": [
+    "src/screens/Home.tsx"
+   ]
+  },
+  {
    "id": "0byz8hk050o39e",
    "text": "Weeks the whole squad made it: {n}",
    "where": [
@@ -2705,13 +2718,6 @@
    "text": "(you)",
    "where": [
     "src/components/squad/SquadSheet.tsx"
-   ]
-  },
-  {
-   "id": "0fwtwb5-gyxhqc",
-   "text": "Nothing logged yet today — snap a meal and I'll do the maths.",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -3473,7 +3479,6 @@
    "id": "0kby39h-uq0ijq",
    "text": "Reads your diary before it answers",
    "where": [
-    "src/components/NutritionistCard.tsx",
     "src/screens/Ask.tsx"
    ]
   },
@@ -3511,13 +3516,6 @@
    "text": "Plan dinner",
    "where": [
     "src/screens/Diary.tsx"
-   ]
-  },
-  {
-   "id": "0kfz49c-68r8vk",
-   "text": "Today's meals",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -4931,13 +4929,6 @@
    ]
   },
   {
-   "id": "0rliql10hvnjv2",
-   "text": "Good food. Brighter days. ♡",
-   "where": [
-    "src/screens/Home.tsx"
-   ]
-  },
-  {
    "id": "0rov14q0fw5eht",
    "text": "Friends",
    "where": [
@@ -5158,17 +5149,18 @@
    ]
   },
   {
+   "id": "0spiyq8-3q34gl",
+   "one": "{n} meal planned for today",
+   "other": "{n} meals planned for today",
+   "where": [
+    "src/screens/Home.tsx"
+   ]
+  },
+  {
    "id": "0sqxo9d0vomwo9",
    "text": "Your progress",
    "where": [
     "src/screens/Insights.tsx"
-   ]
-  },
-  {
-   "id": "0stc9up-2cv9x3",
-   "text": "Still planned for today",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -5359,13 +5351,6 @@
    "text": "Gold",
    "where": [
     "src/lib/looks.ts"
-   ]
-  },
-  {
-   "id": "0u5385d0pqj8zm",
-   "text": "Snap your first meal",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -5632,6 +5617,13 @@
    "text": "Another partner already has that email address — each one signs in to one page.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "0ve9xiv-9mciy1",
+   "text": "{n} ideas",
+   "where": [
+    "src/components/TodayPlanning.tsx"
    ]
   },
   {
@@ -6248,13 +6240,6 @@
    "text": "Blossom garden",
    "where": [
     "src/lib/scenes.ts"
-   ]
-  },
-  {
-   "id": "0zfd5kt-npouik",
-   "text": "Tap to log",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -7962,7 +7947,8 @@
    "id": "18wtqlt0cx1v4s",
    "text": "Log",
    "where": [
-    "src/screens/Diary.tsx"
+    "src/screens/Diary.tsx",
+    "src/screens/Home.tsx"
    ]
   },
   {
@@ -8071,13 +8057,6 @@
    "text": "Leave the squad? You can join again with the code, if there is room.",
    "where": [
     "src/components/squad/SquadSheet.tsx"
-   ]
-  },
-  {
-   "id": "19mqy9f-3in2yg",
-   "text": "See all",
-   "where": [
-    "src/screens/Home.tsx"
    ]
   },
   {
@@ -8794,8 +8773,7 @@
    "id": "1e3my9j-9vvreh",
    "text": "Daily check-ins",
    "where": [
-    "src/screens/Diary.tsx",
-    "src/screens/Home.tsx"
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -8840,8 +8818,7 @@
     "src/components/MealPlanPanel.tsx",
     "src/components/ShoppingSheet.tsx",
     "src/lib/shopping.ts",
-    "src/screens/Diary.tsx",
-    "src/screens/Home.tsx"
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -9213,6 +9190,13 @@
    "where": [
     "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1gjy6s50592j7l",
+   "text": "{done}/{target}",
+   "where": [
+    "src/screens/Home.tsx"
    ]
   },
   {
@@ -10068,7 +10052,6 @@
     "src/lib/nutrition.ts",
     "src/lib/planExplained.ts",
     "src/screens/AddFood.tsx",
-    "src/screens/Home.tsx",
     "src/screens/Insights.tsx",
     "src/screens/You.tsx"
    ]
@@ -10515,6 +10498,7 @@
    "text": "Steps",
    "where": [
     "src/screens/Diary.tsx",
+    "src/screens/Home.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -10620,6 +10604,7 @@
     "src/lib/shareDecor.ts",
     "src/screens/Diary.tsx",
     "src/screens/Home.tsx",
+    "src/screens/Insights.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -10726,7 +10711,7 @@
    "id": "1nvt7jn0xtaw8f",
    "text": "This week",
    "where": [
-    "src/screens/Home.tsx"
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -11016,7 +11001,7 @@
    "id": "1q1pypk-ndlhpw",
    "text": "{habit} target met on {n} of 7 days",
    "where": [
-    "src/screens/Home.tsx"
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -11179,7 +11164,8 @@
    "id": "1qufeyg-kbo5dt",
    "text": "Movement",
    "where": [
-    "src/screens/Home.tsx"
+    "src/screens/Home.tsx",
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -11322,7 +11308,7 @@
    "id": "1rva85u-mnbg59",
    "text": "{n}/7 days logged",
    "where": [
-    "src/screens/Home.tsx"
+    "src/screens/Insights.tsx"
    ]
   },
   {

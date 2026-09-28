@@ -29,15 +29,14 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
   const today = isoDate();
   // Whether the nutritionist has a plan on the go, so the button can open it rather than offer a new one.
   const planned = plans.some((p) => p.note === NUTRITIONIST_PLAN_NOTE && p.date >= today && p.date <= addDays(today, 7));
-  const questions = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 3), [meals, targets, today]);
+  const questions = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 1), [meals, targets, today]);
 
   return (
     <section className="card nutri-card" aria-labelledby="nutri-title">
       <div className="nutri-head">
-        <Squish mood="thinking" size={58} bob={false} label="" />
+        <Squish mood="thinking" size={36} bob={false} label="" />
         <div className="nutri-head-text">
           <h3 id="nutri-title">{t('Your nutritionist')}</h3>
-          <p className="tiny">{t('Reads your diary before it answers')}</p>
         </div>
         {access.label && <span className="badge nutri-badge">{access.label}</span>}
       </div>

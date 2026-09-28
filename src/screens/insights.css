@@ -31,3 +31,15 @@
 .badge-group-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--s2); }
 .badge-group-head h4 { margin: 0; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
 .achievement-reward { color: var(--brand-ink); font-weight: 600; margin-top: 2px; }
+
+/* This week: moved from Home. */
+.habit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2); }
+.habit-caption { margin-bottom: var(--s2); }
+.habit {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s2) var(--s1);
+  border-radius: var(--r-md); background: var(--surface-2); color: var(--ink-2);
+}
+.habit.is-on { background: var(--mint-soft); color: var(--good); }
+.habit b { color: var(--ink); font-size: var(--text-body); }
+.habit.is-on b { color: var(--good); }
+

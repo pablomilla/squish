@@ -15,13 +15,7 @@ export function MealCard({ meal, onClick }: { meal: MealEntry; onClick?: () => v
   const Wrapper = onClick ? 'button' : 'div';
   return (
     <Wrapper type={onClick ? 'button' : undefined} className="meal-card" onClick={onClick}>
-      {meal.photo ? (
-        <img className="thumb" src={meal.photo} alt="" />
-      ) : (
-        <span className="thumb thumb--emoji" aria-hidden="true">
-          {meal.items[0]?.emoji ?? SLOT_EMOJI[meal.slot]}
-        </span>
-      )}
+      <MealThumb meal={meal} />
       <span className="meal-card-body">
         <span className="meal-card-title">
           {/* The ellipsis needs a non-flex box to happen in. */}
@@ -43,3 +37,14 @@ export function MealCard({ meal, onClick }: { meal: MealEntry; onClick?: () => v
 }
 
 export default MealCard;
+
+/** The meal's photo, or the emoji of its first food, or of its slot. */
+export function MealThumb({ meal, className = 'thumb' }: { meal: MealEntry; className?: string }) {
+  return meal.photo ? (
+    <img className={className} src={meal.photo} alt="" />
+  ) : (
+    <span className={`${className} thumb--emoji`} aria-hidden="true">
+      {meal.items[0]?.emoji ?? SLOT_EMOJI[meal.slot]}
+    </span>
+  );
+}
