@@ -156,7 +156,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <div className="row diary-summary-row">
             {/* Food quality under the ring, where there is room, rather than a row of its own above the bars. */}
             <div className="diary-ring">
-              <ProgressRing value={totals.calories} target={targets.calories} size={104} />
+              <ProgressRing value={totals.calories} target={targets.calories} size={120} />
               <div className="diary-verdict">
                 <span className="tiny muted">{t('Food quality')}</span>
                 {score > 0 ? (
