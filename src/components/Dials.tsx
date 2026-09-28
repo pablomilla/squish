@@ -27,7 +27,9 @@ import {
   poundsToKg,
   type Units,
 } from '../lib/units';
-import { t } from '../lib/i18n';
+import { t, uiLocale } from '../lib/i18n';
+import { ageOn, birthDateOf, daysIn } from '../lib/birthday';
+import { currentRegion } from '../lib/region';
 import './dials.css';
 
 interface Option {
@@ -50,7 +52,20 @@ function nearest(options: Option[], value: number): number {
  * A value that falls between two rows (a weight typed elsewhere as 72.4 kg)
  * shows the nearest, and is not changed until the wheel is moved.
  */
-export function Wheel({ label, options, value, onChange }: { label: string; options: Option[]; value: number; onChange: (value: number) => void }) {
+export function Wheel({
+  label,
+  options,
+  value,
+  onChange,
+  quiet = false,
+}: {
+  label: string;
+  options: Option[];
+  value: number;
+  onChange: (value: number) => void;
+  /** Label for screen readers only, where the column speaks for itself (a month, a year). */
+  quiet?: boolean;
+}) {
   const box = useRef<HTMLDivElement | null>(null);
   const selected = nearest(options, value);
   const [centre, setCentre] = useState(selected);
@@ -78,7 +93,7 @@ export function Wheel({ label, options, value, onChange }: { label: string; opti
 
   return (
     <div className="dial">
-      <span className="dial-label" id={id}>
+      <span className={quiet ? 'visually-hidden' : 'dial-label'} id={id}>
         {label}
       </span>
       <div className="wheel">
@@ -290,6 +305,52 @@ export function GoalWeightRuler({ kg, fromKg, units, goal, onChange }: { kg: num
         describe={(value) => formatWeight(toKg(value), units)}
         onChange={(value) => onChange(toKg(value))}
       />
+    </div>
+  );
+}
+
+/**
+ * A date of birth on three wheels, in the order people there write a date:
+ * month first in the US, day first everywhere else Squish is. Month names in
+ * the app's language. Years run to this one, so somebody too young to use
+ * Squish can say so truthfully and be told why, rather than have to lie.
+ */
+export function BirthdayWheel({ birthDate, onChange }: { birthDate: string; onChange: (birthDate: string) => void }) {
+  const [year, month, day] = birthDate.split('-').map(Number);
+  const thisYear = new Date().getFullYear();
+  const months = useMemo<Option[]>(() => {
+    const name = new Intl.DateTimeFormat(uiLocale(), { month: 'long', timeZone: 'UTC' });
+    return Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: name.format(new Date(Date.UTC(2000, i, 1))) }));
+  }, []);
+  const dayCount = daysIn(year, month);
+  const days = useMemo<Option[]>(() => Array.from({ length: dayCount }, (_, i) => ({ value: i + 1, label: String(i + 1) })), [dayCount]);
+  const years = useMemo<Option[]>(
+    () => Array.from({ length: 101 }, (_, i) => ({ value: thisYear - 100 + i, label: String(thisYear - 100 + i) })),
+    [thisYear],
+  );
+
+  // Each wheel changes its own part of the latest date, not of the one it was
+  // drawn with: two turned at once must not undo each other.
+  const latest = useRef(birthDate);
+  useEffect(() => {
+    latest.current = birthDate;
+  }, [birthDate]);
+  const change = (part: { y?: number; m?: number; d?: number }) => {
+    const [y, m, d] = latest.current.split('-').map(Number);
+    latest.current = birthDateOf(part.y ?? y, part.m ?? m, part.d ?? d);
+    onChange(latest.current);
+  };
+
+  const dayWheel = <Wheel key="d" quiet label={t('Day')} options={days} value={day} onChange={(d) => change({ d })} />;
+  const monthWheel = <Wheel key="m" quiet label={t('Month')} options={months} value={month} onChange={(m) => change({ m })} />;
+  const yearWheel = <Wheel key="y" quiet label={t('Year')} options={years} value={year} onChange={(y) => change({ y })} />;
+
+  return (
+    <div className="dial-birthday">
+      <div className="dial-trio">{currentRegion().id === 'US' ? [monthWheel, dayWheel, yearWheel] : [dayWheel, monthWheel, yearWheel]}</div>
+      <p className="tiny muted center" aria-live="polite">
+        {t('{n} years old', { n: ageOn(birthDate) })}
+      </p>
     </div>
   );
 }

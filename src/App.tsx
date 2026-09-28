@@ -84,6 +84,17 @@ function Shell() {
   useAppliedLook(look, useAppliedTheme(theme) === 'dark');
   const { awake, keepsData } = useServer();
 
+  // A birthday since the app was last opened: the age, and the suggested
+  // targets with it, move on. Looked at on opening and on coming back to it.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') useSquish.getState().refreshAge();
+    };
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
+  }, []);
+
   const [route, setRoute] = useState<Route>({ name: 'home' });
 
   useEffect(() => startBackup(keepsData), [keepsData]);

@@ -21,6 +21,7 @@ import type { ShareDecor } from '../lib/shareDecor';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow, type PartOfDay } from '../lib/date';
 import type { Extra } from '../lib/shopping';
+import { ageOn, isBirthDate } from '../lib/birthday';
 
 /**
  * Squish is for adults. It sets calorie targets and gives diet feedback, and
@@ -116,6 +117,8 @@ interface SquishState {
   completeOnboarding: (profile: Partial<Profile>) => void;
   setTargets: (patch: Partial<Targets>) => void;
   recalcTargets: () => void;
+  /** A birthday since last time: the age goes up, and the targets with it unless they set their own. */
+  refreshAge: () => void;
   /** Accept what the logs say about their metabolism, and redo the plan on it. */
   applyBurnFactor: (factor: number) => void;
 
@@ -311,6 +314,17 @@ export const useSquish = create<SquishState>()(
 
       setTargets: (patch) => set({ targets: { ...get().targets, ...patch } }),
       recalcTargets: () => set({ targets: computeTargets(get().profile) }),
+
+      refreshAge: () => {
+        const { profile, targets } = get();
+        if (!isBirthDate(profile.birthDate)) return;
+        const age = ageOn(profile.birthDate);
+        if (age === profile.age) return;
+        const next = { ...profile, age };
+        // Targets they set themselves are theirs; suggested ones follow the age.
+        const suggested = computeTargets(profile).calories === targets.calories;
+        set({ profile: next, targets: suggested ? computeTargets(next) : targets });
+      },
 
       applyBurnFactor: (factor) => {
         const profile = { ...get().profile, burnFactor: factor };

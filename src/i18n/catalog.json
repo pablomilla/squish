@@ -1,5 +1,5 @@
 {
- "version": "07peta5-7avhay",
+ "version": "1e76tmq-kliru1",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -1064,6 +1064,7 @@
    "id": "05xgri4-idpy3b",
    "text": "Year",
    "where": [
+    "src/components/Dials.tsx",
     "src/components/diary/CalendarSheet.tsx"
    ]
   },
@@ -1851,6 +1852,13 @@
    "text": "You can close this page and carry on in Squish.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "0avg0qs02ou9q0",
+   "text": "{n} years old",
+   "where": [
+    "src/components/Dials.tsx"
    ]
   },
   {
@@ -3452,6 +3460,7 @@
    "id": "0kcgjh9-r3scpz",
    "text": "Day",
    "where": [
+    "src/components/Dials.tsx",
     "src/components/charts.tsx"
    ]
   },
@@ -3781,7 +3790,6 @@
    "text": "yrs",
    "where": [
     "src/components/TooYoung.tsx",
-    "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -5031,6 +5039,13 @@
   {
    "id": "0sgzb8p-93sk42",
    "text": "Working out what your body burns",
+   "where": [
+    "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0shc28p-mh3z20",
+   "text": "When were you born?",
    "where": [
     "src/screens/Onboarding.tsx"
    ]
@@ -6965,7 +6980,6 @@
    "id": "13mcq4c-8p475r",
    "text": "Age",
    "where": [
-    "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -8165,6 +8179,13 @@
    "text": "Library",
    "where": [
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "1aqporp0wdfp49",
+   "text": "Month",
+   "where": [
+    "src/components/Dials.tsx"
    ]
   },
   {
@@ -10835,6 +10856,13 @@
    "text": "Reading your diary {from} to {to}",
    "where": [
     "src/lib/nutritionist-tools.ts"
+   ]
+  },
+  {
+   "id": "1pd5b5e0st6ya5",
+   "text": "Your age changes what your body burns, so I keep it up to date for you.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {

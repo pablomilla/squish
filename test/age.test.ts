@@ -13,12 +13,17 @@ test('the minimum age is 18', () => {
 });
 
 test('every age field uses it, and says so rather than quietly rounding up', () => {
-  for (const file of ['src/screens/Onboarding.tsx', 'src/screens/You.tsx']) {
-    const source = read(file);
-    assert.ok(!/label="Age"[^>]*min=\{1[0-7]\}/s.test(source), `${file} still lets a child in`);
-    assert.match(source, /min=\{MIN_AGE\}/, `${file} does not use MIN_AGE`);
-    assert.match(source, /onBelowMin=/, `${file} rounds a child's age up to 18 without a word`);
-  }
+  const source = read('src/screens/You.tsx');
+  assert.ok(!/label="Age"[^>]*min=\{1[0-7]\}/s.test(source), 'You still lets a child in');
+  assert.match(source, /min=\{MIN_AGE\}/, 'You does not use MIN_AGE');
+  assert.match(source, /onBelowMin=/, "You rounds a child's age up to 18 without a word");
+});
+
+test('onboarding asks for a birthday, and a child’s stops at the reason rather than going on', () => {
+  const source = read('src/screens/Onboarding.tsx');
+  assert.match(source, /step === 'born' && draft\.age < MIN_AGE\) \{\s*setTooYoung\(true\)/);
+  // Years run to this one, so the truth can be told rather than a year made up.
+  assert.match(read('src/components/Dials.tsx'), /length: 101 \}, \(_, i\) => \(\{ value: thisYear - 100 \+ i/);
 });
 
 test('a diary already set up for somebody under 18 is stopped too', () => {

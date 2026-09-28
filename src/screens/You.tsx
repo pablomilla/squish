@@ -689,7 +689,8 @@ export default function You({ go }: { go: (route: Route) => void }) {
             suffix={t('yrs')}
             min={MIN_AGE}
             max={100}
-            onChange={(age) => setProfile({ age })}
+            // Typed here, the age stands as typed: no birthday moves it on any more.
+            onChange={(age) => setProfile({ age, birthDate: undefined })}
             onBelowMin={() => toast(t('Squish is for people aged {age} and over, so your age has not been changed.', { age: MIN_AGE }), '🫧')}
           />
           <div className="field">

@@ -16,8 +16,9 @@ import { explainPlan } from '../lib/planExplained';
 import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
-import { LanguageField, NumberField, RegionField } from '../components/fields';
-import { GoalWeightRuler, HeightWheel, WeightWheel } from '../components/Dials';
+import { LanguageField, RegionField } from '../components/fields';
+import { BirthdayWheel, GoalWeightRuler, HeightWheel, WeightWheel } from '../components/Dials';
+import { ageOn, startingBirthDate } from '../lib/birthday';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
@@ -42,7 +43,7 @@ import { legalHref } from '../lib/legal';
  * nutritionist and the meal plans suggest, or how the dashboard learns which
  * ways in bring people who stay. Nothing is asked for its own sake.
  */
-const ALL_STEPS = ['welcome', 'name', 'about', 'goal', 'target', 'activity', 'eating', 'aims', 'heard', 'building', 'plan', 'account'] as const;
+const ALL_STEPS = ['welcome', 'name', 'about', 'born', 'goal', 'target', 'activity', 'eating', 'aims', 'heard', 'building', 'plan', 'account'] as const;
 type Step = (typeof ALL_STEPS)[number];
 
 const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string; mood: Mood; say: string }> = {
@@ -107,7 +108,11 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
     const region = browserRegion();
     // A language already picked on the first screen (which reloads the app to switch) is kept.
     const language = useSquish.getState().profile.language ?? browserLanguage();
-    return retuneForUnits({ ...DEFAULT_PROFILE, region, language, diet: 'any', avoid: [], aims: [], obstacles: [] }, REGIONS[region].units);
+    const birthDate = startingBirthDate(DEFAULT_PROFILE.age);
+    return retuneForUnits(
+      { ...DEFAULT_PROFILE, region, language, birthDate, age: ageOn(birthDate), diet: 'any', avoid: [], aims: [], obstacles: [] },
+      REGIONS[region].units,
+    );
   });
   // Changes to the suggested targets, made on the plan itself.
   const [tweak, setTweak] = useState<Partial<Targets>>({});
@@ -174,7 +179,14 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
     setDir(way);
     setStep(to);
   };
-  const next = () => go(STEPS[Math.min(STEPS.length - 1, index + 1)], 'fwd');
+  const next = () => {
+    // Under 18 stops here, with the reason, as the typed age used to.
+    if (step === 'born' && draft.age < MIN_AGE) {
+      setTooYoung(true);
+      return;
+    }
+    go(STEPS[Math.min(STEPS.length - 1, index + 1)], 'fwd');
+  };
   const back = () => {
     // The building moment is on the way in only.
     let to = Math.max(0, index - 1);
@@ -395,19 +407,22 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                 />
               </div>
 
-              <NumberField
-                label={t('Age')}
-                value={draft.age}
-                suffix={t('yrs')}
-                min={MIN_AGE}
-                max={100}
-                onChange={(age) => set({ age })}
-                onBelowMin={() => setTooYoung(true)}
-              />
               <div className="dial-pair">
                 <HeightWheel cm={draft.heightCm} units={draft.units} onChange={(heightCm) => set({ heightCm })} />
                 <WeightWheel label={t('Weight')} kg={draft.weightKg} units={draft.units} onChange={(weightKg) => set({ weightKg })} />
               </div>
+            </div>
+          )}
+
+          {step === 'born' && (
+            <div className="stack">
+              <Buddy mood="calm" say={t('Your age changes what your body burns, so I keep it up to date for you.')}>
+                <h1>{t('When were you born?')}</h1>
+              </Buddy>
+              <BirthdayWheel
+                birthDate={draft.birthDate ?? startingBirthDate(draft.age)}
+                onChange={(birthDate) => set({ birthDate, age: ageOn(birthDate) })}
+              />
             </div>
           )}
 

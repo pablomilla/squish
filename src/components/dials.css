@@ -49,3 +49,7 @@
   background-repeat: repeat-x; background-position: left bottom, left bottom; background-size: 100% 62%, 100% 36%;
 }
 .ruler-shade { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--brand) 18%, transparent); }
+
+/* A date of birth: three wheels, the month the widest. */
+.dial-trio { display: grid; grid-template-columns: 0.8fr 1.4fr 1fr; gap: 8px; }
+.dial-birthday .tiny { margin: 6px 0 0; }

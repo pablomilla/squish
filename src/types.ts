@@ -148,7 +148,14 @@ export type Activity = 'sedentary' | 'light' | 'moderate' | 'active' | 'athlete'
 export interface Profile {
   name: string;
   sex: Sex;
+  /** Whole years; kept in step with `birthDate` where there is one (store/useSquish.ts). */
   age: number;
+  /**
+   * Their date of birth, yyyy-mm-dd, from onboarding's wheel. Absent on a
+   * profile from before it was asked, or once they have typed an age
+   * themselves on the You screen, which then stands as typed.
+   */
+  birthDate?: string;
   heightCm: number;
   weightKg: number;
   targetWeightKg: number;

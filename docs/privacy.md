@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 27 September 2026**
+**Last updated: 28 September 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -36,7 +36,7 @@ an account or a backup.
 
 | What | Examples |
 |---|---|
-| Your profile | The name you typed, if any; sex, age, height, weight, target weight, activity level, goal, and units; and, if you answered when setting up, how you eat (a diet, allergies, foods you never eat), what you want from Squish and what you find gets in the way |
+| Your profile | The name you typed, if any; sex, date of birth (or the age you typed instead), height, weight, target weight, activity level, goal, and units; and, if you answered when setting up, how you eat (a diet, allergies, foods you never eat), what you want from Squish and what you find gets in the way |
 | Your meals | Titles, foods, portions, nutrition figures, and your notes — including meals you have planned for later, and your shopping list |
 | Your photos | **The meal photographs themselves, which stay here.** Only a thumbnail of each — a few kilobytes — is part of the backup below |
 | Your days | Water, weight entries, and the day's totals |
