@@ -1,7 +1,7 @@
 .diary { display: flex; flex-direction: column; gap: var(--s3); }
 .date-strip { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 6px; scroll-snap-type: x proximity; }
 .date-pill {
-  flex: none; width: 48px; padding: 9px 0 8px; border-radius: var(--r-md);
+  flex: none; width: 44px; padding: 5px 0 4px; border-radius: var(--r-md);
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); scroll-snap-align: end;
 }
@@ -12,7 +12,7 @@
 .date-dot.is-on { background: var(--mint); }
 .date-pill.is-on .date-dot.is-on { background: #fff; }
 
-.diary-summary { padding: var(--s5) var(--s4); border-radius: var(--r-xl); }
+.diary-summary { padding: var(--s3) var(--s4); border-radius: var(--r-xl); }
 .slot-empty { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
 /* An empty slot is a prompt, not a section — keep it to one compact row. */
 .card--quiet .card-title { margin-bottom: var(--s2); }
@@ -21,11 +21,14 @@
 .diary-tracker--field .field > label { display: none; }
 .diary-tracker:last-child { border-bottom: none; }
 
-/* "42 Over on fat" is a good deal longer than "42 Balanced" was, and beside a
-   132px ring there is no room for it. Let it drop to its own line rather than
-   breaking mid-phrase. */
-.diary-summary .diary-verdict { flex-wrap: wrap; gap: 3px 8px; }
-.diary-verdict .badge { white-space: nowrap; margin-left: auto; }
+/* The ring with food quality under it, and the macros beside. */
+.diary-summary-row { gap: 14px; align-items: center; }
+.diary-ring { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.diary-verdict { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.diary-verdict .badge { white-space: nowrap; }
+.diary-bars { min-width: 0; }
+.diary-bars .macro-bars--compact { gap: 6px; }
+.diary-bars .macro-bar-head { margin-bottom: 3px; }
 
 /* Getting around a long diary: the date in the header opens a month
    calendar; the search button finds a meal by name. */
@@ -89,3 +92,25 @@
 .diary-plans { margin-bottom: 8px; }
 .diary-ahead-links { flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; }
 .diary-ahead-links .btn--quiet { padding-left: 0; }
+
+/* The day's meals: one card, a slot per heading, a row per meal. */
+.diary-meals { padding: 6px var(--s4); }
+.diary-slot { padding: 4px 0; }
+.diary-slot + .diary-slot { border-top: 1px solid var(--line); }
+.diary-slot-head { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.diary-slot-name { flex: 1; min-width: 0; margin: 0; font-size: var(--text-body); }
+.icon-btn--sm { width: 30px; height: 30px; flex: none; }
+.diary-meal {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 3px 0; text-align: left; color: var(--ink); background: none;
+}
+.diary-meal-thumb { flex: none; width: 32px; height: 32px; border-radius: 10px; object-fit: cover; display: grid; place-items: center; font-size: 18px; background: var(--surface-2); }
+.diary-meal-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.diary-meal-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--text-label); }
+.diary-meal-score { flex: none; min-width: 32px; padding: 4px 6px; border-radius: 10px; text-align: center; font-weight: 700; font-size: 13px; background: var(--brand-soft); color: var(--brand-ink); }
+.diary-slot .diary-plans { margin: 4px 0; }
+
+.diary-head { align-items: center; margin-bottom: 4px; }
+.diary-title { margin: 0; min-width: 0; }
+.diary-title .diary-date { font-size: 22px; font-weight: 700; color: var(--ink); gap: 8px; }
+.diary-title .diary-date svg { color: var(--brand-ink); }
+.diary { gap: 10px; }

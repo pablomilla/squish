@@ -1,0 +1,18 @@
+/* The day's check-ins as three tiles, on Home and in the diary (components/CheckinTiles.tsx). */
+
+/* Water, steps and weight: three tiles, each a tap from its detail, with a
+   plus for the thing done most often. */
+.checkins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.checkin { position: relative; min-width: 0; }
+.checkin-main {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
+  padding: 6px 10px; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); text-align: left;
+}
+.checkin-label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.checkin-main b { white-space: nowrap; }
+.checkin-plus {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--brand-soft); color: var(--brand-ink); font-size: 18px; font-weight: 700; line-height: 1;
+}
+.checkin-plus:active { transform: translateY(-50%) scale(0.92); }

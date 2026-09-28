@@ -300,3 +300,6 @@ a { color: var(--brand-ink); }
 [dir='rtl'] .input--select { padding-right: 14px; padding-left: 38px; background-position: 15px 50%, 20px 50%; }
 [dir='rtl'] .speech::after { left: auto; right: 26px; }
 [dir='rtl'] .speech--right::after { right: auto; left: -9px; transform: rotate(135deg); }
+
+/* "Sugar, salt and more ›": the day's detail, a tap away (Home and the diary). */
+.more-link { display: block; margin-top: 6px; color: var(--brand-ink); font-weight: 600; text-align: left; }

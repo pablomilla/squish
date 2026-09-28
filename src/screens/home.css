@@ -112,22 +112,6 @@
 .home-strip-words { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-label); font-weight: 500; }
 .home-ideas-chip { flex: none; }
 
-/* Water, steps and weight: three tiles, each a tap from its detail, with a
-   plus for the thing done most often. */
-.home-checkins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-.checkin { position: relative; min-width: 0; }
-.checkin-main {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
-  padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); text-align: left;
-}
-.checkin-label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-.checkin-main b { white-space: nowrap; }
-.checkin-plus {
-  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
-  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--brand-soft); color: var(--brand-ink); font-size: 18px; font-weight: 700; line-height: 1;
-}
-.checkin-plus:active { transform: translateY(-50%) scale(0.92); }
 
 /* The greeting and the streak, inside the hero. */
 .home-hello { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
@@ -136,7 +120,6 @@
 .home-hello .home-streak { flex: none; padding: 5px 10px; gap: 4px; }
 .home-hello .home-streak b { font-size: 16px; }
 .home-hero--scene .home-hero-text { align-self: stretch; }
-.home-more-link { display: block; margin-top: 6px; color: var(--brand-ink); font-weight: 600; text-align: left; }
 
 /* Tighter on Home than elsewhere, so the day fits on one screen. */
 .home-hero .speech { padding: 10px 13px; font-size: var(--text-label); line-height: 1.35; }
@@ -146,7 +129,5 @@
 .home-actions .action { white-space: nowrap; }
 .home { gap: 10px; }
 .home-actions .action { padding-block: 6px; }
-.checkin-main { padding-block: 6px; }
 .home-strip { margin-top: 8px; }
-.home-checkins { margin-top: 8px; }
 .card.nutri-card { padding-block: 12px; }

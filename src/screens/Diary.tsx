@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Route } from '../types';
 import type { MealEntry, MealSlot } from '../types';
-import MealCard from '../components/MealCard';
-import Squish from '../components/Squish';
+import { MealThumb } from '../components/MealCard';
+import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
 import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, Stepper, useToast } from '../components/ui';
-import { BasketIcon, CalendarIcon, CameraIcon, ChevronIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
+import { BasketIcon, CalendarIcon, CameraIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
 import DayScoreSheet from '../components/diary/DayScoreSheet';
@@ -13,7 +13,7 @@ import MealQuality from '../components/MealQuality';
 import { explainDay } from '../lib/dayExplained';
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
-import { PLAN_DAYS_AHEAD, planDays, plansOn } from '../lib/planner';
+import { planDays, plansOn } from '../lib/planner';
 import PlanCard from '../components/PlanCard';
 import ShoppingSheet from '../components/ShoppingSheet';
 import WeekPlanSheet from '../components/WeekPlanSheet';
@@ -23,18 +23,18 @@ import { loadPhoto } from '../lib/photos';
 import { GLASS_ML, dayVerdict } from '../lib/nutrition';
 import { WeightField } from '../components/fields';
 import './diary.css';
-import { describePortion } from '../lib/units';
+import { describePortion, saltLabel } from '../lib/units';
 import { formatEnergy } from '../lib/region';
 import { t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
 import { slotWord } from '../lib/words';
 
 /** Each slot's words, whole, so a language never has to lower-case a heading to fit it mid-sentence. */
-const SLOTS: { key: MealSlot; label: string; plan: string; addTo: string; emoji: string }[] = [
-  { key: 'breakfast', label: t('Breakfast'), plan: t('Plan breakfast'), addTo: t('Add to breakfast'), emoji: '🌅' },
-  { key: 'lunch', label: t('Lunch'), plan: t('Plan lunch'), addTo: t('Add to lunch'), emoji: '🥗' },
-  { key: 'dinner', label: t('Dinner'), plan: t('Plan dinner'), addTo: t('Add to dinner'), emoji: '🍲' },
-  { key: 'snack', label: t('Snacks'), plan: t('Plan a snack'), addTo: t('Add to snacks'), emoji: '🍎' },
+const SLOTS: { key: MealSlot; label: string; plan: string; addTo: string; snap: string; emoji: string }[] = [
+  { key: 'breakfast', label: t('Breakfast'), plan: t('Plan breakfast'), addTo: t('Add to breakfast'), snap: t('Snap breakfast'), emoji: '🌅' },
+  { key: 'lunch', label: t('Lunch'), plan: t('Plan lunch'), addTo: t('Add to lunch'), snap: t('Snap lunch'), emoji: '🥗' },
+  { key: 'dinner', label: t('Dinner'), plan: t('Plan dinner'), addTo: t('Add to dinner'), snap: t('Snap dinner'), emoji: '🍲' },
+  { key: 'snack', label: t('Snacks'), plan: t('Plan a snack'), addTo: t('Add to snacks'), snap: t('Snap a snack'), emoji: '🍎' },
 ];
 
 export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; onEditMeal: (meal: MealEntry) => void }) {
@@ -56,7 +56,6 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   // The last fortnight, and the week ahead for planning.
   const strip = useMemo(() => [...lastDays(14, isoDate()), ...planDays(isoDate()).slice(1)], []);
   const ahead = date > isoDate();
-  const lastPlanDay = addDays(isoDate(), PLAN_DAYS_AHEAD);
   const dayPlans = useMemo(() => plansOn(plans, date), [plans, date]);
   const dayMeals = useMemo(() => mealsOn(meals, date), [meals, date]);
   const totals = useMemo(() => totalsOn(meals, date), [meals, date]);
@@ -65,18 +64,20 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
   const verdict = dayVerdict(score, totals, targets);
   const explained = useMemo(() => explainDay(meals, date, targets, isoDate()), [meals, date, targets]);
   const [explaining, setExplaining] = useState(false);
+  const [detail, setDetail] = useState(false);
+  const [checking, setChecking] = useState<Checkin | null>(null);
 
   return (
     <div className="screen diary">
-      <header className="screen-head">
-        <div>
-          <h1>{t('Your diary')}</h1>
-          {/* The date is the way to any other day: the strip below is only the last fortnight. */}
+      {/* One line: the day is the heading, and the way to any other day — the strip below is only the last fortnight. */}
+      <header className="screen-head diary-head">
+        <h1 className="diary-title">
+          <span className="visually-hidden">{t('Your diary')}: </span>
           <button type="button" className="diary-date" onClick={() => setPicking(true)} aria-label={t('{date} — choose another day', { date: friendlyDate(date) })}>
-            <CalendarIcon size={16} /> {friendlyDate(date)}
+            <CalendarIcon size={18} /> {friendlyDate(date)}
             {date.slice(0, 4) !== isoDate().slice(0, 4) && ` ${date.slice(0, 4)}`}
           </button>
-        </div>
+        </h1>
         <div className="diary-head-actions">
           <button type="button" className="icon-btn" onClick={() => setSearching(true)} aria-label={t('Search your meals')}>
             <SearchIcon size={18} />
@@ -152,11 +153,12 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         </section>
       ) : (
         <section className="card diary-summary">
-          <div className="row" style={{ gap: 16 }}>
-            <ProgressRing value={totals.calories} target={targets.calories} size={132} />
-            <div className="grow stack">
-              <div className="row-between diary-verdict">
-                <span className="small muted">{t('Food quality')}</span>
+          <div className="row diary-summary-row">
+            {/* Food quality under the ring, where there is room, rather than a row of its own above the bars. */}
+            <div className="diary-ring">
+              <ProgressRing value={totals.calories} target={targets.calories} size={104} />
+              <div className="diary-verdict">
+                <span className="tiny muted">{t('Food quality')}</span>
                 {score > 0 ? (
                   // Tappable: what the score is and what moved it. Today, until
                   // there is enough logged, it says so rather than judging.
@@ -170,13 +172,29 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                   <span className="badge">{t('Nothing logged')}</span>
                 )}
               </div>
+            </div>
+            <div className="grow diary-bars">
               <MacroBars totals={totals} targets={targets} compact />
+              {/* Sugar, salt and the vitamins, a tap away, so the day fits on one screen. */}
+              {totals.calories > 0 && (
+                <button type="button" className="more-link tiny" onClick={() => setDetail(true)}>
+                  {t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })} ›
+                </button>
+              )}
             </div>
           </div>
-          {/* Sugar and salt were on the home screen and the review sheet but never
-              here, which is the screen people actually go back through. */}
-          <MinorNutrients totals={totals} targets={targets} />
           <OverTargetNote over={verdict.over} />
+          <CheckinTiles
+            water={day?.water ?? 0}
+            waterTarget={targets.water}
+            steps={day?.steps ?? 0}
+            weightKg={day?.weightKg}
+            units={profile.units}
+            stepsAdd={500}
+            onWater={(glasses) => setWater(date, glasses)}
+            onSteps={(steps) => setSteps(date, steps)}
+            onOpen={setChecking}
+          />
         </section>
       )}
 
@@ -188,107 +206,97 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         onAsk={(question) => go({ name: 'ask', question })}
       />
 
-      {!ahead && <Micronutrients totals={totals} targets={targets} />}
 
-      {SLOTS.map(({ key, label, plan, addTo, emoji }) => {
-        const list = dayMeals.filter((m) => m.slot === key);
-        const planned = dayPlans.filter((p) => p.slot === key);
-        const kcal = Math.round(list.reduce((sum, m) => sum + m.nutrients.calories, 0));
-        const addRoute: Route = { name: 'add', slot: key, date, tab: 'search' };
-        return (
-          <section className={`card ${list.length || planned.length ? '' : 'card--quiet'}`} key={key}>
-            <div className="card-title">
-              <h3>
-                <span aria-hidden="true">{emoji}</span> {label}
-              </h3>
-              <span className="tiny muted">{ahead ? (planned.length ? t('planned') : '') : formatEnergy(kcal)}</span>
-            </div>
-            {planned.length > 0 && (
-              <div className="stack diary-plans">
-                {planned.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} />
-                ))}
-              </div>
-            )}
-            {ahead ? (
-              <button type="button" className="btn--quiet small row" onClick={() => go(addRoute)}>
-                <PlusIcon size={15} /> {plan}
-              </button>
-            ) : list.length === 0 ? (
-              <div className="slot-empty">
-                <p className="tiny muted">{t('Nothing yet')}</p>
-                <div className="row" style={{ gap: 8 }}>
-                  <button type="button" className="chip" onClick={() => go({ name: 'capture', slot: key, date })}>
-                    <CameraIcon size={15} /> {t('Snap')}
+      {/* All four slots in one card, a row per meal, so the day fits on one screen. */}
+      <section className="card diary-meals">
+        {SLOTS.map(({ key, label, plan, addTo, snap, emoji }) => {
+          const list = dayMeals.filter((m) => m.slot === key);
+          const planned = dayPlans.filter((p) => p.slot === key);
+          const kcal = Math.round(list.reduce((sum, m) => sum + m.nutrients.calories, 0));
+          return (
+            <div className="diary-slot" key={key}>
+              <div className="diary-slot-head">
+                <h3 className="diary-slot-name">
+                  <span aria-hidden="true">{emoji}</span> {label}
+                </h3>
+                <span className="tiny muted">{ahead ? (planned.length ? t('planned') : '') : list.length ? formatEnergy(kcal) : t('Nothing yet')}</span>
+                {!ahead && (
+                  <button type="button" className="icon-btn icon-btn--sm" aria-label={snap} onClick={() => go({ name: 'capture', slot: key, date })}>
+                    <CameraIcon size={15} />
                   </button>
-                  <button type="button" className="chip" onClick={() => go({ name: 'add', slot: key, date, tab: 'search' })}>
-                    <PlusIcon size={15} /> {t('Add')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="stack">
-                {list.map((meal) => (
-                  <MealCard key={meal.id} meal={meal} onClick={() => setSelected(meal)} />
-                ))}
-                <button type="button" className="btn--quiet small row" onClick={() => go({ name: 'add', slot: key, date, tab: 'search' })}>
-                  <PlusIcon size={15} /> {addTo}
+                )}
+                <button type="button" className="icon-btn icon-btn--sm" aria-label={ahead ? plan : addTo} onClick={() => go({ name: 'add', slot: key, date, tab: 'search' })}>
+                  <PlusIcon size={15} />
                 </button>
               </div>
-            )}
-          </section>
-        );
-      })}
+              {planned.length > 0 && (
+                <div className="stack diary-plans">
+                  {planned.map((p) => (
+                    <PlanCard key={p.id} plan={p} />
+                  ))}
+                </div>
+              )}
+              {list.map((meal) => (
+                <button type="button" className="diary-meal" key={meal.id} onClick={() => setSelected(meal)}>
+                  <MealThumb meal={meal} className="diary-meal-thumb" />
+                  <span className="diary-meal-text">
+                    <span className="diary-meal-title" dir="auto">{meal.title}</span>
+                    <span className="tiny muted">
+                      {meal.time} · {formatEnergy(meal.nutrients.calories)}
+                    </span>
+                  </span>
+                  <span className="diary-meal-score">{meal.score}</span>
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </section>
 
-      {!ahead && (
-        <section className="card">
-          <div className="card-title">
-            <h3>{t('Daily check-ins')}</h3>
-          </div>
-          <div className="row-between diary-tracker">
+      <Sheet open={detail} onClose={() => setDetail(false)} title={t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })}>
+        <div className="stack">
+          <MinorNutrients totals={totals} targets={targets} />
+          <Micronutrients totals={totals} targets={targets} />
+        </div>
+      </Sheet>
+
+      <Sheet open={checking === 'water'} onClose={() => setChecking(null)} title={t('Water')}>
+        <div className="stack">
+          <div className="row-between">
             <span className="small">
               💧 {t('Water')}
               <span className="tiny muted"> · {GLASS_ML} ml</span>
             </span>
             <Stepper value={day?.water ?? 0} min={0} max={20} onChange={(v) => setWater(date, v)} suffix={t('glasses')} />
           </div>
-          <div className="row-between diary-tracker">
+          <button type="button" className="btn btn--block" onClick={() => setChecking(null)}>
+            {t('Done')}
+          </button>
+        </div>
+      </Sheet>
+
+      <Sheet open={checking === 'steps'} onClose={() => setChecking(null)} title={t('Steps')}>
+        <div className="stack">
+          <div className="row-between">
             <span className="small">👟 {t('Steps')}</span>
             <Stepper value={day?.steps ?? 0} step={500} min={0} max={50000} onChange={(v) => setSteps(date, v)} />
           </div>
-          <div className="diary-tracker diary-tracker--field">
-            <span className="small">⚖️ {t('Weight')}</span>
-            {/* The shared field, so stones stay stones — the diary used to be the
-                one place that insisted on plain pounds. */}
-            <WeightField
-              label={t('Weight')}
-              kg={day?.weightKg ?? profile.weightKg}
-              units={profile.units}
-              onChange={(kg) => setWeight(date, kg)}
-            />
-          </div>
-        </section>
-      )}
-
-      {dayMeals.length === 0 && !ahead && (
-        <div className="empty">
-          <Squish mood={date === isoDate() ? 'calm' : 'sleepy'} size={104} />
-          <p style={{ marginTop: 8 }}>
-            {date === isoDate() ? t("Today's a blank page — let's fill it in.") : t('Nothing was logged on this day.')}
-          </p>
-        </div>
-      )}
-
-      <div className="row-between" style={{ marginTop: 4 }}>
-        <button type="button" className="btn--quiet small" onClick={() => setDate(addDays(date, -1))}>
-          ← {friendlyDate(addDays(date, -1))}
-        </button>
-        {date < lastPlanDay && (
-          <button type="button" className="btn--quiet small row" onClick={() => setDate(addDays(date, 1))}>
-            {friendlyDate(addDays(date, 1))} <ChevronIcon size={16} />
+          <button type="button" className="btn btn--block" onClick={() => setChecking(null)}>
+            {t('Done')}
           </button>
-        )}
-      </div>
+        </div>
+      </Sheet>
+
+      <Sheet open={checking === 'weight'} onClose={() => setChecking(null)} title={t('Weight')}>
+        <div className="stack">
+          {/* The shared field, so stones stay stones — the diary used to be the
+              one place that insisted on plain pounds. */}
+          <WeightField label={t('Weight')} kg={day?.weightKg ?? profile.weightKg} units={profile.units} onChange={(kg) => setWeight(date, kg)} />
+          <button type="button" className="btn btn--block" onClick={() => setChecking(null)}>
+            {t('Done')}
+          </button>
+        </div>
+      </Sheet>
 
       <Sheet open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.title}>
         {selected && (

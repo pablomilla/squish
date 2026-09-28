@@ -5,8 +5,9 @@ import NutritionistCard from '../components/NutritionistCard';
 import type { Route } from '../types';
 import Squish from '../components/Squish';
 import { MealThumb } from '../components/MealCard';
+import CheckinTiles from '../components/CheckinTiles';
 import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing } from '../components/charts';
-import { CameraIcon, ChevronIcon, DropIcon, HeartIcon, PenIcon, SearchIcon, ShoeIcon, FlameIcon } from '../components/icons';
+import { CameraIcon, ChevronIcon, HeartIcon, PenIcon, SearchIcon, FlameIcon } from '../components/icons';
 import { WeightField } from '../components/fields';
 import { Sheet } from '../components/ui';
 import { formatWeight, saltLabel } from '../lib/units';
@@ -211,7 +212,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           <div className="home-today-bars">
             <MacroBars totals={totals} targets={targets} compact />
             {totals.calories > 0 && (
-              <button type="button" className="home-more-link tiny" onClick={() => setDetail(true)}>
+              <button type="button" className="more-link tiny" onClick={() => setDetail(true)}>
                 {t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })} ›
               </button>
             )}
@@ -243,38 +244,17 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           </div>
         )}
 
-        <div className="home-checkins">
-          <div className="checkin">
-            <button type="button" className="checkin-main" onClick={() => setTracking('water')}>
-              <span className="tiny muted checkin-label">
-                <DropIcon size={14} /> {t('Water')}
-              </span>
-              <b className="small">{t('{done}/{target}', { done: day?.water ?? 0, target: targets.water })}</b>
-            </button>
-            <button type="button" className="checkin-plus" aria-label={t('Add a glass of water')} onClick={() => setWater(today, (day?.water ?? 0) + 1)}>
-              +
-            </button>
-          </div>
-          <div className="checkin">
-            <button type="button" className="checkin-main" onClick={() => setTracking('steps')}>
-              <span className="tiny muted checkin-label">
-                <ShoeIcon size={14} /> {t('Steps')}
-              </span>
-              <b className="small">{shortSteps(day?.steps ?? 0)}</b>
-            </button>
-            <button type="button" className="checkin-plus" aria-label={t('Add {n} steps', { n: 1000 })} onClick={() => setSteps(today, (day?.steps ?? 0) + 1000)}>
-              +
-            </button>
-          </div>
-          <div className="checkin">
-            <button type="button" className="checkin-main" onClick={() => setWeighing(true)}>
-              <span className="tiny muted checkin-label">
-                <span aria-hidden="true">⚖️</span> {t('Weight')}
-              </span>
-              <b className="small">{day?.weightKg ? formatWeight(day.weightKg, profile.units) : t('Log')}</b>
-            </button>
-          </div>
-        </div>
+        <CheckinTiles
+          water={day?.water ?? 0}
+          waterTarget={targets.water}
+          steps={day?.steps ?? 0}
+          weightKg={day?.weightKg}
+          units={profile.units}
+          stepsAdd={1000}
+          onWater={(glasses) => setWater(today, glasses)}
+          onSteps={(steps) => setSteps(today, steps)}
+          onOpen={(which) => (which === 'weight' ? setWeighing(true) : setTracking(which))}
+        />
       </section>
 
       <section className="home-actions">
@@ -394,11 +374,4 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       </Sheet>
     </div>
   );
-}
-
-/** Steps as a tile can hold them: 850, 2.5k, 12k. */
-function shortSteps(steps: number): string {
-  if (steps < 1000) return steps.toLocaleString();
-  const k = steps / 1000;
-  return `${k < 10 ? Math.round(k * 10) / 10 : Math.round(k)}k`;
 }

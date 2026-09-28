@@ -14,3 +14,10 @@ export function slotName(slot: MealSlot): string {
 export function slotWord(slot: MealSlot): string {
   return { breakfast: t('breakfast'), lunch: t('lunch'), dinner: t('dinner'), snack: t('snack') }[slot] ?? slot;
 }
+
+/** Steps as a small tile can hold them: 850, 2.5k, 12k. */
+export function shortSteps(steps: number): string {
+  if (steps < 1000) return steps.toLocaleString();
+  const k = steps / 1000;
+  return `${k < 10 ? Math.round(k * 10) / 10 : Math.round(k)}k`;
+}

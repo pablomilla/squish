@@ -1,5 +1,5 @@
 {
- "version": "02mxw8k0yp6xrd",
+ "version": "1ort9la0q81fcg",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -691,7 +691,7 @@
    "id": "03ku5h70hvti0o",
    "text": "Add a glass of water",
    "where": [
-    "src/screens/Home.tsx"
+    "src/components/CheckinTiles.tsx"
    ]
   },
   {
@@ -733,6 +733,7 @@
    "id": "03oekdz-t1fury",
    "text": "Add {n} steps",
    "where": [
+    "src/components/CheckinTiles.tsx",
     "src/screens/Home.tsx"
    ]
   },
@@ -939,13 +940,6 @@
    "text": "Your Squish account uses <strong>{email}</strong> again, and every device has been signed out.",
    "where": [
     "server/index.ts"
-   ]
-  },
-  {
-   "id": "051uhdq0z8bvix",
-   "text": "Today's a blank page — let's fill it in.",
-   "where": [
-    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -1388,13 +1382,6 @@
    ]
   },
   {
-   "id": "07o0on1-l3xmuu",
-   "text": "Snap",
-   "where": [
-    "src/screens/Diary.tsx"
-   ]
-  },
-  {
    "id": "07pbw270mdbjmz",
    "text": "Trying things",
    "where": [
@@ -1786,6 +1773,13 @@
    "text": "Valentine’s",
    "where": [
     "src/lib/outfit.ts"
+   ]
+  },
+  {
+   "id": "09tzjdh-mwgi0z",
+   "text": "Snap lunch",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -3363,13 +3357,6 @@
    ]
   },
   {
-   "id": "0jkk6sk-iqboxy",
-   "text": "Nothing was logged on this day.",
-   "where": [
-    "src/screens/Diary.tsx"
-   ]
-  },
-  {
    "id": "0jpharo0rzzkyf",
    "text": "This week, everybody aims to log on {goal} days — {done} of {total} there so far.",
    "where": [
@@ -3781,6 +3768,13 @@
    "text": "Mushrooms, fried",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0llxi000mjg3e9",
+   "text": "Snap breakfast",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -5956,6 +5950,13 @@
    ]
   },
   {
+   "id": "0x5uunw-5evxnz",
+   "text": "Snap a snack",
+   "where": [
+    "src/screens/Diary.tsx"
+   ]
+  },
+  {
    "id": "0x6sovf006boh6",
    "text": "<terms>Terms of use</terms> · <privacy>Privacy policy</privacy>",
    "where": [
@@ -6992,6 +6993,7 @@
    "id": "13cn9g1-se3vlu",
    "text": "Done",
    "where": [
+    "src/screens/Diary.tsx",
     "src/screens/Home.tsx",
     "src/screens/You.tsx"
    ]
@@ -7469,6 +7471,7 @@
    "id": "16i5exl-nn19zt",
    "text": "Weight",
    "where": [
+    "src/components/CheckinTiles.tsx",
     "src/screens/Diary.tsx",
     "src/screens/Home.tsx",
     "src/screens/Insights.tsx",
@@ -7749,7 +7752,6 @@
    "text": "Add",
    "where": [
     "src/components/ShoppingSheet.tsx",
-    "src/screens/Diary.tsx",
     "src/screens/Review.tsx"
    ]
   },
@@ -7947,8 +7949,8 @@
    "id": "18wtqlt0cx1v4s",
    "text": "Log",
    "where": [
-    "src/screens/Diary.tsx",
-    "src/screens/Home.tsx"
+    "src/components/CheckinTiles.tsx",
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -8770,13 +8772,6 @@
    ]
   },
   {
-   "id": "1e3my9j-9vvreh",
-   "text": "Daily check-ins",
-   "where": [
-    "src/screens/Diary.tsx"
-   ]
-  },
-  {
    "id": "1e4adeq-l6o8mb",
    "text": "cm across",
    "where": [
@@ -9196,7 +9191,7 @@
    "id": "1gjy6s50592j7l",
    "text": "{done}/{target}",
    "where": [
-    "src/screens/Home.tsx"
+    "src/components/CheckinTiles.tsx"
    ]
   },
   {
@@ -9791,6 +9786,7 @@
    "id": "1j5p43t0s5d6vh",
    "text": "Sugar, {salt} and more",
    "where": [
+    "src/screens/Diary.tsx",
     "src/screens/Home.tsx"
    ]
   },
@@ -10266,6 +10262,13 @@
    ]
   },
   {
+   "id": "1lo9vyj-54hibf",
+   "text": "Snap dinner",
+   "where": [
+    "src/screens/Diary.tsx"
+   ]
+  },
+  {
    "id": "1lqbkc7-7g2j2d",
    "text": "Finding the label…",
    "where": [
@@ -10497,8 +10500,8 @@
    "id": "1mxszis0yrw9bv",
    "text": "Steps",
    "where": [
+    "src/components/CheckinTiles.tsx",
     "src/screens/Diary.tsx",
-    "src/screens/Home.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -10601,6 +10604,7 @@
    "id": "1nfo14g0e74euo",
    "text": "Water",
    "where": [
+    "src/components/CheckinTiles.tsx",
     "src/lib/shareDecor.ts",
     "src/screens/Diary.tsx",
     "src/screens/Home.tsx",
