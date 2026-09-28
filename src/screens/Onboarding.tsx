@@ -16,7 +16,8 @@ import { explainPlan } from '../lib/planExplained';
 import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
 import { MacroBars } from '../components/charts';
-import { HeightField, LanguageField, NumberField, RegionField, WeightField } from '../components/fields';
+import { LanguageField, NumberField, RegionField } from '../components/fields';
+import { GoalWeightRuler, HeightWheel, WeightWheel } from '../components/Dials';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
@@ -403,8 +404,10 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                 onChange={(age) => set({ age })}
                 onBelowMin={() => setTooYoung(true)}
               />
-              <HeightField cm={draft.heightCm} units={draft.units} onChange={(heightCm) => set({ heightCm })} />
-              <WeightField label={t('Weight')} kg={draft.weightKg} units={draft.units} onChange={(weightKg) => set({ weightKg })} />
+              <div className="dial-pair">
+                <HeightWheel cm={draft.heightCm} units={draft.units} onChange={(heightCm) => set({ heightCm })} />
+                <WeightWheel label={t('Weight')} kg={draft.weightKg} units={draft.units} onChange={(weightKg) => set({ weightKg })} />
+              </div>
             </div>
           )}
 
@@ -434,10 +437,11 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
 
               {draft.goal !== 'maintain' && (
                 <>
-                  <WeightField
-                    label={t('Goal weight')}
+                  <GoalWeightRuler
                     kg={draft.targetWeightKg}
+                    fromKg={draft.weightKg}
                     units={draft.units}
+                    goal={draft.goal === 'gain' ? 'gain' : 'lose'}
                     onChange={(targetWeightKg) => set({ targetWeightKg })}
                   />
                   <div className="field">

@@ -1,0 +1,51 @@
+/* Scrolling dials for onboarding (components/Dials.tsx). */
+
+.dial-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dial { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; }
+.dial-label { text-align: center; font-weight: 600; font-size: var(--text-label); color: var(--ink); }
+
+/* Five rows show; the middle one is chosen, on a soft band. */
+.wheel { position: relative; height: 220px; }
+.wheel::before {
+  content: ''; position: absolute; inset: 88px 0 auto; height: 44px;
+  border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); pointer-events: none;
+}
+.wheel-scroll {
+  position: relative; height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  scroll-snap-type: y mandatory; padding-block: 88px; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  border-radius: var(--r-md);
+}
+.wheel-scroll::-webkit-scrollbar { display: none; }
+.wheel-scroll:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wheel-row {
+  height: 44px; display: grid; place-items: center; scroll-snap-align: center;
+  font-size: 16px; color: var(--ink-3); font-variant-numeric: tabular-nums;
+  cursor: pointer; user-select: none; transition: color 0.15s ease, font-size 0.15s ease;
+}
+.wheel-row.is-near { color: var(--ink-2); font-size: 17px; }
+.wheel-row.is-on { color: var(--ink); font-size: 19px; font-weight: 600; }
+
+/* The goal weight: what it is, big, over a ruler that slides beneath a fixed mark. */
+.goal-ruler { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 4px; }
+.goal-ruler-what { margin: 0; }
+.goal-ruler-value { margin: 0 0 10px; font-size: 34px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ruler { position: relative; width: 100%; }
+.ruler::after {
+  content: ''; position: absolute; left: 50%; bottom: 0; width: 3px; height: 72px;
+  margin-left: -1.5px; border-radius: 2px; background: var(--ink); pointer-events: none;
+}
+.ruler-scroll {
+  overflow-x: auto; overscroll-behavior: contain; scrollbar-width: none; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+}
+.ruler-scroll::-webkit-scrollbar { display: none; }
+.ruler-scroll:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ruler-marks {
+  position: relative; height: 84px; margin-inline: 50%;
+  background-repeat: repeat-x; background-position: left bottom, left bottom; background-size: 100% 62%, 100% 36%;
+}
+.ruler-shade { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--brand) 18%, transparent); }

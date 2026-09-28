@@ -1,5 +1,5 @@
 {
- "version": "0mchduk04s60bs",
+ "version": "07peta5-7avhay",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -1390,6 +1390,7 @@
    "id": "07puwki-racel8",
    "text": "Height",
    "where": [
+    "src/components/Dials.tsx",
     "src/components/fields.tsx",
     "src/screens/You.tsx"
    ]
@@ -4248,6 +4249,7 @@
    "id": "0o9lv6w05iddv0",
    "text": "Lose weight",
    "where": [
+    "src/components/Dials.tsx",
     "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
    ]
@@ -6655,7 +6657,7 @@
    "id": "126t97u0wlli0a",
    "text": "Goal weight",
    "where": [
-    "src/screens/Onboarding.tsx",
+    "src/components/Dials.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -7178,6 +7180,13 @@
    "text": "Drinks",
    "where": [
     "src/lib/shopping.ts"
+   ]
+  },
+  {
+   "id": "15htw5e0bkhthk",
+   "text": "Gain weight",
+   "where": [
+    "src/components/Dials.tsx"
    ]
   },
   {
