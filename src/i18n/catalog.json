@@ -1,5 +1,5 @@
 {
- "version": "1hde2jf-x1zcog",
+ "version": "14q9t9s0hpx88c",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -347,6 +347,13 @@
    ]
   },
   {
+   "id": "021mopg0qhh3u8",
+   "text": "Next week",
+   "where": [
+    "src/screens/Insights.tsx"
+   ]
+  },
+  {
    "id": "024qqsh0v2gpgc",
    "text": "You're in the squad!",
    "where": [
@@ -617,6 +624,13 @@
    ]
   },
   {
+   "id": "0375be308dmuue",
+   "text": "Last week",
+   "where": [
+    "src/lib/period.ts"
+   ]
+  },
+  {
    "id": "038ds4m-haajl1",
    "text": "Keep my data",
    "where": [
@@ -733,7 +747,8 @@
    "id": "03prhrq0h73ywe",
    "text": "Previous month",
    "where": [
-    "src/components/diary/CalendarSheet.tsx"
+    "src/components/diary/CalendarSheet.tsx",
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -3662,6 +3677,13 @@
    ]
   },
   {
+   "id": "0ky86dw-8kr3yc",
+   "text": "Previous week",
+   "where": [
+    "src/screens/Insights.tsx"
+   ]
+  },
+  {
    "id": "0kz9otq0q2961l",
    "text": "1 slice",
    "where": [
@@ -5616,7 +5638,8 @@
    "id": "0vde0ae0wi9pp5",
    "text": "Next month",
    "where": [
-    "src/components/diary/CalendarSheet.tsx"
+    "src/components/diary/CalendarSheet.tsx",
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -9244,6 +9267,13 @@
    ]
   },
   {
+   "id": "1gukh0v0hfd8fu",
+   "text": "Last month",
+   "where": [
+    "src/lib/period.ts"
+   ]
+  },
+  {
    "id": "1guxk6e0c01dc7",
    "text": "Egg",
    "where": [
@@ -10699,6 +10729,7 @@
    "id": "1nvt7jn0xtaw8f",
    "text": "This week",
    "where": [
+    "src/lib/period.ts",
     "src/screens/Insights.tsx"
    ]
   },
@@ -11163,6 +11194,13 @@
    ]
   },
   {
+   "id": "1quvzxz08ib8bi",
+   "text": "This month",
+   "where": [
+    "src/lib/period.ts"
+   ]
+  },
+  {
    "id": "1qv0cs3014tl88",
    "text": "Set a time for at least one meal first.",
    "where": [
@@ -11289,6 +11327,13 @@
    "text": "{n}/7 days logged",
    "where": [
     "src/screens/Insights.tsx"
+   ]
+  },
+  {
+   "id": "1rvfjsv-kwigoc",
+   "text": "{from} – {to}",
+   "where": [
+    "src/lib/period.ts"
    ]
   },
   {

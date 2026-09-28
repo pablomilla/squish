@@ -303,3 +303,8 @@ a { color: var(--brand-ink); }
 
 /* "Sugar, salt and more ›": the day's detail, a tap away (Home and the diary). */
 .more-link { display: block; margin-top: 6px; color: var(--brand-ink); font-weight: 600; text-align: left; }
+
+/* A round icon button: the diary's header and slots, Insights' arrows. */
+.icon-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--surface-sunk); color: var(--ink); border: 0; }
+.icon-btn:disabled { opacity: 0.35; }
+.icon-btn--sm { width: 36px; height: 36px; flex: none; }

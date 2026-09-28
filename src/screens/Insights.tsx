@@ -6,7 +6,7 @@ import { MenuRow } from '../components/MenuList';
 import ShareSheet from '../components/ShareSheet';
 import { shareStory } from '../lib/shareStory';
 import type { ShareCardData } from '../lib/share';
-import { FlameIcon, ShareIcon } from '../components/icons';
+import { ShareIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import type { Route } from '../types';
 import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS } from '../lib/achievements';
@@ -18,6 +18,7 @@ import { formatWeight, formatWeightDelta, saltGrams, saltLabel, saltShown, saltS
 import { currentEnergyUnit, energyValue, fibreWord, formatEnergy } from '../lib/region';
 import type { MacroKey } from '../types';
 import { progressBars, type Range } from '../lib/progressBars';
+import { earliestOffset, periodDays, periodLabel, type PeriodGrain } from '../lib/period';
 import './insights.css';
 import { plural, t, uiLanguage } from '../lib/i18n';
 
@@ -53,18 +54,26 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
   const [metric, setMetric] = useState<Metric>('calories');
   const today = isoDate();
 
-  const dates = useMemo(() => {
-    if (range === '7') return lastDays(7, today);
-    if (range === '30') return lastDays(30, today);
+  // Weekly and Monthly are calendar weeks (Monday to Sunday) and months, stepped
+  // back with the arrows; All time is everything from the first meal.
+  const [offset, setOffset] = useState(0);
+  const grain: PeriodGrain = range === '30' ? 'month' : 'week';
+  const firstMeal = useMemo(() => meals.map((m) => m.date).sort()[0], [meals]);
+  const earliest = range === 'all' ? 0 : earliestOffset(grain, firstMeal, today);
+  const period = useMemo(() => {
+    if (range !== 'all') return periodDays(grain, offset, today);
     // All of it, from the first meal ever logged — not a quiet four months.
-    const first = meals.map((m) => m.date).sort()[0];
-    const span = first ? Math.max(7, daysBetween(first, today) + 1) : 7;
+    const span = firstMeal ? Math.max(7, daysBetween(firstMeal, today) + 1) : 7;
     return lastDays(span, today);
-  }, [range, meals, today]);
+  }, [range, grain, offset, firstMeal, today]);
+  // The chart shows the whole week or month; the figures count only the days
+  // so far, so a Thursday is not marked down for a Sunday yet to come.
+  const dates = useMemo(() => period.filter((d) => d <= today), [period, today]);
 
   const points = useMemo(() => series(meals, dates, targets), [meals, dates, targets]);
   const summary = useMemo(() => summarise(points, targets), [points, targets]);
-  const chart = useMemo(() => progressBars(points, range), [points, range]);
+  const chartPoints = useMemo(() => series(meals, period, targets), [meals, period, targets]);
+  const chart = useMemo(() => progressBars(chartPoints, range), [chartPoints, range]);
   const shownBars = useMemo(
     () => (metric === 'calories' || metric === 'salt' ? chart.bars.map((bar) => ({ ...bar, [metric]: shown(metric, bar[metric]) })) : chart.bars),
     [chart.bars, metric],
@@ -195,16 +204,15 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
           <h1>{t('Your progress')}</h1>
           <p>{t('{logged} of {days} days logged', { logged: summary.loggedDays, days: summary.days })}</p>
         </div>
-        <div className="home-streak">
-          <FlameIcon size={18} />
-          <b>{streak}</b>
-        </div>
       </header>
 
       <Segmented<Range>
         label={t('Range')}
         value={range}
-        onChange={setRange}
+        onChange={(next) => {
+          setRange(next);
+          setOffset(0);
+        }}
         options={[
           { value: '7', label: t('Weekly') },
           { value: '30', label: t('Monthly') },
@@ -217,13 +225,26 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
 
       <section className="card">
         <div className="card-title">
-          <h3>
-            {chart.grain === 'day'
-              ? t('Daily {metric}', { metric: inSentence(metricLabel(metric)) })
-              : chart.grain === 'week'
-                ? t('Weekly average {metric}', { metric: inSentence(metricLabel(metric)) })
-                : t('Monthly average {metric}', { metric: inSentence(metricLabel(metric)) })}
-          </h3>
+          {/* A week or a month steps back with the arrows; the chip below says which figure it is. */}
+          {range === 'all' ? (
+            <h3>
+              {chart.grain === 'day'
+                ? t('Daily {metric}', { metric: inSentence(metricLabel(metric)) })
+                : chart.grain === 'week'
+                  ? t('Weekly average {metric}', { metric: inSentence(metricLabel(metric)) })
+                  : t('Monthly average {metric}', { metric: inSentence(metricLabel(metric)) })}
+            </h3>
+          ) : (
+            <div className="period-nav">
+              <button type="button" className="icon-btn icon-btn--sm" aria-label={grain === 'week' ? t('Previous week') : t('Previous month')} disabled={offset >= earliest} onClick={() => setOffset((o) => o + 1)}>
+                ‹
+              </button>
+              <h3 className="period-label">{periodLabel(grain, offset, today)}</h3>
+              <button type="button" className="icon-btn icon-btn--sm" aria-label={grain === 'week' ? t('Next week') : t('Next month')} disabled={offset === 0} onClick={() => setOffset((o) => o - 1)}>
+                ›
+              </button>
+            </div>
+          )}
           <span className="tiny muted">{t('avg {value} {unit}', { value: shown(metric, metricAverage), unit: metricUnit(metric) })}</span>
         </div>
         <WeeklyBars

@@ -47,3 +47,8 @@
 /* The page's own gap spaces the header from the range switch; the usual
    screen-head margin on top of it left the widest gap on the page. */
 .insights .screen-head { margin-bottom: 0; }
+
+/* The chart's title for a week or a month: arrows either side of it. */
+.period-nav { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; margin-block: -4px; }
+.period-nav .icon-btn { font-size: 20px; line-height: 1; }
+.period-nav .period-label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
