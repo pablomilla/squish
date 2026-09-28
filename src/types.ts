@@ -151,9 +151,9 @@ export interface Profile {
   /** Whole years; kept in step with `birthDate` where there is one (store/useSquish.ts). */
   age: number;
   /**
-   * Their date of birth, yyyy-mm-dd, from onboarding's wheel. Absent on a
-   * profile from before it was asked, or once they have typed an age
-   * themselves on the You screen, which then stands as typed.
+   * Their date of birth, yyyy-mm-dd, from the birthday wheel in onboarding
+   * or on You. Absent on a profile from before it was asked, whose age is
+   * then the one typed back then until they set a birthday.
    */
   birthDate?: string;
   heightCm: number;

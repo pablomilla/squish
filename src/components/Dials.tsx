@@ -328,7 +328,16 @@ export function GoalWeightRuler({ kg, fromKg, units, goal, onChange }: { kg: num
  * the app's language. Years run to this one, so somebody too young to use
  * Squish can say so truthfully and be told why, rather than have to lie.
  */
-export function BirthdayWheel({ birthDate, onChange }: { birthDate: string; onChange: (birthDate: string) => void }) {
+export function BirthdayWheel({
+  birthDate,
+  onChange,
+  youngest = 0,
+}: {
+  birthDate: string;
+  onChange: (birthDate: string) => void;
+  /** Where somebody already in Squish changes it: no year that would make them younger than this. */
+  youngest?: number;
+}) {
   const [year, month, day] = birthDate.split('-').map(Number);
   const thisYear = new Date().getFullYear();
   const months = useMemo<Option[]>(() => {
@@ -338,8 +347,8 @@ export function BirthdayWheel({ birthDate, onChange }: { birthDate: string; onCh
   const dayCount = daysIn(year, month);
   const days = useMemo<Option[]>(() => Array.from({ length: dayCount }, (_, i) => ({ value: i + 1, label: String(i + 1) })), [dayCount]);
   const years = useMemo<Option[]>(
-    () => Array.from({ length: 101 }, (_, i) => ({ value: thisYear - 100 + i, label: String(thisYear - 100 + i) })),
-    [thisYear],
+    () => Array.from({ length: 101 - youngest }, (_, i) => ({ value: thisYear - 100 + i, label: String(thisYear - 100 + i) })),
+    [thisYear, youngest],
   );
 
   // Each wheel changes its own part of the latest date, not of the one it was

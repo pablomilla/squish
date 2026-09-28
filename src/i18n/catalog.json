@@ -1,5 +1,5 @@
 {
- "version": "0j2614f06b7hsd",
+ "version": "1uuoeqg0o3iaxm",
  "entries": [
   {
    "id": "002qykb-b3422i",
@@ -3782,8 +3782,7 @@
    "id": "0ls8v0z-xe8ehc",
    "text": "yrs",
    "where": [
-    "src/components/TooYoung.tsx",
-    "src/screens/You.tsx"
+    "src/components/TooYoung.tsx"
    ]
   },
   {
@@ -7241,6 +7240,13 @@
   {
    "id": "15mz8m40wte3er",
    "text": "Squish will judge portions on its own",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "15n54cn-jmbkqk",
+   "text": "Date of birth",
    "where": [
     "src/screens/You.tsx"
    ]

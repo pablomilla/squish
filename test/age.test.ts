@@ -12,18 +12,20 @@ test('the minimum age is 18', () => {
   assert.match(read('src/store/useSquish.ts'), /export const MIN_AGE = 18;/);
 });
 
-test('every age field uses it, and says so rather than quietly rounding up', () => {
+test('changing a birthday on You cannot make somebody under 18, and says so rather than quietly adjusting it', () => {
   const source = read('src/screens/You.tsx');
-  assert.ok(!/label="Age"[^>]*min=\{1[0-7]\}/s.test(source), 'You still lets a child in');
-  assert.match(source, /min=\{MIN_AGE\}/, 'You does not use MIN_AGE');
-  assert.match(source, /onBelowMin=/, "You rounds a child's age up to 18 without a word");
+  assert.match(source, /youngest=\{MIN_AGE\}/, 'the year wheel on You offers years that make a child');
+  assert.match(source, /if \(age < MIN_AGE\) \{\s*toast\(/, 'a date in the last year that still makes them 17 is not refused with a word');
 });
 
 test('onboarding asks for a birthday, and a child’s stops at the reason rather than going on', () => {
   const source = read('src/screens/Onboarding.tsx');
   assert.match(source, /step === 'born' && draft\.age < MIN_AGE\) \{\s*setTooYoung\(true\)/);
   // Years run to this one, so the truth can be told rather than a year made up.
-  assert.match(read('src/components/Dials.tsx'), /length: 101 \}, \(_, i\) => \(\{ value: thisYear - 100 \+ i/);
+  const dials = read('src/components/Dials.tsx');
+  assert.match(dials, /length: 101 - youngest \}, \(_, i\) => \(\{ value: thisYear - 100 \+ i/);
+  assert.match(dials, /youngest = 0,/, 'onboarding would stop the years short of this one');
+  assert.doesNotMatch(read('src/screens/Onboarding.tsx'), /<BirthdayWheel[^>]*youngest=/s, 'onboarding stops the years short of this one');
 });
 
 test('a diary already set up for somebody under 18 is stopped too', () => {

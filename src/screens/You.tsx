@@ -6,7 +6,7 @@ import PackTile from '../components/PackTile';
 import InviteCard from '../components/InviteCard';
 import SquadCard from '../components/squad/SquadCard';
 import { Segmented, Sheet, Stepper, usePrefersDark, useToast } from '../components/ui';
-import { HeightField, LanguageField, NumberField, RegionField, WeightField } from '../components/fields';
+import { HeightField, LanguageField, RegionField, WeightField } from '../components/fields';
 import { LANGUAGES, languageOf, packFor } from '../lib/language';
 import { REGIONS, energyUnitOf, energyValue, formatEnergy, regionOf, toKcal, type EnergyUnit } from '../lib/region';
 import { PACE_CHOICES, formatHeight, formatPace, formatWeight, formatWeightDelta, paceIn, paceToKg, imperialLabel, retuneForUnits, saltGrams, saltLabel, saltShown, showsSodium, sodiumFromShown, sodiumMg, weightUnitLabel } from '../lib/units';
@@ -38,6 +38,8 @@ import './you.css';
 import { plural, t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
 import { slotName } from '../lib/words';
+import { BirthdayWheel } from '../components/Dials';
+import { ageOn, startingBirthDate } from '../lib/birthday';
 
 export default function You({ go }: { go: (route: Route) => void }) {
   const toast = useToast();
@@ -58,6 +60,7 @@ export default function You({ go }: { go: (route: Route) => void }) {
   const learned = ignoredLearning ? null : learning;
   const [editing, setEditing] = useState(false);
   const [editingTargets, setEditingTargets] = useState(false);
+  const [birthdayReset, setBirthdayReset] = useState(0);
   const [savingReminders, setSavingReminders] = useState(false);
   const measured = profile.plateCm !== undefined || profile.bowlMl !== undefined;
   // Worked out once: whether push is possible does not change while the screen
@@ -683,16 +686,29 @@ export default function You({ go }: { go: (route: Route) => void }) {
             onChange={(targetWeightKg) => setProfile({ targetWeightKg })}
           />
           <HeightField cm={profile.heightCm} units={profile.units} onChange={(heightCm) => setProfile({ heightCm })} />
-          <NumberField
-            label={t('Age')}
-            value={profile.age}
-            suffix={t('yrs')}
-            min={MIN_AGE}
-            max={100}
-            // Typed here, the age stands as typed: no birthday moves it on any more.
-            onChange={(age) => setProfile({ age, birthDate: undefined })}
-            onBelowMin={() => toast(t('Squish is for people aged {age} and over, so your age has not been changed.', { age: MIN_AGE }), '🫧')}
-          />
+          <div className="field">
+            <span className="field-label">{t('Date of birth')}</span>
+            {/*
+              Years stop at 18 years ago. A date in that last year that would
+              still make them 17 is not saved, and the wheels are set back to
+              the one that is — remounted, since a wheel only moves itself
+              when the value it is given changes.
+            */}
+            <BirthdayWheel
+              key={birthdayReset}
+              youngest={MIN_AGE}
+              birthDate={profile.birthDate ?? startingBirthDate(profile.age)}
+              onChange={(birthDate) => {
+                const age = ageOn(birthDate);
+                if (age < MIN_AGE) {
+                  toast(t('Squish is for people aged {age} and over, so your age has not been changed.', { age: MIN_AGE }), '🫧');
+                  setBirthdayReset((n) => n + 1);
+                  return;
+                }
+                setProfile({ birthDate, age });
+              }}
+            />
+          </div>
           <div className="field">
             <label>{t('Sex (for the energy formula)')}</label>
             <Segmented<Sex>
