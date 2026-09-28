@@ -116,23 +116,6 @@
 .look--colour.look--locked .look-preview { opacity: 0.6; }
 .look--colour.look--on .tile-note { color: var(--brand-ink); font-weight: 600; }
 
-/* You is a menu: each row says where things stand and opens its sheet, so
-   the whole screen fits without scrolling. */
-.you-menu {
-  display: flex; flex-direction: column; border-radius: var(--r-lg); overflow: hidden;
-  background: var(--surface); border: 1px solid var(--line);
-}
-.you-row {
-  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 14px; width: 100%;
-  text-align: left; color: var(--ink); background: none; transition: background 0.12s ease;
-}
-.you-row + .you-row { border-top: 1px solid var(--line); }
-.you-row:active { background: var(--surface-sunk); }
-.you-row-icon { flex: none; width: 24px; text-align: center; font-size: 18px; }
-.you-row-label { flex: 1; min-width: 0; font-size: var(--text-label); font-weight: 600; }
-.you-row-value { flex: none; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-label); color: var(--ink-3); }
-.you-row-more { flex: none; font-size: 20px; line-height: 1; color: var(--ink-3); }
-.you-row .badge { flex: none; }
 /* A sheet holding one card needs the card's own title no more than twice. */
 .you-sheet-single .card-title h3 { display: none; }
 
@@ -140,5 +123,4 @@
   .you { gap: 10px; }
   .you-head .squish { width: 56px !important; height: 56px !important; }
   .you-head h1 { font-size: 26px; }
-  .you-row { min-height: 40px; padding-block: 7px; }
 }

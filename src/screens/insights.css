@@ -1,7 +1,7 @@
 .insights { display: flex; flex-direction: column; gap: var(--s3); }
 /* Six of them now, so three across and two down rather than a squeezed row. */
 /* Four across: the three macros sit with calories on the first row, fibre and the limits and quality on the second. */
-.metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); margin-top: var(--s3); }
+.metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); margin-top: var(--s2); }
 .metric-row > * { min-width: 0; padding-left: 0; padding-right: 0; justify-content: center; }
 .insights-streak { display: flex; align-items: center; gap: 10px; }
 .share-trigger { margin-top: var(--s3); }
@@ -43,3 +43,7 @@
 .habit b { color: var(--ink); font-size: var(--text-body); }
 .habit.is-on b { color: var(--good); }
 
+
+/* The page's own gap spaces the header from the range switch; the usual
+   screen-head margin on top of it left the widest gap on the page. */
+.insights .screen-head { margin-bottom: 0; }

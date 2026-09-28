@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
 import { MacroSplitBar, StreakDots, WeeklyBars, WeightTrend } from '../components/charts';
-import { Segmented } from '../components/ui';
+import { Segmented, Sheet } from '../components/ui';
+import { MenuRow } from '../components/MenuList';
 import ShareSheet from '../components/ShareSheet';
 import { shareStory } from '../lib/shareStory';
 import type { ShareCardData } from '../lib/share';
 import { FlameIcon, ShareIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
-import AskLink from '../components/AskLink';
 import type { Route } from '../types';
 import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS } from '../lib/achievements';
 import { unlocksLine } from '../lib/rewards';
@@ -47,6 +47,7 @@ const METRIC_CEILING: Metric[] = ['sugar', 'salt'];
 
 export default function Insights({ go }: { go?: (route: Route) => void }) {
   const [sharing, setSharing] = useState(false);
+  const [open, setOpen] = useState<'streak' | 'average' | 'weight' | 'badges' | null>(null);
   const { meals, days, targets, unlocked, profile, unlock } = useSquish();
   const [range, setRange] = useState<Range>('7');
   const [metric, setMetric] = useState<Metric>('calories');
@@ -211,65 +212,8 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
         ]}
       />
 
-      <section className="card">
-        <div className="insights-streak">
-          <Squish mood={streak >= 3 ? 'cheering' : 'calm'} size={92} />
-          <div>
-            <p className="speech">
-              {streak >= 3
-                ? t("You're on a {n} day streak! Keep it going 💜", { n: streak })
-                : t('Log something today and we start a new streak together.')}
-            </p>
-            <p className="tiny muted" style={{ marginTop: 8 }}>
-              {plural(best, { one: 'Best streak: {n} day', other: 'Best streak: {n} days' })}
-            </p>
-            {forgave && (
-              <p className="tiny" style={{ marginTop: 4, color: 'var(--brand-ink)' }}>
-                {t('You missed a day and came back — the streak held. It takes two in a row to lose it.')}
-              </p>
-            )}
-          </div>
-        </div>
-        {/* Always here, so the share card — and its frames and stickers — can
-            be found before there is a streak to put on it. */}
-        <button type="button" className="btn btn--soft btn--block share-trigger" onClick={() => setSharing(true)}>
-          <ShareIcon size={18} /> {streak >= 2 ? t('Share my streak') : t('Share a card')}
-        </button>
-        <div className="divider" />
-        <div className="row-between" style={{ marginBottom: 8 }}>
-          <h4 className="small">{t('This week')}</h4>
-          <span className="tiny muted">{t('{n}/7 days logged', { n: loggedThisWeek.filter(Boolean).length })}</span>
-        </div>
-        <StreakDots dates={week} done={loggedThisWeek} />
-        <p className="tiny muted habit-caption" style={{ marginTop: 12 }}>{t('Targets hit, out of seven days')}</p>
-        <div className="habit-grid">
-          {(
-            [
-              { key: 'meals', label: t('Meals') },
-              { key: 'protein', label: t('Protein') },
-              { key: 'water', label: t('Water') },
-              { key: 'movement', label: t('Movement') },
-            ] as const
-          ).map(({ key, label }) => (
-            <div
-              key={key}
-              className={`habit ${tally[key] >= 5 ? 'is-on' : ''}`}
-              aria-label={t('{habit} target met on {n} of 7 days', { habit: label, n: tally[key] })}
-            >
-              <span className="tiny">{label}</span>
-              <b>{tally[key]}/7</b>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {go && (
-        <AskLink
-          label={t('Ask the nutritionist about your week')}
-          question={t('How was my week, and what’s the one thing to change?')}
-          onAsk={(question) => go({ name: 'ask', question })}
-        />
-      )}
+
 
       <section className="card">
         <div className="card-title">
@@ -299,6 +243,80 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
         </div>
       </section>
 
+      {/* The rest is a row each, opening in a sheet, so Insights fits on one screen. */}
+      <nav className="menu-list" aria-label={t('More about your progress')}>
+        <MenuRow icon="🔥" label={t('Streak and this week')} value={plural(streak, { one: '{n} day streak', other: '{n} day streak' })} onClick={() => setOpen('streak')} />
+        <MenuRow icon="🥗" label={t('Average day')} value={t('{energy} a day', { energy: formatEnergy(summary.avgCalories) })} onClick={() => setOpen('average')} />
+        <MenuRow
+          icon="⚖️"
+          label={t('Weight')}
+          value={weights.length ? formatWeight(weights[weights.length - 1].weightKg, profile.units) : t('Not logged yet')}
+          onClick={() => setOpen('weight')}
+        />
+        <MenuRow icon="🏆" label={t('Achievements')} value={`${ACHIEVEMENTS.filter((a) => unlocked[a.id]).length}/${ACHIEVEMENTS.length}`} onClick={() => setOpen('badges')} />
+        {go && (
+          <MenuRow
+            icon="💬"
+            label={t('Ask about your week')}
+            value=""
+            onClick={() => go({ name: 'ask', question: t('How was my week, and what’s the one thing to change?') })}
+          />
+        )}
+      </nav>
+
+      <Sheet open={open === 'streak'} onClose={() => setOpen(null)} title={t('Streak and this week')}>
+        <div className="insights-streak">
+          <Squish mood={streak >= 3 ? 'cheering' : 'calm'} size={92} />
+          <div>
+            <p className="speech">
+              {streak >= 3
+                ? t("You're on a {n} day streak! Keep it going 💜", { n: streak })
+                : t('Log something today and we start a new streak together.')}
+            </p>
+            <p className="tiny muted" style={{ marginTop: 8 }}>
+              {plural(best, { one: 'Best streak: {n} day', other: 'Best streak: {n} days' })}
+            </p>
+            {forgave && (
+              <p className="tiny" style={{ marginTop: 4, color: 'var(--brand-ink)' }}>
+                {t('You missed a day and came back — the streak held. It takes two in a row to lose it.')}
+              </p>
+            )}
+          </div>
+        </div>
+        {/* Always here, so the share card — and its frames and stickers — can
+            be found before there is a streak to put on it. */}
+        <button type="button" className="btn btn--soft btn--block share-trigger" onClick={() => { setOpen(null); setSharing(true); }}>
+          <ShareIcon size={18} /> {streak >= 2 ? t('Share my streak') : t('Share a card')}
+        </button>
+        <div className="divider" />
+        <div className="row-between" style={{ marginBottom: 8 }}>
+          <h4 className="small">{t('This week')}</h4>
+          <span className="tiny muted">{t('{n}/7 days logged', { n: loggedThisWeek.filter(Boolean).length })}</span>
+        </div>
+        <StreakDots dates={week} done={loggedThisWeek} />
+        <p className="tiny muted habit-caption" style={{ marginTop: 12 }}>{t('Targets hit, out of seven days')}</p>
+        <div className="habit-grid">
+          {(
+            [
+              { key: 'meals', label: t('Meals') },
+              { key: 'protein', label: t('Protein') },
+              { key: 'water', label: t('Water') },
+              { key: 'movement', label: t('Movement') },
+            ] as const
+          ).map(({ key, label }) => (
+            <div
+              key={key}
+              className={`habit ${tally[key] >= 5 ? 'is-on' : ''}`}
+              aria-label={t('{habit} target met on {n} of 7 days', { habit: label, n: tally[key] })}
+            >
+              <span className="tiny">{label}</span>
+              <b>{tally[key]}/7</b>
+            </div>
+          ))}
+        </div>
+      </Sheet>
+
+      <Sheet open={open === 'average'} onClose={() => setOpen(null)} title={t('Average day')}>
       <section className="insights-stats">
         <div className="pill-stat">
           <span className="tiny muted">{t('Avg energy')}</span>
@@ -317,12 +335,8 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
           <b>{habitScore}%</b>
         </div>
       </section>
-
-      <section className="card">
-        <div className="card-title">
-          <h3>{t('Average day')}</h3>
-          <span className="tiny muted">{t('per logged day')}</span>
-        </div>
+        <div style={{ marginTop: 12 }}>
+        <p className="tiny muted">{t('per logged day')}</p>
         <MacroSplitBar totals={{ calories: weekTotals.calories, protein: weekTotals.protein, carbs: weekTotals.carbs, fat: weekTotals.fat, fibre: weekTotals.fibre }} />
         <div className="divider" />
         <div className="avg-grid">
@@ -373,26 +387,9 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
             </div>
           </>
         )}
-      </section>
-
-      <section className="card">
-        <div className="card-title">
-          <h3>{t('Weight')}</h3>
-          <span className="tiny muted">{t('goal {weight}', { weight: formatWeight(profile.targetWeightKg, profile.units) })}</span>
         </div>
-        <WeightTrend points={weights} goalKg={profile.targetWeightKg} units={profile.units} />
-        {weights.length >= 2 && (
-          <p className="tiny muted" style={{ marginTop: 6 }}>
-            {t('{change} since {date}', {
-              change: formatWeightDelta(weights[weights.length - 1].weightKg - weights[0].weightKg, profile.units),
-              date: shortDate(weights[0].date),
-            })}
-          </p>
-        )}
-      </section>
-
       {topFoods.length > 0 && (
-        <section className="card card--quiet">
+        <section className="card card--quiet" style={{ marginTop: 12 }}>
           <div className="card-title">
             <h3>{t('You eat a lot of…')}</h3>
           </div>
@@ -409,14 +406,23 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
           ))}
         </section>
       )}
+      </Sheet>
 
-      <section className="card card--quiet">
-        <div className="card-title">
-          <h3>{t('Achievements')}</h3>
-          <span className="tiny muted">
-            {ACHIEVEMENTS.filter((a) => unlocked[a.id]).length}/{ACHIEVEMENTS.length}
-          </span>
-        </div>
+      <Sheet open={open === 'weight'} onClose={() => setOpen(null)} title={t('Weight')}>
+        <p className="tiny muted">{t('goal {weight}', { weight: formatWeight(profile.targetWeightKg, profile.units) })}</p>
+        <WeightTrend points={weights} goalKg={profile.targetWeightKg} units={profile.units} />
+        {weights.length >= 2 && (
+          <p className="tiny muted" style={{ marginTop: 6 }}>
+            {t('{change} since {date}', {
+              change: formatWeightDelta(weights[weights.length - 1].weightKg - weights[0].weightKg, profile.units),
+              date: shortDate(weights[0].date),
+            })}
+          </p>
+        )}
+      </Sheet>
+
+      <Sheet open={open === 'badges'} onClose={() => setOpen(null)} title={t('Achievements')}>
+        <p className="tiny muted">{t('{n} of {total}', { n: ACHIEVEMENTS.filter((a) => unlocked[a.id]).length, total: ACHIEVEMENTS.length })}</p>
         {ACHIEVEMENT_GROUPS.map((group) => {
           const badges = ACHIEVEMENTS.filter((a) => a.group === group.id);
           return (
@@ -443,11 +449,18 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
             </div>
           );
         })}
-      </section>
+      </Sheet>
 
-      <p className="script center" style={{ fontSize: 20, color: 'var(--ink-2)' }}>
-        {t('A happier you, with Squish.')}
-      </p>
+
+
+
+
+
+
+
+
+
+
 
       <ShareSheet open={sharing} onClose={() => setSharing(false)} data={shareData} />
     </div>

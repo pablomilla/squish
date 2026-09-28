@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Squish from '../components/Squish';
+import { MenuRow } from '../components/MenuList';
 import AccountCard from '../components/AccountCard';
 import Shelf from '../components/Shelf';
 import PackTile from '../components/PackTile';
@@ -141,7 +142,7 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
       </header>
 
       {/* Everything on You is a row that opens its own sheet, so the whole of it fits on one screen. */}
-      <nav className="you-menu" aria-label={t('You')}>
+      <nav className="menu-list" aria-label={t('You')}>
         {/* Only where the server says so, and it decides again on every request: hiding this is a convenience, never the lock. */}
         {standing.admin && <MenuRow icon="📊" label={t('Dashboard')} value={t('Open')} onClick={() => go({ name: 'admin' })} />}
         <MenuRow icon="🎯" label={t('Your plan')} value={t('{energy} a day', { energy: formatEnergy(targets.calories) })} note={learned ? t('Suggestion') : undefined} onClick={() => setOpen('plan')} />
@@ -153,7 +154,7 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
         />
         <MenuRow icon="🥗" label={t('Food and goals')} value={DIETS.find((d) => d.key === (profile.diet ?? 'any'))?.label ?? ''} onClick={() => setOpen('food')} />
       </nav>
-      <nav className="you-menu" aria-label={t('Settings')}>
+      <nav className="menu-list" aria-label={t('Settings')}>
         <MenuRow icon="🎨" label={t('Appearance')} value={theme === 'light' ? t('Light') : theme === 'dark' ? t('Dark') : t('Auto')} onClick={() => setOpen('appearance')} />
         <MenuRow icon="🍽️" label={t('Your plates')} value={measured ? t('{n} cm plate', { n: profile.plateCm ?? 27 }) : t('Not set')} onClick={() => setOpen('plates')} />
         <MenuRow icon="🔔" label={t('Meal reminders')} value={reminders.on ? t('On') : t('Off')} onClick={() => setOpen('reminders')} />
@@ -164,7 +165,7 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
           onClick={() => setOpen('notes')}
         />
       </nav>
-      <nav className="you-menu" aria-label={t('Account')}>
+      <nav className="menu-list" aria-label={t('Account')}>
         {standing.known && !standing.off && (
           <>
             <MenuRow icon="⭐" label={t('Plan and usage')} value={subscribed ? PLUS : t('Free')} onClick={() => setOpen('usage')} />
@@ -876,22 +877,6 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
         </div>
       </Sheet>
     </div>
-  );
-}
-
-function MenuRow({ icon, label, value, note, onClick }: { icon: string; label: string; value: string; note?: string; onClick: () => void }) {
-  return (
-    <button type="button" className="you-row" onClick={onClick}>
-      <span className="you-row-icon" aria-hidden="true">
-        {icon}
-      </span>
-      <span className="you-row-label">{label}</span>
-      {note && <span className="badge badge--warn">{note}</span>}
-      <span className="you-row-value">{value}</span>
-      <span className="you-row-more" aria-hidden="true">
-        ›
-      </span>
-    </button>
   );
 }
 

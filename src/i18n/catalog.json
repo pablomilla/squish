@@ -1,5 +1,5 @@
 {
- "version": "0etyar40cm1jtc",
+ "version": "1gpt3n6-785nyx",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1415,6 +1415,7 @@
    "other": "{n} day streak",
    "where": [
     "src/lib/shareStory.ts",
+    "src/screens/Insights.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -2007,6 +2008,13 @@
    "text": "Sticking with it",
    "where": [
     "src/lib/eating.ts"
+   ]
+  },
+  {
+   "id": "0bv9g7e-yy5d3b",
+   "text": "Not logged yet",
+   "where": [
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -4357,6 +4365,13 @@
    ]
   },
   {
+   "id": "0oe4wmy0a90y1v",
+   "text": "Ask about your week",
+   "where": [
+    "src/screens/Insights.tsx"
+   ]
+  },
+  {
    "id": "0oe804e0iekor9",
    "text": "Email confirmed. Thank you!",
    "where": [
@@ -5937,6 +5952,7 @@
    "id": "0x4tbmc01n9scy",
    "text": "{energy} a day",
    "where": [
+    "src/screens/Insights.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -6964,6 +6980,13 @@
    "text": "Nobody else here yet. Send your squad link to a friend or two.",
    "where": [
     "src/components/squad/SquadSheet.tsx"
+   ]
+  },
+  {
+   "id": "136mvd2-2b0jdt",
+   "text": "Streak and this week",
+   "where": [
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -8858,13 +8881,6 @@
    ]
   },
   {
-   "id": "1elm9of-wye6nm",
-   "text": "A happier you, with Squish.",
-   "where": [
-    "src/screens/Insights.tsx"
-   ]
-  },
-  {
    "id": "1em31kv-hs6hem",
    "text": "They come back next month.",
    "where": [
@@ -9097,13 +9113,6 @@
    "text": "Your code",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "1g1cidn0h13px6",
-   "text": "Ask the nutritionist about your week",
-   "where": [
-    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -11815,6 +11824,13 @@
    "text": "Meals around your targets, the food you already like, and anything you’ve told me — an allergy, a food you avoid. With a shopping list to match, and you choose what to keep.",
    "where": [
     "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
+   "id": "1utq9jz-jt6u67",
+   "text": "More about your progress",
+   "where": [
+    "src/screens/Insights.tsx"
    ]
   },
   {

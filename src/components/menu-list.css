@@ -1,0 +1,20 @@
+/* A menu of rows (components/MenuList.tsx): each says where things stand and
+   opens its sheet, so a screen of them fits without scrolling. You and Insights. */
+.menu-list {
+  display: flex; flex-direction: column; border-radius: var(--r-lg); overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line);
+}
+.menu-row {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 14px; width: 100%;
+  text-align: left; color: var(--ink); background: none; transition: background 0.12s ease;
+}
+.menu-row + .menu-row { border-top: 1px solid var(--line); }
+.menu-row:active { background: var(--surface-sunk); }
+.menu-row-icon { flex: none; width: 24px; text-align: center; font-size: 18px; }
+.menu-row-label { flex: 1; min-width: 0; font-size: var(--text-label); font-weight: 600; }
+.menu-row-value { flex: none; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-label); color: var(--ink-3); }
+.menu-row-more { flex: none; font-size: 20px; line-height: 1; color: var(--ink-3); }
+.menu-row .badge { flex: none; }
+@media (max-height: 740px) {
+  .menu-row { min-height: 40px; padding-block: 7px; }
+}
