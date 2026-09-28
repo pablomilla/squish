@@ -12,6 +12,7 @@
  */
 import { useSquish } from '../store/useSquish';
 import { knownVersion, pushDiary, rememberVersion, type BackupState, type RemoteDiary } from './backup';
+import { isBlank } from './blankDiary';
 
 /** Long enough that a burst of edits is one push, short enough to be a backup. */
 const QUIET_MS = 6_000;
@@ -41,6 +42,8 @@ function snapshot(): unknown {
   return { profile, targets, meals, days, favourites, plans, shopping, unlocked, nutritionistNotes, look, outfit, scene, shareDecor, theme, comparisons };
 }
 
+let retried = false;
+
 async function push(): Promise<void> {
   if (inFlight || stopped) return;
   inFlight = true;
@@ -62,6 +65,17 @@ async function push(): Promise<void> {
     return;
   }
   if (result.kind === 'conflict') {
+    // A diary that was never set up and has nothing in it is not a diary
+    // anybody could lose: this one takes its place. It is what an account
+    // made during onboarding was left holding until that was fixed, and
+    // what the blank snapshot of somebody half-way through setting up is.
+    if (isBlank(result.current?.state) && !retried) {
+      rememberVersion(result.current.version);
+      retried = true;
+      await push();
+      retried = false;
+      return;
+    }
     // Stop. Another device has written something this one has not seen, and
     // choosing between two diaries is not a decision to take silently.
     stopped = true;
@@ -143,10 +157,17 @@ export function watchIdentity(listener: () => void): () => void {
   return () => onSwitch.delete(listener);
 }
 
-export function switchedIdentity(): void {
+export function switchedIdentity({ broughtDiary = false }: { broughtDiary?: boolean } = {}): void {
   // Whatever version this browser last agreed about referred to a different
   // diary. Forgetting it means the next push either starts cleanly or is told
   // there is already one there — and being told is the whole point.
-  resumeBackup(null);
+  //
+  // Except where the diary came along: signing up (or into an account with
+  // no diary) hands this device's diary to the account as it is, version and
+  // all. Forgetting the version then made the very next save collide with
+  // the diary it had just become, and the backup stopped — leaving the
+  // account holding whatever was saved before, which at the end of
+  // onboarding was a diary not yet set up.
+  resumeBackup(broughtDiary ? knownVersion() : null);
   for (const listener of onSwitch) listener();
 }

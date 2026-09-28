@@ -104,7 +104,9 @@ async function enter(path: string, email: string, password: string, ref?: string
   const answer = await ask<Arrived>('POST', path, ref ? { email, password, ref } : { email, password });
   if (answer.ok) {
     if (ref) forgetReferral();
-    switchedIdentity();
+    // Where this device's diary became the account's, it is the same diary at
+    // the same version: keep saving to it rather than colliding with it.
+    switchedIdentity({ broughtDiary: answer.broughtDiary === true });
     // The tier hangs off the account, so signing in or up can change it —
     // and anything on screen that asks whether there is an account at all is
     // reading the same answer. Without this the app believed you were still
@@ -142,7 +144,7 @@ export async function signInWith(provider: Provider, token: string, nonce: strin
   const answer = await ask<Arrived & { created?: boolean }>('POST', '/api/account/federated', { provider, token, nonce, ...(ref ? { ref } : {}) });
   if (answer.ok) {
     if (ref && answer.created) forgetReferral();
-    switchedIdentity();
+    switchedIdentity({ broughtDiary: answer.broughtDiary === true });
     await refreshPlan();
   }
   return answer;
