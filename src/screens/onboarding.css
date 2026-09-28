@@ -178,3 +178,8 @@ input[type='range'] { width: 100%; accent-color: var(--brand); height: 28px; -we
 /* Squish is a block; in a centred column it is centred too. */
 .onboarding .center > .squish { margin-inline: auto; }
 .onboard-building-bar { margin: 4px 0 8px; }
+.onboard-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.onboard-macros > div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-2); }
+.onboard-macros b { font-size: var(--text-label); }
+/* On a short phone the plan itself matters more than Squish: the confetti still cheers. */
+@media (max-height: 720px) { .onboard-plan-squish { display: none; } }

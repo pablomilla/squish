@@ -15,14 +15,14 @@ import { noteHeard } from '../lib/api';
 import { explainPlan } from '../lib/planExplained';
 import { pullDiary } from '../lib/backup';
 import { adoptBackup } from '../lib/autobackup';
-import { MacroBars } from '../components/charts';
+import { MACRO_COLOR } from '../components/charts';
 import { LanguageField, RegionField } from '../components/fields';
 import { BirthdayWheel, GoalWeightRuler, HeightWheel, WeightWheel } from '../components/Dials';
 import { ageOn, startingBirthDate } from '../lib/birthday';
 import { paceTier, targetMessage, type PaceTier } from '../lib/targetMessage';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
-import { ACTIVITY_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
+import { ACTIVITY_LABEL, MACRO_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
 import type { Activity, Goal, Mood, Profile, Sex, Targets } from '../types';
 import { PACE_CHOICES, formatPace, formatWeight, imperialLabel, paceIn, paceToKg, retuneForUnits } from '../lib/units';
 import { REGIONS, browserRegion, currentEnergyUnit, energyValue, regionOf, toKcal, type Region } from '../lib/region';
@@ -585,7 +585,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
             <div className="stack">
               <Confetti />
               <div className="center">
-                <Squish mood="cheering" size={140} />
+                <div className="onboard-plan-squish"><Squish mood="cheering" size={110} /></div>
                 <h1 style={{ marginTop: 6 }}>{name ? t('Here’s your plan, {name}!', { name }) : t('Here’s your plan!')}</h1>
                 <p className="muted small">{t('Built from your height, weight, age and activity. Tap − or + to change anything.')}</p>
               </div>
@@ -612,10 +612,24 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                     <Stepper value={targets.calories} step={50} min={floor} max={5000} onChange={(calories) => setTweak((w) => ({ ...w, calories }))} />
                   )}
                 </div>
-                <MacroBars totals={{ calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }} targets={targets} compact />
                 <div className="row-between onboard-plan-adjust">
-                  <span className="small">{t('Protein')}</span>
+                  <span className="small row" style={{ gap: 8 }}>
+                    <span className="macro-dot" style={{ background: MACRO_COLOR.protein }} aria-hidden="true" />
+                    {MACRO_LABEL.protein}
+                  </span>
                   <Stepper value={targets.protein} step={5} min={30} max={300} onChange={(protein) => setTweak((w) => ({ ...w, protein }))} suffix="g" />
+                </div>
+                {/* The rest as figures, not empty progress bars: nothing is eaten yet, and it keeps the plan on one screen. */}
+                <div className="onboard-macros">
+                  {(['carbs', 'fat', 'fibre'] as const).map((key) => (
+                    <div key={key}>
+                      <span className="tiny muted row" style={{ gap: 6 }}>
+                        <span className="macro-dot" style={{ background: MACRO_COLOR[key] }} aria-hidden="true" />
+                        {MACRO_LABEL[key]}
+                      </span>
+                      <b>{Math.round(targets[key])} g</b>
+                    </div>
+                  ))}
                 </div>
                 <div className="divider" />
                 <div className="row" style={{ gap: 16 }}>
