@@ -63,29 +63,54 @@ const COOKING = new Set<StepAction>(['boil', 'fry', 'bake', 'grill']);
  * "Simmer" is labelled boil, and boil is pictured as a saucepan of water. But
  * adding tomatoes to the browned turkey and simmering them happens in the
  * frying pan, and a saucepan there says it goes in with the pasta. So a
- * simmering step goes where its food already is: with something last cooked
- * in the frying pan, and nothing from the pot, it is the frying pan. A sauce
- * simmering after frying is too, whatever it names.
+ * simmering step goes where its food is (whereItSimmers), and what it cooks
+ * is remembered for the steps after.
  */
 function followTheFood(steps: string[], details: StepDetail[], items: { name: string }[]): StepDetail[] {
   const where = new Map<string, StepAction>();
-  let lastCooked: StepAction | undefined;
+  let fried = false;
   return details.map((detail, i) => {
     const using = usedIn(steps[i], items).map((item) => item.name);
-    let action = detail.action;
-    if (action === 'boil') {
-      const already = using.map((name) => where.get(name));
-      const inPan = already.includes('fry');
-      const inPot = already.includes('boil');
-      const sauce = !already.some(Boolean) && lastCooked === 'fry' && /\bsauce\b/i.test(steps[i]);
-      if ((inPan && !inPot) || sauce) action = 'fry';
-    }
-    if (COOKING.has(action)) {
-      for (const name of using) where.set(name, action);
-      lastCooked = action;
-    }
+    const into = intoWhat(steps[i]);
+    const target = into ? usedIn(into, items).map((item) => where.get(item.name)) : [];
+    const action = detail.action === 'boil' ? whereItSimmers(steps[i], using.map((name) => where.get(name)), target, fried) : detail.action;
+    if (COOKING.has(action)) for (const name of using) where.set(name, action);
+    if (action === 'fry') fried = true;
     return action === detail.action ? detail : { ...detail, action };
   });
+}
+
+/** Words that put a step in a saucepan of water, whatever else it says. */
+const POT = /\b(saucepan|pot|boiling water|pan of (?:salted )?water|kettle|steamer)\b/i;
+/** Words that put it in the frying pan. */
+const PAN = /\b(frying pan|skillet|wok|sauce)\b/i;
+/** Foods that go into boiling water, not into a sauce. */
+const BOILED = /\b(pasta|spaghetti|penne|fusilli|macaroni|linguine|tagliatelle|rigatoni|noodles?|rice|couscous|quinoa|potato(?:es)?|eggs?|dumplings?|gnocchi)\b/i;
+/** A step putting something into what is already cooking. */
+const ADDING = /\b(add|adding|stir in|stir through|pour in|pour over|tip in|mix in)\b/i;
+
+/** What a step puts things into: the words after "to the", "into the", "in with the". */
+function intoWhat(step: string): string | undefined {
+  const m = step.match(/\b(?:to|into|in with|over)\s+(?:the|your)\s+(.+)$/i);
+  return m?.[1];
+}
+
+/**
+ * Where a step labelled boil happens: a saucepan unless its food is in the
+ * frying pan. Said outright, that decides it. Otherwise the food it names
+ * that is already cooking does: what it goes into first ("add the lentils to
+ * the onion"), then the rest, in the pan and not the pot, the pan. And
+ * something new added and simmered once there is a frying pan going ("add the
+ * tomatoes and simmer") joins the pan, unless it is the pasta or the rice.
+ */
+function whereItSimmers(step: string, already: (StepAction | undefined)[], into: (StepAction | undefined)[], fried: boolean): StepAction {
+  if (POT.test(step)) return 'boil';
+  if (PAN.test(step)) return fried || already.includes('fry') ? 'fry' : 'boil';
+  if (into.includes('fry') !== into.includes('boil')) return into.includes('fry') ? 'fry' : 'boil';
+  if (already.includes('boil')) return 'boil';
+  if (already.includes('fry')) return 'fry';
+  if (fried && ADDING.test(step) && !BOILED.test(step)) return 'fry';
+  return 'boil';
 }
 
 /** Words in a food's name that say nothing about which food it is. */

@@ -75,3 +75,18 @@ test('the model is told a picture follows the food', () => {
   assert.match(COOK_SYSTEM, /follow the food/);
   assert.match(COOK_SYSTEM, /pan something was fried in is still fry/);
 });
+
+test('"add the tomatoes and simmer" joins the frying pan, even naming nothing already in it', () => {
+  const items = [{ name: 'Wholewheat spaghetti' }, { name: 'Turkey mince' }, { name: 'Chopped tomatoes' }, { name: 'Onion' }, { name: 'Red lentils' }];
+  const actions = (steps: string[]) => detailsFor(steps, undefined, items).map((d) => d.action);
+  assert.deepEqual(actions(['Boil the spaghetti for 10 minutes.', 'Fry the turkey mince until browned.', 'Add the tomatoes and simmer for 10 minutes.']), ['boil', 'fry', 'fry']);
+  assert.deepEqual(actions(['Fry the turkey mince until browned.', 'Boil the spaghetti for 10 minutes.', 'Stir in the chopped tomatoes and simmer for 10 minutes.']), ['fry', 'boil', 'fry'], 'with the pasta boiling in between');
+  assert.deepEqual(actions(['Fry the onion.', 'Add the spaghetti and simmer for 10 minutes.']), ['fry', 'boil'], 'pasta goes in the pot');
+  assert.deepEqual(actions(['Fry the onion.', 'Add the tomatoes to a pan of boiling water and simmer.']), ['fry', 'boil'], 'when it says the pot, the pot');
+  assert.deepEqual(actions(['Fry the onion.', 'Simmer the red lentils in a frying pan with the tomatoes.']), ['fry', 'fry']);
+  assert.deepEqual(actions(['Add the tomatoes and simmer for 10 minutes.']), ['boil'], 'with nothing fried, a simmer is the pot');
+  const lentils = ['Simmer the red lentils for 20 minutes.', 'Fry the onion.'];
+  assert.deepEqual(actions([...lentils, 'Add the lentils to the onion and simmer for 2 minutes.']), ['boil', 'fry', 'fry'], 'where it goes into decides');
+  assert.deepEqual(actions([...lentils, 'Tip the onion into the lentils and simmer for 2 minutes.']), ['boil', 'fry', 'boil']);
+  assert.deepEqual(actions([...lentils, 'Simmer the lentils for 5 minutes more.']), ['boil', 'fry', 'boil'], 'food in the pot keeps its pot');
+});
