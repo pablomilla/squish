@@ -135,7 +135,11 @@ export function MinorNutrients({ totals, targets }: { totals: Nutrients; targets
  * It renders nothing at all when nothing reported any, which is the common
  * case for a day logged entirely by barcode.
  */
-export function Micronutrients({ totals, targets }: { totals: Nutrients; targets: Targets }) {
+/**
+ * `meal` is for one meal, measured against a whole day's needs: "2 of 6 met"
+ * would read as a failing for a lunch that was never meant to cover the day.
+ */
+export function Micronutrients({ totals, targets, meal = false }: { totals: Nutrients; targets: Targets; meal?: boolean }) {
   if (!totals.micros) return null;
 
   const rows = MICROS.map((key) => ({
@@ -149,12 +153,14 @@ export function Micronutrients({ totals, targets }: { totals: Nutrients; targets
   if (!rows.length) return null;
 
   return (
-    // Shown open: it sits in the day's detail sheet, which is already the tap
-    // to see more, and a second tap to open it inside that was one too many.
+    // Shown open: it sits in a sheet that was already the tap to see more,
+    // and a second tap to open it inside that was one too many.
     <section className="micro-card" aria-label={t('Vitamins & minerals')}>
       <div className="card-title">
         <h3>{t('Vitamins & minerals')}</h3>
-        <span className="tiny muted">{t('{met} of {total} met', { met: rows.filter((r) => r.value >= r.target).length, total: rows.length })}</span>
+        <span className="tiny muted">
+          {meal ? t('Against a whole day’s needs') : t('{met} of {total} met', { met: rows.filter((r) => r.value >= r.target).length, total: rows.length })}
+        </span>
       </div>
 
       <div className="micro-list">

@@ -1,5 +1,5 @@
 {
- "version": "14q9t9s0hpx88c",
+ "version": "0p965660j6o2m5",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -8664,6 +8664,13 @@
    "text": "Get the whole plate in frame. Anything cropped out is nutrition I cannot count.",
    "where": [
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "1dbt5m3-z1rlx2",
+   "text": "Against a whole day’s needs",
+   "where": [
+    "src/components/charts.tsx"
    ]
   },
   {

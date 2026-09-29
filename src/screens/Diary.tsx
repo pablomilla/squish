@@ -4,7 +4,7 @@ import type { MealEntry, MealSlot } from '../types';
 import { MealThumb } from '../components/MealCard';
 import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
 import CheckinSheets from '../components/CheckinSheets';
-import { MacroBars, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
+import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, useToast } from '../components/ui';
 import { BasketIcon, CalendarIcon, CameraIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import DayDetailSheet, { dayDetailTitle } from '../components/DayDetailSheet';
@@ -283,6 +283,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
 
             <MacroBars totals={selected.nutrients} targets={targets} compact />
             <MinorNutrients totals={selected.nutrients} targets={targets} />
+            <Micronutrients totals={selected.nutrients} targets={targets} meal />
 
             <div className="card card--tint card--flat">
               {selected.items.map((item) => (
