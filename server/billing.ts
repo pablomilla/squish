@@ -30,6 +30,28 @@ interface Billed {
 
 const store = new AsyncLocalStorage<Billed>();
 
+/**
+ * The writes still on their way. Nothing in a request waits for them; the
+ * tests do, through billingSettled, rather than polling and guessing when the
+ * last one has landed — two tables are written per call, and one can be seen
+ * before the other.
+ */
+const pending = new Set<Promise<void>>();
+function track(write: Promise<unknown>): void {
+  const settled: Promise<void> = write.then(
+    () => undefined,
+    () => {
+      /* a gap in a report, never a failed request */
+    },
+  ).finally(() => pending.delete(settled));
+  pending.add(settled);
+}
+
+/** Every cost billed so far, written. For the tests, which read the tables straight after billing. */
+export async function billingSettled(): Promise<void> {
+  while (pending.size) await Promise.all([...pending]);
+}
+
 /** Run a request's handler with somewhere for its costs to land. */
 export function billedTo(deviceId: string, kind: Spend, body: () => void): void {
   store.run({ deviceId, kind }, body);
@@ -62,16 +84,10 @@ export function bill(usd: number | null, model: string): void {
   if (!who) return;
   who.tally?.(usd, model);
   if (who.deviceId) {
-    void recordCost(who.deviceId, who.kind, usd).catch(() => {
-      /* a gap in a report, never a failed request */
-    });
-    void recordDeviceModelCost(who.deviceId, who.kind, model, usd).catch(() => {
-      /* the same */
-    });
+    track(recordCost(who.deviceId, who.kind, usd));
+    track(recordDeviceModelCost(who.deviceId, who.kind, model, usd));
   }
-  void recordModelCost(who.kind, model, usd).catch(() => {
-    /* the same */
-  });
+  track(recordModelCost(who.kind, model, usd));
 }
 
 /** A call's price against its model and feature, for the dashboard's split by model. */

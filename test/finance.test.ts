@@ -16,7 +16,7 @@ import {
   saveSettings,
   type FixedCost,
 } from '../server/finance';
-import { bill, billedAs } from '../server/billing';
+import { bill, billedAs, billingSettled } from '../server/billing';
 import { people } from '../server/admin';
 import { attribute, checkAffiliate, createAffiliate, listAffiliates, recordPayout, tidyCode } from '../server/affiliates';
 
@@ -306,17 +306,12 @@ when('a cost is kept by model: a weekly plan as a plan, Gemini apart from Claude
   await billedAs('photo', null, async () => bill(0.25, 'gemini-3.8-flash'));
   bill(9, 'claude-opus-5'); // outside any request or job: nobody's, and not counted
 
-  // Written without waiting; give it a moment.
-  let rows: { kind: string; model: string; calls: number; usd: string }[] = [];
-  for (let i = 0; i < 40; i++) {
-    rows = await query(
-      `select kind, model, calls, cost_usd::text as usd from ai_costs
-        where day = current_date and ((kind = 'weekplan' and model = 'claude-opus-5') or model = 'gemini-3.8-flash')`,
-    );
-    const mine = await query(`select 1 from usage where device_id = $1 and kind = 'weekplan' and cost_usd > 0`, [device.id]);
-    if (rows.length === 2 && mine.length) break;
-    await new Promise((r) => setTimeout(r, 25));
-  }
+  // Written without waiting in the app; here, waited for, every table of it.
+  await billingSettled();
+  const rows = await query<{ kind: string; model: string; calls: number; usd: string }>(
+    `select kind, model, calls, cost_usd::text as usd from ai_costs
+      where day = current_date and ((kind = 'weekplan' and model = 'claude-opus-5') or model = 'gemini-3.8-flash')`,
+  );
   assert.ok(rows.some((r) => r.kind === 'weekplan' && r.model === 'claude-opus-5'), 'the date stamp dropped from the name');
   const [spent] = await query<{ count: number; usd: string }>(
     `select count, cost_usd::text as usd from usage where device_id = $1 and kind = 'weekplan' and day = current_date`,
@@ -344,11 +339,9 @@ when('the People list splits each person\'s month by feature and model', async (
   await billedAs('photo', null, async () => bill(5, 'claude-opus-5')); // nobody's: on nobody's line
 
   const [email] = (await query<{ email: string }>('select email from accounts where id = $1', [who.id])).map((r) => r.email);
-  let person = (await people(email))[0];
-  for (let i = 0; i < 40 && person.byModel.length < 3; i++) {
-    await new Promise((r) => setTimeout(r, 25));
-    person = (await people(email))[0];
-  }
+  // The month total and the lines by model are separate writes: wait for all of them, not for the lines to appear.
+  await billingSettled();
+  const person = (await people(email))[0];
   const line = (kind: string, model: string) => person.byModel.find((m) => m.kind === kind && m.model === model);
   assert.deepEqual(line('photo', 'gemini-3.8-flash'), { kind: 'photo', model: 'gemini-3.8-flash', calls: 2, usd: 0.03 });
   assert.equal(line('photo', 'claude-sonnet-5')?.usd, 0.04, 'the date stamp dropped from the name');
