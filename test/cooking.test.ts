@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { test } from 'node:test';
-import { detailsFor, guessDetail, usedIn } from '../src/lib/cooking';
+import { STEP_ACTIONS, detailsFor, guessDetail, usedIn } from '../src/lib/cooking';
 import { COOK_SCHEMA, COOK_SYSTEM, toCookSteps } from '../server/cook';
 
 /**
@@ -44,4 +45,10 @@ test('a step shows the foods it names, by any particular word of their name', ()
   assert.deepEqual(names('Use fresh water.'), [], '"fresh" alone is not basil');
   assert.deepEqual(names('Price it up.'), [], 'a word inside another word is not the food');
   assert.deepEqual(usedIn('Añade el arroz basmati.', [{ name: 'arroz basmati' }]).length, 1, 'in any language the steps are written in');
+});
+
+test('every kind of step has its picture', () => {
+  for (const action of STEP_ACTIONS) {
+    assert.ok(existsSync(new URL(`../src/assets/cook/${action}.webp`, import.meta.url)), `src/assets/cook/${action}.webp`);
+  }
 });

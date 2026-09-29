@@ -21,5 +21,10 @@ Each one with its pot, pan or plate **empty**: cook mode puts the step's own
 foods in (src/components/StepArt.tsx). Optional food pictures go in `foods/`,
 named after the ingredient (`salmon.png`, `broccoli.png`).
 
-Once they are here they get compressed to WebP, wired into cook mode, and
-the drawn scenes stay as the fallback.
+All eleven are in. What the app uses is a trimmed, 720-wide WebP of each in
+src/assets/cook/, and where the foods sit on it is in `PLACES` in StepArt.tsx.
+A new kind of step needs its picture here and there (a test checks), and a
+line in `PLACES`.
+
+The generator painted a checkerboard in rather than leaving the background
+transparent, so the PNGs here are the cut-outs, not the originals.
