@@ -70,3 +70,6 @@
 .sa-foods--rinse .sa-emoji { animation: sa-bob 2.2s ease-in-out infinite; }
 @keyframes sa-jump { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-7px) rotate(-8deg); } }
 @keyframes sa-tumble { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(14deg) translateY(-3px); } }
+
+/* On a painted scene the foods sit in its light, with a soft shadow under them. */
+.step-art--painted .sa-emoji { filter: drop-shadow(0 1.5px 1.5px rgb(0 0 0 / 0.22)); }

@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 import type { StepAction } from '../lib/cooking';
 import './step-art.css';
 
+/** Painted scenes (from design/cook), where there is one for the action; the drawn ones stand in for the rest. */
+const PAINTED = import.meta.glob<string>('../assets/cook/*.webp', { query: '?url', import: 'default', eager: true });
+const paintedFor = (action: StepAction): string | undefined => PAINTED[`../assets/cook/${action}.webp`];
+
 /**
  * A small drawing of what a cooking step does — a board and knife for
  * chopping, a pot with steam for boiling — with the step's own foods in it:
@@ -14,6 +18,9 @@ import './step-art.css';
  * is hidden from screen readers.
  */
 export default function StepArt({ action, foods = [] }: { action: StepAction; foods?: string[] }) {
+  const painted = paintedFor(action);
+  const place = PLACES[action];
+  if (painted && place) return <PaintedArt action={action} url={painted} place={place} foods={foods} />;
   const scene = SCENES[action];
   const shown = foods.slice(0, scene.spots.length);
   return (
@@ -34,6 +41,54 @@ export default function StepArt({ action, foods = [] }: { action: StepAction; fo
         ) : (
           scene.plain
         ),
+      )}
+    </svg>
+  );
+}
+
+/**
+ * Where the foods sit on a painted scene: its shape (width over height), and
+ * each spot as a share of the picture's width and height, with a size in the
+ * drawing's own units. The picture is fitted into the same 240 × 160 as the
+ * drawn scenes, so both sit the same on the page.
+ */
+interface Place {
+  aspect: number;
+  spots: [number, number, number][];
+}
+
+const PLACES: Partial<Record<StepAction, Place>> = {
+  bake: { aspect: 720 / 572, spots: [[0.43, 0.5, 24], [0.55, 0.5, 24], [0.49, 0.44, 22]] },
+  grill: { aspect: 720 / 451, spots: [[0.33, 0.42, 30], [0.46, 0.38, 28], [0.57, 0.45, 26]] },
+  blend: { aspect: 720 / 1094, spots: [[0.38, 0.44, 24], [0.56, 0.42, 22], [0.47, 0.3, 22]] },
+  rest: { aspect: 720 / 425, spots: [[0.36, 0.4, 30], [0.5, 0.38, 28], [0.43, 0.5, 26]] },
+  serve: { aspect: 720 / 394, spots: [[0.42, 0.5, 30], [0.58, 0.52, 28], [0.5, 0.4, 24], [0.5, 0.62, 22]] },
+};
+
+/** The box a painted scene is fitted into, centred on the blob. */
+const BOX = { width: 212, height: 150, cx: 120, cy: 82 };
+
+function PaintedArt({ action, url, place, foods }: { action: StepAction; url: string; place: Place; foods: string[] }) {
+  const width = Math.min(BOX.width, BOX.height * place.aspect);
+  const height = width / place.aspect;
+  const x = BOX.cx - width / 2;
+  const y = BOX.cy - height / 2;
+  const shown = foods.slice(0, place.spots.length);
+  return (
+    <svg className={`step-art step-art--painted step-art--${action}`} viewBox="0 0 240 160" aria-hidden="true" focusable="false">
+      <ellipse className="sa-blob" cx="120" cy="84" rx="96" ry="66" />
+      <image href={url} x={x} y={y} width={width} height={height} preserveAspectRatio="xMidYMid meet" />
+      {shown.length > 0 && (
+        <g className={`sa-foods sa-foods--${action}`}>
+          {shown.map((emoji, i) => {
+            const [u, v, size] = place.spots[i];
+            return (
+              <text key={i} className="sa-emoji" style={{ animationDelay: `${i * 0.3}s` }} x={x + u * width} y={y + v * height} fontSize={size} textAnchor="middle" dominantBaseline="central">
+                {emoji}
+              </text>
+            );
+          })}
+        </g>
       )}
     </svg>
   );
