@@ -975,8 +975,9 @@ export const FIT = { tolerance: 0.1, least: 0.6, most: 1.5 };
 /**
  * Each day brought to the calorie target it was planned for.
  *
- * The model is asked for days within about 5% of the target, but the figures
- * it gave are then replaced by the food table's (server/grounding.ts), and a
+ * The model is asked for days near the target and told this step does the
+ * rest, so it need not work the sums out to the calorie; and the figures it
+ * gave are then replaced by the food table's (server/grounding.ts), so a
  * day can drift well away from it — a plan that says it is for 1,900 kcal a
  * day and adds up to 2,500 is no use to anybody. A day more than 10% out has
  * every portion on it scaled by the same factor, grams and nutrition
@@ -1064,14 +1065,20 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
   const format = { type: 'json_schema' as const, schema };
   const response = await streamMessage({
     model,
-    max_tokens: 32000,
+    // Thinking counts against this too. At 32,000 a week with its reasoning could be cut off
+    // ("ran long") on Claude, and the route's backup asked every time; streamed, room costs nothing.
+    max_tokens: 64000,
     system: `${WEEKPLAN_SYSTEM}${brief ? `\n${TABLE_FIRST_RULE}` : ''}\n\n${regionNote('plan')}`,
     messages: [{ role: 'user', content: weekPlanPrompt(req) }],
     ...(plain
       ? { output_config: { format } }
       : {
           thinking: { type: 'adaptive' as const },
-          output_config: { effort: 'medium' as const, format },
+          // Low, not medium: at medium, Opus and Sonnet thought for so long over a week that
+          // they ran out of room or time and Gemini planned it instead. The sums need no deep
+          // thought here — the food table supplies the figures and fitToTarget lands each day on
+          // its target — so the reasoning went on arithmetic the server redoes anyway.
+          output_config: { effort: 'low' as const, format },
           // Anthropic's own fallback for a declined plan, on Opus, where it was proven; on any
           // other model a decline fails over to the route's backup (server/routing.ts) instead.
           ...(model.startsWith('claude-opus') ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const } : {}),
