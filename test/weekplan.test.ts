@@ -79,27 +79,46 @@ test('a month-end start rolls into the next month', () => {
   assert.deepEqual(plan.days.map((d) => d.date), ['2026-12-30', '2026-12-31', '2027-01-01']);
 });
 
-test('days that drift from the target are scaled back to it, portions and all; close days and wild ones are left alone', () => {
-  const req = cleanWeekRequest({ ...base, days: 4 })!;
+test('days are scaled to the target, portions and all, and never left over it', () => {
+  const req = cleanWeekRequest({ ...base, days: 5 })!;
   const day = (n: number, kcal: number) => ({
     day: n,
     meals: [
       { slot: 'breakfast' as const, title: 'Oats', items: [item('porridge oats', kcal * 0.4)] },
-      { slot: 'dinner' as const, title: 'Curry', items: [item('chicken breast', kcal * 0.6)] },
+      { slot: 'lunch' as const, title: 'Soup', items: [item('lentil soup', kcal * 0.25)] },
+      { slot: 'dinner' as const, title: 'Curry', items: [item('chicken breast', kcal * 0.35)] },
     ],
   });
-  // 2,500 on a 1,900 target — the plan reported; 1,950 close enough; 4,500 and 900 too far to be a rounding problem.
-  const planned = toWeekPlan({ days: [day(1, 2500), day(2, 1950), day(3, 4500), day(4, 900)] }, req);
+  // 2,500 on a 1,900 target — the plan reported; 1,950 only just over; 4,500 far over; 1,800 close under; 900 too far under to scale up.
+  const planned = toWeekPlan({ days: [day(1, 2500), day(2, 1950), day(3, 4500), day(4, 1800), day(5, 900)] }, req);
   const { plan, fitted } = fitToTarget(planned, 1900, 1200);
 
-  assert.deepEqual(fitted.map((f) => f.from), [2500]);
-  const [scaled, close, wild, low] = plan.days;
-  assert.ok(Math.abs(scaled.calories - 1900) <= 2, `day one now adds up to the target: ${scaled.calories}`);
+  assert.deepEqual(fitted.map((f) => Math.round(f.from / 50) * 50), [2500, 1950, 4500]);
+  const [scaled, near, wild, close, low] = plan.days;
+  for (const d of [scaled, near, wild]) {
+    assert.ok(d.calories <= 1900 && d.calories >= 1895, `over the target, now on it and not a calorie over: ${d.calories}`);
+    assert.equal(d.calories, Math.round(d.meals.reduce((sum, m) => sum + m.nutrients.calories, 0)), 'the day adds up');
+  }
   const oats = scaled.meals[0].items[0];
   assert.equal(oats.grams, 76, 'the portion shrinks with its calories: 100 g × 0.76');
   assert.equal(oats.nutrients.protein, 15.2, 'and everything else in it');
   assert.equal(scaled.meals[0].nutrients.calories, oats.nutrients.calories, "the meal's total follows its foods");
-  assert.equal(close.calories, 1950, 'within 10%: left as planned');
-  assert.equal(wild.calories, 4500, 'more than one-and-a-half times out: shown as it came, not disguised');
+  assert.equal(close.calories, 1800, 'within 10% under: left as planned');
+  assert.equal(low.calories, 900, 'more than one-and-a-half times short: shown as it came, not disguised');
   assert.equal(low.underFloor, true, 'and a day under the floor is still marked');
+});
+
+test('rounding each meal never tips a day over the target', () => {
+  const req = cleanWeekRequest({ ...base, days: 1 })!;
+  for (const target of [1500, 1733, 1900, 2111, 2650]) {
+    for (const kcal of [target + 1, target + 7, target * 1.13, target * 2.9]) {
+      const meals = [0.21, 0.13, 0.29, 0.37].map((share, i) => ({
+        slot: (['breakfast', 'lunch', 'dinner', 'snack'] as const)[i],
+        title: `Meal ${i}`,
+        items: [item(`food ${i}`, kcal * share + 0.4), item(`side ${i}`, 33.3)],
+      }));
+      const { plan } = fitToTarget(toWeekPlan({ days: [{ day: 1, meals }] }, req), target, 1200);
+      assert.ok(plan.days[0].calories <= target, `${Math.round(kcal)} on ${target}: ${plan.days[0].calories}`);
+    }
+  }
 });

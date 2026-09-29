@@ -967,41 +967,52 @@ function scaleNutrients(n: Nutrients, factor: number): Nutrients {
   return out as unknown as Nutrients;
 }
 
-/** How far a day may land from the target before its portions are brought to it, and the most they are scaled by. */
-export const FIT = { tolerance: 0.1, least: 0.6, most: 1.5 };
+/** How far under the target a day may land before its portions are brought up to it, and the most they are scaled up by. */
+export const FIT = { tolerance: 0.1, most: 1.5 };
+
+/** A day's portions, grams and nutrition together, times a factor. */
+function scaleDay(day: WeekPlan['days'][number], factor: number) {
+  const meals = day.meals.map((meal) => ({
+    ...meal,
+    nutrients: scaleNutrients(meal.nutrients, factor),
+    items: meal.items.map((item) => ({
+      ...item,
+      grams: item.grams === undefined ? undefined : Math.round(item.grams * factor),
+      nutrients: scaleNutrients(item.nutrients, factor),
+    })),
+  }));
+  return { meals, calories: Math.round(meals.reduce((sum, m) => sum + m.nutrients.calories, 0)) };
+}
 
 /**
- * Each day brought to the calorie target it was planned for.
+ * Each day brought to the calorie target it was planned for, and never over it.
  *
- * The model is asked for days near the target and told this step does the
- * rest, so it need not work the sums out to the calorie; and the figures it
- * gave are then replaced by the food table's (server/grounding.ts), so a
- * day can drift well away from it — a plan that says it is for 1,900 kcal a
- * day and adds up to 2,500 is no use to anybody. A day more than 10% out has
- * every portion on it scaled by the same factor, grams and nutrition
- * together, so the meals stay the meals and the day adds up. A day so far out
- * that it would take more than halving or one-and-a-half times is left as it
- * is: that is a bad plan, not a rounding problem, and is shown as it came.
- * Exported for the tests.
+ * The model is asked for days at or just under the target and told this step
+ * does the rest, so it need not work the sums out to the calorie; and the
+ * figures it gave are then replaced by the food table's (server/grounding.ts),
+ * so a day can drift well away from it — a plan that says it is for 1,900 kcal
+ * a day and adds up to 2,500 is no use to anybody. A day over the target, by
+ * any amount, has every portion on it scaled down by the same factor, grams
+ * and nutrition together, so the meals stay the meals and the day comes in at
+ * the target. A day more than 10% under is scaled up to it the same way,
+ * unless it would take more than one-and-a-half times: that is a bad plan,
+ * not a rounding problem, and is shown as it came. Each meal's calories are
+ * rounded on their own, so the factor is nudged down until the rounded day is
+ * not a calorie over. Exported for the tests.
  */
 export function fitToTarget(plan: WeekPlan, target: number, floor: number): { plan: WeekPlan; fitted: { date: string; from: number }[] } {
   const fitted: { date: string; from: number }[] = [];
   const days = plan.days.map((day) => {
-    if (!day.calories || Math.abs(day.calories / target - 1) <= FIT.tolerance) return day;
-    const factor = target / day.calories;
-    if (factor < FIT.least || factor > FIT.most) return day;
+    if (!day.calories || (day.calories <= target && day.calories >= target * (1 - FIT.tolerance))) return day;
+    let factor = target / day.calories;
+    if (factor > FIT.most) return day;
+    let scaled = scaleDay(day, factor);
+    for (let tries = 0; scaled.calories > target && tries < 50; tries++) {
+      factor *= (target - 0.5) / scaled.calories;
+      scaled = scaleDay(day, factor);
+    }
     fitted.push({ date: day.date, from: day.calories });
-    const meals = day.meals.map((meal) => ({
-      ...meal,
-      nutrients: scaleNutrients(meal.nutrients, factor),
-      items: meal.items.map((item) => ({
-        ...item,
-        grams: item.grams === undefined ? undefined : Math.round(item.grams * factor),
-        nutrients: scaleNutrients(item.nutrients, factor),
-      })),
-    }));
-    const calories = Math.round(meals.reduce((sum, m) => sum + m.nutrients.calories, 0));
-    return { ...day, meals, calories, underFloor: calories < floor };
+    return { ...day, ...scaled, underFloor: scaled.calories < floor };
   });
   return { plan: { ...plan, days }, fitted };
 }
