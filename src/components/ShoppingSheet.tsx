@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Segmented, Sheet, useToast } from './ui';
+import HouseholdPicker from './HouseholdPicker';
 import { CloseIcon } from './icons';
 import { useSquish } from '../store/useSquish';
 import { addDays, isoDate } from '../lib/date';
@@ -21,6 +22,7 @@ type Range = '3' | '7';
 export default function ShoppingSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const plans = useSquish((s) => s.plans);
   const shopping = useSquish((s) => s.shopping);
+  const household = useSquish((s) => s.household);
   const { toggleShoppingTick, addShoppingExtra, removeShoppingExtra, clearShoppingTicked } = useSquish.getState();
   const toast = useToast();
   const [range, setRange] = useState<Range>('7');
@@ -28,7 +30,7 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
 
   const today = isoDate();
   const until = addDays(today, Number(range) - 1);
-  const lines = useMemo(() => shoppingList(plans, today, until), [plans, today, until]);
+  const lines = useMemo(() => shoppingList(plans, today, until, household), [plans, today, until, household]);
   const planned = plans.filter((p) => p.date >= today && p.date <= until).length;
   const ticked = new Set(shopping.ticked);
   const left = lines.filter((l) => !ticked.has(l.key)).length + shopping.extras.filter((e) => !ticked.has(`extra:${e.id}`)).length;
@@ -63,6 +65,7 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
             { value: '7', label: t('Next {n} days', { n: 7 }) },
           ]}
         />
+        <HouseholdPicker />
         <p className="tiny muted">
           {planned
             ? plural(planned, {

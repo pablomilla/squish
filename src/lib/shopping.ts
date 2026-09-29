@@ -12,6 +12,7 @@
  * shop.
  */
 import type { MealEntry } from '../types';
+import { SOLO, servingsFor, type Household } from './planner';
 import { plural, t, uiLocale } from './i18n';
 
 export type Aisle = 'fruit-veg' | 'meat-fish' | 'dairy-eggs' | 'bakery' | 'cupboard' | 'frozen' | 'drinks' | 'other';
@@ -71,19 +72,23 @@ export function shopAmount(total: number, liquid: boolean): string {
   return `${Math.max(step, Math.round(total / step) * step).toLocaleString(uiLocale())} ${liquid ? 'ml' : 'g'}`;
 }
 
-/** Every food in the plans for `from`..`to` (inclusive), added up and in aisle order. */
-export function shoppingList(plans: MealEntry[], from: string, to: string): ShoppingLine[] {
+/**
+ * Every food in the plans for `from`..`to` (inclusive), added up and in aisle
+ * order — each meal times however many it is cooked for (src/lib/planner.ts).
+ */
+export function shoppingList(plans: MealEntry[], from: string, to: string, household: Household = SOLO): ShoppingLine[] {
   const lines = new Map<string, { name: string; grams: number; weighed: boolean; liquid: boolean; aisle?: Aisle; portions: string[]; meals: Set<string> }>();
   for (const plan of plans) {
     if (plan.date < from || plan.date > to) continue;
+    const servings = servingsFor(plan, household);
     for (const item of plan.items) {
       const key = keyOf(item.name);
       if (!key) continue;
       const line = lines.get(key) ?? { name: item.name.trim(), grams: 0, weighed: true, liquid: Boolean(item.liquid), portions: [], meals: new Set() };
       line.aisle ??= isAisle(item.aisle) ? item.aisle : undefined;
-      if (item.grams && item.grams > 0) line.grams += item.grams;
+      if (item.grams && item.grams > 0) line.grams += item.grams * servings;
       else line.weighed = false;
-      line.portions.push(item.portion.trim());
+      for (let i = 0; i < servings; i++) line.portions.push(item.portion.trim());
       line.meals.add(plan.title);
       lines.set(key, line);
     }

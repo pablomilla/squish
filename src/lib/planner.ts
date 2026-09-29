@@ -196,3 +196,40 @@ export function replacedOn(plans: MealEntry[], dates: string[]): MealEntry[] {
   const on = new Set(dates);
   return plans.filter((p) => on.has(p.date) && replaceable(p));
 }
+
+/* ------------------------------------------------------------------ *
+ * Cooking for more than one.
+ *
+ * A plan's ingredients are one portion, sized to one person's day, and that
+ * portion is what gets logged. Cooking for a household multiplies the recipe
+ * and the shopping, never the diary. Usually it is dinner that is shared and
+ * the rest of the day is one's own, so that is the default; a meal can say
+ * otherwise for itself (lunch for the children too, a dinner out alone).
+ * ------------------------------------------------------------------ */
+
+export const MAX_SERVINGS = 8;
+
+export interface Household {
+  /** Everybody eating, them included. */
+  people: number;
+  /** Which meals everybody shares: just dinner, or every meal. */
+  shared: 'dinner' | 'all';
+}
+
+export const SOLO: Household = { people: 1, shared: 'dinner' };
+
+/** A household as saved or sent, made sensible. */
+export function cleanHousehold(raw: Partial<Household> | undefined): Household {
+  const people = Math.round(Number(raw?.people));
+  return {
+    people: Number.isFinite(people) ? Math.min(MAX_SERVINGS, Math.max(1, people)) : 1,
+    shared: raw?.shared === 'all' ? 'all' : 'dinner',
+  };
+}
+
+/** How many a planned meal is cooked for: its own number, else the household's for that meal. */
+export function servingsFor(plan: Pick<MealEntry, 'slot' | 'servings'>, household: Household = SOLO): number {
+  if (plan.servings) return plan.servings;
+  const { people, shared } = cleanHousehold(household);
+  return shared === 'all' || plan.slot === 'dinner' ? people : 1;
+}

@@ -56,6 +56,8 @@ export interface WeekPlanRequest {
    * planned around them. Absent from an app from before.
    */
   kept?: KeptMeal[];
+  /** Who else eats what they cook. The portions planned are still theirs alone. */
+  household?: { people: number; shared: 'dinner' | 'all' };
 }
 
 export interface KeptMeal {
@@ -100,7 +102,16 @@ export function cleanWeekRequest(body: unknown): WeekPlanRequest | null {
     cooking: raw.cooking === 'quick' || raw.cooking === 'batch' ? raw.cooking : 'normal',
     about: cleanAbout(raw.about),
     ...(kept.length ? { kept } : {}),
+    ...householdOf(raw.household),
   };
+}
+
+/** A household worth mentioning: more than one person. */
+function householdOf(raw: unknown): Pick<WeekPlanRequest, 'household'> {
+  const h = (raw ?? {}) as Record<string, unknown>;
+  const people = Math.round(Number(h.people));
+  if (!Number.isFinite(people) || people < 2) return {};
+  return { household: { people: Math.min(8, people), shared: h.shared === 'all' ? 'all' : 'dinner' } };
 }
 
 /** The date `n` days after `iso`, in the same calendar. */
@@ -172,6 +183,11 @@ export function weekPlanPrompt(req: WeekPlanRequest): string {
     `Each day: ${meals}.`,
     `Daily targets: ${req.calorieTarget} kcal, ${req.proteinTarget} g protein, at least ${req.fibreTarget} g fibre. Goal: ${req.goal === 'lose' ? 'losing weight gently' : req.goal === 'gain' ? 'building up' : 'staying steady'}.`,
     cooking,
+    ...(req.household
+      ? [
+          `They cook ${req.household.shared === 'all' ? 'every meal' : 'dinner'} for ${req.household.people} people, themselves included, so plan ${req.household.shared === 'all' ? 'meals' : 'dinners'} that suit a shared table. Every portion you give is still for them alone: the app scales the recipe and the shopping.`,
+        ]
+      : []),
     '',
     '<how_they_eat>',
     ...(eatingLines(req.about ?? {}).length ? eatingLines(req.about ?? {}) : ['- No diet or allergies given.']),

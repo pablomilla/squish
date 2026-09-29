@@ -4,6 +4,9 @@
 .cook p { margin: 0; }
 .cook-meta { margin-top: -6px !important; }
 .cook-head { margin: 0; }
+.cook-serves { padding: 3px; }
+.cook-serves button { width: 30px; height: 30px; font-size: 17px; }
+.cook-serves > span { min-width: 76px; font-size: var(--text-caption); }
 
 /* Keep and swap: small, beside the meal they change, not in the way of cooking it. */
 .cook-change { display: flex; gap: 8px; margin-top: -4px; }

@@ -182,6 +182,13 @@ food table cannot answer an ingredient. Plus only and not counted against the
 month — a plan that needs a few swaps is the plan working — with a daily guard
 (`SQUISH_DAILY_SWAPS`, 30). Its cost is shown with meal plans.
 
+Cooking for a household (the shopping list, the week's plan and a meal's
+recipe all say how many) costs nothing extra in itself: the recipe and the
+shopping are multiplied in the app, and what is logged stays one portion.
+Steps written for four are a different answer from steps for one, so they are
+kept separately — a meal cooked for several can cost one more cooking-steps
+call, once.
+
 Keeping a meal costs nothing: it is a flag on the plan in the app. A new week
 leaves kept meals (and anything they planned themselves) where they are, is
 told about them so it plans the rest of those days around them, and replaces

@@ -142,6 +142,12 @@ export interface MealEntry {
    * where it is, plans around it, and plans more like it (src/lib/planner.ts).
    */
   kept?: boolean;
+  /**
+   * Plans only: how many it is cooked for, where that is not the household's
+   * usual for this meal (src/lib/planner.ts). Scales the recipe and the
+   * shopping; the diary still gets one portion.
+   */
+  servings?: number;
 }
 
 export interface CookSteps {
@@ -149,6 +155,8 @@ export interface CookSteps {
   minutes: number;
   steps: string[];
   tip?: string;
+  /** How many the steps were written for; absent means one. */
+  servings?: number;
 }
 
 export interface DayLog {

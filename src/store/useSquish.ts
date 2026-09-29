@@ -21,6 +21,7 @@ import type { ShareDecor } from '../lib/shareDecor';
 import { newNote, type NutritionistNote } from '../lib/nutritionist-tools';
 import { isoDate, nowTime, slotForNow, type PartOfDay } from '../lib/date';
 import type { Extra } from '../lib/shopping';
+import { MAX_SERVINGS, SOLO, cleanHousehold, type Household } from '../lib/planner';
 import { ageOn, isBirthDate } from '../lib/birthday';
 
 /**
@@ -66,6 +67,8 @@ interface SquishState {
   plans: MealEntry[];
   /** What is ticked off the shopping list, and anything added to it by hand. The list itself is made from `plans`. */
   shopping: { ticked: string[]; extras: Extra[] };
+  /** Who they cook for, which scales recipes and the shopping list, never what is logged (src/lib/planner.ts). */
+  household: Household;
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
   /** "The protein of 3 eggs" on meals and the day. On unless turned off in You → Appearance. */
@@ -155,6 +158,9 @@ interface SquishState {
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setComparisons: (on: boolean) => void;
+  setHousehold: (household: Household) => void;
+  /** How many a planned meal is cooked for, where it differs from the household; undefined goes back to it. */
+  setPlanServings: (id: string, servings: number | undefined) => void;
   setLook: (look: string) => void;
   setOutfit: (outfit: Outfit) => void;
   setScene: (scene: string) => void;
@@ -294,6 +300,7 @@ export const useSquish = create<SquishState>()(
       favourites: [],
       plans: [],
       shopping: { ticked: [], extras: [] },
+      household: SOLO,
       unlocked: {},
       theme: 'system',
       comparisons: true,
@@ -402,7 +409,8 @@ export const useSquish = create<SquishState>()(
         // A plan for a day that has gone is logged on that day; one for today
         // or later is logged now, because now is when it was eaten.
         const past = plan.date < today;
-        const { id: _planId, cook: _cook, kept: _kept, ...rest } = plan;
+        // What was cooked for others is theirs: the diary gets one portion, as planned.
+        const { id: _planId, cook: _cook, kept: _kept, servings: _servings, ...rest } = plan;
         set({ plans: get().plans.filter((p) => p.id !== id) });
         return get().addMeal({ ...rest, date: past ? plan.date : today, time: past && plan.time ? plan.time : undefined });
       },
@@ -470,6 +478,15 @@ export const useSquish = create<SquishState>()(
 
       setTheme: (theme) => set({ theme }),
       setComparisons: (comparisons) => set({ comparisons }),
+      setHousehold: (household) => set({ household: cleanHousehold(household) }),
+      setPlanServings: (id, servings) =>
+        set({
+          plans: get().plans.map((p) => {
+            if (p.id !== id) return p;
+            const { servings: _old, ...rest } = p;
+            return servings === undefined ? rest : { ...rest, servings: Math.min(MAX_SERVINGS, Math.max(1, Math.round(servings))) };
+          }),
+        }),
       setLook: (look) => set({ look }),
       setOutfit: (outfit) => set({ outfit }),
       setScene: (scene) => set({ scene }),
@@ -502,6 +519,7 @@ export const useSquish = create<SquishState>()(
           favourites: [],
           plans: [],
           shopping: { ticked: [], extras: [] },
+          household: SOLO,
           unlocked: {},
           lastCoachNote: null,
           photoAnalyses: 0,

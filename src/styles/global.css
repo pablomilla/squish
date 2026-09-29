@@ -308,3 +308,8 @@ a { color: var(--brand-ink); }
 .icon-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--surface-sunk); color: var(--ink); border: 0; }
 .icon-btn:disabled { opacity: 0.35; }
 .icon-btn--sm { width: 36px; height: 36px; flex: none; }
+
+/* Who they cook for (HouseholdPicker.tsx), on the shopping list and the week's plan. */
+.household { display: flex; flex-direction: column; gap: 10px; }
+.household .stepper > span { min-width: 84px; }
+.stepper button:disabled { opacity: 0.4; box-shadow: none; }

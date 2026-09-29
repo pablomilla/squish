@@ -9,7 +9,7 @@ import { runConversation, type ChatContext, type ChatMessage, type ChatStep, typ
 import { placeHeaders } from './place';
 import { t } from './i18n';
 import type { About } from './eating';
-import type { KeptMeal } from './planner';
+import type { Household, KeptMeal } from './planner';
 import type { Heard } from './heard';
 
 const TIMEOUT_MS = 45_000;
@@ -280,6 +280,8 @@ export interface WeekPlanAsk {
   about: About;
   /** Meals already standing on those days — kept, or planned by them — for the plan to work around. */
   kept?: KeptMeal[];
+  /** Who else eats what they cook, when that is anybody. */
+  household?: Household;
 }
 
 /*
@@ -469,9 +471,10 @@ export async function waitingWeekPlan(): Promise<string | null> {
  * paywall. Written once per meal and kept on the server, so asking again for
  * the same meal costs nothing — the app keeps them on the plan as well.
  */
-export async function cookSteps(meal: Pick<MealEntry, 'title' | 'slot' | 'items'>): Promise<CookSteps> {
+export async function cookSteps(meal: Pick<MealEntry, 'title' | 'slot' | 'items'>, servings = 1): Promise<CookSteps> {
   const items = meal.items.map((item) => ({ name: item.name, portion: item.portion, grams: item.grams, liquid: item.liquid }));
-  return (await post<{ steps: CookSteps }>('/api/cook', { title: meal.title, slot: meal.slot, items }, 60_000)).steps;
+  const { steps } = await post<{ steps: CookSteps }>('/api/cook', { title: meal.title, slot: meal.slot, items, servings }, 60_000);
+  return servings > 1 ? { ...steps, servings } : steps;
 }
 
 export interface SwapAsk {

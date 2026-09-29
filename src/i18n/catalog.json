@@ -1,5 +1,5 @@
 {
- "version": "0nwc0tk080bukk",
+ "version": "0rljxn5-3ionbx",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -3354,6 +3354,14 @@
    ]
   },
   {
+   "id": "0j3ipph-mwlb44",
+   "text": "Fewer people",
+   "where": [
+    "src/components/CookSheet.tsx",
+    "src/components/HouseholdPicker.tsx"
+   ]
+  },
+  {
    "id": "0j45eps03ignar",
    "text": "A new phone is a sign-in, not a fresh start",
    "where": [
@@ -3365,13 +3373,6 @@
    "text": "Its own notes, kept in this browser with everything else. Delete any of them.",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "0j5nk47-5e67hx",
-   "text": "Cooking",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -4118,6 +4119,13 @@
    "text": "Your diary came with you.",
    "where": [
     "src/components/AccountCard.tsx"
+   ]
+  },
+  {
+   "id": "0mjjnz30ayn1u3",
+   "text": "Just me",
+   "where": [
+    "src/components/HouseholdPicker.tsx"
    ]
   },
   {
@@ -5400,6 +5408,14 @@
    ]
   },
   {
+   "id": "0tcz3sx0vmfl3b",
+   "one": "For {n}. Your portion is one of them — {energy} — and that is what gets logged.",
+   "other": "For {n}. Your portion is one of them — {energy} — and that is what gets logged.",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "0teq27d0ofkbs4",
    "text": "Calories (kcal)",
    "where": [
@@ -5952,6 +5968,14 @@
    ]
   },
   {
+   "id": "0vzn4j9009ob42",
+   "one": "{n} person",
+   "other": "{n} people",
+   "where": [
+    "src/components/HouseholdPicker.tsx"
+   ]
+  },
+  {
    "id": "0vzzk0z08yymwi",
    "text": "That sign-in did not come through. Try again.",
    "where": [
@@ -5978,6 +6002,13 @@
    "other": "{n} badges",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0w3gn7u-hxqwse",
+   "text": "Serves 1",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -7637,6 +7668,13 @@
    ]
   },
   {
+   "id": "168i4r3-1410t5",
+   "text": "How many it serves",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "169jin8-68w48j",
    "text": "Could not sign out just now.",
    "where": [
@@ -7655,6 +7693,13 @@
    "text": "over {limit} {unit}",
    "where": [
     "src/screens/Insights.tsx"
+   ]
+  },
+  {
+   "id": "16els2c-12euv1",
+   "text": "Dinners together",
+   "where": [
+    "src/components/HouseholdPicker.tsx"
    ]
   },
   {
@@ -7945,6 +7990,13 @@
    ]
   },
   {
+   "id": "17o56e8-wtufht",
+   "text": "Cooking for",
+   "where": [
+    "src/components/HouseholdPicker.tsx"
+   ]
+  },
+  {
    "id": "17oiw84-7dsipj",
    "text": "Ten years is not a grant, it is a mistake.",
    "where": [
@@ -8055,6 +8107,14 @@
    "text": "Ice lolly",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "1843wgz0za47wz",
+   "text": "More people",
+   "where": [
+    "src/components/CookSheet.tsx",
+    "src/components/HouseholdPicker.tsx"
    ]
   },
   {
@@ -8800,6 +8860,13 @@
    ]
   },
   {
+   "id": "1cld0810zhazyf",
+   "text": "Which meals are shared",
+   "where": [
+    "src/components/HouseholdPicker.tsx"
+   ]
+  },
+  {
    "id": "1cn3s4d0us537d",
    "text": "Berry smoothie",
    "where": [
@@ -8958,6 +9025,13 @@
    "text": "Make a free account",
    "where": [
     "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "1dr012e0vj629w",
+   "text": "Cooking style",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -12344,6 +12418,13 @@
    ]
   },
   {
+   "id": "1vu0yg10yxuauz",
+   "text": "Serves {n}",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "1vwbtmz-qhr2eo",
    "text": "Here’s your plan, {name}!",
    "where": [
@@ -12482,6 +12563,13 @@
    "text": "Let me plan your week",
    "where": [
     "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
+   "id": "1wrqs2705337d1",
+   "text": "Every meal",
+   "where": [
+    "src/components/HouseholdPicker.tsx"
    ]
   },
   {

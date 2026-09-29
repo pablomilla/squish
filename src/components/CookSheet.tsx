@@ -8,12 +8,12 @@ import { useSquish } from '../store/useSquish';
 import { useSubscribed } from './useSubscribed';
 import { cookSteps, isPaywalled, swapPlannedMeal } from '../lib/api';
 import { aboutOf } from '../lib/eating';
-import { NUTRITIONIST_PLAN_NOTE } from '../lib/planner';
+import { MAX_SERVINGS, NUTRITIONIST_PLAN_NOTE, servingsFor } from '../lib/planner';
 import { friendlyDate, isoDate } from '../lib/date';
 import { describePortion } from '../lib/units';
 import { formatEnergy } from '../lib/region';
 import { PLUS } from '../lib/plan';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { slotName } from '../lib/words';
 import './cook.css';
 
@@ -41,14 +41,21 @@ export function useEatPlan(): (plan: MealEntry) => void {
 export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; open: boolean; onClose: () => void }) {
   const setPlanCook = useSquish((s) => s.setPlanCook);
   const toggleKeepPlan = useSquish((s) => s.toggleKeepPlan);
+  const setPlanServings = useSquish((s) => s.setPlanServings);
+  const household = useSquish((s) => s.household);
+  const servings = servingsFor(plan, household);
+  const usual = servingsFor({ slot: plan.slot }, household);
   const subscribed = useSubscribed();
   const eat = useEatPlan();
   const toast = useToast();
   const [asking, setAsking] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  /** The server said this is Plus's, whatever the app thought: offer, don't wait. */
+  const [refused, setRefused] = useState(false);
   const [cooking, setCooking] = useState(false);
   const [swapping, setSwapping] = useState(false);
-  const steps = plan.cook;
+  // Steps written for another number of people are not these steps: their amounts are wrong.
+  const steps = plan.cook && (plan.cook.servings ?? 1) === servings ? plan.cook : undefined;
   // Keeping means something only for the nutritionist's plans: a new week replaces those, and never theirs.
   const keepable = plan.note === NUTRITIONIST_PLAN_NOTE;
 
@@ -56,26 +63,33 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
     setAsking(true);
     setFailed(null);
     try {
-      const written = await cookSteps(plan);
-      // Swapped while the steps were being written: these are the old meal's, and go nowhere.
-      if (useSquish.getState().plans.find((p) => p.id === plan.id)?.title === plan.title) setPlanCook(plan.id, written);
+      const written = await cookSteps(plan, servings);
+      // Swapped, or cooking for a different number, while the steps were being written: these go nowhere.
+      const { plans: now, household: home } = useSquish.getState();
+      const current = now.find((p) => p.id === plan.id);
+      if (current?.title === plan.title && servingsFor(current, home) === servings) setPlanCook(plan.id, written);
     } catch (error) {
       // The paywall has already said what there is to say.
-      if (!isPaywalled(error)) setFailed(error instanceof Error && error.message ? error.message : t('The steps could not be written just now. Try again in a moment.'));
+      if (isPaywalled(error)) setRefused(true);
+      else setFailed(error instanceof Error && error.message ? error.message : t('The steps could not be written just now. Try again in a moment.'));
     } finally {
       setAsking(false);
     }
-  }, [plan, setPlanCook]);
+  }, [plan, servings, setPlanCook]);
 
   // Opening a Plus member's meal is asking for its steps: once per meal, not on
   // every render — and again for the meal it was swapped for.
   const askedFor = useRef<string | null>(null);
   useEffect(() => {
-    const meal = `${plan.id}:${plan.title}`;
+    const meal = `${plan.id}:${plan.title}:${servings}`;
     if (!open || steps || !subscribed || swapping || askedFor.current === meal) return;
-    askedFor.current = meal;
-    void ask();
-  }, [open, steps, subscribed, swapping, plan.id, plan.title, ask]);
+    // A moment's pause, so stepping from 2 to 5 people asks once, for 5.
+    const timer = setTimeout(() => {
+      askedFor.current = meal;
+      void ask();
+    }, askedFor.current ? 600 : 0);
+    return () => clearTimeout(timer);
+  }, [open, steps, subscribed, swapping, plan.id, plan.title, servings, ask]);
 
   return (
     <Sheet open={open} onClose={onClose} title={plan.title}>
@@ -111,9 +125,27 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
         ) : (
           <>
             <section>
-              <h3 className="cook-head">{t('Ingredients')}</h3>
-              <Ingredients items={plan.items} />
-              <p className="tiny muted">{t('For one, sized to your day. These amounts are what gets logged.')}</p>
+              <div className="row-between">
+                <h3 className="cook-head">{t('Ingredients')}</h3>
+                <div className="stepper cook-serves" aria-label={t('How many it serves')}>
+                  <button type="button" aria-label={t('Fewer people')} disabled={servings <= 1} onClick={() => setPlanServings(plan.id, servings - 1 === usual ? undefined : servings - 1)}>
+                    −
+                  </button>
+                  <span aria-live="polite">{servings === 1 ? t('Serves 1') : t('Serves {n}', { n: servings })}</span>
+                  <button type="button" aria-label={t('More people')} disabled={servings >= MAX_SERVINGS} onClick={() => setPlanServings(plan.id, servings + 1 === usual ? undefined : servings + 1)}>
+                    +
+                  </button>
+                </div>
+              </div>
+              <Ingredients items={plan.items} servings={servings} />
+              <p className="tiny muted">
+                {servings === 1
+                  ? t('For one, sized to your day. These amounts are what gets logged.')
+                  : plural(servings, {
+                      one: 'For {n}. Your portion is one of them — {energy} — and that is what gets logged.',
+                      other: 'For {n}. Your portion is one of them — {energy} — and that is what gets logged.',
+                    }, { energy: formatEnergy(plan.nutrients.calories) })}
+              </p>
             </section>
 
             <section>
@@ -131,7 +163,8 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
                     </p>
                   )}
                 </>
-              ) : asking ? (
+              ) : asking || (subscribed && !failed && !refused) ? (
+                // Also while a change in how many it serves settles, so the old steps are not replaced by a button for a moment.
                 <div className="cook-writing">
                   <Squish mood="thinking" size={64} bob={false} />
                   <p className="small muted">{t('Writing the steps for you…')}</p>
@@ -166,14 +199,19 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
   );
 }
 
-function Ingredients({ items }: { items: MealEntry['items'] }) {
+/** A meal's ingredients, times however many it is cooked for. */
+function Ingredients({ items, servings = 1 }: { items: MealEntry['items']; servings?: number }) {
   return (
     <ul className="cook-ingredients">
       {items.map((item, i) => (
         <li key={item.id ?? i}>
           <span aria-hidden="true">{item.emoji ?? '🍽️'}</span>
           <span className="grow" dir="auto">{item.name}</span>
-          <span className="small muted">{describePortion(item.portion, item.grams, item.liquid)}</span>
+          <span className="small muted">
+            {servings === 1
+              ? describePortion(item.portion, item.grams, item.liquid)
+              : describePortion(`${servings} × ${item.portion}`, item.grams ? item.grams * servings : undefined, item.liquid)}
+          </span>
         </li>
       ))}
     </ul>
