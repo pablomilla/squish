@@ -198,6 +198,8 @@ export function CookMode({
   const details = detailsFor(steps, detail);
   const step = details[at];
   const using = usedIn(steps[at], items);
+  // In the drawing: this step's foods; for serving, the whole meal.
+  const foods = [...new Set((using.length || step.action !== 'serve' ? using : items).map((i) => i.emoji).filter((e): e is string => Boolean(e) && e !== '🍽️'))];
   const timer = useStepTimer();
 
   // Keep the screen on, and take it back when the page comes back into view:
@@ -267,7 +269,7 @@ export function CookMode({
 
       <div className="cook-mode-body">
         <div className="cook-mode-art" key={at}>
-          <StepArt action={step.action} />
+          <StepArt action={step.action} foods={foods} />
         </div>
 
         <p className="cook-mode-step" dir="auto" aria-live="polite">

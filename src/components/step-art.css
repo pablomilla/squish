@@ -61,3 +61,12 @@
 @media (prefers-reduced-motion: reduce) {
   .step-art * { animation: none !important; }
 }
+
+/* The step's own foods, as their emoji, moving with the scene: bobbing in the pot, jumping in the pan. */
+.sa-emoji { transform-box: fill-box; transform-origin: center; }
+.sa-foods--boil .sa-emoji { animation: sa-bob 1.8s ease-in-out infinite; }
+.sa-foods--fry .sa-emoji { animation: sa-jump 1.2s ease-in-out infinite; }
+.sa-foods--mix .sa-emoji, .sa-foods--blend .sa-emoji { animation: sa-tumble 2.4s ease-in-out infinite; }
+.sa-foods--rinse .sa-emoji { animation: sa-bob 2.2s ease-in-out infinite; }
+@keyframes sa-jump { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-7px) rotate(-8deg); } }
+@keyframes sa-tumble { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(14deg) translateY(-3px); } }
