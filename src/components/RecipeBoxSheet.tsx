@@ -233,7 +233,17 @@ function RecipeView({ recipe, onBack, onDone }: { recipe: Recipe; onBack: () => 
         </>
       )}
 
-      {cooking && method.steps && <CookMode plan={recipe} steps={method.steps.steps} onClose={() => setCooking(false)} onDone={madeIt} />}
+      {cooking && method.steps && (
+        <CookMode
+          plan={recipe}
+          steps={method.steps.steps}
+          detail={method.steps.detail}
+          items={recipe.items}
+          servings={servings}
+          onClose={() => setCooking(false)}
+          onDone={madeIt}
+        />
+      )}
     </div>
   );
 }

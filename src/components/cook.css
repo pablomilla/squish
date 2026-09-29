@@ -50,11 +50,43 @@
 .cook-mode-progress span { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-sunk); transition: background 0.2s var(--ease); }
 .cook-mode-progress span.is-done { background: var(--brand); }
 .cook-mode-title { margin: 0; }
-.cook-mode-step {
-  flex: 1; display: flex; align-items: center; margin: 0; padding: 12px 0;
-  font-size: clamp(1.35rem, 5.6vw, 1.75rem); line-height: 1.4; font-weight: 600; color: var(--ink);
-  overflow-y: auto;
+.cook-mode-top { gap: 10px; }
+.cook-mode-count { flex: none; }
+
+/* The step: a drawing of what it does, the words, what it uses, and its timer. Scrolls on a small phone rather than squashing. */
+.cook-mode-body {
+  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center;
+  gap: var(--s4); padding: var(--s3) 0;
 }
+.cook-mode-art { animation: cook-art-in 0.35s var(--ease); }
+.cook-mode-art .step-art { max-height: 26vh; width: auto; max-width: 100%; }
+@keyframes cook-art-in { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: none; } }
+.cook-mode-step { margin: 0; font-size: clamp(1.2rem, 5vw, 1.5rem); line-height: 1.42; font-weight: 600; color: var(--ink); }
+
+.cook-mode-uses { display: flex; flex-direction: column; gap: 6px; }
+.cook-mode-uses ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.cook-use { padding: 6px 12px; border-radius: var(--r-pill); background: var(--surface-sunk); font-size: var(--text-caption); color: var(--ink); }
+
+.cook-timer-start { align-self: flex-start; }
+.cook-timer { display: flex; align-items: center; gap: var(--s3); }
+/* The time left as a ring that empties, drawn with a conic gradient: no chart library for one circle. */
+.cook-timer-ring { width: 92px; height: 92px; flex: none; position: relative; display: grid; place-items: center; }
+.cook-timer-arc {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(var(--brand) var(--left), var(--surface-sunk) 0);
+  -webkit-mask: radial-gradient(circle, transparent 0 34px, #000 35px); mask: radial-gradient(circle, transparent 0 34px, #000 35px);
+}
+.cook-timer-ring b { position: relative; font-size: 1.05rem; font-variant-numeric: tabular-nums; color: var(--ink); text-align: center; line-height: 1.1; padding: 0 12px; }
+.cook-timer.is-done .cook-timer-arc { background: var(--good); animation: cook-timer-pulse 1s ease-in-out infinite; }
+.cook-timer-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.cook-timer-pill {
+  margin-inline-start: auto; padding: 6px 12px; border-radius: var(--r-pill); background: var(--brand-soft); color: var(--brand-ink);
+  font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cook-timer-pill.is-done { background: var(--good); color: var(--on-brand); animation: cook-timer-pulse 1s ease-in-out infinite; }
+@keyframes cook-timer-pulse { 50% { opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) { .cook-mode-art, .cook-timer.is-done .cook-timer-arc, .cook-timer-pill.is-done { animation: none; } }
+
 .cook-mode-foot { display: flex; flex-direction: column; gap: 10px; }
 .cook-mode-foot p { margin: 0; }
 .cook-mode-nav { display: flex; gap: 10px; }

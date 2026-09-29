@@ -1,0 +1,63 @@
+/* Cook mode's drawings (StepArt.tsx): the app's own colours, so light and dark both work. */
+.step-art { width: 100%; max-width: 300px; height: auto; display: block; margin: 0 auto; }
+.step-art * { stroke-linecap: round; stroke-linejoin: round; }
+
+.sa-blob { fill: var(--brand-soft); }
+.sa-peach { fill: var(--peach); }
+.sa-mint { fill: var(--mint); }
+.sa-yellow { fill: var(--yellow); }
+
+/* Things: a soft fill and an ink outline, like the rest of Squish's drawings. */
+.sa-board { fill: var(--peach-soft); stroke: var(--ink-2); stroke-width: 3; }
+.sa-board-hole { fill: var(--brand-soft); stroke: var(--ink-2); stroke-width: 2; }
+.sa-blade { fill: var(--surface); stroke: var(--ink-2); stroke-width: 3; }
+.sa-handle { fill: var(--ink-2); }
+.sa-veg, .sa-food { stroke: var(--ink-2); stroke-width: 2.5; }
+.sa-bowl, .sa-pot, .sa-jug { fill: var(--surface); stroke: var(--ink-2); stroke-width: 3; }
+.sa-rim, .sa-lid, .sa-base, .sa-panel { fill: var(--ink-2); }
+.sa-hole { fill: var(--brand-soft); stroke: var(--ink-2); stroke-width: 2; }
+.sa-hole-dark { fill: var(--surface); }
+.sa-mix { fill: var(--yellow-soft); stroke: var(--ink-2); stroke-width: 2; }
+.sa-swirl, .sa-hands, .sa-char { fill: none; stroke: var(--ink-2); stroke-width: 3; }
+.sa-jar { fill: var(--surface); stroke: var(--ink-2); stroke-width: 3; }
+.sa-grain { fill: var(--ink-2); }
+.sa-plate, .sa-plate-in { fill: var(--surface); stroke: var(--ink-2); stroke-width: 3; }
+.sa-plate-in { stroke-width: 2; stroke: var(--line-strong); }
+.sa-water { fill: var(--mint-soft); stroke: var(--ink-2); stroke-width: 2; }
+.sa-bubble { fill: var(--surface); stroke: var(--ink-2); stroke-width: 2; }
+.sa-hob { fill: var(--ink-3); }
+.sa-pan { fill: var(--ink-2); }
+.sa-pan-in { fill: var(--ink-3); }
+.sa-oven { fill: var(--surface); stroke: var(--ink-2); stroke-width: 3; }
+.sa-knob { fill: var(--surface); stroke: var(--ink-2); stroke-width: 2; }
+.sa-window { fill: var(--yellow-soft); stroke: var(--ink-2); stroke-width: 3; }
+.sa-tray { fill: var(--ink-2); }
+.sa-bar { fill: var(--ink-3); }
+.sa-flame { fill: var(--peach); stroke: var(--ink-2); stroke-width: 2; }
+.sa-clock { fill: var(--surface); stroke: var(--ink-2); stroke-width: 3; }
+.sa-clock-in { fill: none; stroke: var(--line-strong); stroke-width: 2; stroke-dasharray: 2 9; }
+.sa-sparkle { fill: var(--yellow); stroke: var(--ink-2); stroke-width: 2; }
+.sa-drop { fill: var(--mint); stroke: var(--ink-2); stroke-width: 2; }
+.sa-wisp { fill: none; stroke: var(--ink-3); stroke-width: 3; }
+
+/* A little life: steam rising, bubbles, a sizzle, falling drops and grains. */
+.sa-wisp { animation: sa-rise 2.4s var(--ease) infinite; }
+.sa-bubble { animation: sa-bob 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.sa-sizzle .sa-wisp { animation: sa-flicker 0.9s steps(2) infinite; }
+.sa-drop, .sa-grain { animation: sa-fall 1.4s ease-in infinite; }
+.sa-flame { animation: sa-flicker 1s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+.sa-sparkle { animation: sa-twinkle 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.sa-knife { animation: sa-chop 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: right center; }
+.sa-hands { animation: sa-spin 8s linear infinite; transform-origin: 120px 78px; }
+
+@keyframes sa-rise { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(-10px); } }
+@keyframes sa-bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(0.85); } }
+@keyframes sa-flicker { 0%, 100% { opacity: 1; transform: scaleY(1); } 50% { opacity: 0.55; transform: scaleY(0.9); } }
+@keyframes sa-fall { 0% { opacity: 0; transform: translateY(-8px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(14px); } }
+@keyframes sa-twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+@keyframes sa-chop { 0%, 60%, 100% { transform: rotate(0); } 30% { transform: rotate(-8deg); } }
+@keyframes sa-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .step-art * { animation: none !important; }
+}

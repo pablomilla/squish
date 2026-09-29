@@ -148,7 +148,9 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
         )}
       </div>
 
-      {cooking && steps && <CookMode plan={plan} steps={steps.steps} onClose={() => setCooking(false)} onDone={() => eat(plan)} />}
+      {cooking && steps && (
+        <CookMode plan={plan} steps={steps.steps} detail={steps.detail} items={plan.items} servings={servings} onClose={() => setCooking(false)} onDone={() => eat(plan)} />
+      )}
     </Sheet>
   );
 }

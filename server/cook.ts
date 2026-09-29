@@ -20,6 +20,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { MealSlot } from '../src/types';
+import { STEP_ACTIONS, isStepAction, type StepDetail } from '../src/lib/cooking';
 import { hasDatabase, migrate, query } from './db';
 
 export interface CookItem {
@@ -46,6 +47,8 @@ export interface CookSteps {
   steps: string[];
   /** One useful line — making it ahead, a swap, the leftovers — or nothing. */
   tip?: string;
+  /** For cook mode, one per step: what it does, and a timer if it has something to wait for. */
+  detail?: StepDetail[];
 }
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -102,9 +105,19 @@ export const COOK_SCHEMA = {
   properties: {
     minutes: { type: 'integer', description: 'Roughly how long from starting to eating, in minutes.' },
     steps: { type: 'array', items: { type: 'string' }, description: 'The method, one action per step, in order.' },
+    actions: {
+      type: 'array',
+      items: { type: 'string', enum: [...STEP_ACTIONS] },
+      description: 'One per step, in the same order: the main thing that step does.',
+    },
+    timers: {
+      type: 'array',
+      items: { type: 'integer' },
+      description: 'One per step, in the same order: minutes to set a timer for, or 0.',
+    },
     tip: { type: 'string', description: 'One short, useful line, or an empty string.' },
   },
-  required: ['minutes', 'steps', 'tip'],
+  required: ['minutes', 'steps', 'actions', 'timers', 'tip'],
 } as const;
 
 export const COOK_SYSTEM = `You write the method for a meal somebody has planned, so they can cook it tonight without looking anything up.
@@ -119,6 +132,8 @@ How to write it:
 - Give heat, times and how to tell it is done ("until the chicken is white all the way through"). Cook meat, fish and eggs through.
 - A ready-to-eat item (a yoghurt, fruit, a bought sandwich) only needs serving. A meal made only of those is one or two steps.
 - minutes: from starting to eating, honestly, including any oven time.
+- actions: for each step, in order, the one thing it mostly does: prep (chopping, slicing, weighing out), rinse (rinsing, draining), mix, season, boil (boiling, simmering, poaching, steaming), fry, bake (oven), grill, blend, rest (resting, cooling, marinating, waiting) or serve.
+- timers: for each step, in order, the minutes to set a timer for when the step says to leave something for a time ("simmer for 10–12 minutes" is 12), else 0.
 - tip: one short, practical line — making it ahead, what to do with a leftover, a swap that keeps it the same meal — or an empty string. Never a health claim.
 - Do not repeat the ingredient list, and do not mention calories or nutrition.
 
@@ -148,7 +163,7 @@ export function cookPrompt(ask: CookAsk): string {
 
 /** The model's answer, checked: steps that say something, a time that could be true. Throws if there is nothing to cook from. */
 export function toCookSteps(parsed: unknown): CookSteps {
-  const raw = (parsed ?? {}) as { minutes?: unknown; steps?: unknown; tip?: unknown };
+  const raw = (parsed ?? {}) as { minutes?: unknown; steps?: unknown; tip?: unknown; actions?: unknown; timers?: unknown };
   const steps = (Array.isArray(raw.steps) ? raw.steps : [])
     .map((step) => text(step, 400).replace(/^\d+[.)]\s*/, ''))
     .filter(Boolean)
@@ -156,7 +171,29 @@ export function toCookSteps(parsed: unknown): CookSteps {
   if (!steps.length) throw new Error('The method came back with no steps.');
   const minutes = Math.round(Number(raw.minutes));
   const tip = text(raw.tip, 240);
-  return { minutes: Number.isFinite(minutes) ? Math.min(600, Math.max(1, minutes)) : 20, steps, ...(tip ? { tip } : {}) };
+  return {
+    minutes: Number.isFinite(minutes) ? Math.min(600, Math.max(1, minutes)) : 20,
+    steps,
+    ...(tip ? { tip } : {}),
+    ...detailOf(raw, steps.length),
+  };
+}
+
+/**
+ * The labels for cook mode, kept only when there is one for every step: a
+ * list out of step with the steps would draw a pan beside the washing-up.
+ * Without them, cook mode reads each step's words instead (src/lib/cooking.ts).
+ */
+function detailOf(raw: { actions?: unknown; timers?: unknown }, count: number): Pick<CookSteps, 'detail'> {
+  const actions = Array.isArray(raw.actions) ? raw.actions : [];
+  const timers = Array.isArray(raw.timers) ? raw.timers : [];
+  if (actions.length !== count || !actions.every(isStepAction)) return {};
+  return {
+    detail: actions.map((action, i) => {
+      const minutes = Math.round(Number(timers[i]));
+      return { action, ...(minutes > 0 && minutes <= 240 ? { minutes } : {}) };
+    }),
+  };
 }
 
 /* ------------------------------------------------------------------ *

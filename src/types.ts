@@ -1,3 +1,4 @@
+import type { StepDetail } from './lib/cooking';
 import type { EnergyUnit, Region } from './lib/region';
 import type { Language } from './lib/language';
 import type { Aim, Avoid, Diet, Obstacle } from './lib/eating';
@@ -177,6 +178,8 @@ export interface CookSteps {
   tip?: string;
   /** How many the steps were written for; absent means one. */
   servings?: number;
+  /** For cook mode, one per step: what it does and any timer (src/lib/cooking.ts). Absent from steps written before. */
+  detail?: StepDetail[];
 }
 
 export interface DayLog {

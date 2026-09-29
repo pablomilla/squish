@@ -1,5 +1,5 @@
 {
- "version": "1hdgr7k-hn3e33",
+ "version": "1w7mq3i-9ecc2f",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -805,6 +805,13 @@
    "text": "Another device has backed up something this one has not seen. Squish will not merge two diaries — that means guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say which to keep.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "03ufivl0w4wpof",
+   "text": "Time’s up — step {n}",
+   "where": [
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -3436,6 +3443,13 @@
    ]
   },
   {
+   "id": "0j4z7710y8cdi9",
+   "text": "Pause",
+   "where": [
+    "src/components/cookParts.tsx"
+   ]
+  },
+  {
    "id": "0j53ecn0swqj1o",
    "text": "Its own notes, kept in this browser with everything else. Delete any of them.",
    "where": [
@@ -3822,7 +3836,8 @@
    "id": "0ky4lc5-vlyf6m",
    "text": "Stop",
    "where": [
-    "src/components/DictateButton.tsx"
+    "src/components/DictateButton.tsx",
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -6320,6 +6335,13 @@
    ]
   },
   {
+   "id": "0xasi6100h6il3",
+   "text": "Carry on",
+   "where": [
+    "src/components/cookParts.tsx"
+   ]
+  },
+  {
    "id": "0xbaa9q0c064vm",
    "text": "Back to the suggested plan",
    "where": [
@@ -6666,6 +6688,13 @@
    "text": "Starburst",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "0zsaaq3-v4b10f",
+   "text": "step {n}",
+   "where": [
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -7380,6 +7409,7 @@
    "text": "Done",
    "where": [
     "src/components/CheckinSheets.tsx",
+    "src/components/cookParts.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -7611,6 +7641,13 @@
    ]
   },
   {
+   "id": "154ttvd0ldebzb",
+   "text": "Time’s up",
+   "where": [
+    "src/components/cookParts.tsx"
+   ]
+  },
+  {
    "id": "156gcra06j6yad",
    "text": "Made in a factory from refined ingredients rather than cooked from food. It counts against the score.",
    "where": [
@@ -7808,6 +7845,13 @@
    "text": "Save your plan",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "162cx4u-mn0z0z",
+   "text": "For this step",
+   "where": [
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -9387,6 +9431,13 @@
    "text": "you’ve had it before",
    "where": [
     "src/components/TodayPlanning.tsx"
+   ]
+  },
+  {
+   "id": "1ecw6ue-ybre5r",
+   "text": "Start a {n}-minute timer",
+   "where": [
+    "src/components/cookParts.tsx"
    ]
   },
   {

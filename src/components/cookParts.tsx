@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { CookSteps, MealEntry } from '../types';
+import type { CookSteps, FoodItem, MealEntry } from '../types';
+import StepArt from './StepArt';
+import { detailsFor, usedIn, type StepDetail } from '../lib/cooking';
 import Squish from './Squish';
 import { CloseIcon } from './icons';
 import { useSubscribed } from './useSubscribed';
@@ -169,12 +171,34 @@ export function Ingredients({ items, servings = 1 }: { items: MealEntry['items']
 /**
  * One step at a time, big enough to read from across a kitchen, with the
  * screen kept awake where the browser allows — nobody should have to unlock a
- * phone with floury hands.
+ * phone with floury hands. Each step has a drawing of what it does, the foods
+ * it uses (for however many it serves), and a timer when it has something to
+ * wait for: the timer keeps going between steps, and says so at the top.
  */
-export function CookMode({ plan, steps, onClose, onDone }: { plan: Pick<MealEntry, 'title'>; steps: string[]; onClose: () => void; onDone: () => void }) {
+export function CookMode({
+  plan,
+  steps,
+  detail,
+  items = [],
+  servings = 1,
+  onClose,
+  onDone,
+}: {
+  plan: Pick<MealEntry, 'title'>;
+  steps: string[];
+  detail?: StepDetail[];
+  items?: FoodItem[];
+  servings?: number;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [at, setAt] = useState(0);
   const [awake, setAwake] = useState(false);
   const last = at === steps.length - 1;
+  const details = detailsFor(steps, detail);
+  const step = details[at];
+  const using = usedIn(steps[at], items);
+  const timer = useStepTimer();
 
   // Keep the screen on, and take it back when the page comes back into view:
   // the browser lets go of the lock whenever the tab is hidden.
@@ -219,10 +243,17 @@ export function CookMode({ plan, steps, onClose, onDone }: { plan: Pick<MealEntr
     return () => window.removeEventListener('keydown', onKey, true);
   }, [steps.length, onClose]);
 
+  const elsewhere = timer.state && timer.state.step !== at;
+
   return createPortal(
     <div className="cook-mode" role="dialog" aria-modal="true" aria-label={t('Cooking {meal}', { meal: plan.title })}>
       <div className="cook-mode-top">
         <span className="small muted cook-mode-count">{t('Step {n} of {total}', { n: at + 1, total: steps.length })}</span>
+        {elsewhere && (
+          <button type="button" className={`cook-timer-pill${timer.done ? ' is-done' : ''}`} onClick={() => setAt(timer.state!.step)}>
+            ⏱ {timer.done ? t('Time’s up — step {n}', { n: timer.state!.step + 1 }) : `${clock(timer.left)} · ${t('step {n}', { n: timer.state!.step + 1 })}`}
+          </button>
+        )}
         <button type="button" className="icon-btn" onClick={onClose} aria-label={t('Stop cooking')}>
           <CloseIcon />
         </button>
@@ -234,9 +265,37 @@ export function CookMode({ plan, steps, onClose, onDone }: { plan: Pick<MealEntr
       </div>
       <p className="tiny muted cook-mode-title" dir="auto">{plan.title}</p>
 
-      <p className="cook-mode-step" dir="auto" aria-live="polite">
-        {steps[at]}
-      </p>
+      <div className="cook-mode-body">
+        <div className="cook-mode-art" key={at}>
+          <StepArt action={step.action} />
+        </div>
+
+        <p className="cook-mode-step" dir="auto" aria-live="polite">
+          {steps[at]}
+        </p>
+
+        {using.length > 0 && (
+          <div className="cook-mode-uses">
+            <span className="tiny muted">{t('For this step')}</span>
+            <ul>
+              {using.map((item, i) => (
+                <li key={item.id ?? i} className="cook-use">
+                  <span aria-hidden="true">{item.emoji ?? '🍽️'}</span> <span dir="auto">{item.name}</span>
+                  {item.grams ? <span className="muted"> · {describePortion('', item.grams * servings, item.liquid)}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {step.minutes && (
+          <StepTimer
+            minutes={step.minutes}
+            here={timer.state?.step === at ? timer : null}
+            onStart={() => timer.start(at, step.minutes!)}
+          />
+        )}
+      </div>
 
       <div className="cook-mode-foot">
         {awake && <p className="tiny muted center">{t('Your screen stays on while you cook.')}</p>}
@@ -257,5 +316,127 @@ export function CookMode({ plan, steps, onClose, onDone }: { plan: Pick<MealEntr
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** mm:ss, from milliseconds. */
+function clock(ms: number): string {
+  const s = Math.ceil(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+interface Timer {
+  state: { step: number; total: number; ends: number | null; left: number } | null;
+  left: number;
+  done: boolean;
+  start: (step: number, minutes: number) => void;
+  pause: () => void;
+  resume: () => void;
+  stop: () => void;
+}
+
+/**
+ * One kitchen timer for the whole cook: started from a step, running while
+ * the other steps are read, and when it ends it says so — a chime and a buzz
+ * where the phone allows, and on screen whichever step is showing.
+ */
+function useStepTimer(): Timer {
+  const [state, setState] = useState<Timer['state']>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const rung = useRef(false);
+  const sound = useRef<AudioContext | null>(null);
+  const left = state ? (state.ends ? Math.max(0, state.ends - now) : state.left) : 0;
+  const done = Boolean(state?.ends) && left === 0;
+
+  useEffect(() => {
+    if (!state?.ends) return;
+    const tick = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(tick);
+  }, [state]);
+
+  useEffect(() => {
+    if (!done || rung.current) return;
+    rung.current = true;
+    navigator.vibrate?.([250, 120, 250, 120, 250]);
+    chime(sound.current);
+  }, [done]);
+
+  return {
+    state,
+    left,
+    done,
+    start: (step, minutes) => {
+      // Made on the tap that starts it: a browser only lets a page make a sound it was asked for.
+      try {
+        const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        sound.current ??= Ctx ? new Ctx() : null;
+        void sound.current?.resume();
+      } catch {
+        sound.current = null;
+      }
+      rung.current = false;
+      const total = minutes * 60_000;
+      setNow(Date.now());
+      setState({ step, total, ends: Date.now() + total, left: total });
+    },
+    pause: () => state?.ends && setState({ ...state, ends: null, left: Math.max(0, state.ends - Date.now()) }),
+    resume: () => state && !state.ends && setState({ ...state, ends: Date.now() + state.left }),
+    stop: () => setState(null),
+  };
+}
+
+/** Three soft notes. Nothing at all where the browser will not play them. */
+function chime(ctx: AudioContext | null): void {
+  if (!ctx) return;
+  try {
+    [0, 0.35, 0.7].forEach((at, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = [660, 880, 990][i];
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + at);
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + at + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + at);
+      osc.stop(ctx.currentTime + at + 0.32);
+    });
+  } catch {
+    /* a timer that cannot chime still shows it is done */
+  }
+}
+
+/** The step's timer: a button to start it, then the countdown with pause and stop. */
+function StepTimer({ minutes, here, onStart }: { minutes: number; here: Timer | null; onStart: () => void }) {
+  if (!here?.state) {
+    return (
+      <button type="button" className="btn btn--soft cook-timer-start" onClick={onStart}>
+        ⏱ {t('Start a {n}-minute timer', { n: minutes })}
+      </button>
+    );
+  }
+  const share = here.state.total ? here.left / here.state.total : 0;
+  return (
+    <div className={`cook-timer${here.done ? ' is-done' : ''}`} role="timer" aria-live={here.done ? 'assertive' : 'off'}>
+      <div className="cook-timer-ring" style={{ ['--left' as string]: `${Math.round(share * 360)}deg` }}>
+        <span className="cook-timer-arc" aria-hidden="true" />
+        <b>{here.done ? t('Time’s up') : clock(here.left)}</b>
+      </div>
+      <div className="cook-timer-actions">
+        {here.done ? (
+          <button type="button" className="btn btn--sm btn--soft" onClick={here.stop}>
+            {t('Done')}
+          </button>
+        ) : (
+          <>
+            <button type="button" className="btn btn--sm btn--ghost" onClick={here.state.ends ? here.pause : here.resume}>
+              {here.state.ends ? t('Pause') : t('Carry on')}
+            </button>
+            <button type="button" className="btn--quiet small" onClick={here.stop}>
+              {t('Stop')}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
