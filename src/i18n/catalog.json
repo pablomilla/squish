@@ -1,5 +1,5 @@
 {
- "version": "15j71m6-uxw31b",
+ "version": "1hdgr7k-hn3e33",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -122,6 +122,13 @@
    "text": "When",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "00lswqf-clk72m",
+   "text": "skipped",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
    ]
   },
   {
@@ -1913,6 +1920,13 @@
    ]
   },
   {
+   "id": "0afkme1006fvpk",
+   "text": "Not for me",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
    "id": "0ah2ma70twcxxx",
    "text": "Could not sign in just now.",
    "where": [
@@ -2517,6 +2531,13 @@
    "text": "Snap your meal",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0e4jcqr-wkny7m",
+   "text": "That plan fitted your week. The next one keeps to what you made.",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
    ]
   },
   {
@@ -4393,6 +4414,13 @@
    ]
   },
   {
+   "id": "0nq48f7-nrrlv5",
+   "text": "fewer like {meals}",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "0nqcrqi-k5fmvw",
    "text": "Meat & fish",
    "where": [
@@ -4727,6 +4755,13 @@
    ]
   },
   {
+   "id": "0p5vadi-3ic53o",
+   "text": "It will keep this one simpler, with more leftovers.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "0p84vlz0gk6xjv",
    "text": "Straw sun hat",
    "where": [
@@ -4943,6 +4978,13 @@
    "text": "A year works out at {price} a week — less than a coffee, for a nutritionist who has read your diary.",
    "where": [
     "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "0q7djkx0us9gdx",
+   "text": "more like {meals}",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -6294,6 +6336,13 @@
    ]
   },
   {
+   "id": "0xea73n08k32vq",
+   "text": "Busy week? Leave them be — only “Not for me” rules a meal out.",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
    "id": "0xg9wu90943iu9",
    "text": "already in your plans",
    "where": [
@@ -6727,6 +6776,13 @@
    "text": "That sign-in could not be checked. Try again, or use your email.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "10ji5yw-euyggc",
+   "text": "Not for me ✓",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
    ]
   },
   {
@@ -8257,6 +8313,13 @@
    ]
   },
   {
+   "id": "18dwldi-pxn9wj",
+   "text": "That was a lot to fit in. The next plan will be simpler: fewer dishes, more leftovers.",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
    "id": "18dz3vl05g4phk",
    "text": "Prawns, cooked",
    "where": [
@@ -8335,6 +8398,13 @@
    ]
   },
   {
+   "id": "18pvxy1-c1rrqp",
+   "text": "You made {made} of {planned}",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
    "id": "18u3ykk-yqr7df",
    "text": "Listening…",
    "where": [
@@ -8376,6 +8446,13 @@
    "where": [
     "src/lib/words.ts",
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "193qjy5069inty",
+   "text": "taken off",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
    ]
   },
   {
@@ -9025,6 +9102,13 @@
    "text": "Make an account to join",
    "where": [
     "src/components/squad/SquadStrip.tsx"
+   ]
+  },
+  {
+   "id": "1ctpgum-xrjf69",
+   "text": "Learning from your last plans: {what}.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -10374,6 +10458,13 @@
    ]
   },
   {
+   "id": "1jg1wkr0-lhcmo",
+   "text": "swapped",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
    "id": "1jgmvy50sk17pd",
    "text": "Privacy: {link}",
    "where": [
@@ -10536,6 +10627,14 @@
    "text": "Quality",
    "where": [
     "src/screens/Insights.tsx"
+   ]
+  },
+  {
+   "id": "1khzujs0vakdwq",
+   "one": "planned meal",
+   "other": "planned meals",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
    ]
   },
   {
@@ -11759,10 +11858,24 @@
    ]
   },
   {
+   "id": "1r0ld7e00s2d3y",
+   "text": "The next plan leans on what you made, and less on what you didn’t.",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
    "id": "1r2o08r-1oqcxc",
    "text": "Sesame",
    "where": [
     "src/lib/eating.ts"
+   ]
+  },
+  {
+   "id": "1r33mp0-21j018",
+   "text": "never what you said is not for you",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -12605,6 +12718,13 @@
    ]
   },
   {
+   "id": "1vp1oe20vtxvsk",
+   "text": "How last week’s plan went",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
    "id": "1vqmenh-4bhklb",
    "text": "Log on fifty days, any fifty",
    "where": [
@@ -13173,6 +13293,13 @@
    "text": "Watermelon",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "1z0dqnc037g2o5",
+   "text": "Close until next week",
+   "where": [
+    "src/components/PlanReviewCard.tsx"
    ]
   },
   {

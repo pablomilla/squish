@@ -7,6 +7,7 @@ import { useSquish } from '../store/useSquish';
 import { useStanding, useSubscribed } from './useSubscribed';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
 import { NUTRITIONIST_PLAN_NOTE, likesFrom, replacedOn, standingOn, weekDates } from '../lib/planner';
+import { historyFor } from '../lib/planLearning';
 import { PLUS } from '../lib/plan';
 import {
   clearReadyWeekPlan,
@@ -41,7 +42,7 @@ const DAY_ORDER: MealSlot[] = [...MEALS, 'snack'];
  * eaten — so a plan somebody ignores costs them nothing at all.
  */
 export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { profile, targets, meals, favourites, nutritionistNotes, addPlan, removePlans, plans, household, recipes } = useSquish();
+  const { profile, targets, meals, favourites, nutritionistNotes, addPlan, removePlans, plans, household, recipes, planLog, notForMe } = useSquish();
   const subscribed = useSubscribed();
   const planCounts = useStanding().weekplans;
   /** Weekly plans left this month, where the server has said (Plus only). */
@@ -112,6 +113,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
     setStage({ kind: 'planning' });
     try {
       const startDate = start === 'today' ? today : addDays(today, 1);
+      const history = historyFor(planLog, notForMe, today);
       const kept = standingOn(plans, weekDates(startDate, Number(days)));
       const week = await requestWeekPlan({
         startDate,
@@ -130,6 +132,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
         about: aboutOf(profile),
         ...(kept.length ? { kept } : {}),
         ...(household.people > 1 ? { household } : {}),
+        ...(history ? { history } : {}),
       });
       setLeft(new Set());
       setStage({ kind: 'preview', plan: week });
@@ -183,6 +186,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
             {t('The nutritionist plans meals around your targets, the foods you already eat, and anything you have told it — an allergy, a food you avoid. You choose what to keep.')}
           </p>
           {!subscribed && <p className="badge badge--plus week-plus">{t('Part of {plus}', { plus: PLUS })}</p>}
+          <Learned />
 
           <div className="field">
             <label>{t('How many days')}</label>
@@ -397,5 +401,28 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
         </div>
       )}
     </Sheet>
+  );
+}
+
+/**
+ * What the next plan will learn from, said before it is asked for: the
+ * learning is theirs to see, and to change on the meal plan's check-in.
+ */
+function Learned() {
+  const planLog = useSquish((s) => s.planLog);
+  const notForMe = useSquish((s) => s.notForMe);
+  const history = historyFor(planLog, notForMe, isoDate());
+  if (!history || (!history.hits.length && !history.misses.length && !history.never.length)) return null;
+  const few = (titles: string[]) => titles.slice(0, 2).join(', ');
+  const parts = [
+    history.hits.length ? t('more like {meals}', { meals: few(history.hits) }) : '',
+    history.misses.length ? t('fewer like {meals}', { meals: few(history.misses) }) : '',
+    history.never.length ? t('never what you said is not for you') : '',
+  ].filter(Boolean);
+  return (
+    <p className="tiny week-learned">
+      <span aria-hidden="true">🧠</span> {t('Learning from your last plans: {what}.', { what: parts.join('; ') })}
+      {history.planned > 0 && history.made < history.planned / 2 && ` ${t('It will keep this one simpler, with more leftovers.')}`}
+    </p>
   );
 }

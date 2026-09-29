@@ -10,6 +10,7 @@ import { placeHeaders } from './place';
 import { t } from './i18n';
 import type { About } from './eating';
 import type { Household, KeptMeal } from './planner';
+import type { PlanHistory } from './planLearning';
 import type { Heard } from './heard';
 
 const TIMEOUT_MS = 45_000;
@@ -282,6 +283,8 @@ export interface WeekPlanAsk {
   kept?: KeptMeal[];
   /** Who else eats what they cook, when that is anybody. */
   household?: Household;
+  /** How their last plans went, once there is something to go on. */
+  history?: PlanHistory;
 }
 
 /*

@@ -161,7 +161,7 @@ type Swap = { stage: 'finding' } | { stage: 'offer'; meal: AnalysisResult } | { 
  * "Try another" never offers the same one twice.
  */
 function SwapPanel({ plan, onDone }: { plan: MealEntry; onDone: () => void }) {
-  const { profile, plans, nutritionistNotes, replacePlan } = useSquish();
+  const { profile, plans, nutritionistNotes, replacePlan, notForMe } = useSquish();
   const toast = useToast();
   const [swap, setSwap] = useState<Swap>({ stage: 'finding' });
   const offered = useRef<string[]>([]);
@@ -177,7 +177,8 @@ function SwapPanel({ plan, onDone }: { plan: MealEntry; onDone: () => void }) {
         calories: Math.round(plan.nutrients.calories),
         protein: Math.round(plan.nutrients.protein),
         dayMeals: others.filter((p) => p.date === plan.date).map((p) => p.title),
-        avoid: [...new Set([...offered.current, ...others.map((p) => p.title)])].slice(0, 40),
+        // What it offered already, what else is planned, and what they have said is not for them.
+        avoid: [...new Set([...offered.current, ...notForMe, ...others.map((p) => p.title)])].slice(0, 40),
         goal: profile.goal,
         sex: profile.sex,
         notes: nutritionistNotes.map((n) => n.note),
@@ -189,7 +190,7 @@ function SwapPanel({ plan, onDone }: { plan: MealEntry; onDone: () => void }) {
       if (isPaywalled(error)) onDone();
       else setSwap({ stage: 'failed', message: error instanceof Error && error.message ? error.message : t('The nutritionist could not swap that just now. Try again in a moment.') });
     }
-  }, [plan, plans, profile, nutritionistNotes, onDone]);
+  }, [plan, plans, profile, nutritionistNotes, notForMe, onDone]);
 
   // Opening the panel is asking for one.
   const started = useRef(false);

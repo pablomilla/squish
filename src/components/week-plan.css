@@ -37,3 +37,5 @@
 .week-meal.is-kept { cursor: default; }
 .week-kept-mark { width: 22px; flex: none; text-align: center; color: var(--pink, var(--brand)); line-height: 22px; }
 .week-replaces { margin: 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); }
+/* What the plan is learning from, before it is asked for. */
+.week-learned { margin: 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--mint-soft, var(--surface-2)); color: var(--ink-2); line-height: 1.4; }

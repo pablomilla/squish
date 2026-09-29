@@ -54,6 +54,9 @@ the way a nutrition app should, and works offline too.
 - A **recipe box** of meals saved from plans, the diary or a recipe link — planned again in two taps,
   logged from the Saved tab, and put first in what the planner is told you like.
 - A shopping list in aisle order, made from the plans.
+- It learns (`src/lib/planLearning.ts`): what happens to each planned meal — made, skipped, swapped —
+  is kept, shown back in a weekly check-in with a "Not for me" for anything missed, and told to the
+  next plan: more like what was made, fewer like what wasn't, simpler when fewer than half were made.
 
 **Your plan**
 - Mifflin–St Jeor BMR × activity, adjusted by goal and pace, with a safe calorie floor.

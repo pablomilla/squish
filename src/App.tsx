@@ -85,10 +85,14 @@ function Shell() {
   const { awake, keepsData } = useServer();
 
   // A birthday since the app was last opened: the age, and the suggested
-  // targets with it, move on. Looked at on opening and on coming back to it.
+  // targets with it, move on. Looked at on opening and on coming back to it —
+  // as are plans whose day has gone by, which leave the diary and, if they
+  // were the nutritionist's and never eaten, are what the next plan learns from.
   useEffect(() => {
     const refresh = () => {
-      if (document.visibilityState === 'visible') useSquish.getState().refreshAge();
+      if (document.visibilityState !== 'visible') return;
+      useSquish.getState().refreshAge();
+      useSquish.getState().settlePlans();
     };
     refresh();
     document.addEventListener('visibilitychange', refresh);

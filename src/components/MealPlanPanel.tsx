@@ -4,6 +4,7 @@ import PlanCard from './PlanCard';
 import ShoppingSheet from './ShoppingSheet';
 import WeekPlanSheet from './WeekPlanSheet';
 import RecipeBoxSheet from './RecipeBoxSheet';
+import PlanReviewCard from './PlanReviewCard';
 import { BasketIcon, BookmarkIcon, SparkIcon } from './icons';
 import { useSquish } from '../store/useSquish';
 import { useSubscribed } from './useSubscribed';
@@ -43,6 +44,7 @@ export default function MealPlanPanel() {
       <WeekPlanSheet open={planning} onClose={() => setPlanning(false)} />
       <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
       <RecipeBoxSheet open={box} onClose={() => setBox(false)} />
+      <PlanReviewCard />
 
       {days.length === 0 ? (
         <div className="meal-plan-empty">

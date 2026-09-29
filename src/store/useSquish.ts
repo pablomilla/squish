@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CookSteps, DayLog, Draft, FoodItem, MealEntry, Profile, Recipe, Targets } from '../types';
 import { findRecipe } from '../lib/recipes';
+import { judged, logged, outcomeOf, stalePlans, toggleNever, type PlanOutcome } from '../lib/planLearning';
 import {
   CARBS_MAX_SHARE,
   FAT_MAX_SHARE,
@@ -72,6 +73,12 @@ interface SquishState {
   household: Household;
   /** Meals kept to make again (src/lib/recipes.ts). */
   recipes: Recipe[];
+  /** What happened to the nutritionist's planned meals, for the next plan to learn from (src/lib/planLearning.ts). */
+  planLog: PlanOutcome[];
+  /** Meals they have said are not for them: never planned again. */
+  notForMe: string[];
+  /** The week whose check-in they have closed, as its Monday. */
+  reviewSeen: string;
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
   /** "The protein of 3 eggs" on meals and the day. On unless turned off in You → Appearance. */
@@ -165,6 +172,10 @@ interface SquishState {
   /** Keep a meal in the recipe box; one of the same name is updated rather than kept twice. */
   saveRecipe: (recipe: Omit<Recipe, 'id'>) => Recipe;
   removeRecipe: (id: string) => void;
+  /** Past plans leave the diary; the nutritionist's that were never eaten are noted as skipped. */
+  settlePlans: () => void;
+  toggleNotForMe: (title: string) => void;
+  setReviewSeen: (week: string) => void;
   setRecipeCook: (id: string, cook: CookSteps) => void;
   /** How many a planned meal is cooked for, where it differs from the household; undefined goes back to it. */
   setPlanServings: (id: string, servings: number | undefined) => void;
@@ -309,6 +320,9 @@ export const useSquish = create<SquishState>()(
       shopping: { ticked: [], extras: [] },
       household: SOLO,
       recipes: [],
+      planLog: [],
+      notForMe: [],
+      reviewSeen: '',
       unlocked: {},
       theme: 'system',
       comparisons: true,
@@ -386,7 +400,13 @@ export const useSquish = create<SquishState>()(
         return plan;
       },
 
-      removePlan: (id) => set({ plans: get().plans.filter((p) => p.id !== id) }),
+      removePlan: (id) => {
+        const plan = get().plans.find((p) => p.id === id);
+        set({
+          plans: get().plans.filter((p) => p.id !== id),
+          ...(plan && judged(plan) ? { planLog: logged(get().planLog, outcomeOf(plan, 'dropped')) } : {}),
+        });
+      },
 
       toggleShoppingTick: (key) => {
         const { ticked, extras } = get().shopping;
@@ -419,7 +439,10 @@ export const useSquish = create<SquishState>()(
         const past = plan.date < today;
         // What was cooked for others is theirs: the diary gets one portion, as planned.
         const { id: _planId, cook: _cook, kept: _kept, servings: _servings, ...rest } = plan;
-        set({ plans: get().plans.filter((p) => p.id !== id) });
+        set({
+          plans: get().plans.filter((p) => p.id !== id),
+          ...(judged(plan) ? { planLog: logged(get().planLog, outcomeOf(plan, 'made')) } : {}),
+        });
         return get().addMeal({ ...rest, date: past ? plan.date : today, time: past && plan.time ? plan.time : undefined });
       },
 
@@ -427,15 +450,18 @@ export const useSquish = create<SquishState>()(
 
       toggleKeepPlan: (id) => set({ plans: get().plans.map((p) => (p.id === id ? { ...p, kept: !p.kept } : p)) }),
 
-      replacePlan: (id, meal) =>
+      replacePlan: (id, meal) => {
+        const was = get().plans.find((p) => p.id === id);
         set({
+          ...(was && judged(was) ? { planLog: logged(get().planLog, outcomeOf(was, 'swapped')) } : {}),
           plans: get().plans.map((p) => {
             if (p.id !== id) return p;
             // A different meal: its own steps are written when it is opened, and keeping it is a new decision.
             const { cook: _cook, kept: _kept, ...rest } = p;
             return { ...rest, title: meal.title, items: meal.items, nutrients: meal.nutrients, score: meal.score };
           }),
-        }),
+        });
+      },
 
       removePlans: (ids) => {
         const gone = new Set(ids);
@@ -500,6 +526,17 @@ export const useSquish = create<SquishState>()(
 
       removeRecipe: (id) => set({ recipes: get().recipes.filter((r) => r.id !== id) }),
 
+      settlePlans: () => {
+        const { stale, skipped } = stalePlans(get().plans, isoDate());
+        if (!stale.length) return;
+        const gone = new Set(stale.map((p) => p.id));
+        set({ plans: get().plans.filter((p) => !gone.has(p.id)), planLog: logged(get().planLog, ...skipped) });
+      },
+
+      toggleNotForMe: (title) => set({ notForMe: toggleNever(get().notForMe, title) }),
+
+      setReviewSeen: (reviewSeen) => set({ reviewSeen }),
+
       setRecipeCook: (id, cook) => set({ recipes: get().recipes.map((r) => (r.id === id ? { ...r, cook } : r)) }),
       setPlanServings: (id, servings) =>
         set({
@@ -543,6 +580,9 @@ export const useSquish = create<SquishState>()(
           shopping: { ticked: [], extras: [] },
           household: SOLO,
           recipes: [],
+          planLog: [],
+          notForMe: [],
+          reviewSeen: '',
           unlocked: {},
           lastCoachNote: null,
           photoAnalyses: 0,

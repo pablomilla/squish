@@ -1065,6 +1065,24 @@ export function fitToTarget(
  * told to leave kept meals alone, it usually does, and this is for when it
  * does not — a day with two dinners is no plan. Exported for the tests.
  */
+/**
+ * A plan without any meal they have said is not for them, by name: told
+ * never to plan it, the model should not, and this is for when it does.
+ * The day's other meals are fitted up to the target afterwards.
+ * Exported for the tests.
+ */
+export function withoutNever(plan: WeekPlan, never: string[] = []): WeekPlan {
+  if (!never.length) return plan;
+  const no = new Set(never.map((t) => t.trim().toLocaleLowerCase()));
+  const days = plan.days
+    .map((day) => {
+      const meals = day.meals.filter((meal) => !no.has(meal.title.trim().toLocaleLowerCase()));
+      return meals.length === day.meals.length ? day : { ...day, meals, calories: Math.round(meals.reduce((sum, m) => sum + m.nutrients.calories, 0)) };
+    })
+    .filter((day) => day.meals.length > 0);
+  return { ...plan, days };
+}
+
 export function withoutKept(plan: WeekPlan, kept: { date: string; slot: MealSlot }[] = []): WeekPlan {
   if (!kept.length) return plan;
   const taken = new Set(kept.map((k) => `${k.date}#${k.slot}`));
@@ -1178,7 +1196,12 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
     .join('');
   const { week, fill } = await groundWeek(readAnswer<ModelWeek>(text, response.stop_reason), brief);
   if (fill) console.info(`[squish] weekplan fill-in: out=${fill.outputTokens} ${fill.costUsd === null ? 'unpriced' : `$${fill.costUsd.toFixed(4)}`}`);
-  const { plan, fitted } = fitToTarget(withoutKept(toWeekPlan(week, req), req.kept), req.calorieTarget, floorFor(req.sex), keptCalories(req));
+  const { plan, fitted } = fitToTarget(
+    withoutNever(withoutKept(toWeekPlan(week, req), req.kept), req.history?.never),
+    req.calorieTarget,
+    floorFor(req.sex),
+    keptCalories(req),
+  );
   if (fitted.length) {
     console.info(
       `[squish] weekplan ${model}: ${fitted.length} of ${plan.days.length} days came to ${fitted.map((f) => f.from).join(', ')} kcal ` +

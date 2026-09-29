@@ -58,6 +58,18 @@ export interface WeekPlanRequest {
   kept?: KeptMeal[];
   /** Who else eats what they cook. The portions planned are still theirs alone. */
   household?: { people: number; shared: 'dinner' | 'all' };
+  /** How their last plans went (src/lib/planLearning.ts). Absent until there is something to go on. */
+  history?: PlanHistory;
+}
+
+export interface PlanHistory {
+  /** The nutritionist's meals planned over the last few weeks, and how many of them were made. */
+  planned: number;
+  made: number;
+  hits: string[];
+  misses: string[];
+  /** Said not to be for them: never planned again. */
+  never: string[];
 }
 
 export interface KeptMeal {
@@ -103,7 +115,24 @@ export function cleanWeekRequest(body: unknown): WeekPlanRequest | null {
     about: cleanAbout(raw.about),
     ...(kept.length ? { kept } : {}),
     ...householdOf(raw.household),
+    ...historyOf(raw.history),
   };
+}
+
+/** How the last plans went, tidied; nothing if there is nothing in it. */
+function historyOf(raw: unknown): Pick<WeekPlanRequest, 'history'> {
+  if (!raw || typeof raw !== 'object') return {};
+  const h = raw as Record<string, unknown>;
+  const count = (v: unknown) => Math.min(500, Math.max(0, Math.round(Number(v) || 0)));
+  const planned = count(h.planned);
+  const history = {
+    planned,
+    made: Math.min(planned, count(h.made)),
+    hits: list(h.hits, 10, 80),
+    misses: list(h.misses, 10, 80),
+    never: list(h.never, 20, 80),
+  };
+  return history.planned || history.never.length ? { history } : {};
 }
 
 /** A household worth mentioning: more than one person. */
@@ -158,6 +187,7 @@ What a good plan here looks like:
 - Protein near their target across the day, spread over meals, and fibre at or above theirs: vegetables, pulses, whole grains, fruit.
 - Their diet and everything under "How they eat" are absolute rules, and so is anything in "What they have told you" that is an allergy, intolerance or food they avoid. Never include it, including as a hidden ingredient in a sauce or a stock.
 - Meals under "Already decided" are kept from an earlier plan and stay exactly as they are. Leave those slots out on those days, and plan the rest of each such day around them: their calories count towards the day's target.
+- How their last plans went is the best guide there is. Plan more like the meals they made, fewer like the ones they skipped or swapped, and never anything under "not for them", in any form. If they made fewer than half of what was planned, make this plan easier to follow: fewer different dishes, more cook-once-eat-twice, simpler weekday meals.
 - Their liked meals are a guide to their taste. Include one or two of them, and plan the rest in the same spirit rather than repeating them all week.
 - Keep the shopping short: reuse ingredients across days, and where it suits, cook once and eat it twice (tonight's chilli is tomorrow's lunch). Say so in the meal title when a meal uses leftovers.
 - Breakfasts simple and repeatable. Weekday dinners quick unless they asked otherwise. Vary the dinners.
@@ -206,6 +236,7 @@ export function weekPlanPrompt(req: WeekPlanRequest): string {
           '',
         ]
       : []),
+    ...(req.history ? [...historyLines(req.history), ''] : []),
     '<meals_they_like>',
     ...(req.likes.length ? req.likes.map((m) => `- ${m}`) : ['- Nothing logged yet; plan broadly liked everyday meals.']),
     '</meals_they_like>',
@@ -215,6 +246,18 @@ export function weekPlanPrompt(req: WeekPlanRequest): string {
     '</their_preferences_for_this_plan>',
   ];
   return lines.join('\n');
+}
+
+/** How their last plans went, as the prompt says it. */
+function historyLines(h: PlanHistory): string[] {
+  return [
+    '<how_their_last_plans_went>',
+    ...(h.planned ? [`They made ${h.made} of the ${h.planned} meals planned for them in the last few weeks.`] : []),
+    ...(h.hits.length ? [`Made: ${h.hits.join('; ')}`] : []),
+    ...(h.misses.length ? [`Skipped or swapped: ${h.misses.join('; ')}`] : []),
+    ...(h.never.length ? [`Not for them — never plan these: ${h.never.join('; ')}`] : []),
+    '</how_their_last_plans_went>',
+  ];
 }
 
 /** Whole days from one date to another. */
