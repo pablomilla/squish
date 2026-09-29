@@ -8,13 +8,18 @@
  */
 import { GEMINI_PRICING, geminiRate, isGeminiModel } from './gemini';
 
-/** Anthropic's list prices. */
-const CLAUDE_PRICING: Record<string, { input: number; output: number }> = {
+/**
+ * Anthropic's list prices. `cacheRead` where a model's cached input is not the
+ * usual tenth of its input price (below).
+ */
+const CLAUDE_PRICING: Record<string, { input: number; output: number; cacheRead?: number }> = {
+  'claude-opus-5-5': { input: 4, output: 20, cacheRead: 0.2 },
   'claude-opus-5': { input: 5, output: 25 },
   'claude-opus-4-8': { input: 5, output: 25 },
+  'claude-sonnet-5-5': { input: 2, output: 10 },
   'claude-sonnet-5': { input: 2, output: 10 },
   'claude-haiku-4-5': { input: 1, output: 5 },
-  'claude-fable-5-1': { input: 10, output: 50 },
+  'claude-fable-5-1': { input: 10, output: 50, cacheRead: 0.25 },
 };
 
 /**
@@ -38,7 +43,7 @@ export interface TokenCounts {
 }
 
 /** A model's rate today, or none on file. A dated snapshot is priced as its model. */
-export function rateFor(model: string, at = new Date()): { input: number; output: number } | null {
+export function rateFor(model: string, at = new Date()): { input: number; output: number; cacheRead?: number } | null {
   const name = model.replace(/-\d{8}$/, '');
   if (isGeminiModel(name)) return geminiRate(name, at);
   return CLAUDE_PRICING[name] ?? null;
@@ -50,7 +55,7 @@ export function priceUsage(model: string, counts: TokenCounts): number | null {
   if (!rate) return null;
   const input =
     counts.inputTokens +
-    (counts.cacheReadTokens ?? 0) * CACHE_READ +
+    (counts.cacheReadTokens ?? 0) * (rate.cacheRead === undefined ? CACHE_READ : rate.cacheRead / rate.input) +
     (counts.cacheWriteTokens ?? 0) * CACHE_WRITE;
   return (input * rate.input + counts.outputTokens * rate.output) / 1_000_000;
 }

@@ -27,6 +27,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type Anthropic from '@anthropic-ai/sdk';
 import { hasDatabase, query } from './db';
+import { thinkingOff } from './providers';
 import { AMERICAN, LANGUAGES, PACKS, isPack, packFor, packName, type Language, type Pack } from '../src/lib/language';
 import { localeFor, speaker, type PluralForms, type Speaker, type Translation } from '../src/lib/i18n';
 import { REGIONS, isRegion } from '../src/lib/region';
@@ -379,8 +380,8 @@ export function translateRequest(entries: CatalogEntry[], language: Pack, model:
     model,
     max_tokens: 16000,
     system: TRANSLATE_SYSTEM,
-    // Claude without thinking, at medium effort where the model takes one; Gemini as it comes.
-    ...(model.startsWith('claude-') ? { thinking: { type: 'disabled' as const } } : {}),
+    // Claude without thinking where the model allows it, at medium effort where it takes one; Gemini as it comes.
+    ...(model.startsWith('claude-') ? thinkingOff(model) : {}),
     output_config: {
       ...(model.startsWith('claude-') && !model.startsWith('claude-haiku') ? { effort: 'medium' as const } : {}),
       format: { type: 'json_schema', schema },

@@ -24,7 +24,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NUTRITIONIST_TOOLS, type ToolCall } from './nutritionist-tools';
 import { priceUsage } from './pricing';
 import { bill } from './billing';
-import { createMessage } from './providers';
+import { alwaysThinks, bindsThinking, createMessage } from './providers';
 import { withModels } from './routing';
 import { regionNote } from './region';
 import { aimLines, eatingLines, type About } from '../src/lib/eating';
@@ -379,7 +379,24 @@ export function forClaude(params: Anthropic.MessageCreateParamsNonStreaming, bac
   const bare = messages
     .slice(asked + 1)
     .some((m) => m.role === 'assistant' && Array.isArray(m.content) && m.content.length > 0 && unsigned(m.content[0]));
-  return bare ? { ...params, messages, thinking: { type: 'disabled' } } : { ...params, messages };
+  // A model that always thinks cannot be told not to (server/providers.ts); it reads the turns without thinking as they are.
+  return bare && !alwaysThinks(params.model) ? { ...params, messages, thinking: { type: 'disabled' } } : { ...params, messages };
+}
+
+/**
+ * For a model whose thinking is bound to the conversation: the conversation
+ * here does change — the lookups go when a question has used its share, and
+ * the diary outline in the system prompt moves when a meal is logged — so the
+ * thinking written before such a change is asked to be dropped rather than
+ * the whole question refused, which it would be on a newer Anthropic account.
+ */
+export function bindingSafe(params: Anthropic.MessageCreateParamsNonStreaming): Anthropic.MessageCreateParamsNonStreaming | Anthropic.Beta.MessageCreateParamsNonStreaming {
+  if (!bindsThinking(params.model) || params.thinking?.type !== 'adaptive') return params;
+  return {
+    ...(params as Anthropic.Beta.MessageCreateParamsNonStreaming),
+    betas: ['thinking-binding-controls-2026-08-01'],
+    thinking: { ...params.thinking, block_binding: { prefix_mismatch_behavior: 'drop_block' } },
+  };
 }
 
 export async function chatStep(
@@ -409,7 +426,7 @@ async function chatStepOn(
   const request = chatRequest(messages, context, notes, { ...tuning, model });
   // Haiku has neither adaptive thinking nor an effort setting.
   const tuned: typeof request = model.startsWith('claude-haiku') ? { ...request, thinking: { type: 'disabled' }, output_config: undefined } : request;
-  const response = await createMessage(model.startsWith('claude-') ? forClaude(tuned, backup) : tuned, signal);
+  const response = await createMessage(model.startsWith('claude-') ? bindingSafe(forClaude(tuned, backup)) : tuned, signal);
 
   const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
   const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;

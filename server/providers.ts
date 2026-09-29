@@ -22,14 +22,34 @@ let client: Anthropic | null = null;
 export const anthropic = (): Anthropic => (client ??= new Anthropic());
 
 export { isGeminiModel };
+
+/**
+ * Claude models that always think: `thinking: {type: 'disabled'}` is a 400 on
+ * them (Opus 5.5, Sonnet 5.5, Fable). There, effort is the only control, so a
+ * call that wanted no thinking leaves it on and asks for low effort instead.
+ */
+export const alwaysThinks = (model: string): boolean => /^claude-(opus-5-5|sonnet-5-5|fable-|mythos-)/.test(model);
+
+/** Thinking off where the model allows it; where it does not, nothing, and the caller's low effort keeps it short. */
+export const thinkingOff = (model: string): { thinking?: { type: 'disabled' } } => (alwaysThinks(model) ? {} : { thinking: { type: 'disabled' } });
+
+/**
+ * Claude models whose thinking is bound to the conversation that produced it
+ * ("preserved thinking"): change an earlier part of it — the system prompt,
+ * the tools, an earlier turn — and the thinking after it no longer counts,
+ * which for newer Anthropic accounts is a 400 unless the request asks for such
+ * thinking to be dropped instead.
+ */
+export const bindsThinking = (model: string): boolean => /^claude-(opus-5-5|sonnet-5-5|fable-5-1)/.test(model);
 export const providerOf = (model: string): 'google' | 'anthropic' => (isGeminiModel(model) ? 'google' : 'anthropic');
 
 type Params = Anthropic.MessageCreateParamsNonStreaming | Anthropic.Beta.MessageCreateParamsNonStreaming;
 
-/** Ask, and wait for the whole answer. */
-export async function createMessage(params: Anthropic.MessageCreateParamsNonStreaming, signal?: AbortSignal): Promise<Anthropic.Message> {
+/** Ask, and wait for the whole answer. A request naming betas goes to the beta endpoint. */
+export async function createMessage(params: Anthropic.MessageCreateParamsNonStreaming | Anthropic.Beta.MessageCreateParamsNonStreaming, signal?: AbortSignal): Promise<Anthropic.Message> {
   if (isGeminiModel(params.model)) return askGemini(params, signal);
-  return anthropic().messages.create(params, { signal });
+  if ('betas' in params && params.betas?.length) return (await anthropic().beta.messages.create(params, { signal })) as unknown as Anthropic.Message;
+  return anthropic().messages.create(params as Anthropic.MessageCreateParamsNonStreaming, { signal });
 }
 
 /**

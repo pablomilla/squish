@@ -12,7 +12,7 @@ import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../sr
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
 import { priceUsage } from './pricing';
-import { createMessage, streamMessage } from './providers';
+import { createMessage, streamMessage, thinkingOff } from './providers';
 import { repeating } from './runaway';
 import { withModels, type Feature } from './routing';
 
@@ -865,10 +865,8 @@ async function coachOn(model: string, ctx: CoachContext, signal: AbortSignal): P
     system:
       "You are Squish, a small round blob mascot who helps someone eat well. You speak in one or two short sentences, warm, playful and specific. Never shame food choices, never mention calories as something to 'burn off', never give medical advice. Reply with the message only — no quotes, no preamble.\n\n" +
       regionNote('coach'),
-    // A line, not a problem to reason about: no thinking, and little effort where the model takes one.
-    ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
-      ? { thinking: { type: 'disabled' as const }, output_config: { effort: 'low' as const } }
-      : {}),
+    // A line, not a problem to reason about: no thinking where the model allows it, and little effort where it takes one.
+    ...(model.startsWith('claude-') && !model.startsWith('claude-haiku') ? { ...thinkingOff(model), output_config: { effort: 'low' as const } } : {}),
     messages: [
       {
         role: 'user',
