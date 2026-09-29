@@ -9808,8 +9808,7 @@
    "id": "1j5p43t0s5d6vh",
    "text": "Sugar, {salt} and more",
    "where": [
-    "src/screens/Diary.tsx",
-    "src/screens/Home.tsx"
+    "src/components/DayDetailSheet.tsx"
    ]
   },
   {

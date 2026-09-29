@@ -149,11 +149,13 @@ export function Micronutrients({ totals, targets }: { totals: Nutrients; targets
   if (!rows.length) return null;
 
   return (
-    <details className="card micro-card">
-      <summary className="card-title">
+    // Shown open: it sits in the day's detail sheet, which is already the tap
+    // to see more, and a second tap to open it inside that was one too many.
+    <section className="micro-card" aria-label={t('Vitamins & minerals')}>
+      <div className="card-title">
         <h3>{t('Vitamins & minerals')}</h3>
         <span className="tiny muted">{t('{met} of {total} met', { met: rows.filter((r) => r.value >= r.target).length, total: rows.length })}</span>
-      </summary>
+      </div>
 
       <div className="micro-list">
         {rows.map((row) => {
@@ -187,7 +189,7 @@ export function Micronutrients({ totals, targets }: { totals: Nutrients; targets
       <p className="tiny muted micro-note">
         {t('Estimated from what you logged, so treat these as a rough guide. Anything logged without a figure for a vitamin is not counted towards it.')}
       </p>
-    </details>
+    </section>
   );
 }
 

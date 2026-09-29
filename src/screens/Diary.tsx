@@ -4,9 +4,10 @@ import type { MealEntry, MealSlot } from '../types';
 import { MealThumb } from '../components/MealCard';
 import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
 import CheckinSheets from '../components/CheckinSheets';
-import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
+import { MacroBars, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, useToast } from '../components/ui';
 import { BasketIcon, CalendarIcon, CameraIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
+import DayDetailSheet, { dayDetailTitle } from '../components/DayDetailSheet';
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
 import DayScoreSheet from '../components/diary/DayScoreSheet';
@@ -23,7 +24,7 @@ import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
 import { dayVerdict } from '../lib/nutrition';
 import './diary.css';
-import { describePortion, saltLabel } from '../lib/units';
+import { describePortion } from '../lib/units';
 import { formatEnergy } from '../lib/region';
 import { t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
@@ -178,7 +179,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
               {/* Sugar, salt and the vitamins, a tap away, so the day fits on one screen. */}
               {totals.calories > 0 && (
                 <button type="button" className="more-link tiny" onClick={() => setDetail(true)}>
-                  {t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })} ›
+                  {dayDetailTitle()} ›
                 </button>
               )}
             </div>
@@ -253,12 +254,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
         })}
       </section>
 
-      <Sheet open={detail} onClose={() => setDetail(false)} title={t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })}>
-        <div className="stack">
-          <MinorNutrients totals={totals} targets={targets} />
-          <Micronutrients totals={totals} targets={targets} />
-        </div>
-      </Sheet>
+      <DayDetailSheet open={detail} onClose={() => setDetail(false)} date={date} totals={totals} targets={targets} />
 
       <CheckinSheets date={date} open={checking} onClose={() => setChecking(null)} />
 

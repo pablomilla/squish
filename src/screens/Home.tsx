@@ -7,13 +7,10 @@ import Squish from '../components/Squish';
 import { MealThumb } from '../components/MealCard';
 import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
 import CheckinSheets from '../components/CheckinSheets';
-import { MacroBars, MacroSplitBar, MinorNutrients, OverTargetNote, ProgressRing } from '../components/charts';
+import { MacroBars, OverTargetNote, ProgressRing } from '../components/charts';
+import DayDetailSheet, { dayDetailTitle } from '../components/DayDetailSheet';
 import { CameraIcon, ChevronIcon, HeartIcon, PenIcon, SearchIcon, FlameIcon } from '../components/icons';
-import { Sheet } from '../components/ui';
-import { saltLabel } from '../lib/units';
 import { useSquish } from '../store/useSquish';
-import Comparison from '../components/Comparison';
-import { equivalentFor, progressWords, seedFrom, type GoodNutrient } from '../lib/equivalents';
 import { friendlyDate, greeting, isoDate, partOfDay, timeOfDayWords } from '../lib/date';
 import { habitCount, habitsOn, mealsOn, moodFor, streakOf, totalsOn } from '../lib/selectors';
 import { overTargets, pct, remaining } from '../lib/nutrition';
@@ -67,17 +64,6 @@ export default function Home({ go }: { go: (route: Route) => void }) {
   // about. Log a meal and it is stale, so a fresh one is asked for and the live
   // fallback below covers the gap.
   const mealsLogged = todaysMeals.length;
-  // One good thing about the day in food terms. Protein one day, fibre the
-  // next, and a different food each day, so it stays worth reading.
-  const dayComparison = useMemo(() => {
-    const seed = seedFrom(today);
-    const order: GoodNutrient[] = seed % 2 ? ['fibre', 'protein'] : ['protein', 'fibre'];
-    for (const nutrient of order) {
-      const equivalent = equivalentFor(nutrient, totals[nutrient], seed >> 1);
-      if (equivalent) return { equivalent };
-    }
-    return null;
-  }, [today, totals]);
   const part = partOfDay();
   const nudge =
     lastCoachNote?.date === today && lastCoachNote.mealsLogged === mealsLogged && lastCoachNote.part === part
@@ -205,7 +191,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             <MacroBars totals={totals} targets={targets} compact />
             {totals.calories > 0 && (
               <button type="button" className="more-link tiny" onClick={() => setDetail(true)}>
-                {t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })} ›
+                {dayDetailTitle()} ›
               </button>
             )}
           </div>
@@ -273,20 +259,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
       <FriendNudge onOpenYou={() => go({ name: 'you', open: 'friends' })} />
       {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
 
-      <Sheet open={detail} onClose={() => setDetail(false)} title={t('Sugar, {salt} and more', { salt: saltLabel().toLocaleLowerCase() })}>
-        <div className="stack">
-            {dayComparison && (
-            <Comparison
-              equivalent={dayComparison.equivalent}
-              variant="day"
-              tail={progressWords(totals[dayComparison.equivalent.nutrient], targets[dayComparison.equivalent.nutrient])}
-            />
-          )}
-          <MinorNutrients totals={totals} targets={targets} />
-          <div className="divider" />
-          <MacroSplitBar totals={totals} />
-        </div>
-      </Sheet>
+      <DayDetailSheet open={detail} onClose={() => setDetail(false)} date={today} totals={totals} targets={targets} />
 
       <CheckinSheets date={today} open={checking} onClose={() => setChecking(null)} />
     </div>
