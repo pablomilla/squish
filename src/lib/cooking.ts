@@ -21,7 +21,7 @@ export const isStepAction = (value: unknown): value is StepAction => STEP_ACTION
 const WORDS: [StepAction, RegExp][] = [
   ['bake', /\b(bake|roast|oven)\b/i],
   ['grill', /\b(grill|broil|barbecue|bbq|griddle)\b/i],
-  ['boil', /\b(boil|simmer|poach|steam|blanch|pasta|rice|noodles)\b/i],
+  ['boil', /\b(boil|simmer|bubble|poach|steam|blanch|pasta|rice|noodles)\b/i],
   ['fry', /\b(fry|frying|sauté|saute|sear|brown|stir-fry|pan|skillet|wok)\b/i],
   ['blend', /\b(blend|blitz|puree|purée|smoothie|food processor)\b/i],
   ['rinse', /\b(rinse|drain|wash)\b/i],
@@ -44,11 +44,47 @@ export function guessDetail(step: string): StepDetail {
   return { action, ...(minutes ? { minutes } : {}) };
 }
 
-/** What cook mode shows for each step: the model's labels where it gave them, a guess where it did not. */
-export function detailsFor(steps: string[], detail?: StepDetail[]): StepDetail[] {
-  return steps.map((step, i) => {
+/**
+ * What cook mode shows for each step: the model's labels where it gave them,
+ * a guess where it did not — then, given the ingredients, following the food.
+ */
+export function detailsFor(steps: string[], detail?: StepDetail[], items?: { name: string }[]): StepDetail[] {
+  const details = steps.map((step, i) => {
     const given = detail?.[i];
     return given && isStepAction(given.action) ? given : guessDetail(step);
+  });
+  return items?.length ? followTheFood(steps, details, items) : details;
+}
+
+/** Where food cooks, and so what the picture shows it in. */
+const COOKING = new Set<StepAction>(['boil', 'fry', 'bake', 'grill']);
+
+/**
+ * "Simmer" is labelled boil, and boil is pictured as a saucepan of water. But
+ * adding tomatoes to the browned turkey and simmering them happens in the
+ * frying pan, and a saucepan there says it goes in with the pasta. So a
+ * simmering step goes where its food already is: with something last cooked
+ * in the frying pan, and nothing from the pot, it is the frying pan. A sauce
+ * simmering after frying is too, whatever it names.
+ */
+function followTheFood(steps: string[], details: StepDetail[], items: { name: string }[]): StepDetail[] {
+  const where = new Map<string, StepAction>();
+  let lastCooked: StepAction | undefined;
+  return details.map((detail, i) => {
+    const using = usedIn(steps[i], items).map((item) => item.name);
+    let action = detail.action;
+    if (action === 'boil') {
+      const already = using.map((name) => where.get(name));
+      const inPan = already.includes('fry');
+      const inPot = already.includes('boil');
+      const sauce = !already.some(Boolean) && lastCooked === 'fry' && /\bsauce\b/i.test(steps[i]);
+      if ((inPan && !inPot) || sauce) action = 'fry';
+    }
+    if (COOKING.has(action)) {
+      for (const name of using) where.set(name, action);
+      lastCooked = action;
+    }
+    return action === detail.action ? detail : { ...detail, action };
   });
 }
 

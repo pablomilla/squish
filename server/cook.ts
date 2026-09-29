@@ -132,7 +132,7 @@ How to write it:
 - Give heat, times and how to tell it is done ("until the chicken is white all the way through"). Cook meat, fish and eggs through.
 - A ready-to-eat item (a yoghurt, fruit, a bought sandwich) only needs serving. A meal made only of those is one or two steps.
 - minutes: from starting to eating, honestly, including any oven time.
-- actions: for each step, in order, the one thing it mostly does: prep (chopping, slicing, weighing out), rinse (rinsing, draining), mix, season, boil (boiling, simmering, poaching, steaming), fry, bake (oven), grill, blend, rest (resting, cooling, marinating, waiting) or serve.
+- actions: for each step, in order, the one thing it mostly does: prep (chopping, slicing, weighing out), rinse (rinsing, draining), mix, season, boil (boiling, simmering, poaching, steaming in a saucepan), fry, bake (oven), grill, blend, rest (resting, cooling, marinating, waiting) or serve. Each is shown as a picture of where the food is, so follow the food: a sauce simmered in the pan something was fried in is still fry; boil is a saucepan of water, stock or soup.
 - timers: for each step, in order, the minutes to set a timer for when the step says to leave something for a time ("simmer for 10–12 minutes" is 12), else 0.
 - tip: one short, practical line — making it ahead, what to do with a leftover, a swap that keeps it the same meal — or an empty string. Never a health claim.
 - Do not repeat the ingredient list, and do not mention calories or nutrition.

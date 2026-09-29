@@ -195,7 +195,7 @@ export function CookMode({
   const [at, setAt] = useState(0);
   const [awake, setAwake] = useState(false);
   const last = at === steps.length - 1;
-  const details = detailsFor(steps, detail);
+  const details = detailsFor(steps, detail, items);
   const step = details[at];
   const using = usedIn(steps[at], items);
   const timer = useStepTimer();
