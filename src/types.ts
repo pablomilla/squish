@@ -180,6 +180,8 @@ export interface CookSteps {
   servings?: number;
   /** For cook mode, one per step: what it does and any timer (src/lib/cooking.ts). Absent from steps written before. */
   detail?: StepDetail[];
+  /** Which way the detail was labelled (STEP_LABELS); absent is the first. */
+  labels?: number;
 }
 
 export interface DayLog {

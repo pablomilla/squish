@@ -23,11 +23,12 @@ import { tableFoods } from './foodTable';
 import { readTranslation, translateRequest, TranslationTooLong, type CatalogEntry } from './translate';
 import type { Pack } from '../src/lib/language';
 import { AISLES, isAisle } from '../src/lib/shopping';
+import type { StepDetail } from '../src/lib/cooking';
 import { msg } from '../src/lib/i18n';
 
 const AISLE_IDS = AISLES.map((a) => a.id);
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, keptCalories, swapPrompt, weekPlanPrompt, type SwapRequest, type WeekPlanRequest } from './weekplan';
-import { COOK_SCHEMA, COOK_SYSTEM, cookPrompt, toCookSteps, type CookAsk, type CookSteps } from './cook';
+import { COOK_SCHEMA, COOK_SYSTEM, COOK_LABEL_SCHEMA, COOK_LABEL_SYSTEM, cookPrompt, labelPrompt, toCookSteps, toLabels, type CookAsk, type CookSteps, type LabelAsk } from './cook';
 import { aimLines, eatingLines, type About } from '../src/lib/eating';
 
 /**
@@ -926,6 +927,35 @@ async function cookOn(model: string, ask: CookAsk, signal: AbortSignal): Promise
     .map((block) => block.text)
     .join('');
   return { steps: toCookSteps(readAnswer(answer, response.stop_reason)), model: response.model };
+}
+
+/**
+ * Labels for steps written before they were labelled the way they are now,
+ * in whatever language the steps are in. Small and quick: a word and a
+ * number per step.
+ */
+export async function labelCookSteps(ask: LabelAsk): Promise<{ detail: StepDetail[]; model: string }> {
+  return withModels('cook', (model, _attempt, signal) => labelOn(model, ask, signal));
+}
+
+async function labelOn(model: string, ask: LabelAsk, signal: AbortSignal): Promise<{ detail: StepDetail[]; model: string }> {
+  const format = { type: 'json_schema', schema: COOK_LABEL_SCHEMA } as const;
+  const response = await createMessage({
+    model,
+    max_tokens: 800,
+    system: COOK_LABEL_SYSTEM,
+    ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
+      ? { ...thinkingOff(model), output_config: { effort: 'low' as const, format } }
+      : { output_config: { format } }),
+    messages: [{ role: 'user', content: labelPrompt(ask) }],
+  }, signal);
+
+  billed(priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model);
+  const answer = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('');
+  return { detail: toLabels(readAnswer(answer, response.stop_reason), ask.steps.length), model: response.model };
 }
 
 /* ------------------------------------------------------------------ *

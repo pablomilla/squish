@@ -8,6 +8,7 @@ import type { ToolAnswer, ToolCall } from './nutritionist-tools';
 import { runConversation, type ChatContext, type ChatMessage, type ChatStep, type ConversationResult } from './nutritionist-session';
 import { placeHeaders } from './place';
 import { t } from './i18n';
+import { isStepAction, type StepDetail } from './cooking';
 import type { About } from './eating';
 import type { Household, KeptMeal } from './planner';
 import type { PlanHistory } from './planLearning';
@@ -478,6 +479,31 @@ export async function cookSteps(meal: Pick<MealEntry, 'title' | 'slot' | 'items'
   const items = meal.items.map((item) => ({ name: item.name, portion: item.portion, grams: item.grams, liquid: item.liquid }));
   const { steps } = await post<{ steps: CookSteps }>('/api/cook', { title: meal.title, slot: meal.slot, items, servings }, 60_000);
   return servings > 1 ? { ...steps, servings } : steps;
+}
+
+/**
+ * New labels for steps written before they were labelled the way they are
+ * now, in any language (server/cook.ts). Quiet: nothing is shown if it cannot
+ * be done — no paywall, no error — and the steps are drawn as they were.
+ */
+export async function relabelCookSteps(steps: string[], items: { name: string }[]): Promise<StepDetail[] | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const response = await fetch(apiUrl('/api/cook/labels'), {
+      method: 'POST',
+      headers: await headers(true),
+      body: JSON.stringify({ steps, items: items.map((item) => item.name) }),
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const { detail } = (await response.json()) as { detail?: StepDetail[] };
+    return Array.isArray(detail) && detail.length === steps.length && detail.every((d) => isStepAction(d?.action)) ? detail : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export interface SwapAsk {

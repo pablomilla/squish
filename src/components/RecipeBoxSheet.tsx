@@ -238,6 +238,7 @@ function RecipeView({ recipe, onBack, onDone }: { recipe: Recipe; onBack: () => 
           plan={recipe}
           steps={method.steps.steps}
           detail={method.steps.detail}
+          labels={method.steps.labels}
           items={recipe.items}
           servings={servings}
           onClose={() => setCooking(false)}

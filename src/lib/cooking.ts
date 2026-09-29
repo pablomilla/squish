@@ -15,6 +15,13 @@ export interface StepDetail {
   minutes?: number;
 }
 
+/**
+ * Which way of labelling the steps they were labelled by. 2: each label is
+ * where the food is (a sauce simmered in the frying pan is fry), told to the
+ * model in any language. Steps from before are relabelled when opened.
+ */
+export const STEP_LABELS = 2;
+
 export const isStepAction = (value: unknown): value is StepAction => STEP_ACTIONS.includes(value as StepAction);
 
 /** Checked in order: "bring to the boil, then simmer" is boiling, however it was chopped first. */

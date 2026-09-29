@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { CookSteps, FoodItem, MealEntry } from '../types';
 import StepArt from './StepArt';
-import { detailsFor, usedIn, type StepDetail } from '../lib/cooking';
+import { STEP_LABELS, detailsFor, usedIn, type StepDetail } from '../lib/cooking';
 import Squish from './Squish';
 import { CloseIcon } from './icons';
 import { useSubscribed } from './useSubscribed';
-import { cookSteps, isPaywalled } from '../lib/api';
+import { cookSteps, isPaywalled, relabelCookSteps } from '../lib/api';
 import { describePortion } from '../lib/units';
 import { MAX_SERVINGS } from '../lib/planner';
 import { PLUS } from '../lib/plan';
@@ -92,6 +92,17 @@ export function useMethod({
     }, askedFor.current ? 600 : 0);
     return () => clearTimeout(timer);
   }, [open, steps, subscribed, paused, id, meal.title, servings, ask]);
+
+  // Steps labelled the old way are labelled again, once, by the model: it reads any language.
+  const relabelled = useRef<CookSteps | null>(null);
+  useEffect(() => {
+    if (!open || !steps || !subscribed || paused || (steps.labels ?? 0) >= STEP_LABELS || relabelled.current === steps) return;
+    relabelled.current = steps;
+    void relabelCookSteps(steps.steps, meal.items).then((detail) => {
+      const now = current();
+      if (detail && now?.title === meal.title && now.servings === servings) keep({ ...steps, detail, labels: STEP_LABELS });
+    });
+  }, [open, steps, subscribed, paused, meal, servings, keep, current]);
 
   return { steps, asking, failed, refused, subscribed, ask };
 }
@@ -179,6 +190,7 @@ export function CookMode({
   plan,
   steps,
   detail,
+  labels,
   items = [],
   servings = 1,
   onClose,
@@ -187,6 +199,8 @@ export function CookMode({
   plan: Pick<MealEntry, 'title'>;
   steps: string[];
   detail?: StepDetail[];
+  /** Which way the detail was labelled: the model's own, now, is trusted as it is. */
+  labels?: number;
   items?: FoodItem[];
   servings?: number;
   onClose: () => void;
@@ -195,7 +209,8 @@ export function CookMode({
   const [at, setAt] = useState(0);
   const [awake, setAwake] = useState(false);
   const last = at === steps.length - 1;
-  const details = detailsFor(steps, detail, items);
+  // The model labels steps by where the food is now, in any language; older labels get the rules in src/lib/cooking.ts.
+  const details = detailsFor(steps, detail, (labels ?? 0) >= STEP_LABELS ? undefined : items);
   const step = details[at];
   const using = usedIn(steps[at], items);
   const timer = useStepTimer();

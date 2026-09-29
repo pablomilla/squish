@@ -3,8 +3,9 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { closeDatabase, hasDatabase } from '../server/db';
-import { TEXT_MODEL, writeCookSteps } from '../server/claude';
-import { cleanCookAsk, cookKey, cookPrompt, keepSteps, keptSteps, toCookSteps, COOK_SYSTEM } from '../server/cook';
+import { TEXT_MODEL, labelCookSteps, writeCookSteps } from '../server/claude';
+import { cleanCookAsk, cleanLabelAsk, cookKey, cookPrompt, keepSteps, keptSteps, labelKey, labelPrompt, toCookSteps, toLabels, COOK_LABEL_SYSTEM, COOK_SYSTEM } from '../server/cook';
+import { STEP_LABELS } from '../src/lib/cooking';
 import { inPlace } from '../server/region';
 import { FEATURES } from '../server/routing';
 
@@ -123,4 +124,52 @@ test('steps once written are kept, whoever asks next', async () => {
   assert.deepEqual(await keptSteps(key), { minutes: 20, steps: ['Serve.'] });
   await keepSteps(key, { minutes: 99, steps: ['Something else.'] }, TEXT_MODEL);
   assert.deepEqual(await keptSteps(key), { minutes: 20, steps: ['Serve.'] }, 'the first one written stands');
+});
+
+/* Steps from before, labelled again in whatever language they are in. */
+
+const RAGU = {
+  steps: ['Cuece los 75 g de espaguetis 10 minutos.', 'Dora los 125 g de pavo picado en la sartén.', 'Añade el tomate triturado y deja que hierva a fuego lento 10 minutos.'],
+  items: ['espaguetis integrales', 'pavo picado', 'tomate triturado'],
+};
+
+test('steps written before are asked about as they are, with their ingredients, in their language', () => {
+  const ask = cleanLabelAsk({ ...RAGU, items: [...RAGU.items, '   ', 7] })!;
+  assert.deepEqual(ask.items, RAGU.items, 'only names that say something');
+  const prompt = labelPrompt(ask);
+  assert.match(prompt, /- pavo picado/);
+  assert.match(prompt, /3\. Añade el tomate triturado/);
+  assert.equal(cleanLabelAsk({ steps: [] }), null);
+  assert.equal(cleanLabelAsk({ steps: Array(13).fill('Stir.') }), null, 'more steps than a method has');
+  assert.match(COOK_LABEL_SYSTEM, /any language/);
+  assert.match(COOK_LABEL_SYSTEM, /add the tomatoes and simmer/, 'the same rule new methods are written by');
+  assert.match(COOK_SYSTEM, /add the tomatoes and simmer/);
+});
+
+test('labels come back one for every step, or not at all', () => {
+  assert.deepEqual(toLabels({ actions: ['boil', 'fry', 'fry'], timers: [10, 0, 10] }, 3), [{ action: 'boil', minutes: 10 }, { action: 'fry' }, { action: 'fry', minutes: 10 }]);
+  assert.throws(() => toLabels({ actions: ['boil', 'fry'], timers: [0, 0] }, 3));
+  assert.throws(() => toLabels({ actions: ['boil', 'stew', 'fry'], timers: [0, 0, 0] }, 3));
+  assert.equal(toCookSteps({ minutes: 20, steps: ['Serve.'], actions: ['serve'], timers: [0], tip: '' }).labels, STEP_LABELS, 'new methods say how they were labelled');
+  assert.equal(toCookSteps({ minutes: 20, steps: ['Serve.'], tip: '' }).labels, undefined);
+});
+
+test('the same steps are the same labels; other steps are not', () => {
+  const ask = cleanLabelAsk(RAGU)!;
+  assert.equal(labelKey(ask), labelKey(cleanLabelAsk({ ...RAGU, items: RAGU.items.map((n) => n.toUpperCase()) })!));
+  assert.notEqual(labelKey(ask), labelKey(cleanLabelAsk({ ...RAGU, steps: RAGU.steps.slice(1) })!));
+  assert.notEqual(labelKey(ask), cookKey(cleanCookAsk({ title: 'Ragú', items: [{ name: 'pavo' }] })!, { language: 'es', region: 'ES' }));
+});
+
+test('labelling is small and quick: the cheaper model, no thinking, a word and a number a step', async () => {
+  requests.length = 0;
+  reply = { actions: ['boil', 'fry', 'fry'], timers: [10, 0, 10] };
+  const { detail, model } = await labelCookSteps(cleanLabelAsk(RAGU)!);
+  assert.deepEqual(detail.map((d) => d.action), ['boil', 'fry', 'fry']);
+  assert.equal(model, TEXT_MODEL);
+  const request = requests[0] as { model: string; max_tokens: number; thinking?: { type: string }; output_config?: { effort?: string; format?: { schema?: { required?: string[] } } } };
+  assert.deepEqual(request.thinking, { type: 'disabled' });
+  assert.equal(request.output_config?.effort, 'low');
+  assert.deepEqual(request.output_config?.format?.schema?.required, ['actions', 'timers']);
+  assert.ok(request.max_tokens <= 1000);
 });

@@ -119,12 +119,13 @@ import {
   translateBatch,
   WeekPlanError,
   writeCookSteps,
+  labelCookSteps,
   swapMeal,
   type CoachContext,
   type Crockery,
 } from './claude';
 import { cleanSwapRequest, cleanWeekRequest, type SwapRequest } from './weekplan';
-import { cleanCookAsk, cookKey, keepSteps, keptSteps, type CookAsk } from './cook';
+import { cleanCookAsk, cleanLabelAsk, cookKey, keepSteps, keptSteps, labelKey, type CookAsk, type LabelAsk } from './cook';
 import { currentPlace, withPlace } from './region';
 import { msg } from '../src/lib/i18n';
 import { isTranslatable, languagePack, speakerFor, setTranslator, warmAll } from './translate';
@@ -2853,6 +2854,61 @@ app.post('/api/cook', async (req, res, next) => {
     res.json(readBy({ steps }, 'cook'));
   } catch (error) {
     logFailure('cook steps', error);
+    res.status(502).json({ error: msg('The steps could not be written just now. Try again in a moment.') });
+  }
+});
+
+/**
+ * Labels for cooking steps written before they were labelled the way they are
+ * now (server/cook.ts). Body: { steps, items }, the ingredients by name.
+ * Answers { detail }. Plus, as the steps are; kept, so the same steps are
+ * only ever labelled once, and counted against the day's cooking steps.
+ */
+app.post('/api/cook/labels', async (req, res, next) => {
+  const ask = cleanLabelAsk(req.body);
+  if (!ask) {
+    res.status(400).json({ error: msg('There are no steps to label.') });
+    return;
+  }
+  let plan: Plan;
+  try {
+    plan = req.device ? await planFor(req.device) : 'free';
+  } catch (error) {
+    logFailure('cook labels plan', error);
+    res.status(503).json({ error: msg('The steps could not be written just now. Try again in a moment.') });
+    return;
+  }
+  if (plan === 'free') {
+    res.status(402).json({
+      error: 'out_of_allowance', plan, kind: 'cook', used: 0, allowance: 0, period: 'ever',
+      needsAccount: false, resets: null, message: `Cooking steps for your meal plans are part of ${PLUS}.`,
+    });
+    return;
+  }
+  try {
+    const kept = await keptSteps(labelKey(ask));
+    if (kept?.detail) {
+      res.json({ detail: kept.detail });
+      return;
+    }
+  } catch (error) {
+    logFailure('cook labels kept', error);
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: msg('Writing the steps needs the AI, and no key is configured on this server.') });
+    return;
+  }
+  res.locals.labelAsk = ask;
+  next();
+}, meter('cook'), async (_req, res) => {
+  const ask = res.locals.labelAsk as LabelAsk;
+  try {
+    const { detail, model } = await labelCookSteps(ask);
+    // Kept in the same table as the methods, under its own key: the steps, and their labels.
+    await keepSteps(labelKey(ask), { minutes: 0, steps: ask.steps, detail }, model).catch((error) => logFailure('cook labels keep', error));
+    res.json(readBy({ detail }, 'cook'));
+  } catch (error) {
+    logFailure('cook labels', error);
     res.status(502).json({ error: msg('The steps could not be written just now. Try again in a moment.') });
   }
 });
