@@ -43,6 +43,18 @@ the way a nutrition app should, and works offline too.
   calorie floors, no skipping meals or fasting or cutting out a food group, and anything that sounds
   like distress ends at Beat rather than at a macro split.
 
+**Meal planning** (Plus)
+- The nutritionist plans three to seven days around your targets, diet and the meals you like; no
+  day goes over your calorie target, and portions are fitted to it afterwards.
+- A planned meal opens as a recipe: its ingredients, and a method written the first time it is
+  opened (`server/cook.ts`), with a cook mode that shows one step at a time and keeps the screen on.
+- **Swap** one meal for another sized to the same calories, previewed first; **Keep** one, and the
+  next week plans around it and brings it back.
+- **Cooking for** a household: recipes and the shopping list scale, the diary still gets one portion.
+- A **recipe box** of meals saved from plans, the diary or a recipe link — planned again in two taps,
+  logged from the Saved tab, and put first in what the planner is told you like.
+- A shopping list in aisle order, made from the plans.
+
 **Your plan**
 - Mifflin–St Jeor BMR × activity, adjusted by goal and pace, with a safe calorie floor.
 - Protein scaled to body weight, fat at 28% of energy, fibre at 14 g per 1000 kcal.

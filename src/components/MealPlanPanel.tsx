@@ -3,7 +3,8 @@ import Squish from './Squish';
 import PlanCard from './PlanCard';
 import ShoppingSheet from './ShoppingSheet';
 import WeekPlanSheet from './WeekPlanSheet';
-import { BasketIcon, SparkIcon } from './icons';
+import RecipeBoxSheet from './RecipeBoxSheet';
+import { BasketIcon, BookmarkIcon, SparkIcon } from './icons';
 import { useSquish } from '../store/useSquish';
 import { useSubscribed } from './useSubscribed';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
@@ -25,6 +26,8 @@ export default function MealPlanPanel() {
   const subscribed = useSubscribed();
   const [planning, setPlanning] = useState(false);
   const [shopping, setShopping] = useState(false);
+  const [box, setBox] = useState(false);
+  const saved = useSquish((s) => s.recipes.length);
   const today = isoDate();
 
   const days = useMemo(() => {
@@ -39,6 +42,7 @@ export default function MealPlanPanel() {
     <div className="meal-plan">
       <WeekPlanSheet open={planning} onClose={() => setPlanning(false)} />
       <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
+      <RecipeBoxSheet open={box} onClose={() => setBox(false)} />
 
       {days.length === 0 ? (
         <div className="meal-plan-empty">
@@ -51,6 +55,11 @@ export default function MealPlanPanel() {
             <SparkIcon size={16} /> {t('Plan my week')}
           </button>
           {!subscribed && <p className="tiny muted">{t('Part of {plus}.', { plus: PLUS })}</p>}
+          {saved > 0 && (
+            <button type="button" className="btn--quiet small row" onClick={() => setBox(true)}>
+              <BookmarkIcon size={15} /> {t('My recipes ({n})', { n: saved })}
+            </button>
+          )}
         </div>
       ) : (
         <>
@@ -59,9 +68,14 @@ export default function MealPlanPanel() {
               <b>{plural(count, { one: '{n} meal planned', other: '{n} meals planned' })}</b>{' '}
               <span className="muted">{t('· tap “I ate this” when you do')}</span>
             </p>
-            <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
-              <BasketIcon size={15} /> {t('Shopping list')}
-            </button>
+            <span className="row meal-plan-links">
+              <button type="button" className="btn--quiet small row" onClick={() => setBox(true)}>
+                <BookmarkIcon size={15} /> {t('My recipes')}
+              </button>
+              <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
+                <BasketIcon size={15} /> {t('Shopping list')}
+              </button>
+            </span>
           </div>
           {days.map((day) => (
             <section key={day.date} className="meal-plan-day">

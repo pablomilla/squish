@@ -150,6 +150,26 @@ export interface MealEntry {
   servings?: number;
 }
 
+/**
+ * A meal kept to make again: one portion, exactly as it is logged, with the
+ * steps for it once written and where it came from. How often it has been
+ * made is read from the diary (src/lib/recipes.ts), not counted here.
+ */
+export interface Recipe {
+  id: string;
+  title: string;
+  /** The meal it was, as a starting point for planning it again. */
+  slot: MealSlot;
+  items: FoodItem[];
+  nutrients: Nutrients;
+  score: number;
+  cook?: CookSteps;
+  /** The page it was imported from, if it was. */
+  sourceUrl?: string;
+  /** yyyy-mm-dd. */
+  savedAt: string;
+}
+
 export interface CookSteps {
   /** From starting to eating, roughly. */
   minutes: number;

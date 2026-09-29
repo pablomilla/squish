@@ -113,6 +113,13 @@ export const HeartFilledIcon = ({ size = 20, className }: IconProps) => (
   </svg>
 );
 
+/** A ribbon marking a page: saved to the recipe box. Filled once it is. */
+export const BookmarkIcon = ({ size = 20, className, filled = false }: IconProps & { filled?: boolean }) => (
+  <svg {...base(size)} fill={filled ? 'currentColor' : 'none'} className={className}>
+    <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" />
+  </svg>
+);
+
 /** Two arrows passing: one thing for another. */
 export const SwapIcon = ({ size = 20, className }: IconProps) => (
   <svg {...base(size)} className={className}>

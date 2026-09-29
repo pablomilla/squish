@@ -4,12 +4,14 @@ import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
 import DictateButton from '../components/DictateButton';
 import { Segmented, Stepper, useToast } from '../components/ui';
-import { CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../components/icons';
+import { BookmarkIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { searchFoods, toFoodItem } from '../lib/foods';
 import { qualityScore, scaleNutrients, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
 import { analyseText, importRecipe, isPaywalled, SquishApiError, type RecipeImport } from '../lib/api';
-import { slotForNow } from '../lib/date';
+import { isoDate, slotForNow } from '../lib/date';
+import { findRecipe, orderRecipes, recipeFrom } from '../lib/recipes';
+import { asAnalysis } from '../lib/planner';
 import './addfood.css';
 import { describePortion } from '../lib/units';
 import { currentEnergyUnit, energyValue, formatEnergy, toKcal } from '../lib/region';
@@ -50,6 +52,9 @@ const EXAMPLES = [
 export default function AddFood({ slot, date, initialTab = 'search', onCancel, onReady }: Props) {
   const toast = useToast();
   const favourites = useSquish((s) => s.favourites);
+  const recipes = useSquish((s) => s.recipes);
+  const loggedMeals = useSquish((s) => s.meals);
+  const saveRecipe = useSquish((s) => s.saveRecipe);
   const [tab, setTab] = useState<Tab>(initialTab);
   const [query, setQuery] = useState('');
   const [basket, setBasket] = useState<FoodItem[]>([]);
@@ -383,6 +388,20 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
               <button type="button" className="btn btn--block" style={{ marginTop: 10 }} onClick={useRecipe}>
                 <PlusIcon size={18} /> {t('Use this')}
               </button>
+              {/* One serving, as the page makes it, whatever they had today: that is the recipe. */}
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                style={{ marginTop: 8 }}
+                disabled={Boolean(findRecipe(recipes, recipe.title))}
+                onClick={() => {
+                  saveRecipe(recipeFrom({ ...recipe, slot: mealSlot }, isoDate(), recipe.sourceUrl));
+                  toast(t('Saved to your recipes — one serving, ready to plan.'), '📖');
+                }}
+              >
+                <BookmarkIcon size={17} filled={Boolean(findRecipe(recipes, recipe.title))} />{' '}
+                {findRecipe(recipes, recipe.title) ? t('In your recipes') : t('Save to my recipes')}
+              </button>
             </section>
           )}
         </div>
@@ -390,10 +409,30 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
 
       {tab === 'favourites' && (
         <div className="stack">
+          {recipes.length > 0 && (
+            <>
+              <h4 className="tiny muted add-heading">{t('Your recipes')}</h4>
+              {orderRecipes(recipes, loggedMeals).map((r) => (
+                <button key={r.id} type="button" className="meal-card" onClick={() => onReady(asAnalysis({ ...r, items: r.items.map((i) => ({ ...i, id: `${i.id}-${Date.now()}` })) }, mealSlot), { slot: mealSlot, date })}>
+                  <span className="thumb thumb--emoji" aria-hidden="true">{r.items[0]?.emoji ?? '🍽️'}</span>
+                  <span className="meal-card-body">
+                    <span className="meal-card-title">{r.title}</span>
+                    <span className="tiny muted">
+                      {formatEnergy(r.nutrients.calories)} · {t('P{protein}', { protein: Math.round(r.nutrients.protein) })}
+                    </span>
+                  </span>
+                  <BookmarkIcon size={17} filled />
+                </button>
+              ))}
+              {favourites.length > 0 && <h4 className="tiny muted add-heading">{t('Your foods')}</h4>}
+            </>
+          )}
           {favourites.length === 0 ? (
+            recipes.length > 0 ? null : (
             <EmptyState mood="calm">
               {t('No favourites yet. Tap the heart on any food you log and it will live here.')}
             </EmptyState>
+            )
           ) : (
             favourites.map((item) => (
               <button key={item.id} type="button" className="meal-card" onClick={() => add({ ...item, id: `${item.id}-${Date.now()}` })}>

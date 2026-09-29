@@ -6,7 +6,8 @@ import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
 import CheckinSheets from '../components/CheckinSheets';
 import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
 import { Sheet, useToast } from '../components/ui';
-import { BasketIcon, CalendarIcon, CameraIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
+import { BasketIcon, BookmarkIcon, CalendarIcon, CameraIcon, PenIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
+import { findRecipe, recipeFrom } from '../lib/recipes';
 import DayDetailSheet, { dayDetailTitle } from '../components/DayDetailSheet';
 import CalendarSheet from '../components/diary/CalendarSheet';
 import SearchSheet from '../components/diary/SearchSheet';
@@ -299,6 +300,8 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             </div>
 
             {selected.coachNote && <p className="speech" dir="auto">{selected.coachNote}</p>}
+
+            <SaveRecipeButton meal={selected} />
             {selected.note && <p className="small muted">"{t(selected.note)}"</p>}
 
             <div className="row" style={{ gap: 10 }}>
@@ -356,4 +359,29 @@ function MealPhoto({ meal }: { meal: MealEntry }) {
   }, [meal.id]);
 
   return <img src={full ?? meal.photo} alt="" className="review-photo" />;
+}
+
+/** "That was good": the meal as they had it, into the recipe box to plan again. Tapped again, it comes out. */
+function SaveRecipeButton({ meal }: { meal: MealEntry }) {
+  const { recipes, saveRecipe, removeRecipe } = useSquish();
+  const toast = useToast();
+  const saved = findRecipe(recipes, meal.title);
+  return (
+    <button
+      type="button"
+      className="btn--quiet small row diary-save-recipe"
+      aria-pressed={Boolean(saved)}
+      onClick={() => {
+        if (saved) {
+          removeRecipe(saved.id);
+          toast(t('Taken out of your recipes.'), '📕');
+        } else {
+          saveRecipe(recipeFrom(meal, isoDate()));
+          toast(t('Saved to your recipes — plan it again from the meal plan.'), '📖');
+        }
+      }}
+    >
+      <BookmarkIcon size={16} filled={Boolean(saved)} /> {saved ? t('In your recipes') : t('Save to my recipes')}
+    </button>
+  );
 }

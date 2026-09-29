@@ -111,3 +111,4 @@
 .diary { gap: var(--s4); }
 .diary .checkins { margin-top: var(--s4); gap: 10px; }
 .diary .checkin-main { padding: 10px 12px; }
+.diary-save-recipe { align-self: center; gap: 6px; }

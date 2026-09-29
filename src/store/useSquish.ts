@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CookSteps, DayLog, Draft, FoodItem, MealEntry, Profile, Targets } from '../types';
+import type { CookSteps, DayLog, Draft, FoodItem, MealEntry, Profile, Recipe, Targets } from '../types';
+import { findRecipe } from '../lib/recipes';
 import {
   CARBS_MAX_SHARE,
   FAT_MAX_SHARE,
@@ -69,6 +70,8 @@ interface SquishState {
   shopping: { ticked: string[]; extras: Extra[] };
   /** Who they cook for, which scales recipes and the shopping list, never what is logged (src/lib/planner.ts). */
   household: Household;
+  /** Meals kept to make again (src/lib/recipes.ts). */
+  recipes: Recipe[];
   unlocked: Record<string, string>;
   theme: 'light' | 'dark' | 'system';
   /** "The protein of 3 eggs" on meals and the day. On unless turned off in You → Appearance. */
@@ -159,6 +162,10 @@ interface SquishState {
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setComparisons: (on: boolean) => void;
   setHousehold: (household: Household) => void;
+  /** Keep a meal in the recipe box; one of the same name is updated rather than kept twice. */
+  saveRecipe: (recipe: Omit<Recipe, 'id'>) => Recipe;
+  removeRecipe: (id: string) => void;
+  setRecipeCook: (id: string, cook: CookSteps) => void;
   /** How many a planned meal is cooked for, where it differs from the household; undefined goes back to it. */
   setPlanServings: (id: string, servings: number | undefined) => void;
   setLook: (look: string) => void;
@@ -301,6 +308,7 @@ export const useSquish = create<SquishState>()(
       plans: [],
       shopping: { ticked: [], extras: [] },
       household: SOLO,
+      recipes: [],
       unlocked: {},
       theme: 'system',
       comparisons: true,
@@ -479,6 +487,20 @@ export const useSquish = create<SquishState>()(
       setTheme: (theme) => set({ theme }),
       setComparisons: (comparisons) => set({ comparisons }),
       setHousehold: (household) => set({ household: cleanHousehold(household) }),
+
+      saveRecipe: (recipe) => {
+        const existing = findRecipe(get().recipes, recipe.title);
+        // Saved again: the newer version of the meal, the steps it already had if it has none, and the same place in the box.
+        const saved: Recipe = existing
+          ? { ...existing, ...recipe, id: existing.id, cook: recipe.cook ?? existing.cook, sourceUrl: recipe.sourceUrl ?? existing.sourceUrl, savedAt: existing.savedAt }
+          : { ...recipe, id: uid() };
+        set({ recipes: existing ? get().recipes.map((r) => (r.id === existing.id ? saved : r)) : [saved, ...get().recipes].slice(0, 200) });
+        return saved;
+      },
+
+      removeRecipe: (id) => set({ recipes: get().recipes.filter((r) => r.id !== id) }),
+
+      setRecipeCook: (id, cook) => set({ recipes: get().recipes.map((r) => (r.id === id ? { ...r, cook } : r)) }),
       setPlanServings: (id, servings) =>
         set({
           plans: get().plans.map((p) => {
@@ -520,6 +542,7 @@ export const useSquish = create<SquishState>()(
           plans: [],
           shopping: { ticked: [], extras: [] },
           household: SOLO,
+          recipes: [],
           unlocked: {},
           lastCoachNote: null,
           photoAnalyses: 0,

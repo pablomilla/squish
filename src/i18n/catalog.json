@@ -1,5 +1,5 @@
 {
- "version": "0rljxn5-3ionbx",
+ "version": "15j71m6-uxw31b",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -93,6 +93,13 @@
    "other": "{done} of {days} days done — {n} more to go.",
    "where": [
     "src/components/FriendNudge.tsx"
+   ]
+  },
+  {
+   "id": "00ibq1d0cqg22z",
+   "text": "Which meal",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -416,6 +423,13 @@
    "text": "Keep the one with your meals in it. The other is replaced, so anything only in that one is lost.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "02burf6-4old28",
+   "text": "Saved to your recipes — plan it again from the meal plan.",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -1034,6 +1048,13 @@
    ]
   },
   {
+   "id": "05g8h340ayva49",
+   "text": "For one, as you had it. These amounts are what gets logged.",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "05ljxq6-e11qdc",
    "one": "{n} note",
    "other": "{n} notes",
@@ -1073,7 +1094,8 @@
    "id": "05tbstj-nuy1cw",
    "text": "Ingredients",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/CookSheet.tsx",
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -1653,6 +1675,13 @@
    ]
   },
   {
+   "id": "08wzh4v-gl7e1t",
+   "text": "Search your recipes",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "090f05d-ubuc9l",
    "text": "Not signed in",
    "where": [
@@ -1677,7 +1706,8 @@
    "id": "0982hh60-aa1wn",
    "text": "Try again",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/CookSheet.tsx",
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -1851,6 +1881,14 @@
    "text": "Full week",
    "where": [
     "src/lib/achievements.ts"
+   ]
+  },
+  {
+   "id": "09z3biq0wfgqsv",
+   "text": "Save to my recipes",
+   "where": [
+    "src/screens/AddFood.tsx",
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -2628,6 +2666,7 @@
    "text": "Cancel",
    "where": [
     "src/components/CookSheet.tsx",
+    "src/components/RecipeBoxSheet.tsx",
     "src/components/squad/SquadSheet.tsx",
     "src/screens/Review.tsx"
    ]
@@ -2658,6 +2697,13 @@
    "text": "Fifty days of logging",
    "where": [
     "src/lib/achievements.ts"
+   ]
+  },
+  {
+   "id": "0f7jp930votmvp",
+   "text": "Nothing in your recipes matches that.",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -3357,8 +3403,8 @@
    "id": "0j3ipph-mwlb44",
    "text": "Fewer people",
    "where": [
-    "src/components/CookSheet.tsx",
-    "src/components/HouseholdPicker.tsx"
+    "src/components/HouseholdPicker.tsx",
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -3854,6 +3900,7 @@
    "id": "0lewgh4-2x0i40",
    "text": "Save",
    "where": [
+    "src/components/CookSheet.tsx",
     "src/components/TooYoung.tsx",
     "src/components/squad/SquadSheet.tsx"
    ]
@@ -4619,7 +4666,7 @@
    "id": "0oxfxs50iwx33r",
    "text": "Done — I made this",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -4726,6 +4773,13 @@
    "text": "A code and a number of days, please.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "0pestpu-efdl55",
+   "text": "When?",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -4881,7 +4935,7 @@
    "id": "0q5va4g0pblazc",
    "text": "Step {n} of {total}",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -4952,6 +5006,14 @@
    "text": "Your Squish account will use <strong>{email}</strong> again. Every device will be signed out, and you will choose a new password from a link we send there — whoever changed the address may know the old one.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "0qmo8ou-6cprug",
+   "text": "In your recipes",
+   "where": [
+    "src/screens/AddFood.tsx",
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -5284,7 +5346,7 @@
    "id": "0slfq3p-xa3au8",
    "text": "Stop cooking",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -5445,6 +5507,13 @@
    ]
   },
   {
+   "id": "0tltdrb-ooq1mn",
+   "text": "Saved to your recipes.",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "0tnouxx0ydzs6i",
    "text": "Reminders on",
    "where": [
@@ -5541,6 +5610,13 @@
    "text": "Meal plan",
    "where": [
     "src/screens/Ask.tsx"
+   ]
+  },
+  {
+   "id": "0u97g4w09smiux",
+   "text": "Plan it for {day}",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -5777,6 +5853,7 @@
    "id": "0vc1f6j0dki2gg",
    "text": "Plan it",
    "where": [
+    "src/components/RecipeBoxSheet.tsx",
     "src/screens/Review.tsx"
    ]
   },
@@ -5956,8 +6033,8 @@
    "id": "0vxmqu70z3gewa",
    "text": "Part of {plus}.",
    "where": [
-    "src/components/CookSheet.tsx",
-    "src/components/MealPlanPanel.tsx"
+    "src/components/MealPlanPanel.tsx",
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -6008,7 +6085,7 @@
    "id": "0w3gn7u-hxqwse",
    "text": "Serves 1",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -6113,6 +6190,13 @@
    ]
   },
   {
+   "id": "0ws8jcc06x90f0",
+   "text": "For {n}. Your portion is one of them — {energy} — and that is what gets logged.",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "0wvn72w-h83bjn",
    "text": "<b>💜 You have been invited to a squad.</b> Friends who cheer each other on — no food, no weight, just encouragement.",
    "where": [
@@ -6166,7 +6250,7 @@
    "id": "0x5uyzo-4kkf04",
    "text": "The steps could not be written just now. Try again in a moment.",
    "where": [
-    "src/components/CookSheet.tsx",
+    "src/components/cookParts.tsx",
     "server/index.ts"
    ]
   },
@@ -6576,8 +6660,10 @@
    "where": [
     "src/components/CookSheet.tsx",
     "src/components/PlanCard.tsx",
+    "src/components/RecipeBoxSheet.tsx",
     "src/components/TodayPlanning.tsx",
-    "src/components/WeekPlanSheet.tsx"
+    "src/components/WeekPlanSheet.tsx",
+    "src/screens/AddFood.tsx"
    ]
   },
   {
@@ -6648,6 +6734,13 @@
    "text": "Team Sunshine",
    "where": [
     "src/lib/cheers.ts"
+   ]
+  },
+  {
+   "id": "10l5yed-5xf3uv",
+   "text": "Take it out of my recipes",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -7016,6 +7109,7 @@
    "text": "Saved",
    "where": [
     "src/components/AddSheet.tsx",
+    "src/components/CookSheet.tsx",
     "src/screens/AddFood.tsx",
     "src/screens/Home.tsx",
     "src/screens/Review.tsx"
@@ -7291,6 +7385,13 @@
    ]
   },
   {
+   "id": "13t4phu0q8dkit",
+   "text": "I made this today",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "13trpkp-bjd8dc",
    "text": "Māori",
    "where": [
@@ -7316,6 +7417,13 @@
    "text": "That goal is below your weight now. Did you mean to lose weight?",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "144z9hj0w3r0dh",
+   "text": "Take it out",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -7471,7 +7579,7 @@
    "id": "15a38ie-vmpxr4",
    "text": "Show me how to make it",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -7633,6 +7741,13 @@
    ]
   },
   {
+   "id": "161c7yb09948jj",
+   "text": "My recipes ({n})",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "1624t1y0m5ytt3",
    "text": "Save your plan",
    "where": [
@@ -7671,7 +7786,7 @@
    "id": "168i4r3-1410t5",
    "text": "How many it serves",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -7685,7 +7800,7 @@
    "id": "16cmxjk-k1j4se",
    "text": "Method",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -8004,6 +8119,15 @@
    ]
   },
   {
+   "id": "17qovbb-cm2838",
+   "text": "Taken out of your recipes.",
+   "where": [
+    "src/components/CookSheet.tsx",
+    "src/components/RecipeBoxSheet.tsx",
+    "src/screens/Diary.tsx"
+   ]
+  },
+  {
    "id": "17rblrc-jb5phs",
    "text": "a week",
    "where": [
@@ -8064,7 +8188,8 @@
    "id": "17zoey70fi82ky",
    "text": "about {minutes} min",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/CookSheet.tsx",
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -8113,8 +8238,8 @@
    "id": "1843wgz0za47wz",
    "text": "More people",
    "where": [
-    "src/components/CookSheet.tsx",
-    "src/components/HouseholdPicker.tsx"
+    "src/components/HouseholdPicker.tsx",
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -8594,6 +8719,7 @@
    "id": "1b1e2ut01bhp5v",
    "text": "Keep it",
    "where": [
+    "src/components/RecipeBoxSheet.tsx",
     "src/components/WeekPlanSheet.tsx"
    ]
   },
@@ -8665,7 +8791,7 @@
    "id": "1bhqoze-cx84q8",
    "text": "Next step",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -8687,6 +8813,13 @@
    "text": "Paste the address of a recipe page.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "1bkfq3y0xmiru5",
+   "text": "From {site}",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -8909,6 +9042,13 @@
    ]
   },
   {
+   "id": "1cy9zj10c6e3rd",
+   "text": "Your recipes",
+   "where": [
+    "src/screens/AddFood.tsx"
+   ]
+  },
+  {
    "id": "1cya99o0vwubej",
    "text": "From {from} now to {to} around {when}",
    "where": [
@@ -9021,6 +9161,13 @@
    ]
   },
   {
+   "id": "1dppz4l-qg8bk5",
+   "text": "Kept, and saved to your recipes — a new week plans around it, and more like it.",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "1dq3ykp0hiz8mu",
    "text": "Make a free account",
    "where": [
@@ -9120,6 +9267,14 @@
    ]
   },
   {
+   "id": "1e86ri80xhy1fk",
+   "text": "My recipes",
+   "where": [
+    "src/components/MealPlanPanel.tsx",
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "1e9bsfy0r4t3p6",
    "text": "2 scoops",
    "where": [
@@ -9148,6 +9303,13 @@
    "text": "you’ve had it before",
    "where": [
     "src/components/TodayPlanning.tsx"
+   ]
+  },
+  {
+   "id": "1eekiv40o2tbrg",
+   "text": "Saved to your recipes — one serving, ready to plan.",
+   "where": [
+    "src/screens/AddFood.tsx"
    ]
   },
   {
@@ -9579,6 +9741,14 @@
    ]
   },
   {
+   "id": "1gv72g2001lvew",
+   "one": "made once, {last}",
+   "other": "made {n} times, last {last}",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "1gw4gj7-8qka4f",
    "text": "We will send a link that works for two hours. It says the same thing whether or not that address has an account here, which is deliberate.",
    "where": [
@@ -9640,6 +9810,13 @@
    "text": "Porridge oats, dry",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1h6az69-4rwzdd",
+   "text": "not made yet",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -9850,7 +10027,7 @@
    "id": "1hzmxtu-bwr122",
    "text": "Back",
    "where": [
-    "src/components/CookSheet.tsx",
+    "src/components/cookParts.tsx",
     "src/screens/Onboarding.tsx"
    ]
   },
@@ -10007,7 +10184,8 @@
    "id": "1ivrphb-dqkliw",
    "text": "Start cooking",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/CookSheet.tsx",
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -10157,6 +10335,13 @@
    "text": "This device has no meals in it, so the backup is almost certainly the one to keep.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1j9lua8-jkyiwr",
+   "text": "Nothing saved yet. Tap Save on a planned meal or on a meal in your diary, or save a recipe you import, and it lives here — ready to plan again.",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -10995,6 +11180,14 @@
    ]
   },
   {
+   "id": "1nrf2dy0h4mz46",
+   "one": "made once",
+   "other": "made {n} times",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "1nsb1lg0tpncju",
    "text": "Squish is for people aged {age} and over, so your age has not been changed.",
    "where": [
@@ -11194,6 +11387,13 @@
    ]
   },
   {
+   "id": "1p52cg30ph9g1e",
+   "text": "Planned for {day} — and on your shopping list.",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
    "id": "1p5qyzh0c30eev",
    "text": "Habit rate",
    "where": [
@@ -11246,7 +11446,7 @@
    "id": "1pi7kxc-y5uk3c",
    "text": "Cooking {meal}",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -11348,6 +11548,13 @@
    "text": "Keeping this one.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1q90zx7-n0os4h",
+   "text": "All recipes",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {
@@ -11539,6 +11746,7 @@
    "text": "Squished it — {energy} logged.",
    "where": [
     "src/components/CookSheet.tsx",
+    "src/components/RecipeBoxSheet.tsx",
     "src/screens/Review.tsx"
    ]
   },
@@ -11589,7 +11797,7 @@
    "id": "1rbxrkd0d10wfz",
    "text": "Your screen stays on while you cook.",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -12293,7 +12501,7 @@
    "id": "1v7fdon-hjta7l",
    "text": "Writing the steps for you…",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -12352,13 +12560,6 @@
    "text": "Neckerchief",
    "where": [
     "src/lib/outfit.ts"
-   ]
-  },
-  {
-   "id": "1vgxd4u-pcfbvd",
-   "text": "Kept — a new week plans around it, and more like it.",
-   "where": [
-    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -12421,7 +12622,7 @@
    "id": "1vu0yg10yxuauz",
    "text": "Serves {n}",
    "where": [
-    "src/components/CookSheet.tsx"
+    "src/components/cookParts.tsx"
    ]
   },
   {
@@ -12594,6 +12795,13 @@
    ]
   },
   {
+   "id": "1wttrnr0bf8w9u",
+   "text": "Your foods",
+   "where": [
+    "src/screens/AddFood.tsx"
+   ]
+  },
+  {
    "id": "1wxttdl-bautb1",
    "text": "Reading a recipe needs the AI, and no key is configured on this server.",
    "where": [
@@ -12711,6 +12919,13 @@
    "text": "Cheer back ›",
    "where": [
     "src/components/squad/SquadStrip.tsx"
+   ]
+  },
+  {
+   "id": "1xk94hx-pqn65l",
+   "text": "Take {meal} out of your recipes? Meals in your diary stay as they are.",
+   "where": [
+    "src/components/RecipeBoxSheet.tsx"
    ]
   },
   {

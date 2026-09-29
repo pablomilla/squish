@@ -1,0 +1,26 @@
+/* The recipe box (RecipeBoxSheet.tsx): meals kept to make again. */
+.recipe-box { display: flex; flex-direction: column; gap: var(--s3); }
+.recipe-box-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0 20px; text-align: center; }
+.recipe-box-empty p { margin: 0; max-width: 32ch; }
+.recipe-box-search {
+  display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 46px;
+  border-radius: var(--r-pill); background: var(--surface-sunk); color: var(--ink-3);
+}
+.recipe-box-search input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; color: var(--ink); }
+.recipe-box-search input:focus { outline: none; }
+.recipe-box-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.recipe-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 12px 12px 14px; text-align: start;
+  border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+}
+.recipe-row:active { transform: scale(0.99); }
+.recipe-row-emoji { font-size: 24px; flex: none; }
+.recipe-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.recipe-row-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recipe-row svg { flex: none; color: var(--ink-3); }
+
+.recipe-back { align-self: flex-start; margin: -6px 0 -4px; padding: 0; }
+.recipe-title { margin: 0 0 4px; font-size: var(--text-display, 1.4rem); }
+.recipe-source { display: inline-block; margin-top: 4px; color: var(--brand-ink); }
+.recipe-plan { display: flex; flex-direction: column; gap: var(--s3); }
+.recipe-remove { align-self: center; color: var(--ink-3); }

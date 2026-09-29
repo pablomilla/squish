@@ -6,3 +6,4 @@
 .meal-plan-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .meal-plan-head p { margin: 0; }
 .meal-plan-day h3 { margin: 0 0 8px; color: var(--ink-2); }
+.meal-plan-links { gap: 14px; }

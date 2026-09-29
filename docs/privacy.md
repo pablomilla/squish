@@ -37,7 +37,7 @@ an account or a backup.
 | What | Examples |
 |---|---|
 | Your profile | The name you typed, if any; sex, date of birth (or the age you typed instead), height, weight, target weight, activity level, goal, and units; and, if you answered when setting up, how you eat (a diet, allergies, foods you never eat), what you want from Squish and what you find gets in the way |
-| Your meals | Titles, foods, portions, nutrition figures, and your notes — including meals you have planned for later, and your shopping list |
+| Your meals | Titles, foods, portions, nutrition figures, and your notes — including meals you have planned for later, recipes you have saved, and your shopping list |
 | Your photos | **The meal photographs themselves, which stay here.** Only a thumbnail of each — a few kilobytes — is part of the backup below |
 | Your days | Water, weight entries, and the day's totals |
 | Your settings | Saved foods, achievements earned, colourway, light or dark, reminder times |

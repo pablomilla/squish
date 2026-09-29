@@ -16,7 +16,8 @@
  * the day is nearly done. A plan not followed is not a failure, so nothing
  * here keeps score of plans.
  */
-import type { AnalysisResult, FoodItem, MealEntry, MealSlot, Nutrients, Targets } from '../types';
+import type { AnalysisResult, FoodItem, MealEntry, MealSlot, Nutrients, Recipe, Targets } from '../types';
+import { orderRecipes } from './recipes';
 import { addDays } from './date';
 import { EMPTY, addNutrients, qualityScore, ultraProcessedShare } from './nutrition';
 import { msg, t } from './i18n';
@@ -133,16 +134,19 @@ export function asAnalysis(meal: Pick<Idea, 'title' | 'items' | 'nutrients' | 's
  * logged most often in the last month, then saved foods, each once. Titles
  * only — their taste, not their diary.
  */
-export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: string, count = 15, plans: MealEntry[] = []): string[] {
-  // Meals they kept from a plan first: kept is the plainest way of saying "more of this".
+export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: string, count = 15, plans: MealEntry[] = [], recipes: Recipe[] = []): string[] {
+  // Meals they kept from a plan first, then their saved recipes, the most made
+  // first: keeping and saving are the plainest ways of saying "more of this".
   const keptKeys = new Set<string>();
   const kept: string[] = [];
-  for (const plan of plans) {
-    const title = plan.title.trim();
-    if (!plan.kept || !title || keptKeys.has(title.toLowerCase())) continue;
+  const add = (raw: string) => {
+    const title = raw.trim();
+    if (!title || keptKeys.has(title.toLowerCase())) return;
     keptKeys.add(title.toLowerCase());
     kept.push(title);
-  }
+  };
+  for (const plan of plans) if (plan.kept) add(plan.title);
+  for (const recipe of orderRecipes(recipes, meals)) add(recipe.title);
   const since = addDays(today, -30);
   const tally = new Map<string, { title: string; times: number }>();
   for (const meal of meals) {

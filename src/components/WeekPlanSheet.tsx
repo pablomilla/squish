@@ -41,7 +41,7 @@ const DAY_ORDER: MealSlot[] = [...MEALS, 'snack'];
  * eaten — so a plan somebody ignores costs them nothing at all.
  */
 export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { profile, targets, meals, favourites, nutritionistNotes, addPlan, removePlans, plans, household } = useSquish();
+  const { profile, targets, meals, favourites, nutritionistNotes, addPlan, removePlans, plans, household, recipes } = useSquish();
   const subscribed = useSubscribed();
   const planCounts = useStanding().weekplans;
   /** Weekly plans left this month, where the server has said (Plus only). */
@@ -123,7 +123,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
         fibreTarget: targets.fibre,
         goal: profile.goal,
         sex: profile.sex,
-        likes: likesFrom(meals, favourites, today, 15, plans),
+        likes: likesFrom(meals, favourites, today, 15, plans, recipes),
         notes: nutritionistNotes.map((n) => n.note),
         preferences: preferences.trim(),
         cooking,
