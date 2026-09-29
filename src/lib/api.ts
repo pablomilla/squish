@@ -9,6 +9,7 @@ import { runConversation, type ChatContext, type ChatMessage, type ChatStep, typ
 import { placeHeaders } from './place';
 import { t } from './i18n';
 import type { About } from './eating';
+import type { KeptMeal } from './planner';
 import type { Heard } from './heard';
 
 const TIMEOUT_MS = 45_000;
@@ -44,7 +45,7 @@ export const isPaywalled = (error: unknown): boolean =>
 /** What the server says when an allowance has run out. */
 export interface OutOfAllowance {
   plan: 'free' | 'plus';
-  kind: 'photo' | 'chat' | 'recipe' | 'weekplan' | 'cook';
+  kind: 'photo' | 'chat' | 'recipe' | 'weekplan' | 'swap' | 'cook';
   used: number;
   allowance: number;
   /** 'month' for Plus; 'ever' for the free taste, which does not come back. */
@@ -277,6 +278,8 @@ export interface WeekPlanAsk {
   cooking: 'quick' | 'normal' | 'batch';
   /** How they eat and what they want, from the profile. */
   about: About;
+  /** Meals already standing on those days — kept, or planned by them — for the plan to work around. */
+  kept?: KeptMeal[];
 }
 
 /*
@@ -469,6 +472,29 @@ export async function waitingWeekPlan(): Promise<string | null> {
 export async function cookSteps(meal: Pick<MealEntry, 'title' | 'slot' | 'items'>): Promise<CookSteps> {
   const items = meal.items.map((item) => ({ name: item.name, portion: item.portion, grams: item.grams, liquid: item.liquid }));
   return (await post<{ steps: CookSteps }>('/api/cook', { title: meal.title, slot: meal.slot, items }, 60_000)).steps;
+}
+
+export interface SwapAsk {
+  date: string;
+  slot: MealSlot;
+  title: string;
+  calories: number;
+  protein: number;
+  dayMeals: string[];
+  avoid: string[];
+  goal: string;
+  sex: string;
+  notes: string[];
+  about: About;
+}
+
+/**
+ * Another meal in place of a planned one, sized to it (server/weekplan.ts).
+ * Plus; a free plan gets the paywall. Nothing changes until they choose to
+ * use it.
+ */
+export async function swapPlannedMeal(ask: SwapAsk): Promise<AnalysisResult> {
+  return (await post<{ meal: AnalysisResult }>('/api/weekplan/swap', ask, 120_000)).meal;
 }
 
 export async function requestWeekPlan(ask: WeekPlanAsk): Promise<WeekPlan> {

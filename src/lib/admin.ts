@@ -178,7 +178,7 @@ export async function giveBackUse(email: string, kind: 'chat' | 'weekplan'): Pro
   }
 }
 
-export type ModelFeature = 'photo' | 'label' | 'words' | 'fill' | 'recipe' | 'chat' | 'weekplan' | 'cook' | 'coach' | 'translate';
+export type ModelFeature = 'photo' | 'label' | 'words' | 'fill' | 'recipe' | 'chat' | 'weekplan' | 'swap' | 'cook' | 'coach' | 'translate';
 export type ModelAudience = 'admins' | 'everyone';
 export type ModelRoutes = Record<ModelFeature, Record<ModelAudience, string[]>>;
 

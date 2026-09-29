@@ -5,7 +5,7 @@ import { Segmented, Sheet, useToast } from './ui';
 import { useSquish } from '../store/useSquish';
 import { useStanding, useSubscribed } from './useSubscribed';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
-import { NUTRITIONIST_PLAN_NOTE, likesFrom } from '../lib/planner';
+import { NUTRITIONIST_PLAN_NOTE, likesFrom, replacedOn, standingOn, weekDates } from '../lib/planner';
 import { PLUS } from '../lib/plan';
 import {
   clearReadyWeekPlan,
@@ -28,6 +28,7 @@ import { aboutOf } from '../lib/eating';
 type Stage = { kind: 'ask' } | { kind: 'planning' } | { kind: 'preview'; plan: WeekPlan };
 
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
+const DAY_ORDER: MealSlot[] = [...MEALS, 'snack'];
 
 /**
  * The nutritionist plans the days ahead, for Plus.
@@ -39,7 +40,7 @@ const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
  * eaten — so a plan somebody ignores costs them nothing at all.
  */
 export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { profile, targets, meals, favourites, nutritionistNotes, addPlan, plans } = useSquish();
+  const { profile, targets, meals, favourites, nutritionistNotes, addPlan, removePlans, plans } = useSquish();
   const subscribed = useSubscribed();
   const planCounts = useStanding().weekplans;
   /** Weekly plans left this month, where the server has said (Plus only). */
@@ -109,8 +110,10 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
   const plan = async () => {
     setStage({ kind: 'planning' });
     try {
+      const startDate = start === 'today' ? today : addDays(today, 1);
+      const kept = standingOn(plans, weekDates(startDate, Number(days)));
       const week = await requestWeekPlan({
-        startDate: start === 'today' ? today : addDays(today, 1),
+        startDate,
         days: Number(days),
         slots,
         snacks,
@@ -119,11 +122,12 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
         fibreTarget: targets.fibre,
         goal: profile.goal,
         sex: profile.sex,
-        likes: likesFrom(meals, favourites, today),
+        likes: likesFrom(meals, favourites, today, 15, plans),
         notes: nutritionistNotes.map((n) => n.note),
         preferences: preferences.trim(),
         cooking,
         about: aboutOf(profile),
+        ...(kept.length ? { kept } : {}),
       });
       setLeft(new Set());
       setStage({ kind: 'preview', plan: week });
@@ -135,12 +139,21 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
   };
 
   const keyOf = (date: string, index: number) => `${date}#${index}`;
+  /** What adding the plan in preview would take the place of. */
+  const replaced = stage.kind === 'preview' ? replacedOn(plans, stage.plan.days.map((d) => d.date)) : [];
 
   const keep = (week: WeekPlan) => {
+    // What it plans on these days replaces what the nutritionist planned there
+    // before — apart from the meals they kept and any they planned themselves.
+    const dates = week.days.map((d) => d.date);
+    removePlans(replacedOn(plans, dates).map((p) => p.id));
+    const standing = new Set(standingOn(plans, dates).map((k) => `${k.date}#${k.slot}`));
     let added = 0;
     for (const day of week.days) {
       day.meals.forEach((meal, index) => {
         if (left.has(keyOf(day.date, index))) return;
+        // Told to leave these slots alone, and checked on the server; this is for a plan made before they were kept.
+        if (standing.has(`${day.date}#${meal.slot ?? 'dinner'}`)) return;
         addPlan({
           date: day.date,
           slot: meal.slot ?? 'dinner',
@@ -266,48 +279,81 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
       {stage.kind === 'preview' && (
         <div className="week-preview">
           {stage.plan.summary && <p className="small week-summary" dir="auto">{stage.plan.summary}</p>}
-          {stage.plan.days.map((day) => (
+          {replaced.length > 0 && (
+            <p className="tiny muted week-replaces">
+              {plural(replaced.length, {
+                one: 'This replaces the {n} meal the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.',
+                other: 'This replaces the {n} meals the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.',
+              })}
+            </p>
+          )}
+          {stage.plan.days.map((day) => {
+            const standing = standingOn(plans, [day.date]);
+            const standingKcal = standing.reduce((sum, k) => sum + k.calories, 0);
+            return (
             <section key={day.date} className="week-day">
               <div className="week-day-head">
                 <h4 className="small">{friendlyDate(day.date)}</h4>
                 <span className="tiny muted">
-                  {t('{eaten} of {target}', { eaten: energyValue(day.calories), target: formatEnergy(targets.calories) })}
+                  {t('{eaten} of {target}', { eaten: energyValue(day.calories + standingKcal), target: formatEnergy(targets.calories) })}
                 </span>
               </div>
               {day.underFloor && <p className="tiny week-light">{t('This day came out light — add a snack if you keep it.')}</p>}
               <ul>
-                {day.meals.map((meal, index) => {
-                  const key = keyOf(day.date, index);
-                  const kept = !left.has(key);
-                  return (
-                    <li key={key}>
-                      <label className={`week-meal${kept ? '' : ' is-left'}`}>
-                        <input
-                          type="checkbox"
-                          checked={kept}
-                          onChange={() =>
-                            setLeft((set) => {
-                              const next = new Set(set);
-                              if (kept) next.add(key);
-                              else next.delete(key);
-                              return next;
-                            })
-                          }
-                        />
-                        <span className="week-meal-text" dir="auto">
-                          <span className="week-meal-title">{meal.title}</span>
-                          <span className="tiny muted">
-                            {slotWord(meal.slot ?? 'dinner')} · {formatEnergy(meal.nutrients.calories)} · {t('P{protein}', { protein: Math.round(meal.nutrients.protein) })} ·{' '}
-                            {meal.items.map((item) => item.name).join(', ')}
+                {/* The new meals and the ones already standing, in the order the day is eaten. */}
+                {[
+                  ...standing.map((k) => ({ slot: k.slot, kept: k, meal: null, index: -1 })),
+                  ...day.meals.map((meal, index) => ({ slot: meal.slot ?? 'dinner', kept: null, meal, index })),
+                ]
+                  .sort((x, y) => DAY_ORDER.indexOf(x.slot) - DAY_ORDER.indexOf(y.slot))
+                  .map(({ kept: k, meal, index }) => {
+                    if (k) {
+                      return (
+                        <li key={`kept-${k.slot}`}>
+                          <div className="week-meal is-kept">
+                            <span className="week-kept-mark" aria-hidden="true">♥</span>
+                            <span className="week-meal-text" dir="auto">
+                              <span className="week-meal-title">{k.title}</span>
+                              <span className="tiny muted">
+                                {slotWord(k.slot)} · {formatEnergy(k.calories)} · {t('already in your plans')}
+                              </span>
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    }
+                    const key = keyOf(day.date, index);
+                    const kept = !left.has(key);
+                    return (
+                      <li key={key}>
+                        <label className={`week-meal${kept ? '' : ' is-left'}`}>
+                          <input
+                            type="checkbox"
+                            checked={kept}
+                            onChange={() =>
+                              setLeft((set) => {
+                                const next = new Set(set);
+                                if (kept) next.add(key);
+                                else next.delete(key);
+                                return next;
+                              })
+                            }
+                          />
+                          <span className="week-meal-text" dir="auto">
+                            <span className="week-meal-title">{meal!.title}</span>
+                            <span className="tiny muted">
+                              {slotWord(meal!.slot ?? 'dinner')} · {formatEnergy(meal!.nutrients.calories)} · {t('P{protein}', { protein: Math.round(meal!.nutrients.protein) })} ·{' '}
+                              {meal!.items.map((item) => item.name).join(', ')}
+                            </span>
                           </span>
-                        </span>
-                      </label>
-                    </li>
-                  );
-                })}
+                        </label>
+                      </li>
+                    );
+                  })}
               </ul>
             </section>
-          ))}
+            );
+          })}
           {discarding ? (
             // Asked here, in Squish's own words, not in a browser box headed with the web address.
             <div className="week-discard" role="alertdialog" aria-labelledby="week-discard-q">

@@ -5,6 +5,17 @@
 .cook-meta { margin-top: -6px !important; }
 .cook-head { margin: 0; }
 
+/* Keep and swap: small, beside the meal they change, not in the way of cooking it. */
+.cook-change { display: flex; gap: 8px; margin-top: -4px; }
+.cook-change .chip { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Another meal, offered before anything changes. */
+.cook-swap { display: flex; flex-direction: column; gap: var(--s2); }
+.cook-offer { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: var(--r-lg); border: 1.5px dashed var(--line-strong); }
+.cook-offer h3 { margin: 0; }
+.cook-swap .cook-actions { align-items: stretch; }
+.cook-swap .btn--quiet { align-self: center; }
+
 .cook-ingredients { list-style: none; margin: 0; padding: 0; border-radius: var(--r-md); background: var(--surface-sunk); }
 .cook-ingredients li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); }
 .cook-ingredients li:first-child { border-top: 0; }

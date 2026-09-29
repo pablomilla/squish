@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { MealEntry } from '../types';
+import type { AnalysisResult, MealEntry } from '../types';
 import Squish from './Squish';
 import { Sheet, useToast } from './ui';
-import { CloseIcon } from './icons';
+import { CloseIcon, HeartFilledIcon, HeartIcon, SwapIcon } from './icons';
 import { useSquish } from '../store/useSquish';
 import { useSubscribed } from './useSubscribed';
-import { cookSteps, isPaywalled } from '../lib/api';
+import { cookSteps, isPaywalled, swapPlannedMeal } from '../lib/api';
+import { aboutOf } from '../lib/eating';
+import { NUTRITIONIST_PLAN_NOTE } from '../lib/planner';
 import { friendlyDate, isoDate } from '../lib/date';
 import { describePortion } from '../lib/units';
 import { formatEnergy } from '../lib/region';
@@ -28,7 +30,8 @@ export function useEatPlan(): (plan: MealEntry) => void {
 
 /**
  * A planned meal as a recipe: what goes in it, how to make it, and the way
- * to say it was made.
+ * to say it was made — with the two ways of changing a plan without planning
+ * again: keep this one, or swap it for another.
  *
  * The ingredients are the plan's own, sized to the day, so they are there for
  * anybody at once. The steps are written the first time a Plus member opens
@@ -37,18 +40,25 @@ export function useEatPlan(): (plan: MealEntry) => void {
  */
 export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; open: boolean; onClose: () => void }) {
   const setPlanCook = useSquish((s) => s.setPlanCook);
+  const toggleKeepPlan = useSquish((s) => s.toggleKeepPlan);
   const subscribed = useSubscribed();
   const eat = useEatPlan();
+  const toast = useToast();
   const [asking, setAsking] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [cooking, setCooking] = useState(false);
+  const [swapping, setSwapping] = useState(false);
   const steps = plan.cook;
+  // Keeping means something only for the nutritionist's plans: a new week replaces those, and never theirs.
+  const keepable = plan.note === NUTRITIONIST_PLAN_NOTE;
 
   const ask = useCallback(async () => {
     setAsking(true);
     setFailed(null);
     try {
-      setPlanCook(plan.id, await cookSteps(plan));
+      const written = await cookSteps(plan);
+      // Swapped while the steps were being written: these are the old meal's, and go nowhere.
+      if (useSquish.getState().plans.find((p) => p.id === plan.id)?.title === plan.title) setPlanCook(plan.id, written);
     } catch (error) {
       // The paywall has already said what there is to say.
       if (!isPaywalled(error)) setFailed(error instanceof Error && error.message ? error.message : t('The steps could not be written just now. Try again in a moment.'));
@@ -57,13 +67,15 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
     }
   }, [plan, setPlanCook]);
 
-  // Opening a Plus member's meal is asking for its steps; once, not on every render.
-  const asked = useRef(false);
+  // Opening a Plus member's meal is asking for its steps: once per meal, not on
+  // every render — and again for the meal it was swapped for.
+  const askedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!open || steps || !subscribed || asked.current) return;
-    asked.current = true;
+    const meal = `${plan.id}:${plan.title}`;
+    if (!open || steps || !subscribed || swapping || askedFor.current === meal) return;
+    askedFor.current = meal;
     void ask();
-  }, [open, steps, subscribed, ask]);
+  }, [open, steps, subscribed, swapping, plan.id, plan.title, ask]);
 
   return (
     <Sheet open={open} onClose={onClose} title={plan.title}>
@@ -73,65 +85,205 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
           {steps && ` · ${t('about {minutes} min', { minutes: steps.minutes })}`}
         </p>
 
-        <section>
-          <h3 className="cook-head">{t('Ingredients')}</h3>
-          <ul className="cook-ingredients">
-            {plan.items.map((item) => (
-              <li key={item.id}>
-                <span aria-hidden="true">{item.emoji ?? '🍽️'}</span>
-                <span className="grow" dir="auto">{item.name}</span>
-                <span className="small muted">{describePortion(item.portion, item.grams, item.liquid)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="tiny muted">{t('For one, sized to your day. These amounts are what gets logged.')}</p>
-        </section>
-
-        <section>
-          <h3 className="cook-head">{t('Method')}</h3>
-          {steps ? (
-            <>
-              <ol className="cook-steps">
-                {steps.steps.map((step, i) => (
-                  <li key={i} dir="auto">{step}</li>
-                ))}
-              </ol>
-              {steps.tip && (
-                <p className="cook-tip small" dir="auto">
-                  <span aria-hidden="true">💡</span> {steps.tip}
-                </p>
-              )}
-            </>
-          ) : asking ? (
-            <div className="cook-writing">
-              <Squish mood="thinking" size={64} bob={false} />
-              <p className="small muted">{t('Writing the steps for you…')}</p>
-            </div>
-          ) : (
-            <div className="cook-ask">
-              {failed && <p className="small cook-failed">{failed}</p>}
-              <button type="button" className="btn btn--soft btn--block" onClick={() => void ask()}>
-                {failed ? t('Try again') : t('Show me how to make it')}
+        {!swapping && (
+          <div className="cook-change">
+            {keepable && (
+              <button
+                type="button"
+                className={`chip cook-keep${plan.kept ? ' chip--on' : ''}`}
+                aria-pressed={Boolean(plan.kept)}
+                onClick={() => {
+                  toggleKeepPlan(plan.id);
+                  toast(plan.kept ? t('Not kept — a new week can replace it.') : t('Kept — a new week plans around it, and more like it.'), plan.kept ? '🗓️' : '💜');
+                }}
+              >
+                {plan.kept ? <HeartFilledIcon size={16} /> : <HeartIcon size={16} />} {plan.kept ? t('Kept') : t('Keep')}
               </button>
-              {!subscribed && <p className="tiny muted center">{t('Part of {plus}.', { plus: PLUS })}</p>}
-            </div>
-          )}
-        </section>
-
-        <div className="cook-actions">
-          {steps && (
-            <button type="button" className="btn btn--block" onClick={() => setCooking(true)}>
-              {t('Start cooking')}
+            )}
+            <button type="button" className="chip" onClick={() => setSwapping(true)}>
+              <SwapIcon size={16} /> {t('Swap')}
             </button>
-          )}
-          <button type="button" className={steps ? 'btn btn--ghost btn--block' : 'btn btn--block'} onClick={() => eat(plan)}>
-            {t('I made this')}
-          </button>
-        </div>
+          </div>
+        )}
+
+        {swapping ? (
+          <SwapPanel plan={plan} onDone={() => setSwapping(false)} />
+        ) : (
+          <>
+            <section>
+              <h3 className="cook-head">{t('Ingredients')}</h3>
+              <Ingredients items={plan.items} />
+              <p className="tiny muted">{t('For one, sized to your day. These amounts are what gets logged.')}</p>
+            </section>
+
+            <section>
+              <h3 className="cook-head">{t('Method')}</h3>
+              {steps ? (
+                <>
+                  <ol className="cook-steps">
+                    {steps.steps.map((step, i) => (
+                      <li key={i} dir="auto">{step}</li>
+                    ))}
+                  </ol>
+                  {steps.tip && (
+                    <p className="cook-tip small" dir="auto">
+                      <span aria-hidden="true">💡</span> {steps.tip}
+                    </p>
+                  )}
+                </>
+              ) : asking ? (
+                <div className="cook-writing">
+                  <Squish mood="thinking" size={64} bob={false} />
+                  <p className="small muted">{t('Writing the steps for you…')}</p>
+                </div>
+              ) : (
+                <div className="cook-ask">
+                  {failed && <p className="small cook-failed">{failed}</p>}
+                  <button type="button" className="btn btn--soft btn--block" onClick={() => void ask()}>
+                    {failed ? t('Try again') : t('Show me how to make it')}
+                  </button>
+                  {!subscribed && <p className="tiny muted center">{t('Part of {plus}.', { plus: PLUS })}</p>}
+                </div>
+              )}
+            </section>
+
+            <div className="cook-actions">
+              {steps && (
+                <button type="button" className="btn btn--block" onClick={() => setCooking(true)}>
+                  {t('Start cooking')}
+                </button>
+              )}
+              <button type="button" className={steps ? 'btn btn--ghost btn--block' : 'btn btn--block'} onClick={() => eat(plan)}>
+                {t('I made this')}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {cooking && steps && <CookMode plan={plan} steps={steps.steps} onClose={() => setCooking(false)} onDone={() => eat(plan)} />}
     </Sheet>
+  );
+}
+
+function Ingredients({ items }: { items: MealEntry['items'] }) {
+  return (
+    <ul className="cook-ingredients">
+      {items.map((item, i) => (
+        <li key={item.id ?? i}>
+          <span aria-hidden="true">{item.emoji ?? '🍽️'}</span>
+          <span className="grow" dir="auto">{item.name}</span>
+          <span className="small muted">{describePortion(item.portion, item.grams, item.liquid)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+type Swap = { stage: 'finding' } | { stage: 'offer'; meal: AnalysisResult } | { stage: 'failed'; message: string };
+
+/**
+ * Another meal for the same place in the plan, sized to this one so the day
+ * adds up as before — shown first, and only put in the plan if they say so.
+ * "Try another" never offers the same one twice.
+ */
+function SwapPanel({ plan, onDone }: { plan: MealEntry; onDone: () => void }) {
+  const { profile, plans, nutritionistNotes, replacePlan } = useSquish();
+  const toast = useToast();
+  const [swap, setSwap] = useState<Swap>({ stage: 'finding' });
+  const offered = useRef<string[]>([]);
+
+  const find = useCallback(async () => {
+    setSwap({ stage: 'finding' });
+    const others = plans.filter((p) => p.id !== plan.id);
+    try {
+      const meal = await swapPlannedMeal({
+        date: plan.date,
+        slot: plan.slot,
+        title: plan.title,
+        calories: Math.round(plan.nutrients.calories),
+        protein: Math.round(plan.nutrients.protein),
+        dayMeals: others.filter((p) => p.date === plan.date).map((p) => p.title),
+        avoid: [...new Set([...offered.current, ...others.map((p) => p.title)])].slice(0, 40),
+        goal: profile.goal,
+        sex: profile.sex,
+        notes: nutritionistNotes.map((n) => n.note),
+        about: aboutOf(profile),
+      });
+      offered.current = [...offered.current, meal.title];
+      setSwap({ stage: 'offer', meal });
+    } catch (error) {
+      if (isPaywalled(error)) onDone();
+      else setSwap({ stage: 'failed', message: error instanceof Error && error.message ? error.message : t('The nutritionist could not swap that just now. Try again in a moment.') });
+    }
+  }, [plan, plans, profile, nutritionistNotes, onDone]);
+
+  // Opening the panel is asking for one.
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void find();
+  }, [find]);
+
+  if (swap.stage === 'finding') {
+    return (
+      <div className="cook-writing" role="status" aria-live="polite">
+        <Squish mood="thinking" size={72} bob={false} />
+        <p className="small muted">{t('Finding another {meal}…', { meal: slotName(plan.slot).toLocaleLowerCase() })}</p>
+        <button type="button" className="btn--quiet small" onClick={onDone}>
+          {t('Cancel')}
+        </button>
+      </div>
+    );
+  }
+
+  if (swap.stage === 'failed') {
+    return (
+      <div className="cook-ask">
+        <p className="small cook-failed">{swap.message}</p>
+        <button type="button" className="btn btn--soft btn--block" onClick={() => void find()}>
+          {t('Try again')}
+        </button>
+        <button type="button" className="btn--quiet small" onClick={onDone}>
+          {t('Keep {meal}', { meal: plan.title })}
+        </button>
+      </div>
+    );
+  }
+
+  const { meal } = swap;
+  return (
+    <section className="cook-swap">
+      <p className="small muted">{t('Instead of {meal}:', { meal: plan.title })}</p>
+      <div className="cook-offer">
+        <h3 dir="auto">{meal.title}</h3>
+        <p className="tiny muted">
+          {formatEnergy(meal.nutrients.calories)} · {t('P{protein}', { protein: Math.round(meal.nutrients.protein) })}
+        </p>
+        <Ingredients items={meal.items} />
+      </div>
+      <p className="tiny muted">{t('Sized to the meal it replaces, so your day still adds up.')}</p>
+      <div className="cook-actions">
+        <button
+          type="button"
+          className="btn btn--block"
+          onClick={() => {
+            replacePlan(plan.id, meal);
+            toast(t('Swapped in {meal}.', { meal: meal.title }), '🔁');
+            onDone();
+          }}
+        >
+          {t('Use this')}
+        </button>
+        <button type="button" className="btn btn--ghost btn--block" onClick={() => void find()}>
+          {t('Try another')}
+        </button>
+        <button type="button" className="btn--quiet small" onClick={onDone}>
+          {t('Keep {meal}', { meal: plan.title })}
+        </button>
+      </div>
+    </section>
   );
 }
 

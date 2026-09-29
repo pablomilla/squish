@@ -30,7 +30,7 @@ import { isAdmin } from './admin';
 import { DEFAULT_GEMINI, hasGeminiKey, isGeminiModel } from './gemini';
 import { PRICED_MODELS } from './pricing';
 
-export type Feature = 'photo' | 'label' | 'words' | 'fill' | 'recipe' | 'chat' | 'weekplan' | 'cook' | 'coach' | 'translate';
+export type Feature = 'photo' | 'label' | 'words' | 'fill' | 'recipe' | 'chat' | 'weekplan' | 'swap' | 'cook' | 'coach' | 'translate';
 export type Audience = 'admins' | 'everyone';
 export const AUDIENCES: Audience[] = ['admins', 'everyone'];
 
@@ -88,6 +88,14 @@ export const FEATURES: FeatureInfo[] = [
   // A week of meals with reasoning can take Sonnet or Opus well over five minutes, and nobody is
   // watching it: ten, so a slow good plan is never thrown away for a backup to start again from nothing.
   { id: 'weekplan', label: 'Meal plans', detail: 'A week of meals from the nutritionist.', personal: true, defaults: chain(WEEK, TEXT), limit: 600 },
+  {
+    id: 'swap',
+    label: 'Swapping a planned meal',
+    detail: 'One meal from a plan swapped for another, sized to the one it replaces.',
+    personal: true,
+    defaults: chain(TEXT, MAIN),
+    limit: 90,
+  },
   {
     id: 'cook',
     label: 'Cooking steps',

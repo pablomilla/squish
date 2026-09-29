@@ -1,5 +1,5 @@
 {
- "version": "0cvbl7z06t3aum",
+ "version": "0nwc0tk080bukk",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -191,6 +191,13 @@
    ]
   },
   {
+   "id": "016w2an-ebcsri",
+   "text": "Swapped in {meal}.",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "017e95z04820oe",
    "text": "Sunglasses",
    "where": [
@@ -230,6 +237,13 @@
    "text": "Put your email back — Squish",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "01bm4g00m1uz80",
+   "text": "Finding another {meal}…",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -1103,6 +1117,13 @@
    "text": "Ireland",
    "where": [
     "src/lib/region.ts"
+   ]
+  },
+  {
+   "id": "05z92xf0jfoczn",
+   "text": "Swapping a meal needs the AI, and no key is configured on this server.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -1991,6 +2012,13 @@
    ]
   },
   {
+   "id": "0bda8ka004nkjm",
+   "text": "The nutritionist could not find another meal for that. Try again in a moment.",
+   "where": [
+    "server/claude.ts"
+   ]
+  },
+  {
    "id": "0begj99-z82ucz",
    "text": "How many did you have?",
    "where": [
@@ -2030,6 +2058,13 @@
    "text": "In your own words, or out loud",
    "where": [
     "src/components/AddSheet.tsx"
+   ]
+  },
+  {
+   "id": "0bsj4g10hicyjx",
+   "text": "Keep {meal}",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -2224,6 +2259,13 @@
    "text": "Ask me something.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "0cwfelz-7xvfl8",
+   "text": "Instead of {meal}:",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -2585,6 +2627,7 @@
    "id": "0ew9em3-ilnd6e",
    "text": "Cancel",
    "where": [
+    "src/components/CookSheet.tsx",
     "src/components/squad/SquadSheet.tsx",
     "src/screens/Review.tsx"
    ]
@@ -2878,6 +2921,14 @@
    "text": "Semi-skimmed milk",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0gqtje90fg3mob",
+   "text": "The nutritionist could not swap that just now. Try again in a moment.",
+   "where": [
+    "src/components/CookSheet.tsx",
+    "server/index.ts"
    ]
   },
   {
@@ -3571,6 +3622,14 @@
    ]
   },
   {
+   "id": "0kibgh608914j7",
+   "one": "This replaces the {n} meal the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.",
+   "other": "This replaces the {n} meals the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "0kj6e1y0h3mdfs",
    "text": "Override anything Squish suggested — handy if a coach or dietitian set your numbers.",
    "where": [
@@ -3913,6 +3972,13 @@
    ]
   },
   {
+   "id": "0lzn1ix0pao892",
+   "text": "Kept",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "0m07ga3-fwp7eq",
    "text": "{period} each",
    "where": [
@@ -3925,6 +3991,13 @@
    "other": "Invite friends — {n} places left. Code <b>{code}</b>",
    "where": [
     "src/components/squad/SquadSheet.tsx"
+   ]
+  },
+  {
+   "id": "0m1y5f10n6qhhp",
+   "text": "Try another",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -4248,6 +4321,13 @@
    "text": "Confirm your email.",
    "where": [
     "src/components/AccountCard.tsx"
+   ]
+  },
+  {
+   "id": "0nonre003b9qd3",
+   "text": "Keep",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -5391,6 +5471,13 @@
    ]
   },
   {
+   "id": "0tvu3j90gone2k",
+   "text": "There is nothing in that meal to swap.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "0tw6k7x-x05ez6",
    "text": "What are you hoping for?",
    "where": [
@@ -6092,6 +6179,13 @@
    ]
   },
   {
+   "id": "0xg9wu90943iu9",
+   "text": "already in your plans",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "0xitqcl0ugp47l",
    "text": "Dark chocolate 70%",
    "where": [
@@ -6495,6 +6589,13 @@
    "text": "Your diary",
    "where": [
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "10gr3ku-himakd",
+   "text": "Not kept — a new week can replace it.",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -8759,6 +8860,13 @@
    "text": "Get the whole plate in frame. Anything cropped out is nutrition I cannot count.",
    "where": [
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "1dbltjt0k28zzs",
+   "text": "Sized to the meal it replaces, so your day still adds up.",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -11136,6 +11244,7 @@
    "id": "1pzqiig-hz3dwd",
    "text": "Use this",
    "where": [
+    "src/components/CookSheet.tsx",
     "src/screens/AddFood.tsx"
    ]
   },
@@ -11296,6 +11405,13 @@
    ]
   },
   {
+   "id": "1qrzrid02al4w7",
+   "text": "Swapping planned meals comes with {plus}.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "1qtuyxt0-q3igq",
    "text": "Reset to suggested ({energy})",
    "where": [
@@ -11421,6 +11537,13 @@
    "text": "The Avocados",
    "where": [
     "src/lib/cheers.ts"
+   ]
+  },
+  {
+   "id": "1rkfalq-ke6cze",
+   "text": "Swap",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -12155,6 +12278,13 @@
    "text": "Neckerchief",
    "where": [
     "src/lib/outfit.ts"
+   ]
+  },
+  {
+   "id": "1vgxd4u-pcfbvd",
+   "text": "Kept — a new week plans around it, and more like it.",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {

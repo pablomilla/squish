@@ -32,3 +32,8 @@
 .week-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .week-discard { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--r-md, 16px); background: var(--surface-2); }
 .week-discard p { margin: 0; }
+
+/* A meal already standing on a day — kept, or planned by them — that the new plan works around. */
+.week-meal.is-kept { cursor: default; }
+.week-kept-mark { width: 22px; flex: none; text-align: center; color: var(--pink, var(--brand)); line-height: 22px; }
+.week-replaces { margin: 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); }

@@ -26,7 +26,7 @@ import { AISLES, isAisle } from '../src/lib/shopping';
 import { msg } from '../src/lib/i18n';
 
 const AISLE_IDS = AISLES.map((a) => a.id);
-import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
+import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, keptCalories, swapPrompt, weekPlanPrompt, type SwapRequest, type WeekPlanRequest } from './weekplan';
 import { COOK_SCHEMA, COOK_SYSTEM, cookPrompt, toCookSteps, type CookAsk, type CookSteps } from './cook';
 import { aimLines, eatingLines, type About } from '../src/lib/eating';
 
@@ -1029,23 +1029,52 @@ function scaleDay(day: WeekPlan['days'][number], factor: number) {
  * unless it would take more than one-and-a-half times: that is a bad plan,
  * not a rounding problem, and is shown as it came. Each meal's calories are
  * rounded on their own, so the factor is nudged down until the rounded day is
- * not a calorie over. Exported for the tests.
+ * not a calorie over. On a day with meals kept from an earlier plan, the
+ * target the planned meals are fitted to is what those leave of it.
+ * Exported for the tests.
  */
-export function fitToTarget(plan: WeekPlan, target: number, floor: number): { plan: WeekPlan; fitted: { date: string; from: number }[] } {
+export function fitToTarget(
+  plan: WeekPlan,
+  target: number,
+  floor: number,
+  /** Calories already spoken for on a date by meals kept from an earlier plan: the day's planned meals get what is left. */
+  kept: Record<string, number> = {},
+): { plan: WeekPlan; fitted: { date: string; from: number }[] } {
   const fitted: { date: string; from: number }[] = [];
-  const days = plan.days.map((day) => {
-    if (!day.calories || (day.calories <= target && day.calories >= target * (1 - FIT.tolerance))) return day;
-    let factor = target / day.calories;
-    if (factor > FIT.most) return day;
+  const days = plan.days.flatMap((day) => {
+    const fixed = kept[day.date] ?? 0;
+    const room = target - fixed;
+    // Kept meals that fill the day already: nothing planned beside them.
+    if (room <= 0) return [];
+    if (!day.calories || (day.calories <= room && day.calories >= room * (1 - FIT.tolerance))) return [{ ...day, underFloor: day.calories + fixed < floor }];
+    let factor = room / day.calories;
+    if (factor > FIT.most) return [{ ...day, underFloor: day.calories + fixed < floor }];
     let scaled = scaleDay(day, factor);
-    for (let tries = 0; scaled.calories > target && tries < 50; tries++) {
-      factor *= (target - 0.5) / scaled.calories;
+    for (let tries = 0; scaled.calories > room && tries < 50; tries++) {
+      factor *= (room - 0.5) / scaled.calories;
       scaled = scaleDay(day, factor);
     }
     fitted.push({ date: day.date, from: day.calories });
-    return { ...day, ...scaled, underFloor: scaled.calories < floor };
+    return [{ ...day, ...scaled, underFloor: scaled.calories + fixed < floor }];
   });
   return { plan: { ...plan, days }, fitted };
+}
+
+/**
+ * A plan without anything the model put in a slot that was already decided:
+ * told to leave kept meals alone, it usually does, and this is for when it
+ * does not — a day with two dinners is no plan. Exported for the tests.
+ */
+export function withoutKept(plan: WeekPlan, kept: { date: string; slot: MealSlot }[] = []): WeekPlan {
+  if (!kept.length) return plan;
+  const taken = new Set(kept.map((k) => `${k.date}#${k.slot}`));
+  const days = plan.days
+    .map((day) => {
+      const meals = day.meals.filter((meal) => !taken.has(`${day.date}#${meal.slot ?? 'dinner'}`));
+      return meals.length === day.meals.length ? day : { ...day, meals, calories: Math.round(meals.reduce((sum, m) => sum + m.nutrients.calories, 0)) };
+    })
+    .filter((day) => day.meals.length > 0);
+  return { ...plan, days };
 }
 
 /**
@@ -1149,7 +1178,7 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
     .join('');
   const { week, fill } = await groundWeek(readAnswer<ModelWeek>(text, response.stop_reason), brief);
   if (fill) console.info(`[squish] weekplan fill-in: out=${fill.outputTokens} ${fill.costUsd === null ? 'unpriced' : `$${fill.costUsd.toFixed(4)}`}`);
-  const { plan, fitted } = fitToTarget(toWeekPlan(week, req), req.calorieTarget, floorFor(req.sex));
+  const { plan, fitted } = fitToTarget(withoutKept(toWeekPlan(week, req), req.kept), req.calorieTarget, floorFor(req.sex), keptCalories(req));
   if (fitted.length) {
     console.info(
       `[squish] weekplan ${model}: ${fitted.length} of ${plan.days.length} days came to ${fitted.map((f) => f.from).join(', ')} kcal ` +
@@ -1158,6 +1187,65 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
   }
   if (!plan.days.length) throw new WeekPlanError(msg('The plan came back empty. Try again in a moment.'));
   return plan;
+}
+
+/**
+ * One planned meal swapped for another (server/weekplan.ts has the why): the
+ * weekly plan's rules and shape for a single meal, its figures from the food
+ * table, and its portions sized so it comes in at — never over — the calories
+ * of the meal it replaces.
+ */
+export function swapMeal(req: SwapRequest, signal?: AbortSignal): Promise<AnalysisResult> {
+  return withModels('swap', (model, _attempt, routeSignal) => swapOn(model, req, routeSignal), { signal });
+}
+
+async function swapOn(model: string, req: SwapRequest, signal: AbortSignal): Promise<AnalysisResult> {
+  const plain = model.startsWith('claude-haiku') || model.startsWith('gemini-');
+  const brief = await tableFirst(WEEKPLAN_SYSTEM);
+  const schema = (brief ? briefSchema(WEEKPLAN_SCHEMA as unknown as Record<string, unknown>) : WEEKPLAN_SCHEMA) as Record<string, unknown>;
+  const format = { type: 'json_schema' as const, schema };
+  const response = await createMessage({
+    model,
+    max_tokens: 16000,
+    system: `${WEEKPLAN_SYSTEM}${brief ? `\n${TABLE_FIRST_RULE}` : ''}\n\n${regionNote('plan')}`,
+    messages: [{ role: 'user', content: swapPrompt(req) }],
+    // One meal: little to think through, and somebody is waiting for it.
+    ...(plain ? { output_config: { format } } : { ...thinkingOff(model), output_config: { effort: 'low' as const, format } }),
+  }, signal);
+
+  billed(
+    priceUsage(response.model, {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
+    }),
+    response.model,
+  );
+  if (response.stop_reason === 'refusal') throw new WeekPlanError(msg('The nutritionist could not find another meal for that. Try again in a moment.'));
+  const answer = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('');
+  const { week } = await groundWeek(readAnswer<ModelWeek>(answer, response.stop_reason), brief);
+  return fitSwap(week, req);
+}
+
+/**
+ * The swap's one meal out of the model's answer, in the slot it was asked
+ * for, sized to the meal it replaces. Throws if there is no meal in it.
+ * Exported for the tests, which never call the API.
+ */
+export function fitSwap(week: ModelWeek, req: SwapRequest): AnalysisResult {
+  const asked = { startDate: req.date, days: 1, sex: req.sex } as WeekPlanRequest;
+  // The first day's first meal, whatever slot it came back under: it is going in this one.
+  const first = (week.days ?? []).find((d) => d.day === 1 && (d.meals ?? []).some((m) => (m.items ?? []).length)) ?? week.days?.[0];
+  const meal = (first?.meals ?? []).find((m) => (m.items ?? []).length);
+  if (!meal) throw new WeekPlanError(msg('The nutritionist could not find another meal for that. Try again in a moment.'));
+  const one = toWeekPlan({ days: [{ day: 1, meals: [{ ...meal, slot: req.slot }] }] }, asked);
+  if (!one.days.length) throw new WeekPlanError(msg('The nutritionist could not find another meal for that. Try again in a moment.'));
+  const { plan } = fitToTarget(one, req.calories, 0);
+  return { ...plan.days[0].meals[0], slot: req.slot };
 }
 
 /**

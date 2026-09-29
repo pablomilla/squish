@@ -55,7 +55,7 @@ export function delta(now: number, before: number): { arrow: '▲' | '▼' | '' 
 }
 
 /** The category names, in the order they are always drawn. */
-export const KIND_LABEL: Record<string, string> = { photo: 'Meal analyses', chat: 'Nutritionist', recipe: 'Recipe imports', weekplan: 'Meal plans', cook: 'Cooking steps' };
+export const KIND_LABEL: Record<string, string> = { photo: 'Meal analyses', chat: 'Nutritionist', recipe: 'Recipe imports', weekplan: 'Meal plans', swap: 'Meal swaps', cook: 'Cooking steps' };
 export const KINDS = ['photo', 'chat', 'recipe', 'weekplan'] as const;
 /** Fixed order, never cycled — validated as a set (see admin.css). */
 export const KIND_COLOR: Record<string, string> = { photo: 'var(--dv-1)', chat: 'var(--dv-2)', recipe: 'var(--dv-3)', weekplan: 'var(--dv-4)' };

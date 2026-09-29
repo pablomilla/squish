@@ -172,6 +172,21 @@ against any allowance; a daily guard (`SQUISH_DAILY_COOK_STEPS`, 40) stops
 one device writing new ones all day. Its cost is shown with meal plans on the
 dashboard.
 
+### Swapping and keeping planned meals
+
+A planned meal can be swapped for another (`/api/weekplan/swap`): one meal
+under the weekly plan's rules, on the cheaper text model with thinking off,
+sized to the calories of the meal it replaces so the day still adds up. About
+1,500 tokens in and 600 out, roughly a penny, plus a fill-in question when the
+food table cannot answer an ingredient. Plus only and not counted against the
+month — a plan that needs a few swaps is the plan working — with a daily guard
+(`SQUISH_DAILY_SWAPS`, 30). Its cost is shown with meal plans.
+
+Keeping a meal costs nothing: it is a flag on the plan in the app. A new week
+leaves kept meals (and anything they planned themselves) where they are, is
+told about them so it plans the rest of those days around them, and replaces
+only the nutritionist's unkept meals on its days.
+
 A plan also survives the server restarting, which happens on every deploy.
 The request is kept with the job, and so is where the person is — country,
 energy unit and language — so a plan made again on another instance is

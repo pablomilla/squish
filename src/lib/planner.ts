@@ -133,7 +133,16 @@ export function asAnalysis(meal: Pick<Idea, 'title' | 'items' | 'nutrients' | 's
  * logged most often in the last month, then saved foods, each once. Titles
  * only — their taste, not their diary.
  */
-export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: string, count = 15): string[] {
+export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: string, count = 15, plans: MealEntry[] = []): string[] {
+  // Meals they kept from a plan first: kept is the plainest way of saying "more of this".
+  const keptKeys = new Set<string>();
+  const kept: string[] = [];
+  for (const plan of plans) {
+    const title = plan.title.trim();
+    if (!plan.kept || !title || keptKeys.has(title.toLowerCase())) continue;
+    keptKeys.add(title.toLowerCase());
+    kept.push(title);
+  }
   const since = addDays(today, -30);
   const tally = new Map<string, { title: string; times: number }>();
   for (const meal of meals) {
@@ -146,5 +155,44 @@ export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: str
   }
   const often = [...tally.values()].sort((a, b) => b.times - a.times || a.title.localeCompare(b.title)).map((t) => t.title);
   const saved = favourites.map((f) => f.name.trim()).filter((name) => name && !tally.has(name.toLowerCase()));
-  return [...often, ...saved].slice(0, count);
+  return [...kept, ...[...often, ...saved].filter((title) => !keptKeys.has(title.toLowerCase()))].slice(0, count);
+}
+
+/* ------------------------------------------------------------------ *
+ * Keeping a planned meal.
+ *
+ * A new week from the nutritionist replaces what it planned before on the
+ * same days — otherwise Tuesday ends up with two dinners — except the meals
+ * somebody kept, and anything they planned themselves. Those stand: the new
+ * week leaves their slots alone and plans the rest of the day around them.
+ * ------------------------------------------------------------------ */
+
+/** A plan a new week from the nutritionist may replace: its own, and not kept. */
+export const replaceable = (plan: MealEntry): boolean => plan.note === NUTRITIONIST_PLAN_NOTE && !plan.kept;
+
+/** The dates a plan of `days` days from `startDate` covers. */
+export function weekDates(startDate: string, days: number): string[] {
+  return Array.from({ length: days }, (_, i) => addDays(startDate, i));
+}
+
+export interface KeptMeal {
+  date: string;
+  slot: MealSlot;
+  title: string;
+  calories: number;
+}
+
+/** What a new week on these dates must plan around: every plan there it would not replace. */
+export function standingOn(plans: MealEntry[], dates: string[]): KeptMeal[] {
+  const on = new Set(dates);
+  return plans
+    .filter((p) => on.has(p.date) && !replaceable(p))
+    .sort((a, b) => a.date.localeCompare(b.date) || SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))
+    .map((p) => ({ date: p.date, slot: p.slot, title: p.title, calories: Math.round(p.nutrients.calories) }));
+}
+
+/** The plans a new week on these dates takes the place of. */
+export function replacedOn(plans: MealEntry[], dates: string[]): MealEntry[] {
+  const on = new Set(dates);
+  return plans.filter((p) => on.has(p.date) && replaceable(p));
 }

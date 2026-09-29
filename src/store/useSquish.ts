@@ -131,6 +131,12 @@ interface SquishState {
   eatPlan: (id: string) => MealEntry | undefined;
   /** Keep a plan's cooking steps once written, so they are never asked for again. */
   setPlanCook: (id: string, cook: CookSteps) => void;
+  /** Keep a planned meal through the next week's plan, or let it go again. */
+  toggleKeepPlan: (id: string) => void;
+  /** Swap a planned meal for another in the same place: same id, day and slot, so everything showing it follows. */
+  replacePlan: (id: string, meal: Pick<MealEntry, 'title' | 'items' | 'nutrients' | 'score'>) => void;
+  /** Take away several plans at once: the ones a new week replaces. */
+  removePlans: (ids: string[]) => void;
   toggleShoppingTick: (key: string) => void;
   addShoppingExtra: (name: string) => void;
   removeShoppingExtra: (id: string) => void;
@@ -396,12 +402,29 @@ export const useSquish = create<SquishState>()(
         // A plan for a day that has gone is logged on that day; one for today
         // or later is logged now, because now is when it was eaten.
         const past = plan.date < today;
-        const { id: _planId, cook: _cook, ...rest } = plan;
+        const { id: _planId, cook: _cook, kept: _kept, ...rest } = plan;
         set({ plans: get().plans.filter((p) => p.id !== id) });
         return get().addMeal({ ...rest, date: past ? plan.date : today, time: past && plan.time ? plan.time : undefined });
       },
 
       setPlanCook: (id, cook) => set({ plans: get().plans.map((p) => (p.id === id ? { ...p, cook } : p)) }),
+
+      toggleKeepPlan: (id) => set({ plans: get().plans.map((p) => (p.id === id ? { ...p, kept: !p.kept } : p)) }),
+
+      replacePlan: (id, meal) =>
+        set({
+          plans: get().plans.map((p) => {
+            if (p.id !== id) return p;
+            // A different meal: its own steps are written when it is opened, and keeping it is a new decision.
+            const { cook: _cook, kept: _kept, ...rest } = p;
+            return { ...rest, title: meal.title, items: meal.items, nutrients: meal.nutrients, score: meal.score };
+          }),
+        }),
+
+      removePlans: (ids) => {
+        const gone = new Set(ids);
+        set({ plans: get().plans.filter((p) => !gone.has(p.id)) });
+      },
 
       day: (date) => get().days[date] ?? emptyDay(date),
 

@@ -50,9 +50,23 @@ export interface WeekPlanRequest {
   cooking: 'quick' | 'normal' | 'batch';
   /** How they eat and what they want, from their profile (src/lib/eating.ts). Absent from an app from before. */
   about?: About;
+  /**
+   * Meals they kept from an earlier plan, on days this one covers: already
+   * decided, so their slots are left alone and the rest of the day is
+   * planned around them. Absent from an app from before.
+   */
+  kept?: KeptMeal[];
+}
+
+export interface KeptMeal {
+  date: string;
+  slot: MealSlot;
+  title: string;
+  calories: number;
 }
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
+const ALL_SLOTS: MealSlot[] = [...SLOTS, 'snack'];
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const list = (value: unknown, count: number, max: number) =>
   Array.isArray(value) ? value.map((v) => text(v, max)).filter(Boolean).slice(0, count) : [];
@@ -67,9 +81,11 @@ export function cleanWeekRequest(body: unknown): WeekPlanRequest | null {
   const sex = raw.sex === 'male' || raw.sex === 'female' ? raw.sex : 'other';
   const days = Math.round(Number(raw.days));
   const slots = Array.isArray(raw.slots) ? SLOTS.filter((s) => (raw.slots as unknown[]).includes(s)) : SLOTS;
+  const span = Number.isFinite(days) ? Math.min(WEEK_DAYS_MAX, Math.max(WEEK_DAYS_MIN, days)) : WEEK_DAYS_MAX;
+  const kept = keptIn(raw.kept, startDate, span);
   return {
     startDate,
-    days: Number.isFinite(days) ? Math.min(WEEK_DAYS_MAX, Math.max(WEEK_DAYS_MIN, days)) : WEEK_DAYS_MAX,
+    days: span,
     slots: slots.length ? slots : SLOTS,
     snacks: raw.snacks === true,
     // Never plan under the floor, whatever the stored target says.
@@ -83,7 +99,44 @@ export function cleanWeekRequest(body: unknown): WeekPlanRequest | null {
     preferences: text(raw.preferences, 300),
     cooking: raw.cooking === 'quick' || raw.cooking === 'batch' ? raw.cooking : 'normal',
     about: cleanAbout(raw.about),
+    ...(kept.length ? { kept } : {}),
   };
+}
+
+/** The date `n` days after `iso`, in the same calendar. */
+function dayAfter(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+/** Kept meals as sent, tidied: only those on the days being planned, one per slot a day. */
+function keptIn(raw: unknown, startDate: string, days: number): KeptMeal[] {
+  if (!Array.isArray(raw)) return [];
+  const last = dayAfter(startDate, days - 1);
+  const seen = new Set<string>();
+  const out: KeptMeal[] = [];
+  for (const entry of raw.slice(0, 40)) {
+    if (!entry || typeof entry !== 'object') continue;
+    const k = entry as Record<string, unknown>;
+    const date = text(k.date, 10);
+    const slot = ALL_SLOTS.includes(k.slot as MealSlot) ? (k.slot as MealSlot) : null;
+    const title = text(k.title, 80);
+    const calories = Math.round(Number(k.calories));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < startDate || date > last || !slot || !title) continue;
+    if (!Number.isFinite(calories) || calories < 0 || calories > 3000) continue;
+    const key = `${date}#${slot}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ date, slot, title, calories });
+  }
+  return out;
+}
+
+/** Kept calories by date, for fitting each day to what is left of its target. */
+export function keptCalories(req: Pick<WeekPlanRequest, 'kept'>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const k of req.kept ?? []) out[k.date] = (out[k.date] ?? 0) + k.calories;
+  return out;
 }
 
 export const WEEKPLAN_SYSTEM = `You are the nutritionist inside Squish, a friendly food-tracking app. You are planning a few days of meals for one person, from their own targets and tastes. The plan becomes suggestions in their diary; they log each meal only if they eat it.
@@ -93,6 +146,7 @@ What a good plan here looks like:
 - Each day's calories at or just under their daily target, never over it. The app fine-tunes portions afterwards so each day lands on it, so plan sensible meals rather than working the sums out to the calorie. Never plan a day well under it either: this is not a crash diet, and the target already includes whatever deficit they chose.
 - Protein near their target across the day, spread over meals, and fibre at or above theirs: vegetables, pulses, whole grains, fruit.
 - Their diet and everything under "How they eat" are absolute rules, and so is anything in "What they have told you" that is an allergy, intolerance or food they avoid. Never include it, including as a hidden ingredient in a sauce or a stock.
+- Meals under "Already decided" are kept from an earlier plan and stay exactly as they are. Leave those slots out on those days, and plan the rest of each such day around them: their calories count towards the day's target.
 - Their liked meals are a guide to their taste. Include one or two of them, and plan the rest in the same spirit rather than repeating them all week.
 - Keep the shopping short: reuse ingredients across days, and where it suits, cook once and eat it twice (tonight's chilli is tomorrow's lunch). Say so in the meal title when a meal uses leftovers.
 - Breakfasts simple and repeatable. Weekday dinners quick unless they asked otherwise. Vary the dinners.
@@ -128,6 +182,14 @@ export function weekPlanPrompt(req: WeekPlanRequest): string {
     ...(req.notes.length ? req.notes.map((n) => `- ${n}`) : ['- Nothing yet.']),
     '</what_they_have_told_you>',
     '',
+    ...(req.kept?.length
+      ? [
+          '<already_decided>',
+          ...req.kept.map((k) => `- Day ${daysBetween(req.startDate, k.date) + 1} (${k.date}), ${k.slot}: ${k.title}, ${k.calories} kcal`),
+          '</already_decided>',
+          '',
+        ]
+      : []),
     '<meals_they_like>',
     ...(req.likes.length ? req.likes.map((m) => `- ${m}`) : ['- Nothing logged yet; plan broadly liked everyday meals.']),
     '</meals_they_like>',
@@ -137,6 +199,12 @@ export function weekPlanPrompt(req: WeekPlanRequest): string {
     '</their_preferences_for_this_plan>',
   ];
   return lines.join('\n');
+}
+
+/** Whole days from one date to another. */
+function daysBetween(from: string, to: string): number {
+  const at = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+  return Math.round((at(to) - at(from)) / 86_400_000);
 }
 
 const PLAN_NUTRIENTS = {
@@ -215,3 +283,81 @@ export const WEEKPLAN_SCHEMA = {
   required: ['summary', 'days'],
   additionalProperties: false,
 } as const;
+
+/* ------------------------------------------------------------------ *
+ * Swapping one planned meal for another.
+ *
+ * The same nutritionist, the same rules, one meal: for the same day and
+ * slot, sized to the calories of the meal it replaces, so the day it sits in
+ * adds up exactly as before and can never go over its target. Nothing it has
+ * already offered, and nothing else on the plan, so "try another" is another.
+ * ------------------------------------------------------------------ */
+
+export interface SwapRequest {
+  date: string;
+  slot: MealSlot;
+  /** The meal being swapped out. */
+  title: string;
+  /** What it had, which the new one is sized to. */
+  calories: number;
+  protein: number;
+  /** The rest of that day, so the new meal fits beside it. */
+  dayMeals: string[];
+  /** Everything else on the plan and everything already offered: not these again. */
+  avoid: string[];
+  goal: string;
+  sex: string;
+  notes: string[];
+  about?: About;
+}
+
+/** A swap as the browser sent it, tidied, or null when there is nothing to swap. */
+export function cleanSwapRequest(body: unknown): SwapRequest | null {
+  const raw = (body ?? {}) as Record<string, unknown>;
+  const date = text(raw.date, 10);
+  const slot = ALL_SLOTS.includes(raw.slot as MealSlot) ? (raw.slot as MealSlot) : null;
+  const title = text(raw.title, 80);
+  const calories = Math.round(Number(raw.calories));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !slot || !title) return null;
+  // A meal is somewhere between a piece of fruit and a feast; outside that, it is not a meal to size one to.
+  if (!Number.isFinite(calories) || calories < 50 || calories > 2500) return null;
+  return {
+    date,
+    slot,
+    title,
+    calories,
+    protein: Math.min(200, Math.max(0, Math.round(Number(raw.protein) || 0))),
+    dayMeals: list(raw.dayMeals, 6, 80),
+    avoid: list(raw.avoid, 40, 80),
+    goal: ['lose', 'maintain', 'gain'].includes(String(raw.goal)) ? String(raw.goal) : 'maintain',
+    sex: raw.sex === 'male' || raw.sex === 'female' ? raw.sex : 'other',
+    notes: list(raw.notes, 20, 240),
+    about: cleanAbout(raw.about),
+  };
+}
+
+/** The swap, as data, in the user turn. Answered in the weekly plan's own shape: one day, one meal. */
+export function swapPrompt(req: SwapRequest): string {
+  return [
+    `This time, plan one ${req.slot} to swap into a plan they already have, in place of "${req.title}". Answer as a plan of day 1 only (${req.date}) with that one meal, and an empty summary.`,
+    `Aim for about ${req.calories} kcal and ${req.protein} g protein, so the day still adds up. A genuinely different meal — not a variation on the one it replaces.`,
+    '',
+    '<rest_of_that_day>',
+    ...(req.dayMeals.length ? req.dayMeals.map((m) => `- ${m}`) : ['- Nothing else planned.']),
+    '</rest_of_that_day>',
+    '',
+    '<not_these>',
+    ...[req.title, ...req.avoid].map((m) => `- ${m}`),
+    '</not_these>',
+    '',
+    `Goal: ${req.goal === 'lose' ? 'losing weight gently' : req.goal === 'gain' ? 'building up' : 'staying steady'}.`,
+    '',
+    '<how_they_eat>',
+    ...(eatingLines(req.about ?? {}).length ? eatingLines(req.about ?? {}) : ['- No diet or allergies given.']),
+    '</how_they_eat>',
+    '',
+    '<what_they_have_told_you>',
+    ...(req.notes.length ? req.notes.map((n) => `- ${n}`) : ['- Nothing yet.']),
+    '</what_they_have_told_you>',
+  ].join('\n');
+}

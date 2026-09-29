@@ -137,6 +137,11 @@ export interface MealEntry {
    * that. Left behind when the plan is eaten: the diary records the food.
    */
   cook?: CookSteps;
+  /**
+   * Plans only: kept from a nutritionist's plan, so a new week leaves it
+   * where it is, plans around it, and plans more like it (src/lib/planner.ts).
+   */
+  kept?: boolean;
 }
 
 export interface CookSteps {

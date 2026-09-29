@@ -3,7 +3,7 @@ import type { MealEntry } from '../types';
 import CookSheet, { useEatPlan } from './CookSheet';
 import { useSquish } from '../store/useSquish';
 import { useToast } from './ui';
-import { CloseIcon } from './icons';
+import { CloseIcon, HeartFilledIcon } from './icons';
 import './plan-card.css';
 import { formatEnergy } from '../lib/region';
 import { t } from '../lib/i18n';
@@ -26,7 +26,10 @@ export default function PlanCard({ plan, showSlot = false }: { plan: MealEntry; 
     <div className="plan-card">
       {/* The meal itself opens as a recipe: what goes in it and how to make it. */}
       <button type="button" className="plan-card-body" onClick={() => setOpen(true)} aria-label={t('How to make {meal}', { meal: plan.title })}>
-        <span className="plan-card-title" dir="auto">{plan.title}</span>
+        <span className="plan-card-title" dir="auto">
+          {plan.kept && <HeartFilledIcon size={13} className="plan-card-kept" />}
+          {plan.title}
+        </span>
         {/* Dashed, with "I ate this" beside it, says planned without the word — which left no room for the recipe. */}
         <span className="tiny muted plan-card-meta">
           {showSlot ? `${slotName(plan.slot)} · ` : ''}

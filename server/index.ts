@@ -119,10 +119,11 @@ import {
   translateBatch,
   WeekPlanError,
   writeCookSteps,
+  swapMeal,
   type CoachContext,
   type Crockery,
 } from './claude';
-import { cleanWeekRequest } from './weekplan';
+import { cleanSwapRequest, cleanWeekRequest, type SwapRequest } from './weekplan';
 import { cleanCookAsk, cookKey, keepSteps, keptSteps, type CookAsk } from './cook';
 import { currentPlace, withPlace } from './region';
 import { msg } from '../src/lib/i18n';
@@ -257,7 +258,10 @@ const hits = new Map<string, { count: number; resetAt: number }>();
  * guessing down, so they stay per-device and per-day and have nothing to do
  * with which tier somebody is on.
  */
-const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify' | 'weekplan' | 'clarify' | 'cook', number> = {
+const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify' | 'weekplan' | 'clarify' | 'cook' | 'swap', number> = {
+  // Swapping a planned meal comes with Plus's meal plans: plenty for a week
+  // of changed minds, not a way to have the nutritionist plan all day.
+  swap: Number(process.env.SQUISH_DAILY_SWAPS ?? 30),
   // Cooking steps come with Plus's meal plans and are kept once written, so
   // this only stops somebody opening meal after new meal all day long.
   cook: Number(process.env.SQUISH_DAILY_COOK_STEPS ?? 40),
@@ -284,6 +288,7 @@ const SPENT: Partial<Record<Spend, string>> = {
   verify: 'That is enough confirmation emails for one day. Check your spam folder for the last one.',
   clarify: 'That is a lot of questions for one day — tell me what to change in words instead.',
   cook: 'That is a lot of new recipes for one day. The ones you have opened are kept — try this one tomorrow.',
+  swap: 'That is a lot of swaps for one day. Try again tomorrow, or plan a new week.',
 };
 
 /**
@@ -2625,6 +2630,58 @@ app.post('/api/weekplan', weekPlanAsk, weekPlanCap, meter('chat'), async (req, r
     logFailure('weekplan start', error);
     await giveBack(req, res, 'chat');
     res.status(503).json({ error: WEEKPLAN_FAILED });
+  }
+});
+
+/**
+ * One planned meal swapped for another. Body: SwapRequest (server/weekplan.ts).
+ * Answers { meal }: an analysis for the same slot, sized to the meal it
+ * replaces, for the app to put in its place once they have seen it.
+ *
+ * Plus, like the plans it changes; checked first, so a refused swap costs
+ * nothing. Counted per day rather than against the month: a swap is one small
+ * meal, and a plan that needs a few is the plan working.
+ */
+const SWAP_FAILED = msg('The nutritionist could not swap that just now. Try again in a moment.');
+
+app.post('/api/weekplan/swap', async (req, res, next) => {
+  const ask = cleanSwapRequest(req.body);
+  if (!ask) {
+    res.status(400).json({ error: msg('There is nothing in that meal to swap.') });
+    return;
+  }
+  let plan: Plan;
+  try {
+    plan = req.device ? await planFor(req.device) : 'free';
+  } catch (error) {
+    // Not knowing whether they have Plus is not a reason to assume they do.
+    logFailure('swap plan', error);
+    res.status(503).json({ error: SWAP_FAILED });
+    return;
+  }
+  if (plan === 'free') {
+    res.status(402).json({
+      error: 'out_of_allowance', plan, kind: 'swap', used: 0, allowance: 0, period: 'ever',
+      needsAccount: false, resets: null, message: `Swapping planned meals is part of ${PLUS}.`,
+    });
+    return;
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: msg('Swapping a meal needs the AI, and no key is configured on this server.') });
+    return;
+  }
+  res.locals.swapAsk = ask;
+  next();
+}, meter('swap'), async (_req, res) => {
+  try {
+    res.json(readBy({ meal: await swapMeal(res.locals.swapAsk as SwapRequest) }, 'swap'));
+  } catch (error) {
+    if (error instanceof WeekPlanError) {
+      res.status(502).json({ error: error.message });
+      return;
+    }
+    logFailure('swap', error);
+    res.status(502).json({ error: SWAP_FAILED });
   }
 });
 

@@ -106,6 +106,20 @@ export const HeartIcon = ({ size = 20, className }: IconProps) => (
   </svg>
 );
 
+/** Filled, for a meal that has been kept. */
+export const HeartFilledIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} fill="currentColor" className={className}>
+    <path d="M12 20s-7-4.4-7-9a3.8 3.8 0 0 1 7-2.1A3.8 3.8 0 0 1 19 11c0 4.6-7 9-7 9z" />
+  </svg>
+);
+
+/** Two arrows passing: one thing for another. */
+export const SwapIcon = ({ size = 20, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5" />
+  </svg>
+);
+
 export const ShareIcon = ({ size = 20, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <path d="M12 15.5V3.8M8.4 7.2 12 3.6l3.6 3.6" />

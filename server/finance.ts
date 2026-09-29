@@ -25,9 +25,9 @@ import { ALLOWANCE } from './plan';
  */
 export const FEATURE_KINDS = ['photo', 'chat', 'recipe', 'weekplan'] as const;
 const FEATURES = `('photo', 'chat', 'recipe', 'weekplan')`;
-const AI_KINDS = `('photo', 'clarify', 'chat', 'recipe', 'weekplan', 'cook')`;
-// A planned meal's cooking steps are part of meal planning, and shown with it.
-const FEATURE = `case when kind = 'clarify' then 'photo' when kind = 'cook' then 'weekplan' else kind end`;
+const AI_KINDS = `('photo', 'clarify', 'chat', 'recipe', 'weekplan', 'swap', 'cook')`;
+// Swapping a planned meal and its cooking steps are part of meal planning, and shown with it.
+const FEATURE = `case when kind = 'clarify' then 'photo' when kind in ('swap', 'cook') then 'weekplan' else kind end`;
 /** Google's models; everything else priced is Anthropic's. */
 const IS_GEMINI = `model like 'gemini-%'`;
 
@@ -425,7 +425,7 @@ export async function metrics(days: number): Promise<Metrics> {
        (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind in ('photo', 'clarify'))::text as photo,
        (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind = 'chat')::text as chat,
        (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind = 'recipe')::text as recipe,
-       (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind in ('weekplan', 'cook'))::text as weekplan
+       (select coalesce(sum(cost_usd), 0) from ai_costs where day = days.day and kind in ('weekplan', 'swap', 'cook'))::text as weekplan
      from days order by days.day`,
     [span],
   );
