@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Draft, FoodItem, MealSlot, Nutrients } from '../types';
 import Squish from '../components/Squish';
-import { MacroBars, MacroSplitBar, MinorNutrients, ScoreMeter } from '../components/charts';
+import { MacroBars, MacroSplitBar, Micronutrients, MinorNutrients, ScoreMeter } from '../components/charts';
 import Comparison from '../components/Comparison';
 import { mealEquivalent, seedFrom } from '../lib/equivalents';
 import DictateButton from '../components/DictateButton';
@@ -356,6 +356,12 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
         <MacroBars totals={totals} targets={targets} compact />
         <Comparison equivalent={mealEquivalent(totals, targets, comparisonSeed)} />
         <MinorNutrients totals={totals} targets={targets} />
+        {totals.micros && (
+          <>
+            <div className="divider" />
+            <Micronutrients totals={totals} targets={targets} meal />
+          </>
+        )}
         <div className="divider" />
         <MacroSplitBar totals={totals} />
       </div>
