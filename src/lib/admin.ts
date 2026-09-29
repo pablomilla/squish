@@ -128,11 +128,13 @@ export interface PlanRecord {
   attempts: number;
   seconds: number;
   error: string | null;
-  /** The model that answered last: for a plan that was made, the one that made it. */
+  /** For a plan that was made, the model that wrote it; otherwise the one that answered last. */
   model: string | null;
+  /** The model that filled in the figures the food table could not, when one did. */
+  fillModel: string | null;
   /** What it cost in all, in dollars; null for plans from before costs were kept. */
   costUsd: number | null;
-  /** Every model asked and what each came to, the one that made it last. */
+  /** Every model asked and what each came to, the one that made it first. */
   costs: { model: string; usd: number }[];
 }
 

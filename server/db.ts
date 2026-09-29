@@ -819,6 +819,16 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index account_identities_account on account_identities(account_id);
     `,
   },
+  {
+    id: 32,
+    sql: `
+      -- A weekly plan's model is the one that wrote it, and the one that
+      -- filled in the figures the food table could not is kept beside it.
+      -- It used to be whichever answered last, which after a fill-in was the
+      -- filler: a plan written by Opus read as made by Gemini.
+      alter table weekplan_jobs add column fill_model text;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

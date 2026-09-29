@@ -23,7 +23,7 @@
 import { randomBytes } from 'node:crypto';
 import { hasDatabase, migrate, query } from './db';
 import { billedAs, modelName } from './billing';
-import { audienceOf, servedAs } from './routing';
+import { audienceOf, servedAs, servedBy } from './routing';
 import type { WeekPlan } from './claude';
 import type { WeekPlanRequest } from './weekplan';
 import { currentPlace, inPlace, placeFrom, type Place } from './region';
@@ -203,15 +203,22 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
 
   void (async () => {
     let outcome: { status: 'done'; plan: WeekPlan } | { status: 'failed'; error: string };
+    // Which model wrote the plan and which filled in its figures, from the routes themselves: the
+    // cost keeper only knows which answered last, and after a fill-in that is the filler.
+    let madeBy: string | null = null;
+    let filledBy: string | null = null;
     try {
       // Made where they are, whichever instance makes it and however long after they asked.
       // And paid for as a weekly plan, whether it started in the request or was picked up after a restart.
       // On the route of whoever asked — an admin's own, or everybody's — even when picked up after a restart.
       const audience = await audienceOf(deviceId).catch(() => 'everyone' as const);
-      outcome = {
-        status: 'done',
-        plan: await servedAs(audience, () => billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, stop.signal)), costs.tally)),
-      };
+      const plan = await servedAs(audience, async () => {
+        const made = await billedAs('weekplan', deviceId, () => inPlace(place, () => w.make(ask, stop.signal)), costs.tally);
+        madeBy = servedBy('weekplan')?.model ?? null;
+        filledBy = servedBy('fill')?.model ?? null;
+        return made;
+      });
+      outcome = { status: 'done', plan };
     } catch (error) {
       // Stopped on purpose: the job is somebody else's now (or ours to hand over).
       if (stop.signal.aborted) return;
@@ -222,9 +229,18 @@ function runJob(id: string, run: string, deviceId: string | null, ask: WeekPlanR
     }
     await costs.settled();
     const kept = await query(
-      `update weekplan_jobs set status = $3, plan = $4, error = $5, finished_at = now()
+      `update weekplan_jobs set status = $3, plan = $4, error = $5, finished_at = now(),
+              model = coalesce($6, model), fill_model = $7
         where id = $1 and run = $2 and status = 'working' returning 1`,
-      [id, run, outcome.status, outcome.status === 'done' ? JSON.stringify(outcome.plan) : null, outcome.status === 'failed' ? outcome.error : null],
+      [
+        id,
+        run,
+        outcome.status,
+        outcome.status === 'done' ? JSON.stringify(outcome.plan) : null,
+        outcome.status === 'failed' ? outcome.error : null,
+        madeBy && modelName(madeBy),
+        filledBy && modelName(filledBy),
+      ],
     ).catch((error: unknown) => {
       console.error('[squish] could not save a weekly plan:', error instanceof Error ? error.message : error);
       return [];
@@ -442,11 +458,13 @@ export interface PlanRecord {
   /** How long it took, or has taken so far. */
   seconds: number;
   error: string | null;
-  /** The model that answered last: for a plan that was made, the one that made it. */
+  /** For a plan that was made, the model that wrote it; otherwise the one that answered last. */
   model: string | null;
+  /** The model that filled in the figures the food table could not, when one did. */
+  fillModel: string | null;
   /** What it cost in all, in dollars; null for plans from before costs were kept. */
   costUsd: number | null;
-  /** Every model asked and what each came to, the one that made it last. */
+  /** Every model asked and what each came to, the one that made it first. */
   costs: { model: string; usd: number }[];
 }
 
@@ -456,10 +474,10 @@ export async function recentPlans(limit = 50): Promise<PlanRecord[]> {
   await migrate();
   const rows = await query<{
     created_at: Date; email: string | null; days: string | null; status: Job['status']; seen: boolean; attempts: number;
-    seconds: string; error: string | null; model: string | null; costs: Record<string, number | string> | null;
+    seconds: string; error: string | null; model: string | null; fill_model: string | null; costs: Record<string, number | string> | null;
   }>(
     `select j.created_at, a.email, j.ask->>'days' as days, j.status, j.delivered_at is not null as seen, j.attempts, j.error,
-            extract(epoch from coalesce(j.finished_at, now()) - j.created_at)::text as seconds, j.model, j.costs
+            extract(epoch from coalesce(j.finished_at, now()) - j.created_at)::text as seconds, j.model, j.fill_model, j.costs
        from weekplan_jobs j
        left join accounts a on a.id = j.owner
       order by j.created_at desc
@@ -469,7 +487,7 @@ export async function recentPlans(limit = 50): Promise<PlanRecord[]> {
   return rows.map((row) => {
     const costs = Object.entries(row.costs ?? {})
       .map(([model, usd]) => ({ model, usd: Number(usd) }))
-      .sort((a, b) => Number(a.model === row.model) - Number(b.model === row.model));
+      .sort((a, b) => Number(b.model === row.model) - Number(a.model === row.model));
     return {
       at: row.created_at.toISOString(),
       email: row.email,
@@ -480,6 +498,7 @@ export async function recentPlans(limit = 50): Promise<PlanRecord[]> {
       seconds: Math.round(Number(row.seconds)),
       error: row.error,
       model: row.model,
+      fillModel: row.fill_model,
       costUsd: row.costs === null ? null : costs.reduce((sum, c) => sum + c.usd, 0),
       costs,
     };

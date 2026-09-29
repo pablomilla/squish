@@ -5,6 +5,7 @@ import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { refund, spend } from '../server/identity';
 import { DEAD_MS, MAX_ATTEMPTS, STALE_MS, handOver, planCosts, plansOnTheWay, readJob, recentPlans, setWorker, startJob, sweepJobs, waitingJob } from '../server/weekplanJobs';
 import { bill } from '../server/billing';
+import { withModels } from '../server/routing';
 import type { WeekPlan } from '../server/claude';
 import type { WeekPlanRequest } from '../server/weekplan';
 import { currentPlace, inPlace } from '../server/region';
@@ -45,6 +46,14 @@ setWorker({
       if (key.startsWith('billed:')) {
         bill(0.0125, 'gemini-3.8-flash');
         bill(0.2, 'claude-sonnet-5-20260901');
+      }
+      // A plan written by one model on its own route, and its figures filled in by another on theirs: not a backup.
+      if (key.startsWith('filled:')) {
+        void (async () => {
+          await withModels('weekplan', async () => bill(0.4, 'claude-opus-5-5'), { models: ['claude-opus-5-5'] });
+          await withModels('fill', async () => bill(0.02, 'gemini-3.8-flash'), { models: ['gemini-3.8-flash'] });
+          resolve(WEEK);
+        })();
       }
     }),
   onFail: async (device) => {
@@ -248,6 +257,20 @@ when('a stored place that is not one, or none at all, is made for the defaults',
   await settle(id, device);
 });
 
+when('a plan is made by the model that wrote it, not the one that filled in its figures after', async () => {
+  const device = await aDevice();
+  const key = `filled:${randomUUID()}`;
+  const id = await startJob({ deviceId: device, owner: null }, askFor(key));
+  assert.equal(await finished(id), 'done');
+  const plan = await waitFor(async () => (await recentPlans(500)).find((p) => p.status === 'done' && p.costs.some((c) => c.model === 'claude-opus-5-5') && Math.abs((p.costUsd ?? 0) - 0.42) < 1e-9));
+  assert.equal(plan.model, 'claude-opus-5-5', 'written by Opus, though Gemini answered last');
+  assert.equal(plan.fillModel, 'gemini-3.8-flash');
+  assert.deepEqual(plan.costs, [
+    { model: 'claude-opus-5-5', usd: 0.4 },
+    { model: 'gemini-3.8-flash', usd: 0.02 },
+  ]);
+});
+
 when('a plan keeps which model made it and what every model asked for it cost, and adds it to the totals', async () => {
   const device = await aDevice();
   const key = `billed:${randomUUID()}`;
@@ -261,8 +284,8 @@ when('a plan keeps which model made it and what every model asked for it cost, a
     return found;
   });
   assert.equal(plan.model, 'claude-sonnet-5', 'the model that answered last made it, its snapshot date left off');
-  assert.deepEqual(plan.costs.at(-1), { model: 'claude-sonnet-5', usd: 0.2 }, 'the maker last, after the backup it replaced');
-  assert.deepEqual(plan.costs[0], { model: 'gemini-3.8-flash', usd: 0.0125 });
+  assert.deepEqual(plan.costs[0], { model: 'claude-sonnet-5', usd: 0.2 }, 'the maker first, before the backup it replaced');
+  assert.deepEqual(plan.costs.at(-1), { model: 'gemini-3.8-flash', usd: 0.0125 });
 
   const after = (await planCosts()).find((c) => c.model === 'claude-sonnet-5' && c.days === ASK.days && c.outcome === 'made');
   assert.ok(after, 'counted in the totals kept after the job goes');

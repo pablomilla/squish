@@ -278,6 +278,17 @@ function WeekPlans() {
   );
 }
 
+/**
+ * What a model other than the plan's own was there for. Filling in the figures
+ * is part of every plan the food table cannot fully answer, not a backup; a
+ * model that neither wrote nor filled was asked first and failed.
+ */
+function partIn(plan: PlanRecord, model: string): string {
+  if (model === plan.model) return '';
+  if (model === plan.fillModel) return ' (filling in figures)';
+  return plan.status === 'done' ? ' (tried first)' : '';
+}
+
 /** Which model made a plan and what it cost — every model asked, when there was more than one. */
 function PlanSpend({ plan, money }: { plan: PlanRecord; money: (usd: number) => string }) {
   if (plan.costUsd === null) return <p className="tiny muted">Model and cost not recorded (asked for before they were kept).</p>;
@@ -287,9 +298,7 @@ function PlanSpend({ plan, money }: { plan: PlanRecord; money: (usd: number) => 
     <p className="tiny">
       {plan.model ? `${lead} ${modelLabel(plan.model)}` : plan.status === 'working' ? 'Nothing billed yet' : 'No model answered'}
       {(plan.model || plan.costUsd > 0) && ` · ${cost}`}
-      {plan.costs.length > 1 && (
-        <span className="muted"> — {plan.costs.map((c) => `${modelLabel(c.model)} ${money(c.usd)}`).join(', ')}</span>
-      )}
+      {plan.costs.length > 1 && <span className="muted"> — {plan.costs.map((c) => `${modelLabel(c.model)} ${money(c.usd)}${partIn(plan, c.model)}`).join(', ')}</span>}
     </p>
   );
 }
