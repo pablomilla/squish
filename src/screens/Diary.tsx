@@ -41,7 +41,7 @@ const SLOTS: { key: MealSlot; label: string; plan: string; addTo: string; snap: 
 
 export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; onEditMeal: (meal: MealEntry) => void }) {
   const toast = useToast();
-  const { meals, days, targets, removeMeal, setWater, setSteps, profile, plans } = useSquish();
+  const { meals, days, targets, removeMeal, confirmMeal, setWater, setSteps, profile, plans } = useSquish();
   const [date, setDate] = useState(isoDate());
   const [selected, setSelected] = useState<MealEntry | null>(null);
   const [picking, setPicking] = useState(false);
@@ -245,6 +245,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                     <span className="diary-meal-title" dir="auto">{meal.title}</span>
                     <span className="tiny muted">
                       {meal.time} · {formatEnergy(meal.nutrients.calories)}
+                      {meal.quick && <span className="badge diary-meal-check">{t('to check')}</span>}
                     </span>
                   </span>
                   <span className="diary-meal-score">{meal.score}</span>
@@ -272,6 +273,35 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                 </p>
               </div>
             </div>
+
+            {selected.quick && (
+              <div className="card card--tint card--flat diary-quick">
+                <p className="small">{t('Logged from a quick snap, so nobody has checked it yet. Does it look right?')}</p>
+                <div className="row" style={{ gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn btn--sm btn--ghost grow"
+                    onClick={() => {
+                      const meal = selected;
+                      setSelected(null);
+                      onEditMeal(meal);
+                    }}
+                  >
+                    {t('Change it')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--sm grow"
+                    onClick={() => {
+                      confirmMeal(selected.id);
+                      setSelected({ ...selected, quick: undefined });
+                    }}
+                  >
+                    {t('Looks right')}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <MealQuality meal={selected} />
             <AskLink

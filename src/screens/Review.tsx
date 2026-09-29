@@ -208,7 +208,8 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
     }
 
     if (draft.editingId) {
-      updateMeal(draft.editingId, payload);
+      // Looked at and saved: a quick snap's meal is checked now.
+      updateMeal(draft.editingId, { ...payload, quick: undefined });
       // Only when this edit brought a new photograph with it. Editing the
       // title of a meal photographed last week must not wipe its picture.
       if (draft.photoFull) void savePhoto(draft.editingId, draft.photoFull);

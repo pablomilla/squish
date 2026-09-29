@@ -4,4 +4,9 @@
     <string name="title_activity_main">Squish</string>
     <string name="package_name">app.squish.tracker</string>
     <string name="custom_url_scheme">app.squish.tracker</string>
+    <!-- Quick snap: the widget and the icon's shortcut. -->
+    <string name="widget_snap_label">Quick snap</string>
+    <string name="widget_snap_name">Squish quick snap</string>
+    <string name="widget_snap_description">Photograph a meal in one tap and put your phone away. Squish logs it for you to check later.</string>
+    <string name="shortcut_snap_long">Quick snap a meal</string>
 </resources>

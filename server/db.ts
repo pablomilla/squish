@@ -844,6 +844,32 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       );
     `,
   },
+  {
+    id: 34,
+    sql: `
+      -- Quick snaps (server/snaps.ts): a photo handed over in a hurry and
+      -- read here whether or not the app is still open, until the app comes
+      -- back for the reading. The photo is dropped as soon as it is read, the
+      -- row as soon as it is collected, and anything left after a week.
+      create table snaps (
+        id          text not null,
+        device_id   text not null references devices(id) on delete cascade,
+        ask         jsonb not null,
+        image       text,
+        place       jsonb not null,
+        status      text not null default 'working' check (status in ('working', 'done', 'failed')),
+        analysis    jsonb,
+        error       text,
+        attempts    int not null default 1,
+        counted     boolean not null default false,
+        claimed_at  timestamptz not null default now(),
+        created_at  timestamptz not null default now(),
+        finished_at timestamptz,
+        primary key (device_id, id)
+      );
+      create index snaps_created on snaps(created_at);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

@@ -506,6 +506,94 @@ export async function relabelCookSteps(steps: string[], items: { name: string }[
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Quick snaps (src/lib/snaps.ts, server/snaps.ts). Quiet on purpose: they
+ * run with nobody looking, so no paywall and no error pops up from them —
+ * what happened is kept with the snap and shown on Home.
+ * ------------------------------------------------------------------ */
+
+export interface SnapSend {
+  id: string;
+  image: string;
+  date: string;
+  time: string;
+  slot: MealSlot;
+  crockery?: { plateCm?: number; bowlMl?: number };
+}
+
+/**
+ * sent: the server has it. offline: no signal, try later. refused: no photo
+ * reads left. direct: this Squish keeps nothing on the server, so the app
+ * reads the photo itself. failed: not a photo it will take.
+ */
+export type SnapSent = 'sent' | 'offline' | 'refused' | 'direct' | 'failed';
+
+async function quietly(path: string, init: RequestInit, timeoutMs: number): Promise<Response | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(apiUrl(path), { ...init, signal: controller.signal });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function sendSnap(snap: SnapSend): Promise<SnapSent> {
+  const response = await quietly('/api/snaps', { method: 'POST', headers: await headers(true), body: JSON.stringify(snap) }, 30_000);
+  if (!response) return 'offline';
+  if (response.status === 202) return 'sent';
+  if (response.status === 402) {
+    void refreshPlan();
+    return 'refused';
+  }
+  const payload = (await response.json().catch(() => ({}))) as { error?: string };
+  // No database, no device yet, or no AI on the server: read it here, the ordinary way.
+  if (payload.error === 'no_database' || payload.error === 'no_device' || payload.error === 'no_ai') return 'direct';
+  if (response.status === 400) return 'failed';
+  // A server having a bad moment is the same as no signal: it waits for the next try.
+  return 'offline';
+}
+
+export interface SnapBack {
+  id: string;
+  date: string;
+  time: string;
+  slot?: MealSlot;
+  status: 'working' | 'done' | 'failed';
+  analysis?: AnalysisResult;
+  error?: string;
+}
+
+/** This phone's snaps as the server has them; null when it cannot be asked. */
+export async function fetchSnaps(): Promise<SnapBack[] | null> {
+  const response = await quietly('/api/snaps', { headers: await headers(false) }, 20_000);
+  if (!response?.ok) return null;
+  const { snaps } = (await response.json().catch(() => ({}))) as { snaps?: SnapBack[] };
+  return Array.isArray(snaps) ? snaps : null;
+}
+
+/** Logged, or let go of: the server can forget them. */
+export async function snapsCollected(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  await quietly('/api/snaps/collected', { method: 'POST', headers: await headers(true), body: JSON.stringify({ ids }) }, 20_000);
+}
+
+/**
+ * A snap read here, while the app is open, where the server keeps nothing.
+ * No offline guess: a made-up plate logged without anybody looking would be
+ * believed. null when it could not be read now; 'refused' when out of reads.
+ */
+export async function readSnapHere(image: string, slot: MealSlot, crockery?: SnapSend['crockery']): Promise<AnalysisResult | 'refused' | null> {
+  const response = await quietly('/api/analyse/photo', { method: 'POST', headers: await headers(true), body: JSON.stringify({ image, slot, crockery }) }, 60_000);
+  if (!response) return null;
+  if (response.status === 402) return 'refused';
+  if (!response.ok) return null;
+  const analysis = (await response.json().catch(() => null)) as AnalysisResult | null;
+  return analysis && Array.isArray(analysis.items) && !analysis.offline ? analysis : null;
+}
+
 export interface SwapAsk {
   date: string;
   slot: MealSlot;

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Quick snap shortcut on the Squish icon's menu: the camera on Squish's purple. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#6B5FE0" />
+            <size android:width="48dp" android:height="48dp" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ic_snap_camera" android:gravity="center" android:width="26dp" android:height="26dp" />
+</layer-list>

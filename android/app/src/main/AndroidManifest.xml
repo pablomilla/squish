@@ -22,7 +22,34 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- squish://snap: straight into the camera, from the widget and the
+                 shortcut below (src/lib/launch.ts). Not BROWSABLE: nothing on a
+                 web page needs to open it. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="squish" android:host="snap" />
+            </intent-filter>
+
+            <!-- Touch and hold the icon: Quick snap. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
         </activity>
+
+        <!-- The Quick snap widget. -->
+        <receiver
+            android:name=".SnapWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_snap_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_snap_info" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

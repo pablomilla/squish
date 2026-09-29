@@ -190,6 +190,7 @@ one of these things:
 | When you | What is sent |
 |---|---|
 | Photograph a meal | The photo, to be read, and your diet if you told Squish one (so a vegetarian's burger is read as a veggie one). The photo is not kept afterwards — not by us and not on our server |
+| Take a quick snap (the widget) | The same as photographing a meal. The difference is where it waits: so that you can put your phone away at once, the photo is handed to our server, which has it read whether or not the app is still open. Our server holds the photo only until it has been read — usually a few seconds — and what was read only until your app next opens and collects it. Anything not collected is deleted after a week |
 | Describe a meal in words or by voice | What you wrote or said, and your diet if you told Squish one |
 | Import a recipe from a link | The text of that page |
 | Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept — and how you eat and what you want from Squish, if you told it when setting up |
@@ -346,6 +347,9 @@ where those services are makes no difference to you.
   Reset removes it immediately.
 - **Your photographs:** on your device only, until you delete the meal or press
   Reset. Deleting a meal deletes its picture.
+- **A quick snap on our server:** the photo until it has been read (seconds,
+  as a rule), and the reading until your app collects it, the next time it is
+  open. Neither is kept for more than a week.
 - **Your account:** until you delete it.
 - **Signed-in devices:** until you sign them out. **You → Account → Sign out
   other devices** ends every other session at once, which is what to use if

@@ -19,6 +19,10 @@ import { isOversized, rehomePhotos } from './lib/rehome';
 import { refreshPlan, watchPlan } from './lib/plan';
 import SquadSync from './components/squad/SquadSync';
 import AchievementSync from './components/AchievementSync';
+import SnapSync from './components/SnapSync';
+import { onSnapLink, openedToSnap } from './lib/launch';
+import { snapPhotoKeys } from './lib/snaps';
+import { draftOf } from './lib/draft';
 import UpdateWatcher from './components/UpdateWatcher';
 import { onPaywall } from './lib/paywall';
 import { askForAccount, resetTokenInUrl } from './lib/account';
@@ -41,6 +45,7 @@ const AddFood = lazyScreen(() => import('./screens/AddFood'));
 const Paywall = lazyScreen(() => import('./components/Paywall'));
 const ResetPassword = lazyScreen(() => import('./screens/ResetPassword'));
 const Partners = lazyScreen(() => import('./screens/Partners'));
+const QuickSnap = lazyScreen(() => import('./screens/QuickSnap'));
 
 const TABS: { name: Route['name']; label: string; Icon: typeof HomeIcon }[] = [
   { name: 'home', label: t('Home'), Icon: HomeIcon },
@@ -99,7 +104,9 @@ function Shell() {
     return () => document.removeEventListener('visibilitychange', refresh);
   }, []);
 
-  const [route, setRoute] = useState<Route>({ name: 'home' });
+  // Opened from a widget or a shortcut: straight into the camera, before anything else.
+  const [route, setRoute] = useState<Route>(() => (useSquish.getState().profile.onboarded && openedToSnap() ? { name: 'snap' } : { name: 'home' }));
+  useEffect(() => onSnapLink(() => useSquish.getState().profile.onboarded && setRoute({ name: 'snap' })), []);
 
   useEffect(() => startBackup(keepsData), [keepsData]);
 
@@ -145,7 +152,9 @@ function Shell() {
   // just because its meal went. Reconciled here, where every way a meal can
   // leave — deleted, Reset, replaced by a restore — passes through the store.
   const meals = useSquish((s) => s.meals);
-  useEffect(() => watchPhotos(() => useSquish.getState().meals.map((m) => m.id)), [meals]);
+  const snaps = useSquish((s) => s.snaps);
+  // Quick snaps' photos too, while they wait to become meals.
+  useEffect(() => watchPhotos(() => [...useSquish.getState().meals.map((m) => m.id), ...snapPhotoKeys(useSquish.getState().snaps)]), [meals, snaps]);
 
   // Once, for anybody whose diary still has full-size photographs inside it.
   // Until this runs their browser store is close to full and the next meal
@@ -194,6 +203,16 @@ function Shell() {
     else setTimeout(warm, 1500);
   }, [awake, onboarded]);
 
+  // A quick snap does not wait for the server: the photo is kept here and goes when it can.
+  if (route.name === 'snap' && onboarded && !tooYoung && !awake)
+    return (
+      <div className="app">
+        <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
+          <QuickSnap onClose={() => setRoute({ name: 'home' })} />
+        </Suspense>
+        <SnapSync />
+      </div>
+    );
   if (!awake) return <Waking />;
   // Set up before the app asked for 18 or over: the same kind stop as a new
   // setup gets, with a way to put a mistyped age right.
@@ -231,19 +250,7 @@ function Shell() {
       },
     });
 
-  const editMeal = (meal: MealEntry) =>
-    openReview(
-      {
-        title: meal.title,
-        items: meal.items,
-        nutrients: meal.nutrients,
-        score: meal.score,
-        coachNote: meal.coachNote ?? '',
-        confidence: meal.aiConfidence ?? 'medium',
-        slot: meal.slot,
-      },
-      { photo: meal.photo, slot: meal.slot, date: meal.date, editingId: meal.id },
-    );
+  const editMeal = (meal: MealEntry) => setRoute({ name: 'review', draft: draftOf(meal) });
 
   return (
     // The dashboard is the one screen used sitting down at a desk, so it alone
@@ -267,11 +274,13 @@ function Shell() {
       {route.name === 'ask' && <Ask key={`${route.question ?? ''}|${route.draft ?? ''}|${route.tab ?? ''}`} onClose={home} question={route.question} draft={route.draft} tab={route.tab} />}
       {route.name === 'admin' && <Admin onClose={() => setRoute({ name: 'you' })} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
+      {route.name === 'snap' && <QuickSnap onClose={home} />}
       </Suspense>
 
       <AddSheet open={adding} onClose={() => setAdding(false)} go={go} />
       {keepsData && <SquadSync />}
       <AchievementSync />
+      <SnapSync />
       <UpdateWatcher quiet={isTab && !adding} />
 
       {isTab && (

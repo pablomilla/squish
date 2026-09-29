@@ -20,6 +20,7 @@ import { sceneUrl } from '../components/sceneArt';
 import { useSubscribed } from '../components/useSubscribed';
 import FriendNudge from '../components/FriendNudge';
 import PolicyNotice from '../components/PolicyNotice';
+import QuickSnapsCard from '../components/QuickSnapsCard';
 import SquadStrip from '../components/squad/SquadStrip';
 import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
@@ -167,6 +168,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           </div>
         </section>
       )}
+
+      {/* Snaps from the widget: being read, stuck, or logged and waiting to be looked at. */}
+      <QuickSnapsCard go={go} />
 
       {/*
         The whole day in one card, so Home fits on one screen: the numbers,

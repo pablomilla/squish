@@ -112,3 +112,7 @@
 .diary .checkins { margin-top: var(--s4); gap: 10px; }
 .diary .checkin-main { padding: 10px 12px; }
 .diary-save-recipe { align-self: center; gap: 6px; }
+
+/* A quick snap's meal, logged without anybody looking: marked until they have. */
+.diary-meal-check { margin-inline-start: 8px; vertical-align: 1px; }
+.diary-quick { display: flex; flex-direction: column; gap: 10px; }

@@ -24,6 +24,11 @@ a browser behaves exactly as it did.
   page came from the server, and in the app the page is a file with no server
   behind it. A test walks `src/` and fails on any bare `fetch('/…')`.
 - Status bar follows the theme; the splash screen goes when React has painted.
+- **Quick snap widgets**: a Home Screen / Lock Screen widget and a Control
+  Centre control on iPhone, a home-screen widget and an icon shortcut on
+  Android, all opening `squish://snap`. The Android side is in place; the
+  iPhone widget needs its target adding in Xcode once. See
+  [widgets.md](widgets.md).
 
 ## What needs your Mac
 

@@ -35,6 +35,7 @@ import ShareSheet from '../components/ShareSheet';
 import { AimFields, EatingFields } from '../components/EatingFields';
 import { DIETS } from '../lib/eating';
 import type { Activity, Goal, Route, Sex, YouSheet } from '../types';
+import QuickSnapHelp from '../components/QuickSnapHelp';
 import './you.css';
 import { plural, t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
@@ -158,6 +159,7 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
         <MenuRow icon="🎨" label={t('Appearance')} value={theme === 'light' ? t('Light') : theme === 'dark' ? t('Dark') : t('Auto')} onClick={() => setOpen('appearance')} />
         <MenuRow icon="🍽️" label={t('Your plates')} value={measured ? t('{n} cm plate', { n: profile.plateCm ?? 27 }) : t('Not set')} onClick={() => setOpen('plates')} />
         <MenuRow icon="🔔" label={t('Meal reminders')} value={reminders.on ? t('On') : t('Off')} onClick={() => setOpen('reminders')} />
+        <MenuRow icon="📸" label={t('Quick snap')} value={t('Widget')} onClick={() => setOpen('snap')} />
         <MenuRow
           icon="🧠"
           label={t('Nutritionist’s notes')}
@@ -515,6 +517,15 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
             )}
           </>
         )}
+      </Sheet>
+
+      <Sheet open={open === 'snap'} onClose={close} title={t('Quick snap')}>
+        <QuickSnapHelp
+          onTry={() => {
+            close();
+            go({ name: 'snap' });
+          }}
+        />
       </Sheet>
 
       <Sheet open={open === 'notes'} onClose={close} title={t('Nutritionist’s notes')}>

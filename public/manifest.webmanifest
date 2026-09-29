@@ -7,8 +7,38 @@
   "background_color": "#FDF6EC",
   "theme_color": "#FDF6EC",
   "icons": [
-    { "src": "/icon-any-192-v2.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-any-512-v2.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-any-192-v2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-any-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick snap",
+      "short_name": "Snap",
+      "description": "Take a photo of a meal and put your phone away. Squish logs it to check later.",
+      "url": "/?snap",
+      "icons": [
+        {
+          "src": "/icon-any-192-v2.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

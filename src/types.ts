@@ -149,6 +149,35 @@ export interface MealEntry {
    * shopping; the diary still gets one portion.
    */
   servings?: number;
+  /**
+   * Logged from a quick snap without anybody looking at it (src/lib/snaps.ts):
+   * shown as one to check until they say it looks right or change it.
+   */
+  quick?: boolean;
+}
+
+/**
+ * A quick snap on its way into the diary (src/lib/snaps.ts). The photos
+ * themselves are in IndexedDB, under `snap:` and `snapshow:` and its id.
+ */
+export interface QueuedSnap {
+  id: string;
+  /** When it was taken: the meal is logged then, however late it is read. */
+  date: string;
+  time: string;
+  /** The same moment, exactly (ms): the server is told it as a 24-hour clock. */
+  takenAt: number;
+  slot: MealSlot;
+  /** A few kilobytes, for showing it while it waits. */
+  thumb: string;
+  /**
+   * waiting: not handed over yet (no signal). sent: with the server, being
+   * read. failed: could not be read. refused: no photo reads left.
+   */
+  state: 'waiting' | 'sent' | 'failed' | 'refused';
+  /** When it was handed over, to notice one the server has lost. */
+  sentAt?: number;
+  error?: string;
 }
 
 /**
@@ -338,7 +367,7 @@ export interface Draft {
 }
 
 /** The sheets You opens, one per row. */
-export type YouSheet = 'plan' | 'food' | 'appearance' | 'plates' | 'reminders' | 'notes' | 'usage' | 'friends' | 'account' | 'data';
+export type YouSheet = 'plan' | 'food' | 'appearance' | 'plates' | 'reminders' | 'snap' | 'notes' | 'usage' | 'friends' | 'account' | 'data';
 
 /**
  * Where the app is. Kept here rather than beside the router so a component can
@@ -358,4 +387,6 @@ export type Route =
   | { name: 'ask'; question?: string; draft?: string; tab?: 'ask' | 'plan' }
   /** The dashboard, for whoever runs this Squish. Not a tab; reached from You. */
   | { name: 'admin' }
-  | { name: 'review'; draft: Draft };
+  | { name: 'review'; draft: Draft }
+  /** Straight into the camera, from a widget or a shortcut: one tap, and it is logged later. */
+  | { name: 'snap' };

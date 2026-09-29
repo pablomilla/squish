@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Quick snap widget (SnapWidgetProvider): the whole of it is the button. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_snap_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_snap_background"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:contentDescription="@string/widget_snap_description">
+
+    <ImageView
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:src="@drawable/ic_snap_camera"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/widget_snap_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:text="@string/widget_snap_label"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
+</LinearLayout>

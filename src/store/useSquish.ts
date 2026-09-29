@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CookSteps, DayLog, Draft, FoodItem, MealEntry, Profile, Recipe, Targets } from '../types';
+import type { CookSteps, DayLog, Draft, FoodItem, MealEntry, Profile, QueuedSnap, Recipe, Targets } from '../types';
 import { findRecipe } from '../lib/recipes';
 import { judged, logged, outcomeOf, stalePlans, toggleNever, type PlanOutcome } from '../lib/planLearning';
 import {
@@ -118,6 +118,12 @@ interface SquishState {
    */
   pendingMeal: Draft | null;
   /**
+   * Quick snaps on their way into the diary (src/lib/snaps.ts). This phone's
+   * alone: not backed up, since a snap is read into a meal within minutes
+   * and the meal is.
+   */
+  snaps: QueuedSnap[];
+  /**
    * The nudge is cached against the situation it described, not just the day —
    * keyed on the date alone, the morning's "nothing logged yet" would still be
    * on screen after dinner. The part of the day counts too: with nothing
@@ -137,6 +143,11 @@ interface SquishState {
 
   addMeal: (meal: Omit<MealEntry, 'id' | 'date' | 'time'> & Partial<Pick<MealEntry, 'id' | 'date' | 'time'>>) => MealEntry;
   updateMeal: (id: string, patch: Partial<MealEntry>) => void;
+  /** A quick snap's meal looks right: it stops asking to be checked. */
+  confirmMeal: (id: string) => void;
+  addSnap: (snap: QueuedSnap) => void;
+  updateSnap: (id: string, patch: Partial<QueuedSnap>) => void;
+  removeSnap: (id: string) => void;
   removeMeal: (id: string) => void;
   addPlan: (meal: Omit<MealEntry, 'id' | 'time'> & Partial<Pick<MealEntry, 'id' | 'time'>>) => MealEntry;
   removePlan: (id: string) => void;
@@ -335,6 +346,7 @@ export const useSquish = create<SquishState>()(
       reminders: { on: false, breakfast: '08:00', lunch: '12:30', dinner: '19:00' },
       nutritionistNotes: [],
       pendingMeal: null,
+      snaps: [],
       lastCoachNote: null,
       photoAnalyses: 0,
 
@@ -383,6 +395,7 @@ export const useSquish = create<SquishState>()(
           photo: meal.photo,
           source: meal.source,
           aiConfidence: meal.aiConfidence,
+          ...(meal.quick ? { quick: true } : {}),
         };
         set({ meals: [...get().meals, entry] });
         get().unlock('first-meal');
@@ -391,6 +404,13 @@ export const useSquish = create<SquishState>()(
 
       updateMeal: (id, patch) =>
         set({ meals: get().meals.map((m) => (m.id === id ? { ...m, ...patch } : m)) }),
+
+      confirmMeal: (id) =>
+        set({ meals: get().meals.map((m) => (m.id === id && m.quick ? { ...m, quick: undefined } : m)) }),
+
+      addSnap: (snap) => set({ snaps: [...get().snaps.filter((s) => s.id !== snap.id), snap] }),
+      updateSnap: (id, patch) => set({ snaps: get().snaps.map((s) => (s.id === id ? { ...s, ...patch } : s)) }),
+      removeSnap: (id) => set({ snaps: get().snaps.filter((s) => s.id !== id) }),
 
       removeMeal: (id) => set({ meals: get().meals.filter((m) => m.id !== id) }),
 
@@ -588,6 +608,7 @@ export const useSquish = create<SquishState>()(
           photoAnalyses: 0,
           nutritionistNotes: [],
           pendingMeal: null,
+          snaps: [],
           look: DEFAULT_LOOK,
           outfit: {},
           scene: '',

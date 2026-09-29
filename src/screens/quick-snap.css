@@ -1,0 +1,31 @@
+/* A quick snap (QuickSnap.tsx): the capture screen with everything but the shutter taken away. */
+.quick-snap .capture-controls { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+.quick-snap-title {
+  color: #fff; font-weight: 600; font-size: var(--text-label);
+  padding: 8px 14px; border-radius: 999px; background: rgba(20, 16, 30, 0.55); backdrop-filter: blur(6px);
+}
+.quick-snap-spacer { visibility: hidden; }
+
+/* What happened, in one line, low on the viewfinder where a glance finds it. */
+.quick-snap-status {
+  position: absolute; left: 24px; right: 24px; bottom: 22px;
+  margin: 0 auto; max-width: 320px; padding: 10px 16px; border-radius: 16px;
+  text-align: center; color: #fff; font-size: var(--text-label); line-height: 1.4;
+  background: rgba(20, 16, 30, 0.6); backdrop-filter: blur(6px);
+}
+
+.quick-snap-done-mark {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid currentColor; font-size: 15px; font-weight: 700; line-height: 1;
+}
+.quick-snap-done.is-on { color: var(--mint); }
+
+/* The shutter's answer: a soft white blink over the viewfinder. */
+.quick-snap-flash {
+  position: absolute; inset: 0; background: #fff; pointer-events: none;
+  animation: quick-snap-flash 0.35s ease-out forwards;
+}
+@keyframes quick-snap-flash { from { opacity: 0.75; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .quick-snap-flash { animation-duration: 0.01s; }
+}

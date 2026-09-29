@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Touch and hold the Squish icon: Quick snap, straight into the camera (squish://snap). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="snap"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_snap"
+        android:shortcutShortLabel="@string/widget_snap_label"
+        android:shortcutLongLabel="@string/shortcut_snap_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="squish://snap"
+            android:targetPackage="app.squish.tracker"
+            android:targetClass="app.squish.tracker.MainActivity" />
+    </shortcut>
+</shortcuts>

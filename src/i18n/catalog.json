@@ -1,5 +1,5 @@
 {
- "version": "1b4mapm-7r8nv0",
+ "version": "0vqgivk-pq0hzz",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -393,6 +393,7 @@
    "text": "Meal",
    "where": [
     "src/lib/estimate.ts",
+    "src/lib/snaps.ts",
     "src/screens/Capture.tsx",
     "src/screens/Review.tsx"
    ]
@@ -684,6 +685,13 @@
    "text": "Recipe web address",
    "where": [
     "src/screens/AddFood.tsx"
+   ]
+  },
+  {
+   "id": "03hx3d802gf0d1",
+   "text": "Find Squish and drag Quick snap where you want it.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -1241,6 +1249,14 @@
    ]
   },
   {
+   "id": "06aaohs-55bbwy",
+   "text": "Quick snap",
+   "where": [
+    "src/screens/QuickSnap.tsx",
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "06dqpt1041ttwv",
    "text": "Sugar",
    "where": [
@@ -1453,6 +1469,13 @@
    ]
   },
   {
+   "id": "07myz2y0ek1eui",
+   "text": "Snap it",
+   "where": [
+    "src/screens/QuickSnap.tsx"
+   ]
+  },
+  {
    "id": "07nql6j-j2cdqq",
    "text": "English",
    "where": [
@@ -1574,6 +1597,14 @@
    "text": "4 squares",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "08c2xgd0qwuenc",
+   "one": "Waiting for signal to send your snap.",
+   "other": "Waiting for signal to send {n} snaps.",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
    ]
   },
   {
@@ -1721,6 +1752,7 @@
    "text": "Try again",
    "where": [
     "src/components/CookSheet.tsx",
+    "src/components/QuickSnapsCard.tsx",
     "src/components/cookParts.tsx"
    ]
   },
@@ -1759,6 +1791,7 @@
    "id": "09c35st-q5y29e",
    "text": "Remove",
    "where": [
+    "src/components/QuickSnapsCard.tsx",
     "src/screens/Review.tsx"
    ]
   },
@@ -2054,6 +2087,13 @@
    "text": "Too many in one hour — try again shortly.",
    "where": [
     "src/lib/api.ts"
+   ]
+  },
+  {
+   "id": "0bamrei0o451ld",
+   "text": "Change it",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -2640,6 +2680,13 @@
    ]
   },
   {
+   "id": "0en6jzt-j03yzw",
+   "text": "Squish could not read your snap from {when}.",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
+   ]
+  },
+  {
    "id": "0ena8pa-dx98c8",
    "text": "— nearly there",
    "where": [
@@ -3175,6 +3222,13 @@
    ]
   },
   {
+   "id": "0hnz3br0vgr34k",
+   "text": "{meal} logged from your quick snap — {energy}. Check it when you have a moment.",
+   "where": [
+    "src/components/SnapSync.tsx"
+   ]
+  },
+  {
    "id": "0ho1yoa0qczs3w",
    "text": "Send the squad link",
    "where": [
@@ -3545,6 +3599,13 @@
    "text": "Pancakes with syrup",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0jncko207teu5o",
+   "text": "Squish could not look for your snaps just now.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -4272,6 +4333,13 @@
    "text": "30 g",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0mrkitq0h4po9g",
+   "text": "That one did not save. Try again.",
+   "where": [
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -5499,6 +5567,13 @@
    ]
   },
   {
+   "id": "0t3bi0708nf44c",
+   "text": "On iOS 18 you can also add it to Control Centre, or set it on the Action Button.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
+   ]
+  },
+  {
    "id": "0t51q1m0ubbj1p",
    "text": "That link has been used or is too old. Go back to squish.online and press the button again.",
    "where": [
@@ -5698,6 +5773,14 @@
    ]
   },
   {
+   "id": "0ubhcql0r3fk1p",
+   "one": "Squish is reading your snap…",
+   "other": "Squish is reading {n} snaps…",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
+   ]
+  },
+  {
    "id": "0uc0dps-7k9sgc",
    "text": "How do you eat?",
    "where": [
@@ -5776,6 +5859,14 @@
    ]
   },
   {
+   "id": "0unwb4p-8m5x5w",
+   "one": "{n} quick snap logged. Check it when you have a moment.",
+   "other": "{n} quick snaps logged. Check them when you have a moment.",
+   "where": [
+    "src/components/SnapSync.tsx"
+   ]
+  },
+  {
    "id": "0uolz5e0ds4e0g",
    "text": "Squad badge",
    "where": [
@@ -5802,6 +5893,13 @@
    "text": "avg {value} {unit}",
    "where": [
     "src/screens/Insights.tsx"
+   ]
+  },
+  {
+   "id": "0usdwqs-hnw3kg",
+   "text": "to check",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -6168,6 +6266,13 @@
    ]
   },
   {
+   "id": "0wa15q10z0rcb8",
+   "text": "One tap and put your phone away. Squish logs it for you to check later.",
+   "where": [
+    "src/screens/QuickSnap.tsx"
+   ]
+  },
+  {
    "id": "0waz7je096909y",
    "text": "e.g. {code}",
    "where": [
@@ -6244,6 +6349,13 @@
    "text": "{percent}% of today",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "0woaq6s0waa5s3",
+   "text": "On Android, with Squish added to your home screen: touch and hold its icon and tap Quick snap.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -6383,6 +6495,14 @@
    "text": "Dark chocolate 70%",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0xk38nv0gq98gq",
+   "one": "Snapped. Squish will log it — check it later.",
+   "other": "{n} snapped. Squish will log them — check them later.",
+   "where": [
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -6548,6 +6668,13 @@
    ]
   },
   {
+   "id": "0yqhqnb0hu4sen",
+   "text": "The photo was lost before it could be read.",
+   "where": [
+    "src/lib/snaps.ts"
+   ]
+  },
+  {
    "id": "0yrtf9q-lysczm",
    "text": "Balancing protein, carbs and fat",
    "where": [
@@ -6659,6 +6786,13 @@
    "text": "Last logged {weight} on {date}.",
    "where": [
     "src/components/CheckinSheets.tsx"
+   ]
+  },
+  {
+   "id": "0zm4ya6-zdeka5",
+   "text": "Logged from a quick snap, so nobody has checked it yet. Does it look right?",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -6784,6 +6918,13 @@
    "text": "Mostly sitting",
    "where": [
     "src/lib/nutrition.ts"
+   ]
+  },
+  {
+   "id": "10byvi10j6auv7",
+   "text": "No camera here. Take the photo with your phone’s camera instead — it is logged just the same.",
+   "where": [
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -7257,6 +7398,13 @@
    ]
   },
   {
+   "id": "12n59th0ticfwd",
+   "text": "Take a photo",
+   "where": [
+    "src/screens/QuickSnap.tsx"
+   ]
+  },
+  {
    "id": "12niv000o9z013",
    "text": "Sign out",
    "where": [
@@ -7281,7 +7429,8 @@
    "id": "12okn85-yek0j6",
    "text": "Describe it",
    "where": [
-    "src/components/AddSheet.tsx"
+    "src/components/AddSheet.tsx",
+    "src/components/QuickSnapsCard.tsx"
    ]
   },
   {
@@ -7289,6 +7438,13 @@
    "text": "What would make today’s food better?",
    "where": [
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "12rg783-bbkv4t",
+   "text": "Or touch and hold the Squish icon and tap Quick snap.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -7417,6 +7573,7 @@
    "where": [
     "src/components/CheckinSheets.tsx",
     "src/components/cookParts.tsx",
+    "src/screens/QuickSnap.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -8084,6 +8241,13 @@
    ]
   },
   {
+   "id": "170xbrm0ouys17",
+   "text": "Find Squish and add Quick snap. It fits on the Lock Screen too.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
+   ]
+  },
+  {
    "id": "172uemh-24bxwq",
    "text": "Free to try",
    "where": [
@@ -8180,6 +8344,13 @@
    "text": "Quick",
    "where": [
     "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
+   "id": "17ksjnt0vn2ik2",
+   "text": "Quick snaps",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
    ]
   },
   {
@@ -8481,6 +8652,7 @@
    "id": "18wuq59-mwm906",
    "text": "Change",
    "where": [
+    "src/components/QuickSnapsCard.tsx",
     "src/components/squad/SquadSheet.tsx"
    ]
   },
@@ -8489,6 +8661,13 @@
    "text": "Your targets are needed to plan a week.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "191by22-jdcep1",
+   "text": "The photo goes to Squish to be read and is deleted from the server as soon as it has been — usually within seconds. It counts as one photo read.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -8565,6 +8744,14 @@
    ]
   },
   {
+   "id": "19dss4d0u8u2vz",
+   "text": "Looks right",
+   "where": [
+    "src/components/QuickSnapsCard.tsx",
+    "src/screens/Diary.tsx"
+   ]
+  },
+  {
    "id": "19e2oyi-ipd6xd",
    "text": "Reach your water goal 7 days running",
    "where": [
@@ -8590,6 +8777,13 @@
    "text": "Leave the squad? You can join again with the code, if there is room.",
    "where": [
     "src/components/squad/SquadSheet.tsx"
+   ]
+  },
+  {
+   "id": "19m4w4i-vwkbwe",
+   "text": "Squish is offline, so photos cannot be read here.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -8653,6 +8847,13 @@
    "text": "Plain",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1a1hzhr-qrw3da",
+   "text": "Touch and hold an empty part of your home screen, then tap Widgets.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -8753,7 +8954,8 @@
    "id": "1apck8g-dunkum",
    "text": "Library",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/screens/Capture.tsx",
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -9338,6 +9540,13 @@
    ]
   },
   {
+   "id": "1dutw9f-j3frhe",
+   "text": "The camera is blocked for Squish. Take the photo with your phone’s camera instead — it is logged just the same.",
+   "where": [
+    "src/screens/QuickSnap.tsx"
+   ]
+  },
+  {
    "id": "1dvfj8a-n4yhet",
    "text": "Cooking steps for your planned meals come with {plus}.",
    "where": [
@@ -9623,6 +9832,13 @@
    "text": "photo analysis",
    "where": [
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "1ffunxz-9hbyuk",
+   "text": "No photo reads left for this snap from {when}.",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
    ]
   },
   {
@@ -10145,6 +10361,13 @@
    ]
   },
   {
+   "id": "1hwwhcz04tux0n",
+   "text": "For when there is no time, or holding your phone up would be rude: one tap opens the camera, one tap takes it, and you can put your phone away. Squish logs the meal for you to check later.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
+   ]
+  },
+  {
    "id": "1hxrrvg-axphft",
    "text": "Food quality is about what this was made of, out of 100 — not how much.",
    "where": [
@@ -10632,6 +10855,13 @@
    ]
   },
   {
+   "id": "1k4mzlz-sl0lic",
+   "text": "Try it now",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
+   ]
+  },
+  {
    "id": "1k4pqi508gvc51",
    "text": "14 g for every {energy} you eat: the usual guide for a healthy gut and heart.",
    "where": [
@@ -10784,7 +11014,8 @@
     "src/components/ui.tsx",
     "src/screens/AddFood.tsx",
     "src/screens/Ask.tsx",
-    "src/screens/Capture.tsx"
+    "src/screens/Capture.tsx",
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -11786,6 +12017,13 @@
    ]
   },
   {
+   "id": "1qis8w6-szrxv2",
+   "text": "Squish could not keep that photo just now.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1qj2noa-1yxgvn",
    "text": "That account did not share an email address, which Squish needs. Try another way to sign in.",
    "where": [
@@ -12543,6 +12781,13 @@
    ]
   },
   {
+   "id": "1uh4kdh0645hrc",
+   "text": "Widget",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "1ujfwe4-evtxxz",
    "text": "Join my Squish squad, {squad}! We cheer each other on. Code {code}:",
    "where": [
@@ -12724,6 +12969,13 @@
    "text": "sent you a cheer",
    "where": [
     "src/components/squad/SquadStrip.tsx"
+   ]
+  },
+  {
+   "id": "1vg6t0k-e24cz0",
+   "text": "Logged from your snap",
+   "where": [
+    "src/components/SnapSync.tsx"
    ]
   },
   {
@@ -12987,6 +13239,13 @@
    ]
   },
   {
+   "id": "1wybewa04hg0u6",
+   "text": "Touch and hold an empty part of your Home Screen, then tap Edit and Add Widget.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
+   ]
+  },
+  {
    "id": "1x0hrie09f8053",
    "text": "Turn reminders on",
    "where": [
@@ -13157,6 +13416,14 @@
    ]
   },
   {
+   "id": "1xsk8yn0mh3lks",
+   "one": "{n} to check",
+   "other": "{n} to check",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
+   ]
+  },
+  {
    "id": "1xu0nbg0xd88ci",
    "text": "Bran flakes",
    "where": [
@@ -13196,6 +13463,14 @@
    "text": "Friendly ghost",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "1xyj89e0xy1dih",
+   "text": "Squish could not read this photo.",
+   "where": [
+    "src/lib/snaps.ts",
+    "server/index.ts"
    ]
   },
   {
@@ -13246,6 +13521,13 @@
    "text": "Continue with Apple",
    "where": [
     "src/components/SignInWith.tsx"
+   ]
+  },
+  {
+   "id": "1ydd6ch0ioysct",
+   "text": "The Squish app for iPhone and Android has a Quick snap widget for the home screen and Lock Screen.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {

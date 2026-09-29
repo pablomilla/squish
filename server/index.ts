@@ -125,6 +125,7 @@ import {
   type Crockery,
 } from './claude';
 import { cleanSwapRequest, cleanWeekRequest, type SwapRequest } from './weekplan';
+import { cleanSnap, forgetSnaps, knownSnap, setSnapWorker, snapsFor, startSnap, sweepSnaps, type SnapAsk } from './snaps';
 import { cleanCookAsk, cleanLabelAsk, cookKey, keepSteps, keptSteps, labelKey, type CookAsk, type LabelAsk } from './cook';
 import { currentPlace, withPlace } from './region';
 import { msg } from '../src/lib/i18n';
@@ -144,7 +145,7 @@ app.use(withPlace);
  * Whose model routes an AI request follows: an admin's own, or everybody's
  * (server/routing.ts). Asked only on the routes that reach a model.
  */
-app.use(['/api/analyse', '/api/chat', '/api/recipe', '/api/weekplan', '/api/cook', '/api/coach'], (req, _res, next) => {
+app.use(['/api/analyse', '/api/snaps', '/api/chat', '/api/recipe', '/api/weekplan', '/api/cook', '/api/coach'], (req, _res, next) => {
   void isAdmin(req.device)
     .catch(() => false)
     .then((admin) => servedAs(admin ? 'admins' : 'everyone', next));
@@ -2345,6 +2346,87 @@ app.post('/api/analyse/photo', meter('photo'), async (req, res) => {
     // A rough guess to edit, not the AI's reading: it costs nothing.
     await giveBack(req, res, 'photo');
     res.json(demoEstimateFromPhoto(data.slice(0, 256), mealSlot));
+  }
+});
+
+/*
+ * Quick snaps (server/snaps.ts): a photo handed over from the widget's camera
+ * and read here, so they can put the phone away the moment it is taken.
+ */
+setSnapWorker({
+  read: async (ask) => {
+    if (!hasCredentials()) throw new Error('no AI');
+    // Logged without anybody looking, so no question to answer: they check it later.
+    return withoutQuestion(await analysePhoto(ask.image, ask.mediaType, ask.slot, undefined, ask.crockery));
+  },
+  onFail: (deviceId) => refund(deviceId, 'photo'),
+  failure: (error) => {
+    logFailure('snap', error);
+    return msg('Squish could not read this photo.');
+  },
+});
+
+// Abandoned reads failed and their photos deleted, week-old snaps gone: on every instance, hourly.
+setInterval(() => void sweepSnaps().catch((error) => logFailure('snap sweep', error)), 60 * 60_000).unref();
+
+/**
+ * Send a quick snap. Body: { id, image (data URL), date, time, slot?, crockery? }.
+ * Answers 202 as soon as it is kept, and reads it in the background: a photo
+ * read, counted as one. The same snap sent again (a retry after no signal)
+ * is answered the same and counted once.
+ */
+app.post('/api/snaps', requireDevice, async (req, res, next) => {
+  const ask = cleanSnap(req.body);
+  if (!ask) {
+    res.status(400).json({ error: msg('An image is required.') });
+    return;
+  }
+  try {
+    if (await knownSnap(req.device!.id, ask.id)) {
+      res.status(202).json({ id: ask.id });
+      return;
+    }
+  } catch (error) {
+    logFailure('snap known', error);
+    res.status(503).json({ error: msg('Squish could not keep that photo just now.') });
+    return;
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: 'no_ai', message: msg('Squish is offline, so photos cannot be read here.') });
+    return;
+  }
+  res.locals.snap = ask;
+  next();
+}, meter('photo'), async (req, res) => {
+  const ask = res.locals.snap as SnapAsk;
+  try {
+    await startSnap(req.device!.id, ask, res.locals.counted === 'photo');
+    res.status(202).json({ id: ask.id });
+  } catch (error) {
+    logFailure('snap', error);
+    await giveBack(req, res, 'photo');
+    res.status(503).json({ error: msg('Squish could not keep that photo just now.') });
+  }
+});
+
+/** This device's quick snaps: read, being read, or not readable. */
+app.get('/api/snaps', requireDevice, async (req, res) => {
+  try {
+    res.json({ snaps: await snapsFor(req.device!.id) });
+  } catch (error) {
+    logFailure('snaps', error);
+    res.status(503).json({ error: msg('Squish could not look for your snaps just now.') });
+  }
+});
+
+/** Snaps the app has logged, or let go of. Body: { ids }. */
+app.post('/api/snaps/collected', requireDevice, async (req, res) => {
+  try {
+    await forgetSnaps(req.device!.id, Array.isArray(req.body?.ids) ? req.body.ids : []);
+    res.json({ ok: true });
+  } catch (error) {
+    logFailure('snaps collected', error);
+    res.status(503).json({ error: msg('Squish could not look for your snaps just now.') });
   }
 });
 
