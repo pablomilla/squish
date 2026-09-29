@@ -1,4 +1,4 @@
-import type { AnalysisResult, Clarify, MealSlot } from '../types';
+import type { AnalysisResult, Clarify, CookSteps, MealEntry, MealSlot } from '../types';
 import { demoEstimateFromPhoto, estimateFromText } from './estimate';
 import { apiUrl } from './origin';
 import { deviceToken, forgetDevice } from './identity';
@@ -44,7 +44,7 @@ export const isPaywalled = (error: unknown): boolean =>
 /** What the server says when an allowance has run out. */
 export interface OutOfAllowance {
   plan: 'free' | 'plus';
-  kind: 'photo' | 'chat' | 'recipe' | 'weekplan';
+  kind: 'photo' | 'chat' | 'recipe' | 'weekplan' | 'cook';
   used: number;
   allowance: number;
   /** 'month' for Plus; 'ever' for the free taste, which does not come back. */
@@ -459,6 +459,16 @@ export async function waitingWeekPlan(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * How to cook a planned meal (server/cook.ts). Plus; a free plan gets the
+ * paywall. Written once per meal and kept on the server, so asking again for
+ * the same meal costs nothing — the app keeps them on the plan as well.
+ */
+export async function cookSteps(meal: Pick<MealEntry, 'title' | 'slot' | 'items'>): Promise<CookSteps> {
+  const items = meal.items.map((item) => ({ name: item.name, portion: item.portion, grams: item.grams, liquid: item.liquid }));
+  return (await post<{ steps: CookSteps }>('/api/cook', { title: meal.title, slot: meal.slot, items }, 60_000)).steps;
 }
 
 export async function requestWeekPlan(ask: WeekPlanAsk): Promise<WeekPlan> {

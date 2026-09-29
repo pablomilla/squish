@@ -829,6 +829,21 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table weekplan_jobs add column fill_model text;
     `,
   },
+  {
+    id: 33,
+    sql: `
+      -- How to cook a planned meal, written the first time somebody opens it
+      -- (server/cook.ts) and kept, so the same meal is never paid for twice.
+      -- Keyed by the meal, its language and its country, not by who asked:
+      -- a method holds nothing about the person.
+      create table cook_steps (
+        key text primary key,
+        steps jsonb not null,
+        model text,
+        created_at timestamptz not null default now()
+      );
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

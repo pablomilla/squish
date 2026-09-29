@@ -1,0 +1,47 @@
+/* A planned meal as a recipe (CookSheet.tsx): ingredients, method, and cooking one step at a time. */
+.cook { display: flex; flex-direction: column; gap: var(--s4); }
+.cook section { display: flex; flex-direction: column; gap: var(--s2); }
+.cook p { margin: 0; }
+.cook-meta { margin-top: -6px !important; }
+.cook-head { margin: 0; }
+
+.cook-ingredients { list-style: none; margin: 0; padding: 0; border-radius: var(--r-md); background: var(--surface-sunk); }
+.cook-ingredients li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.cook-ingredients li:first-child { border-top: 0; }
+.cook-ingredients .small { flex: none; text-align: end; }
+
+/* Numbered by the list, in a round badge, so a step reads at a glance. */
+.cook-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.cook-steps li { counter-increment: step; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; line-height: 1.45; }
+.cook-steps li::before {
+  content: counter(step); width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font-size: var(--text-caption); font-weight: 700;
+  background: var(--brand-soft); color: var(--brand-ink);
+}
+.cook-tip { padding: 10px 12px; border-radius: var(--r-md); background: var(--yellow-soft); color: var(--ink-2); line-height: 1.4; }
+.cook-writing { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; text-align: center; }
+.cook-ask { display: flex; flex-direction: column; gap: 8px; }
+.cook-failed { color: var(--bad); }
+.cook-actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* Cooking: the whole screen, one step, big enough to read from the hob. */
+.cook-mode {
+  position: fixed; inset: 0; z-index: 65; display: flex; flex-direction: column;
+  width: 100%; max-width: var(--max-w); margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
+  background: var(--bg);
+}
+.cook-mode-top { display: flex; align-items: center; justify-content: space-between; }
+.cook-mode-progress { display: flex; gap: 4px; margin: 10px 0 14px; }
+.cook-mode-progress span { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-sunk); transition: background 0.2s var(--ease); }
+.cook-mode-progress span.is-done { background: var(--brand); }
+.cook-mode-title { margin: 0; }
+.cook-mode-step {
+  flex: 1; display: flex; align-items: center; margin: 0; padding: 12px 0;
+  font-size: clamp(1.35rem, 5.6vw, 1.75rem); line-height: 1.4; font-weight: 600; color: var(--ink);
+  overflow-y: auto;
+}
+.cook-mode-foot { display: flex; flex-direction: column; gap: 10px; }
+.cook-mode-foot p { margin: 0; }
+.cook-mode-nav { display: flex; gap: 10px; }
+.cook-mode-nav .btn { min-height: 52px; }

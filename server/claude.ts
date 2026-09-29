@@ -27,6 +27,7 @@ import { msg } from '../src/lib/i18n';
 
 const AISLE_IDS = AISLES.map((a) => a.id);
 import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, weekPlanPrompt, type WeekPlanRequest } from './weekplan';
+import { COOK_SCHEMA, COOK_SYSTEM, cookPrompt, toCookSteps, type CookAsk, type CookSteps } from './cook';
 import { aimLines, eatingLines, type About } from '../src/lib/eating';
 
 /**
@@ -896,6 +897,36 @@ Pick the one thing most worth mentioning right now and say it kindly. Fit it to 
   return nudge;
 }
 
+
+/* ------------------------------------------------------------------ *
+ * How to cook a planned meal (server/cook.ts has the why).
+ * ------------------------------------------------------------------ */
+
+/** The steps for one planned meal, and which model wrote them. */
+export async function writeCookSteps(ask: CookAsk): Promise<{ steps: CookSteps; model: string }> {
+  return withModels('cook', (model, _attempt, signal) => cookOn(model, ask, signal));
+}
+
+async function cookOn(model: string, ask: CookAsk, signal: AbortSignal): Promise<{ steps: CookSteps; model: string }> {
+  const format = { type: 'json_schema', schema: COOK_SCHEMA } as const;
+  const response = await createMessage({
+    model,
+    max_tokens: 4000,
+    system: `${COOK_SYSTEM}\n\n${regionNote('cook')}`,
+    // Writing down a method is not a problem to reason about: no thinking where the model allows it, and little effort where it takes one.
+    ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
+      ? { ...thinkingOff(model), output_config: { effort: 'low' as const, format } }
+      : { output_config: { format } }),
+    messages: [{ role: 'user', content: cookPrompt(ask) }],
+  }, signal);
+
+  billed(priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model);
+  const answer = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('');
+  return { steps: toCookSteps(readAnswer(answer, response.stop_reason)), model: response.model };
+}
 
 /* ------------------------------------------------------------------ *
  * The nutritionist's weekly plan (server/weekplan.ts has the why).

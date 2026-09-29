@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 28 September 2026**
+**Last updated: 29 September 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -194,6 +194,7 @@ one of these things:
 | Import a recipe from a link | The text of that page |
 | Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept — and how you eat and what you want from Squish, if you told it when setting up |
 | Ask the nutritionist to plan your week | Your daily targets, goal and sex (for the minimum it will plan to), the names of meals you eat often and foods you have saved, the notes it has kept, how you eat (your diet, allergies and foods you never eat) and what you want from Squish, and anything you typed for the plan |
+| Open a planned meal for its recipe (Plus) | The meal's name and its ingredients with their amounts, and your diet if you told Squish one. Nothing else about you: the steps written are kept and shown to anybody who plans the same meal, so they hold nothing personal |
 | Open Home (the daily nudge) | The first name you gave, today's totals so far and your water, your streak, the titles of today's meals, and how you eat and what you want from Squish if you told it |
 
 Each of these also carries which of the six countries you chose (the UK,

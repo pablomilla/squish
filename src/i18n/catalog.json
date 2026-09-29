@@ -1,5 +1,5 @@
 {
- "version": "0p965660j6o2m5",
+ "version": "0cvbl7z06t3aum",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1056,6 +1056,13 @@
    ]
   },
   {
+   "id": "05tbstj-nuy1cw",
+   "text": "Ingredients",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "05tt7l00mruwg6",
    "text": "Balanced meal",
    "where": [
@@ -1643,6 +1650,13 @@
    "text": "Sporty pack",
    "where": [
     "src/lib/outfit.ts"
+   ]
+  },
+  {
+   "id": "0982hh60-aa1wn",
+   "text": "Try again",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -2542,6 +2556,7 @@
    "id": "0epw0dr0yglj5f",
    "text": "Recipe",
    "where": [
+    "src/components/PlanCard.tsx",
     "src/screens/AddFood.tsx"
    ]
   },
@@ -3187,6 +3202,13 @@
    "text": "First things first — what shall I call you?",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0in01kc-dc7wmn",
+   "text": "There is nothing in that meal to cook.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -4506,6 +4528,13 @@
    ]
   },
   {
+   "id": "0oxfxs50iwx33r",
+   "text": "Done — I made this",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "0oyp43g05y6y35",
    "text": "Account",
    "where": [
@@ -4758,6 +4787,13 @@
    "text": "One thing each on the head, face and neck. Tap something you have to put it on; tap it again to take it off.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0q5va4g0pblazc",
+   "text": "Step {n} of {total}",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -5157,6 +5193,13 @@
    ]
   },
   {
+   "id": "0slfq3p-xa3au8",
+   "text": "Stop cooking",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "0sn8rrs04cswhc",
    "text": "regular portion",
    "where": [
@@ -5451,6 +5494,13 @@
    "text": "Plan redone — {energy} a day",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0uky5kz0bteez0",
+   "text": "I made this",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -5803,6 +5853,7 @@
    "id": "0vxmqu70z3gewa",
    "text": "Part of {plus}.",
    "where": [
+    "src/components/CookSheet.tsx",
     "src/components/MealPlanPanel.tsx"
    ]
   },
@@ -5991,6 +6042,14 @@
    "text": "Snap a snack",
    "where": [
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "0x5uyzo-4kkf04",
+   "text": "The steps could not be written just now. Try again in a moment.",
+   "where": [
+    "src/components/CookSheet.tsx",
+    "server/index.ts"
    ]
   },
   {
@@ -6390,6 +6449,7 @@
    "id": "103m3c200vdyz9",
    "text": "P{protein}",
    "where": [
+    "src/components/CookSheet.tsx",
     "src/components/PlanCard.tsx",
     "src/components/TodayPlanning.tsx",
     "src/components/WeekPlanSheet.tsx"
@@ -7276,6 +7336,13 @@
    ]
   },
   {
+   "id": "15a38ie-vmpxr4",
+   "text": "Show me how to make it",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "15b1zfy09vr089",
    "text": "Your name can be letters, spaces, hyphens and apostrophes, up to 20.",
    "where": [
@@ -7473,6 +7540,13 @@
    "text": "Could not sign out just now.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "16cmxjk-k1j4se",
+   "text": "Method",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -7834,6 +7908,13 @@
    ]
   },
   {
+   "id": "17zoey70fi82ky",
+   "text": "about {minutes} min",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "181bln10fdcgic",
    "text": "Snacking and cravings",
    "where": [
@@ -7923,6 +8004,13 @@
    "text": "Pace ({unit}/week)",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "18l84dq0qeejqe",
+   "text": "For one, sized to your day. These amounts are what gets logged.",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -8413,6 +8501,13 @@
    ]
   },
   {
+   "id": "1bhqoze-cx84q8",
+   "text": "Next step",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "1bipuuc-o4kbd3",
    "text": "Continue",
    "where": [
@@ -8776,6 +8871,13 @@
    "text": "It was saved as {saved} under an earlier version of the score; by today's rules it is {score}.",
    "where": [
     "src/components/MealQuality.tsx"
+   ]
+  },
+  {
+   "id": "1dvfj8a-n4yhet",
+   "text": "Cooking steps for your planned meals come with {plus}.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -9167,6 +9269,13 @@
    ]
   },
   {
+   "id": "1g6xgy5-kflptf",
+   "text": "How to make {meal}",
+   "where": [
+    "src/components/PlanCard.tsx"
+   ]
+  },
+  {
    "id": "1g793kc-t2ezh6",
    "text": "Medal",
    "where": [
@@ -9461,7 +9570,7 @@
    "id": "1hmtyxl0q091gt",
    "text": "Squished it — {energy} logged today.",
    "where": [
-    "src/components/PlanCard.tsx"
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -9559,6 +9668,7 @@
    "id": "1hzmxtu-bwr122",
    "text": "Back",
    "where": [
+    "src/components/CookSheet.tsx",
     "src/screens/Onboarding.tsx"
    ]
   },
@@ -9712,6 +9822,13 @@
    ]
   },
   {
+   "id": "1ivrphb-dqkliw",
+   "text": "Start cooking",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "1iwu3yv-tdbpix",
    "text": "Nothing squished today — that’s fine. Tomorrow is a fresh page.",
    "where": [
@@ -9844,6 +9961,13 @@
    "text": "<b>Wild finishes</b> for Squish — rainbow, gold, holographic and more",
    "where": [
     "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "1j8at060d5mn6x",
+   "text": "Writing the steps needs the AI, and no key is configured on this server.",
+   "where": [
+    "server/index.ts"
    ]
   },
   {
@@ -10258,13 +10382,6 @@
    "text": "Missed you today",
    "where": [
     "src/lib/cheers.ts"
-   ]
-  },
-  {
-   "id": "1lkoe2t0yn1kx9",
-   "text": "Planned",
-   "where": [
-    "src/components/PlanCard.tsx"
    ]
   },
   {
@@ -10944,6 +11061,13 @@
    ]
   },
   {
+   "id": "1pi7kxc-y5uk3c",
+   "text": "Cooking {meal}",
+   "where": [
+    "src/components/CookSheet.tsx"
+   ]
+  },
+  {
    "id": "1pkgwh20i54g4f",
    "one": "Sign out {n} other device",
    "other": "Sign out {n} other devices",
@@ -11224,7 +11348,7 @@
    "id": "1qzyucu0p5pc7o",
    "text": "Squished it — {energy} logged.",
    "where": [
-    "src/components/PlanCard.tsx",
+    "src/components/CookSheet.tsx",
     "src/screens/Review.tsx"
    ]
   },
@@ -11269,6 +11393,13 @@
    "text": "Kūmara, baked",
    "where": [
     "src/lib/region.ts"
+   ]
+  },
+  {
+   "id": "1rbxrkd0d10wfz",
+   "text": "Your screen stays on while you cook.",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {
@@ -11959,6 +12090,13 @@
    "text": "Reading your diary",
    "where": [
     "src/lib/nutritionist-tools.ts"
+   ]
+  },
+  {
+   "id": "1v7fdon-hjta7l",
+   "text": "Writing the steps for you…",
+   "where": [
+    "src/components/CookSheet.tsx"
    ]
   },
   {

@@ -157,6 +157,21 @@ was finished and paid for on the server, counted against the person, and
 never seen. A plan that fails gives its question back, and is not counted as
 a plan.
 
+### Cooking steps for a planned meal
+
+Tapping a planned meal opens it as a recipe: its ingredients (the plan's own,
+free to everybody) and, for Plus, the method — written the first time the meal
+is opened (`/api/cook`, `server/cook.ts`), not with the plan, so a plan costs
+no more and arrives no later for meals that are never cooked from the app.
+
+A method is a short answer on the cheaper text model with thinking off: about
+800 tokens in and 300 out, so a fraction of a penny. It is kept by meal,
+language and country (`cook_steps`), so the same meal opened again — by
+anybody — costs nothing, and the app keeps it on the plan as well. Not counted
+against any allowance; a daily guard (`SQUISH_DAILY_COOK_STEPS`, 40) stops
+one device writing new ones all day. Its cost is shown with meal plans on the
+dashboard.
+
 A plan also survives the server restarting, which happens on every deploy.
 The request is kept with the job, and so is where the person is — country,
 energy unit and language — so a plan made again on another instance is

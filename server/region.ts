@@ -100,6 +100,8 @@ function languageRule(kind: NoteFor, place: Place): string {
         ? 'Write the message in it.'
         : kind === 'plan'
           ? 'Write the summary, every meal title, every ingredient name and every portion in it. Name each ingredient the same way every time it appears.'
+          : kind === 'cook'
+            ? 'Write every step and the tip in it.'
           : 'Write the title, every food name, every portion and the coachNote in it.';
   return [
     `Language: ${lang.name} (${lang.native}). ${what}`,
@@ -108,7 +110,7 @@ function languageRule(kind: NoteFor, place: Place): string {
   ].join('\n');
 }
 
-export type NoteFor = 'meal' | 'label' | 'recipe' | 'coach' | 'chat' | 'plan';
+export type NoteFor = 'meal' | 'label' | 'recipe' | 'coach' | 'chat' | 'plan' | 'cook';
 
 /**
  * The paragraph a prompt ends with. `for` picks what is worth saying: a label
@@ -150,6 +152,14 @@ export function regionNote(kind: NoteFor, place: Place = currentPlace()): string
         salt,
         `The diary figures you are given are in kcal and grams of salt; convert them when you talk about them. Where official advice comes into it, go by ${ADVICE[info.guidance]}.`,
       );
+      break;
+    case 'cook':
+      lines.push(
+        place.region === 'US'
+          ? 'Oven temperatures in °F, and the cooking words an American kitchen uses (broil, skillet, cilantro).'
+          : `Oven temperatures in °C, with the fan-oven figure beside it where it differs, and the cooking words used in ${info.name}.`,
+      );
+      if (place.diet) lines.push(`They are ${dietPhrase(place.diet)}: nothing you suggest may break that.`);
       break;
     case 'plan':
       lines.push(

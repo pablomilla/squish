@@ -118,10 +118,12 @@ import {
   TEXT_MODEL,
   translateBatch,
   WeekPlanError,
+  writeCookSteps,
   type CoachContext,
   type Crockery,
 } from './claude';
 import { cleanWeekRequest } from './weekplan';
+import { cleanCookAsk, cookKey, keepSteps, keptSteps, type CookAsk } from './cook';
 import { currentPlace, withPlace } from './region';
 import { msg } from '../src/lib/i18n';
 import { isTranslatable, languagePack, speakerFor, setTranslator, warmAll } from './translate';
@@ -140,7 +142,7 @@ app.use(withPlace);
  * Whose model routes an AI request follows: an admin's own, or everybody's
  * (server/routing.ts). Asked only on the routes that reach a model.
  */
-app.use(['/api/analyse', '/api/chat', '/api/recipe', '/api/weekplan', '/api/coach'], (req, _res, next) => {
+app.use(['/api/analyse', '/api/chat', '/api/recipe', '/api/weekplan', '/api/cook', '/api/coach'], (req, _res, next) => {
   void isAdmin(req.device)
     .catch(() => false)
     .then((admin) => servedAs(admin ? 'admins' : 'everyone', next));
@@ -255,7 +257,10 @@ const hits = new Map<string, { count: number; resetAt: number }>();
  * guessing down, so they stay per-device and per-day and have nothing to do
  * with which tier somebody is on.
  */
-const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify' | 'weekplan' | 'clarify', number> = {
+const GUARD: Record<'signin' | 'reset' | 'invite' | 'verify' | 'weekplan' | 'clarify' | 'cook', number> = {
+  // Cooking steps come with Plus's meal plans and are kept once written, so
+  // this only stops somebody opening meal after new meal all day long.
+  cook: Number(process.env.SQUISH_DAILY_COOK_STEPS ?? 40),
   // Answering the AI's question about a meal is free (it was our question),
   // so it is counted per day instead: plenty for every meal anybody eats.
   clarify: Number(process.env.SQUISH_DAILY_CLARIFY ?? 30),
@@ -278,6 +283,7 @@ const SPENT: Partial<Record<Spend, string>> = {
   invite: 'Too many codes tried from this device. Try again tomorrow.',
   verify: 'That is enough confirmation emails for one day. Check your spam folder for the last one.',
   clarify: 'That is a lot of questions for one day — tell me what to change in words instead.',
+  cook: 'That is a lot of new recipes for one day. The ones you have opened are kept — try this one tomorrow.',
 };
 
 /**
@@ -2731,6 +2737,66 @@ app.post('/api/analyse/clarify', meter('clarify'), async (req, res) => {
   } catch (error) {
     logFailure('clarify', error);
     res.status(502).json({ error: msg('I could not work that out — try editing it by hand.') });
+  }
+});
+
+/**
+ * How to cook a planned meal. Body: { title, slot, items } — the plan as the
+ * app holds it. Answers { steps } (server/cook.ts).
+ *
+ * Plus, like the meal plans it belongs to. A meal whose steps were written
+ * before — for anybody, since a method says nothing about who asked — is
+ * answered from what was kept and counts for nothing; only a new one passes
+ * the daily guard and reaches a model.
+ */
+app.post('/api/cook', async (req, res, next) => {
+  const ask = cleanCookAsk(req.body);
+  if (!ask) {
+    res.status(400).json({ error: msg('There is nothing in that meal to cook.') });
+    return;
+  }
+  let plan: Plan;
+  try {
+    plan = req.device ? await planFor(req.device) : 'free';
+  } catch (error) {
+    // Not knowing whether they have Plus is not a reason to assume they do.
+    logFailure('cook steps plan', error);
+    res.status(503).json({ error: msg('The steps could not be written just now. Try again in a moment.') });
+    return;
+  }
+  if (plan === 'free') {
+    res.status(402).json({
+      error: 'out_of_allowance', plan, kind: 'cook', used: 0, allowance: 0, period: 'ever',
+      needsAccount: false, resets: null, message: `Cooking steps for your meal plans are part of ${PLUS}.`,
+    });
+    return;
+  }
+  try {
+    const key = cookKey(ask, currentPlace());
+    const kept = await keptSteps(key);
+    if (kept) {
+      res.json({ steps: kept });
+      return;
+    }
+  } catch (error) {
+    // Reading what was kept is a saving, not a requirement: write it afresh.
+    logFailure('cook steps kept', error);
+  }
+  if (!hasCredentials()) {
+    res.status(503).json({ error: msg('Writing the steps needs the AI, and no key is configured on this server.') });
+    return;
+  }
+  res.locals.cookAsk = ask;
+  next();
+}, meter('cook'), async (_req, res) => {
+  const ask = res.locals.cookAsk as CookAsk;
+  try {
+    const { steps, model } = await writeCookSteps(ask);
+    await keepSteps(cookKey(ask, currentPlace()), steps, model).catch((error) => logFailure('cook steps keep', error));
+    res.json(readBy({ steps }, 'cook'));
+  } catch (error) {
+    logFailure('cook steps', error);
+    res.status(502).json({ error: msg('The steps could not be written just now. Try again in a moment.') });
   }
 });
 

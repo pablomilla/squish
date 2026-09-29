@@ -263,7 +263,7 @@ already has an account is refused, and the change is recorded under Settings.
 
 **Choosing the model for each job, with backups.** AI usage → **AI models** lists every AI job —
 meal photos, labels, typed and spoken meals, filling in figures, recipe imports, the nutritionist,
-meal plans, the daily nudge and translating the app — each with a model and up to two backups. A
+meal plans, cooking steps for a planned meal, the daily nudge and translating the app — each with a model and up to two backups. A
 job asks its model first; if that fails (an outage, an overload, a refusal, an answer that does not
 parse, or no answer in time), the backup answers instead, so one company's bad hour is a slower
 answer rather than a meal logged as a guess. The time allowed before handing over is set per job

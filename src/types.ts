@@ -131,6 +131,19 @@ export interface MealEntry {
   photo?: string;
   source: 'photo' | 'describe' | 'search' | 'manual' | 'favourite';
   aiConfidence?: 'high' | 'medium' | 'low';
+  /**
+   * How to cook it: plans only, written the first time the plan is opened
+   * (server/cook.ts) and kept here so it opens at once, and offline, after
+   * that. Left behind when the plan is eaten: the diary records the food.
+   */
+  cook?: CookSteps;
+}
+
+export interface CookSteps {
+  /** From starting to eating, roughly. */
+  minutes: number;
+  steps: string[];
+  tip?: string;
 }
 
 export interface DayLog {

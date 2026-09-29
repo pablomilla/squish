@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DayLog, Draft, FoodItem, MealEntry, Profile, Targets } from '../types';
+import type { CookSteps, DayLog, Draft, FoodItem, MealEntry, Profile, Targets } from '../types';
 import {
   CARBS_MAX_SHARE,
   FAT_MAX_SHARE,
@@ -129,6 +129,8 @@ interface SquishState {
   removePlan: (id: string) => void;
   /** Log a plan as eaten: today at the time now, or on its own day if that has passed. */
   eatPlan: (id: string) => MealEntry | undefined;
+  /** Keep a plan's cooking steps once written, so they are never asked for again. */
+  setPlanCook: (id: string, cook: CookSteps) => void;
   toggleShoppingTick: (key: string) => void;
   addShoppingExtra: (name: string) => void;
   removeShoppingExtra: (id: string) => void;
@@ -394,10 +396,12 @@ export const useSquish = create<SquishState>()(
         // A plan for a day that has gone is logged on that day; one for today
         // or later is logged now, because now is when it was eaten.
         const past = plan.date < today;
-        const { id: _planId, ...rest } = plan;
+        const { id: _planId, cook: _cook, ...rest } = plan;
         set({ plans: get().plans.filter((p) => p.id !== id) });
         return get().addMeal({ ...rest, date: past ? plan.date : today, time: past && plan.time ? plan.time : undefined });
       },
+
+      setPlanCook: (id, cook) => set({ plans: get().plans.map((p) => (p.id === id ? { ...p, cook } : p)) }),
 
       day: (date) => get().days[date] ?? emptyDay(date),
 

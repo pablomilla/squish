@@ -35,6 +35,8 @@ const USED: Record<OutOfAllowance['kind'], () => string> = {
   chat: () => t("You have used this month's questions for the nutritionist."),
   recipe: () => t("You have used this month's recipe imports."),
   weekplan: () => t("You have used this month's weekly plans from the nutritionist."),
+  // Never counted against a month; here so every kind has its words.
+  cook: () => t('Cooking steps for your planned meals come with {plus}.', { plus: PLUS }),
 };
 
 const COME_WITH: Record<OutOfAllowance['kind'], () => string> = {
@@ -42,6 +44,7 @@ const COME_WITH: Record<OutOfAllowance['kind'], () => string> = {
   chat: () => t('Questions for the nutritionist come with {plus}.', { plus: PLUS }),
   recipe: () => t('Recipe imports come with {plus}.', { plus: PLUS }),
   weekplan: () => t('Weekly plans from the nutritionist come with {plus}.', { plus: PLUS }),
+  cook: () => t('Cooking steps for your planned meals come with {plus}.', { plus: PLUS }),
 };
 
 const THAT_WAS: Record<OutOfAllowance['kind'], (n: number) => string> = {
@@ -49,10 +52,11 @@ const THAT_WAS: Record<OutOfAllowance['kind'], (n: number) => string> = {
   chat: (n) => plural(n, { one: 'That was your {n} free question for the nutritionist. From here, they are part of {plus}.', other: 'That was your {n} free questions for the nutritionist. From here, they are part of {plus}.' }, { plus: PLUS }),
   recipe: (n) => plural(n, { one: 'That was your {n} free recipe import. From here, they are part of {plus}.', other: 'That was your {n} free recipe imports. From here, they are part of {plus}.' }, { plus: PLUS }),
   weekplan: (n) => plural(n, { one: 'That was your {n} free weekly plan. From here, they are part of {plus}.', other: 'That was your {n} free weekly plans. From here, they are part of {plus}.' }, { plus: PLUS }),
+  cook: () => t('Cooking steps for your planned meals come with {plus}.', { plus: PLUS }),
 };
 
 /** Reached by trying to use the nutritionist: the sheet leads with it. */
-const aboutNutritionist = (kind: OutOfAllowance['kind']) => kind === 'chat' || kind === 'weekplan';
+const aboutNutritionist = (kind: OutOfAllowance['kind']) => kind === 'chat' || kind === 'weekplan' || kind === 'cook';
 
 /** The day the month turns over, said the way a person would say it. */
 function comesBack(iso: string | null | undefined): string {
