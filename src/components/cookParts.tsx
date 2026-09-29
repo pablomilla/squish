@@ -171,7 +171,7 @@ export function Ingredients({ items, servings = 1 }: { items: MealEntry['items']
 /**
  * One step at a time, big enough to read from across a kitchen, with the
  * screen kept awake where the browser allows — nobody should have to unlock a
- * phone with floury hands. Each step has a drawing of what it does, the foods
+ * phone with floury hands. Each step has a picture of what it does, the foods
  * it uses (for however many it serves), and a timer when it has something to
  * wait for: the timer keeps going between steps, and says so at the top.
  */
@@ -198,8 +198,6 @@ export function CookMode({
   const details = detailsFor(steps, detail);
   const step = details[at];
   const using = usedIn(steps[at], items);
-  // In the drawing: this step's foods; for serving, the whole meal.
-  const foods = [...new Set((using.length || step.action !== 'serve' ? using : items).map((i) => i.emoji).filter((e): e is string => Boolean(e) && e !== '🍽️'))];
   const timer = useStepTimer();
 
   // Keep the screen on, and take it back when the page comes back into view:
@@ -269,7 +267,7 @@ export function CookMode({
 
       <div className="cook-mode-body">
         <div className="cook-mode-art" key={at}>
-          <StepArt action={step.action} foods={foods} />
+          <StepArt action={step.action} />
         </div>
 
         <p className="cook-mode-step" dir="auto" aria-live="polite">

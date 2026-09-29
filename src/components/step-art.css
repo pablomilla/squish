@@ -1,18 +1,3 @@
 /* Cook mode's pictures (StepArt.tsx), on a soft blob in the app's own colour. */
 .step-art { width: 100%; max-width: 300px; height: auto; display: block; margin: 0 auto; }
 .sa-blob { fill: var(--brand-soft); }
-
-/* The step's own foods, as their emoji, sitting in the scene's light and moving with it: bobbing in the pot, jumping in the pan. */
-.sa-emoji { transform-box: fill-box; transform-origin: center; filter: drop-shadow(0 1.5px 1.5px rgb(0 0 0 / 0.22)); }
-.sa-foods--boil .sa-emoji { animation: sa-bob 1.8s ease-in-out infinite; }
-.sa-foods--fry .sa-emoji { animation: sa-jump 1.2s ease-in-out infinite; }
-.sa-foods--mix .sa-emoji, .sa-foods--blend .sa-emoji { animation: sa-tumble 2.4s ease-in-out infinite; }
-.sa-foods--rinse .sa-emoji { animation: sa-bob 2.2s ease-in-out infinite; }
-
-@keyframes sa-bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(0.85); } }
-@keyframes sa-jump { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-7px) rotate(-8deg); } }
-@keyframes sa-tumble { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(14deg) translateY(-3px); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .step-art * { animation: none !important; }
-}
