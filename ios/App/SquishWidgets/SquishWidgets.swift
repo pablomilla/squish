@@ -12,6 +12,8 @@ import WidgetKit
  * data to share with the app and nothing on the widget ever changes.
  *
  * Added to the Xcode project as a Widget Extension target: see docs/widgets.md.
+ * Its words are English only for now; translating them is on the to-do list
+ * there, for once the widget is running on a phone.
  */
 
 private let snapURL = URL(string: "squish://snap")!

@@ -116,5 +116,26 @@ No App Group is needed — the widget shares nothing with the app but a link.
 - `App.getLaunchUrl()` on a cold start from a widget is read once per session,
   so a page reload does not reopen the camera. If the camera does *not* open on
   a cold start, the launch URL is arriving later than the app asks for it.
-- Widget text is English for now. The app's own words are translated as
-  usual; the widget's three strings (`strings.xml`, and the Swift) are not yet.
+- Widget text is English for now: see **To do** below.
+
+## To do once the widgets are running on a phone
+
+**Translate the widget labels.** The app's own words are translated as usual,
+but the widgets' are not: they live in the native projects, outside the
+catalog. Wait until both widgets have been seen working on a real phone, so
+the wording is settled before it is put into 24 languages. Then:
+
+- **Android:** the four strings marked "Quick snap" in
+  `android/app/src/main/res/values/strings.xml` (`widget_snap_label`,
+  `widget_snap_name`, `widget_snap_description`, `shortcut_snap_long`), copied
+  into a `values-<lang>/strings.xml` for each language in
+  `src/lib/language.ts` (`values-es`, `values-zh-rCN`, `values-pt-rPT`, …).
+- **iPhone:** the text in `ios/App/SquishWidgets/SquishWidgets.swift` ("Quick
+  snap", "Squish", the two descriptions). Add a String Catalog
+  (`Localizable.xcstrings`) to the SquishWidgets target in Xcode; it picks up
+  every `Text` and `LocalizedStringResource` from the Swift, and the
+  translations go in there.
+- The words to use are already translated in the app's catalog: "Quick snap"
+  is on You, and the description matches the one in
+  `src/components/QuickSnapHelp.tsx`. Take those rather than translating them
+  afresh, so the widget and the app say the same thing.

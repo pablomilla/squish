@@ -177,3 +177,6 @@ allowance.
 - Native-speaker review. Claude's translations are good but not checked by a
   person; the ones that matter most (onboarding, the paywall) are worth a look
   by someone fluent in each launch language.
+- The Quick snap widgets' labels (Android and iPhone). They are in the native
+  projects, not the catalog, and wait until the widgets run on a phone: see
+  [widgets.md](widgets.md#to-do-once-the-widgets-are-running-on-a-phone).
