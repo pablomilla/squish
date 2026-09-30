@@ -388,7 +388,8 @@ export type Route =
   | { name: 'you'; open?: YouSheet }
   /** `shot` opens straight into that mode — a barcode is two taps, not three. */
   | { name: 'capture'; slot?: MealSlot; date?: string; shot?: 'plate' | 'label' | 'barcode' }
-  | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites' }
+  /** `recipeUrl` is read as soon as it opens, and `text` typed into Describe: both from a share (src/lib/shareIn.ts). */
+  | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites'; recipeUrl?: string; text?: string }
   /** `question` is asked as soon as the screen opens: a tap on a suggested question is the question. */
   /** `question` is asked on arrival; `draft` is only typed into the box, to send or change. */
   | { name: 'ask'; question?: string; draft?: string; tab?: 'ask' | 'plan' }

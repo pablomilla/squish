@@ -180,3 +180,5 @@ allowance.
 - The Quick snap widgets' labels (Android and iPhone). They are in the native
   projects, not the catalog, and wait until the widgets run on a phone: see
   [widgets.md](widgets.md#to-do-once-the-widgets-are-running-on-a-phone).
+  The iPhone share extension's two messages ("Sending to Squish…", "Sent to
+  Squish…", in `ios/App/SquishShare/ShareViewController.swift`) go with them.

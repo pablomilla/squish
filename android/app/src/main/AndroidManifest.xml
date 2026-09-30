@@ -31,6 +31,21 @@
                 <data android:scheme="squish" android:host="snap" />
             </intent-filter>
 
+            <!-- Share a recipe, or a few words about a meal, from any app's
+                 share sheet (MainActivity hands it on as squish://share). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- …and the link it becomes. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="squish" android:host="share" />
+            </intent-filter>
+
             <!-- Touch and hold the icon: Quick snap. -->
             <meta-data
                 android:name="android.app.shortcuts"

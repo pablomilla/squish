@@ -29,6 +29,10 @@ a browser behaves exactly as it did.
   Android, all opening `squish://snap`. The Android side is in place; the
   iPhone widget needs its target adding in Xcode once. See
   [widgets.md](widgets.md).
+- **Sharing into Squish**: a recipe link from any app's share sheet opens the
+  recipe import, already reading it. Android is in place; the iPhone needs a
+  Share Extension target and an App Group added in Xcode once. See
+  [share-in.md](share-in.md).
 
 ## What needs your Mac
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AnalysisResult, FoodItem, MealSlot } from '../types';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
@@ -39,6 +39,10 @@ interface Props {
   slot?: MealSlot;
   date?: string;
   initialTab?: Tab;
+  /** Shared from another app: a recipe link, read as soon as the screen opens. */
+  sharedUrl?: string;
+  /** Shared words, typed into Describe but not sent. */
+  sharedText?: string;
   onCancel: () => void;
   onReady: (analysis: AnalysisResult, options: { slot?: MealSlot; date?: string }) => void;
 }
@@ -49,7 +53,7 @@ const EXAMPLES = [
   t('porridge with blueberries and a spoon of peanut butter'),
 ];
 
-export default function AddFood({ slot, date, initialTab = 'search', onCancel, onReady }: Props) {
+export default function AddFood({ slot, date, initialTab = 'search', sharedUrl, sharedText, onCancel, onReady }: Props) {
   const toast = useToast();
   const favourites = useSquish((s) => s.favourites);
   const recipes = useSquish((s) => s.recipes);
@@ -58,11 +62,11 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
   const [tab, setTab] = useState<Tab>(initialTab);
   const [query, setQuery] = useState('');
   const [basket, setBasket] = useState<FoodItem[]>([]);
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(sharedText ?? '');
   const [busy, setBusy] = useState(false);
   const [quickKcal, setQuickKcal] = useState(250);
   const [quickProtein, setQuickProtein] = useState(10);
-  const [recipeUrl, setRecipeUrl] = useState('');
+  const [recipeUrl, setRecipeUrl] = useState(sharedUrl ?? '');
   const [recipe, setRecipe] = useState<RecipeImport | null>(null);
   const [helpings, setHelpings] = useState(1);
   // Whether any of the description was spoken, for the "Say it" badge.
@@ -93,12 +97,12 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
     );
   };
 
-  const readRecipe = async () => {
-    if (!recipeUrl.trim() || busy) return;
+  const readRecipe = async (url = recipeUrl) => {
+    if (!url.trim() || busy) return;
     setBusy(true);
     setRecipe(null);
     try {
-      const imported = await importRecipe(recipeUrl.trim(), mealSlot);
+      const imported = await importRecipe(url.trim(), mealSlot);
       setRecipe(imported);
       setHelpings(1);
       useSquish.getState().unlock('first-recipe');
@@ -122,6 +126,16 @@ export default function AddFood({ slot, date, initialTab = 'search', onCancel, o
     grams: item.grams === undefined ? undefined : Math.round(item.grams * helpings),
     nutrients: scaleNutrients(item.nutrients, helpings),
   });
+
+  // Shared in: read it straight away, once — they sent it here to be read.
+  const readShared = useRef(false);
+  useEffect(() => {
+    if (!sharedUrl || readShared.current) return;
+    readShared.current = true;
+    void readRecipe(sharedUrl);
+    // Once, on arrival: readRecipe is made afresh every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedUrl]);
 
   const useRecipe = () => {
     if (!recipe) return;

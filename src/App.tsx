@@ -21,6 +21,8 @@ import SquadSync from './components/squad/SquadSync';
 import AchievementSync from './components/AchievementSync';
 import SnapSync from './components/SnapSync';
 import { onSnapLink, openedToSnap } from './lib/launch';
+import { openedWithShare, type Shared } from './lib/shareIn';
+import { onShareIn } from './lib/shareInApp';
 import { snapPhotoKeys } from './lib/snaps';
 import { draftOf } from './lib/draft';
 import UpdateWatcher from './components/UpdateWatcher';
@@ -80,6 +82,10 @@ function useServer(): { awake: boolean; keepsData: boolean } {
   return { awake: status !== null, keepsData: Boolean(status?.accounts) };
 }
 
+/** Where something shared from another app goes: a link to be read as a recipe, words to be described. */
+const sharedRoute = (shared: Shared): Route =>
+  shared.kind === 'recipe' ? { name: 'add', tab: 'recipe', recipeUrl: shared.url } : { name: 'add', tab: 'describe', text: shared.text };
+
 function Shell() {
   const onboarded = useSquish((s) => s.profile.onboarded);
   const tooYoung = useSquish((s) => s.profile.age < MIN_AGE);
@@ -105,8 +111,15 @@ function Shell() {
   }, []);
 
   // Opened from a widget or a shortcut: straight into the camera, before anything else.
-  const [route, setRoute] = useState<Route>(() => (useSquish.getState().profile.onboarded && openedToSnap() ? { name: 'snap' } : { name: 'home' }));
+  // …or with something shared from another app: to the recipe import, or to Describe.
+  const [route, setRoute] = useState<Route>(() => {
+    const onboarded = useSquish.getState().profile.onboarded;
+    if (onboarded && openedToSnap()) return { name: 'snap' };
+    const shared = openedWithShare();
+    return onboarded && shared ? sharedRoute(shared) : { name: 'home' };
+  });
   useEffect(() => onSnapLink(() => useSquish.getState().profile.onboarded && setRoute({ name: 'snap' })), []);
+  useEffect(() => onShareIn((shared) => useSquish.getState().profile.onboarded && setRoute(sharedRoute(shared))), []);
 
   useEffect(() => startBackup(keepsData), [keepsData]);
 
@@ -269,7 +282,7 @@ function Shell() {
         <Capture slot={route.slot} date={route.date} shot={route.shot} onCancel={home} onAnalysed={openReview} go={go} />
       )}
       {route.name === 'add' && (
-        <AddFood slot={route.slot} date={route.date} initialTab={route.tab} onCancel={home} onReady={openReview} />
+        <AddFood slot={route.slot} date={route.date} initialTab={route.tab} sharedUrl={route.recipeUrl} sharedText={route.text} onCancel={home} onReady={openReview} />
       )}
       {route.name === 'ask' && <Ask key={`${route.question ?? ''}|${route.draft ?? ''}|${route.tab ?? ''}`} onClose={home} question={route.question} draft={route.draft} tab={route.tab} />}
       {route.name === 'admin' && <Admin onClose={() => setRoute({ name: 'you' })} />}
