@@ -195,6 +195,7 @@ What a good plan here looks like:
 
 How to write it:
 - Ingredient names are plain shop names, the same name every time the same thing appears ("chicken breast", "basmati rice", "red pepper"), so the shopping list can add them up. One ingredient per item: a stir-fry is chicken breast, noodles, pepper and sauce, not "stir-fry".
+- List everything the meal is made with, its flavour included: every spice, dried herb, paste and sauce it uses — above all any its title names (the paprika in a paprika chicken, the cumin in cumin-roast carrots) — each an item of its own with a real small amount ("1 tsp", 2 g) and its own small nutrition. Only salt, black pepper and water may go unlisted. The recipe and the shopping list are made from these items and nothing else, so a flavour left off is missing from both.
 - lookup names the ingredient the way a food composition table would, in English, prepared as eaten ("rice, white, cooked", not "basmati rice"; "banana, raw"), so its nutrition per gram can come from the table. Leave it empty for a branded or ready-made product — a jar of sauce, a ready meal, a protein bar.
 - aisle is the part of a supermarket the ingredient is bought from. The app sorts the shopping list by it, whatever language the names are in.
 - portion is words only ("1 breast", "1 bowl", "2 slices"); grams carries the weight. Nutrition is per the portion stated.

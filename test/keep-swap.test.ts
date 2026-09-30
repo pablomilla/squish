@@ -201,3 +201,11 @@ test('a swap is asked of the cheaper text model first, without thinking, under t
   assert.deepEqual(request.thinking, { type: 'disabled' });
   assert.equal(request.output_config?.effort, 'low');
 });
+
+test('a plan lists what a meal is flavoured with, above all what its title names', () => {
+  // A "Crispy Paprika Chicken" came back with no paprika: spices weigh almost nothing, so they were left off,
+  // and the recipe and the shopping list are made from the items alone.
+  assert.match(WEEKPLAN_SYSTEM, /every spice, dried herb, paste and sauce it uses/);
+  assert.match(WEEKPLAN_SYSTEM, /the paprika in a paprika chicken/);
+  assert.match(WEEKPLAN_SYSTEM, /Only salt, black pepper and water may go unlisted/);
+});
