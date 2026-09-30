@@ -199,10 +199,10 @@ export function Micronutrients({ totals, targets, meal = false }: { totals: Nutr
   );
 }
 
-export function MacroBars({ totals, targets, compact = false }: { totals: Nutrients; targets: Targets; compact?: boolean }) {
+export function MacroBars({ totals, targets, compact = false, only }: { totals: Nutrients; targets: Targets; compact?: boolean; /** Just these, for the essentials view. */ only?: readonly (typeof MACROS)[number][] }) {
   return (
     <div className={`macro-bars ${compact ? 'macro-bars--compact' : ''}`}>
-      {MACROS.map((key) => {
+      {MACROS.filter((key) => !only || only.includes(key)).map((key) => {
         const value = Math.round(totals[key]);
         const target = Math.round(targets[key]);
         const fraction = Math.min(1, pct(value, target));

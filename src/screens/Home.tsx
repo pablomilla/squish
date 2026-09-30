@@ -21,6 +21,7 @@ import { useSubscribed } from '../components/useSubscribed';
 import FriendNudge from '../components/FriendNudge';
 import PolicyNotice from '../components/PolicyNotice';
 import QuickSnapsCard from '../components/QuickSnapsCard';
+import { useEssentials, useMoreDetail } from '../components/useDetail';
 import SquadStrip from '../components/squad/SquadStrip';
 import { useCheerInbox, useSquad } from '../components/squad/useSquad';
 import './home.css';
@@ -34,6 +35,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
     useSquish();
   const [checking, setChecking] = useState<Checkin | null>(null);
   const [detail, setDetail] = useState(false);
+  // Just the essentials: calories left, protein, water and the meals; the rest a tap away.
+  const essentials = useEssentials();
+  const more = useMoreDetail();
   const inbox = useCheerInbox();
   const squad = useSquad();
   const cheered = inbox.length > 0 && squad.kind === 'in';
@@ -192,17 +196,18 @@ export default function Home({ go }: { go: (route: Route) => void }) {
             </p>
           </div>
           <div className="home-today-bars">
-            <MacroBars totals={totals} targets={targets} compact />
-            {totals.calories > 0 && (
+            <MacroBars totals={totals} targets={targets} compact only={more.full ? undefined : ['protein']} />
+            {more.full && totals.calories > 0 && (
               <button type="button" className="more-link tiny" onClick={() => setDetail(true)}>
                 {dayDetailTitle()} ›
               </button>
             )}
+            {more.toggle}
           </div>
         </div>
         {/* Anything over a limit is said up front; the rest of the detail is a
             tap away, so the ring and the buttons to log with share a screen. */}
-        <OverTargetNote over={overTargets(totals, targets)} />
+        {more.full && <OverTargetNote over={overTargets(totals, targets)} />}
 
         {(todaysMeals.length > 0 || plannedToday.length > 0) && (
           <div className="home-strip">
@@ -236,6 +241,7 @@ export default function Home({ go }: { go: (route: Route) => void }) {
           onWater={(glasses) => setWater(today, glasses)}
           onSteps={(steps) => setSteps(today, steps)}
           onOpen={setChecking}
+          only={more.full ? undefined : ['water']}
         />
       </section>
 
@@ -260,8 +266,9 @@ export default function Home({ go }: { go: (route: Route) => void }) {
 
       <NutritionistCard go={go} />
 
-      <FriendNudge onOpenYou={() => go({ name: 'you', open: 'friends' })} />
-      {!cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
+      {/* Friends and squads are for Everything; a cheer that arrives still shows above. */}
+      {!essentials && <FriendNudge onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
+      {!essentials && !cheered && <SquadStrip onOpenYou={() => go({ name: 'you', open: 'friends' })} />}
 
       <DayDetailSheet open={detail} onClose={() => setDetail(false)} date={today} totals={totals} targets={targets} />
 

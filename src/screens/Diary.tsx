@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Route } from '../types';
 import type { MealEntry, MealSlot } from '../types';
 import { MealThumb } from '../components/MealCard';
+import MoreDetail from '../components/MoreDetail';
+import { useEssentials, useMoreDetail } from '../components/useDetail';
 import CheckinTiles, { type Checkin } from '../components/CheckinTiles';
 import CheckinSheets from '../components/CheckinSheets';
 import { MacroBars, Micronutrients, MinorNutrients, OverTargetNote, ProgressRing, ScoreMeter } from '../components/charts';
@@ -42,6 +44,9 @@ const SLOTS: { key: MealSlot; label: string; plan: string; addTo: string; snap: 
 export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; onEditMeal: (meal: MealEntry) => void }) {
   const toast = useToast();
   const { meals, days, targets, removeMeal, confirmMeal, setWater, setSteps, profile, plans } = useSquish();
+  // Just the essentials: the day's calories, protein and meals; scores and the rest a tap away.
+  const essentials = useEssentials();
+  const more = useMoreDetail();
   const [date, setDate] = useState(isoDate());
   const [selected, setSelected] = useState<MealEntry | null>(null);
   const [picking, setPicking] = useState(false);
@@ -159,7 +164,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             {/* Food quality under the ring, where there is room, rather than a row of its own above the bars. */}
             <div className="diary-ring">
               <ProgressRing value={totals.calories} target={targets.calories} size={120} />
-              <div className="diary-verdict">
+              {more.full && <div className="diary-verdict">
                 <span className="tiny muted">{t('Food quality')}</span>
                 {score > 0 ? (
                   // Tappable: what the score is and what moved it. Today, until
@@ -173,19 +178,20 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                 ) : (
                   <span className="badge">{t('Nothing logged')}</span>
                 )}
-              </div>
+              </div>}
             </div>
             <div className="grow diary-bars">
-              <MacroBars totals={totals} targets={targets} compact />
+              <MacroBars totals={totals} targets={targets} compact only={more.full ? undefined : ['protein']} />
               {/* Sugar, salt and the vitamins, a tap away, so the day fits on one screen. */}
-              {totals.calories > 0 && (
+              {more.full && totals.calories > 0 && (
                 <button type="button" className="more-link tiny" onClick={() => setDetail(true)}>
                   {dayDetailTitle()} ›
                 </button>
               )}
+              {more.toggle}
             </div>
           </div>
-          <OverTargetNote over={verdict.over} />
+          {more.full && <OverTargetNote over={verdict.over} />}
           <CheckinTiles
             water={day?.water ?? 0}
             waterTarget={targets.water}
@@ -196,6 +202,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             onWater={(glasses) => setWater(date, glasses)}
             onSteps={(steps) => setSteps(date, steps)}
             onOpen={setChecking}
+            only={more.full ? undefined : ['water']}
           />
         </section>
       )}
@@ -248,7 +255,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
                       {meal.quick && <span className="badge diary-meal-check">{t('to check')}</span>}
                     </span>
                   </span>
-                  <span className="diary-meal-score">{meal.score}</span>
+                  {!essentials && <span className="diary-meal-score">{meal.score}</span>}
                 </button>
               ))}
             </div>
@@ -265,7 +272,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <div className="stack">
             {selected.photo && <MealPhoto meal={selected} />}
             <div className="row" style={{ gap: 12 }}>
-              <ScoreMeter score={selected.score} size={54} />
+              {!essentials && <ScoreMeter score={selected.score} size={54} />}
               <div>
                 <b style={{ fontSize: 24 }}>{formatEnergy(selected.nutrients.calories)}</b>
                 <p className="tiny muted">
@@ -303,6 +310,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
               </div>
             )}
 
+            <MoreDetail>
             <MealQuality meal={selected} />
             <AskLink
               question={t('How could I make my {meal} even better?', { meal: selected.title.trim().toLocaleLowerCase() })}
@@ -315,6 +323,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             <MacroBars totals={selected.nutrients} targets={targets} compact />
             <MinorNutrients totals={selected.nutrients} targets={targets} />
             <Micronutrients totals={selected.nutrients} targets={targets} meal />
+            </MoreDetail>
 
             <div className="card card--tint card--flat">
               {selected.items.map((item) => (

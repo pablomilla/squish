@@ -1,5 +1,5 @@
 {
- "version": "17fh63h04v6gc1",
+ "version": "04qxf27-uzg0ue",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -2057,6 +2057,13 @@
    "text": "{name}, locked — {how}",
    "where": [
     "src/components/ShareSheet.tsx",
+    "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0b2htg8-w3w3c4",
+   "text": "Essentials",
+   "where": [
     "src/screens/You.tsx"
    ]
   },
@@ -4462,6 +4469,14 @@
    ]
   },
   {
+   "id": "0nc5tpt-daxivt",
+   "text": "Just the essentials",
+   "where": [
+    "src/screens/Onboarding.tsx",
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "0nehfra0enfvky",
    "text": "Starry night",
    "where": [
@@ -4778,6 +4793,13 @@
    "text": "How could I make my {meal} even better?",
    "where": [
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "0opssba-lly0i2",
+   "text": "Calories left, protein and what you ate. The rest is a tap away.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -5315,6 +5337,13 @@
    "text": "The plan came back empty. Try again in a moment.",
    "where": [
     "server/claude.ts"
+   ]
+  },
+  {
+   "id": "0rn6psw0-76mo6",
+   "text": "How much detail do you want?",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -6040,6 +6069,13 @@
    ]
   },
   {
+   "id": "0v6pxzz-e6toiw",
+   "text": "How much detail",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "0v74kvj-mckzey",
    "text": "Fill the frame with the nutrition table itself — not the whole packet.",
    "where": [
@@ -6358,6 +6394,13 @@
    ]
   },
   {
+   "id": "0wh1aid0ejqj50",
+   "text": "Every nutrient, score and chart on show. Just the essentials keeps it to calories, protein and your meals.",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "0wiigb5-hx68p7",
    "text": "Dinner plate",
    "where": [
@@ -6398,6 +6441,13 @@
    "text": "{percent}% of today",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "0wnfyax0qj1bjj",
+   "text": "Less detail",
+   "where": [
+    "src/components/useDetail.tsx"
    ]
   },
   {
@@ -6906,6 +6956,13 @@
    "text": "Hit your protein target on 5 days in one week",
    "where": [
     "src/lib/achievements.ts"
+   ]
+  },
+  {
+   "id": "1007d6r-ghmkw0",
+   "text": "Every nutrient, score and chart, all on show.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -8241,6 +8298,13 @@
    ]
   },
   {
+   "id": "16r37mz-g7fxjn",
+   "text": "More detail ›",
+   "where": [
+    "src/components/useDetail.tsx"
+   ]
+  },
+  {
    "id": "16r98b10hplrn8",
    "text": "A bit about you",
    "where": [
@@ -8414,6 +8478,13 @@
    "text": "See what you've got",
    "where": [
     "src/components/FriendNudge.tsx"
+   ]
+  },
+  {
+   "id": "17fbong0v4m17p",
+   "text": "Pick one — you can change it later.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -8760,6 +8831,13 @@
    "text": "taken off",
    "where": [
     "src/components/PlanReviewCard.tsx"
+   ]
+  },
+  {
+   "id": "194f5y6-q0d1g1",
+   "text": "Calories left, protein and what you ate. Everything else is a “More detail” tap away.",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -9953,6 +10031,13 @@
    "text": "Plans count for nothing until you tap “I ate this”. Untick anything you don’t fancy.",
    "where": [
     "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
+   "id": "1fp00yx-tzib77",
+   "text": "Change it any time on You.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {
@@ -12831,6 +12916,13 @@
    ]
   },
   {
+   "id": "1u6nc9b-pf1ah9",
+   "text": "Ask your nutritionist",
+   "where": [
+    "src/components/NutritionistCard.tsx"
+   ]
+  },
+  {
    "id": "1u6touv08r7467",
    "text": "Recipe imports come with {plus}.",
    "where": [
@@ -12912,6 +13004,14 @@
    "text": "Italian",
    "where": [
     "src/lib/language.ts"
+   ]
+  },
+  {
+   "id": "1unt64g-ifocxc",
+   "text": "Everything",
+   "where": [
+    "src/screens/Onboarding.tsx",
+    "src/screens/You.tsx"
    ]
   },
   {

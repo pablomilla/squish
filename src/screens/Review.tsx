@@ -13,6 +13,7 @@ import { answerQuestion, isPaywalled, refineAnalysis } from '../lib/api';
 import { savePhoto } from '../lib/photos';
 import { searchFoods, toFoodItem, type FoodRecord } from '../lib/foods';
 import MealQuality from '../components/MealQuality';
+import { useEssentials, useMoreDetail } from '../components/useDetail';
 import { EMPTY, mealLabel, qualityScore, round1, scaleNutrients, scoreLabel, sumNutrients, ultraProcessedShare } from '../lib/nutrition';
 import { friendlyDate, isoDate } from '../lib/date';
 import { planDays } from '../lib/planner';
@@ -78,6 +79,9 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
   const items = useMemo(() => rows.map((row) => scaledItem(row)), [rows]);
   const totals = useMemo(() => (items.length ? sumNutrients(items) : { ...EMPTY }), [items]);
+  // Just the essentials: the meal, its calories and protein; the score and the rest a tap away.
+  const essentials = useEssentials();
+  const more = useMoreDetail();
   const upfShare = useMemo(() => ultraProcessedShare(items), [items]);
   const score = useMemo(() => (items.length ? qualityScore(totals, upfShare) : 0), [items, totals, upfShare]);
   const verdict = scoreLabel(score);
@@ -268,14 +272,14 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       <div className="review-title-row">
         <input className="input review-title" dir="auto" value={title} onChange={(e) => setTitle(e.target.value)} aria-label={t('Meal name')} />
-        <ScoreMeter score={score} size={52} />
+        {!essentials && <ScoreMeter score={score} size={52} />}
       </div>
 
       <div className="row wrap" style={{ gap: 8 }}>
-        <span className={`badge badge--${verdict.tone}`}>{mealLabel(score)}</span>
+        {!essentials && <span className={`badge badge--${verdict.tone}`}>{mealLabel(score)}</span>}
         {/* Stated, not scolded. It is the one thing the numbers below cannot
             show, and without it a lower score has no visible reason. */}
-        {upfShare >= 0.5 && (
+        {!essentials && upfShare >= 0.5 && (
           <span className="badge" title={t('Made in a factory from refined ingredients rather than cooked from food. It counts against the score.')}>
             {upfShare >= 0.95 ? t('Ultra-processed') : t('Mostly ultra-processed')}
           </span>
@@ -308,7 +312,7 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
 
       {/* Why it scores what it does, updating as items change. Folded: the
           meal is the point of this screen, the reasons are for whoever asks. */}
-      <MealQuality meal={{ nutrients: totals, items }} folded />
+      {!essentials && <MealQuality meal={{ nutrients: totals, items }} folded />}
 
       {question && (
         <section className="card review-question" aria-labelledby="review-question">
@@ -354,17 +358,23 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
             {currentEnergyUnit()} · {t('{percent}% of today', { percent: Math.round((totals.calories / targets.calories) * 100) })}
           </span>
         </div>
-        <MacroBars totals={totals} targets={targets} compact />
-        <Comparison equivalent={mealEquivalent(totals, targets, comparisonSeed)} />
-        <MinorNutrients totals={totals} targets={targets} />
-        {totals.micros && (
+        <MacroBars totals={totals} targets={targets} compact only={more.full ? undefined : ['protein']} />
+        {more.full && (
           <>
+            {essentials && <MealQuality meal={{ nutrients: totals, items }} folded />}
+            <Comparison equivalent={mealEquivalent(totals, targets, comparisonSeed)} />
+            <MinorNutrients totals={totals} targets={targets} />
+            {totals.micros && (
+              <>
+                <div className="divider" />
+                <Micronutrients totals={totals} targets={targets} meal />
+              </>
+            )}
             <div className="divider" />
-            <Micronutrients totals={totals} targets={targets} meal />
+            <MacroSplitBar totals={totals} />
           </>
         )}
-        <div className="divider" />
-        <MacroSplitBar totals={totals} />
+        {more.toggle}
       </div>
 
       <section className="card">

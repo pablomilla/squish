@@ -20,6 +20,7 @@ import type { MacroKey } from '../types';
 import { progressBars, type Range } from '../lib/progressBars';
 import { earliestOffset, periodDays, periodLabel, type PeriodGrain } from '../lib/period';
 import './insights.css';
+import { useMoreDetail } from '../components/useDetail';
 import { plural, t, uiLanguage } from '../lib/i18n';
 
 type Metric = 'calories' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'salt' | 'score';
@@ -51,6 +52,9 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
   const [open, setOpen] = useState<'streak' | 'average' | 'weight' | 'badges' | null>(null);
   const { meals, days, targets, unlocked, profile, unlock } = useSquish();
   const [range, setRange] = useState<Range>('7');
+  // Just the essentials: calories and protein to chart; the other six a tap away.
+  const metricMore = useMoreDetail();
+  const essentialsOnly = !metricMore.full;
   const [metric, setMetric] = useState<Metric>('calories');
   const today = isoDate();
 
@@ -256,12 +260,13 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
           ceiling={METRIC_CEILING.includes(metric)}
         />
         <div className="metric-row">
-          {(['calories', 'protein', 'carbs', 'fat', 'fibre', 'sugar', 'salt', 'score'] as Metric[]).map((m) => (
+          {(essentialsOnly ? (['calories', 'protein'] as Metric[]) : (['calories', 'protein', 'carbs', 'fat', 'fibre', 'sugar', 'salt', 'score'] as Metric[])).map((m) => (
             <button key={m} type="button" className="chip" aria-pressed={metric === m} onClick={() => setMetric(m)}>
               {metricLabel(m)}
             </button>
           ))}
         </div>
+        {metricMore.toggle}
       </section>
 
       {/* The rest is a row each, opening in a sheet, so Insights fits on one screen. */}

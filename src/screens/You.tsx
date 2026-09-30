@@ -158,7 +158,12 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
         <MenuRow icon="🥗" label={t('Food and goals')} value={DIETS.find((d) => d.key === (profile.diet ?? 'any'))?.label ?? ''} onClick={() => setOpen('food')} />
       </nav>
       <nav className="menu-list" aria-label={t('Settings')}>
-        <MenuRow icon="🎨" label={t('Appearance')} value={theme === 'light' ? t('Light') : theme === 'dark' ? t('Dark') : t('Auto')} onClick={() => setOpen('appearance')} />
+        <MenuRow
+          icon="🎨"
+          label={t('Appearance')}
+          value={`${theme === 'light' ? t('Light') : theme === 'dark' ? t('Dark') : t('Auto')}${profile.detail === 'essentials' ? ` · ${t('Essentials')}` : ''}`}
+          onClick={() => setOpen('appearance')}
+        />
         <MenuRow icon="🍽️" label={t('Your plates')} value={measured ? t('{n} cm plate', { n: profile.plateCm ?? 27 }) : t('Not set')} onClick={() => setOpen('plates')} />
         <MenuRow icon="🔔" label={t('Meal reminders')} value={reminders.on ? t('On') : t('Off')} onClick={() => setOpen('reminders')} />
         <MenuRow icon="📸" label={t('Quick snap')} value={t('Widget')} onClick={() => setOpen('snap')} />
@@ -309,6 +314,26 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
               : "Your browser is asking for <b>light</b>, so that is what Auto gives you. On Android that comes from the phone's dark theme <em>or</em> from Chrome's own, under Settings → Theme — they are two separate switches.", {}, { b: (text) => <b>{text}</b>, em: (text) => <em>{text}</em> })}
           </p>
         )}
+
+        <div className="divider" style={{ margin: '16px 0 12px' }} />
+
+        <h4 className="small" style={{ marginBottom: 8 }}>
+          {t('How much detail')}
+        </h4>
+        <Segmented
+          label={t('How much detail')}
+          value={profile.detail ?? 'everything'}
+          onChange={(detail) => setProfile({ detail })}
+          options={[
+            { value: 'essentials' as const, label: t('Just the essentials') },
+            { value: 'everything' as const, label: t('Everything') },
+          ]}
+        />
+        <p className="tiny muted" style={{ marginTop: 8 }}>
+          {profile.detail === 'essentials'
+            ? t('Calories left, protein and what you ate. Everything else is a “More detail” tap away.')
+            : t('Every nutrient, score and chart on show. Just the essentials keeps it to calories, protein and your meals.')}
+        </p>
 
         <div className="divider" style={{ margin: '16px 0 12px' }} />
 

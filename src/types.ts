@@ -283,7 +283,14 @@ export interface Profile {
   avoidOther?: string;
   aims?: Aim[];
   obstacles?: Obstacle[];
+  /**
+   * How much the app shows (src/components/useDetail.tsx): just the essentials,
+   * or everything. Absent is everything: nobody's app changed under them.
+   */
+  detail?: Detail;
 }
+
+export type Detail = 'essentials' | 'everything';
 
 export interface Targets extends Nutrients {
   water: number;

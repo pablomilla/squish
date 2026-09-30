@@ -20,6 +20,7 @@ export default function CheckinTiles({
   onWater,
   onSteps,
   onOpen,
+  only,
 }: {
   water: number;
   waterTarget: number;
@@ -31,10 +32,13 @@ export default function CheckinTiles({
   onWater: (glasses: number) => void;
   onSteps: (steps: number) => void;
   onOpen: (which: Checkin) => void;
+  /** Just these, for the essentials view. */
+  only?: readonly Checkin[];
 }) {
+  const shows = (which: Checkin) => !only || only.includes(which);
   return (
-    <div className="checkins">
-      <div className="checkin">
+    <div className={`checkins${only ? ' checkins--few' : ''}`}>
+      {shows('water') && <div className="checkin">
         <button type="button" className="checkin-main" onClick={() => onOpen('water')}>
           <span className="tiny muted checkin-label">
             <DropIcon size={14} /> {t('Water')}
@@ -44,8 +48,8 @@ export default function CheckinTiles({
         <button type="button" className="checkin-plus" aria-label={t('Add a glass of water')} onClick={() => onWater(water + 1)}>
           +
         </button>
-      </div>
-      <div className="checkin">
+      </div>}
+      {shows('steps') && <div className="checkin">
         <button type="button" className="checkin-main" onClick={() => onOpen('steps')}>
           <span className="tiny muted checkin-label">
             <ShoeIcon size={14} /> {t('Steps')}
@@ -55,15 +59,15 @@ export default function CheckinTiles({
         <button type="button" className="checkin-plus" aria-label={t('Add {n} steps', { n: stepsAdd })} onClick={() => onSteps(steps + stepsAdd)}>
           +
         </button>
-      </div>
-      <div className="checkin">
+      </div>}
+      {shows('weight') && <div className="checkin">
         <button type="button" className="checkin-main" onClick={() => onOpen('weight')}>
           <span className="tiny muted checkin-label">
             <span aria-hidden="true">⚖️</span> {t('Weight')}
           </span>
           <b className="small">{weightKg ? formatWeight(weightKg, units) : t('Log')}</b>
         </button>
-      </div>
+      </div>}
     </div>
   );
 }

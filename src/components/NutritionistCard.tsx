@@ -8,6 +8,7 @@ import { suggestedQuestions } from '../lib/askSuggestions';
 import { NUTRITIONIST_PLAN_NOTE } from '../lib/planner';
 import { addDays, isoDate } from '../lib/date';
 import './nutritionist-card.css';
+import { useEssentials } from './useDetail';
 import { t } from '../lib/i18n';
 
 /**
@@ -30,6 +31,18 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
   // Whether the nutritionist has a plan on the go, so the button can open it rather than offer a new one.
   const planned = plans.some((p) => p.note === NUTRITIONIST_PLAN_NOTE && p.date >= today && p.date <= addDays(today, 7));
   const suggestion = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 1)[0], [meals, targets, today]);
+
+  // Just the essentials: one line, the way in, and nothing to read first.
+  const essentials = useEssentials();
+  if (essentials)
+    return (
+      <section className="card nutri-card nutri-card--line" aria-label={t('Your nutritionist')}>
+        <button type="button" className="nutri-ask" onClick={() => go({ name: 'ask' })}>
+          <SparkIcon size={16} />
+          <span>{t('Ask your nutritionist')}</span>
+        </button>
+      </section>
+    );
 
   return (
     <section className="card nutri-card" aria-labelledby="nutri-title">

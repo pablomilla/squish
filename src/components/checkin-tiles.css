@@ -16,3 +16,4 @@
   background: var(--brand-soft); color: var(--brand-ink); font-size: 18px; font-weight: 700; line-height: 1;
 }
 .checkin-plus:active { transform: translateY(-50%) scale(0.92); }
+.checkins--few { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }

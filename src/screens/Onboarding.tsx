@@ -23,7 +23,7 @@ import { paceTier, targetMessage, type PaceTier } from '../lib/targetMessage';
 import { useSquish, DEFAULT_PROFILE, MIN_AGE } from '../store/useSquish';
 import TooYoung from '../components/TooYoung';
 import { ACTIVITY_LABEL, MACRO_LABEL, computeTargets, waterVolume } from '../lib/nutrition';
-import type { Activity, Goal, Mood, Profile, Sex, Targets } from '../types';
+import type { Activity, Detail, Goal, Mood, Profile, Sex, Targets } from '../types';
 import { PACE_CHOICES, formatPace, formatWeight, imperialLabel, paceIn, paceToKg, retuneForUnits } from '../lib/units';
 import { REGIONS, browserRegion, currentEnergyUnit, energyValue, regionOf, toKcal, type Region } from '../lib/region';
 import { browserLanguage, languageOf, packFor, type Language } from '../lib/language';
@@ -44,7 +44,7 @@ import { legalHref } from '../lib/legal';
  * nutritionist and the meal plans suggest, or how the dashboard learns which
  * ways in bring people who stay. Nothing is asked for its own sake.
  */
-const ALL_STEPS = ['welcome', 'name', 'about', 'born', 'goal', 'target', 'activity', 'eating', 'aims', 'heard', 'building', 'plan', 'account'] as const;
+const ALL_STEPS = ['welcome', 'name', 'about', 'born', 'goal', 'target', 'activity', 'eating', 'aims', 'detail', 'heard', 'building', 'plan', 'account'] as const;
 type Step = (typeof ALL_STEPS)[number];
 
 const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string; mood: Mood; say: string }> = {
@@ -52,6 +52,12 @@ const GOAL_COPY: Record<Goal, { title: string; blurb: string; emoji: string; moo
   maintain: { title: t('Eat healthy'), blurb: t('Balanced meals, weight stays steady'), emoji: '🥗', mood: 'calm', say: t('Good food, feeling good. Love that.') },
   gain: { title: t('Build up'), blurb: t('A little surplus to grow on'), emoji: '💪', mood: 'cheering', say: t('Let’s build you up!') },
 };
+
+/** Just the essentials, or everything (src/components/detail.tsx). Skipped, it is everything. */
+const DETAIL_CHOICES: { value: Detail; emoji: string; title: string; example: string }[] = [
+  { value: 'essentials', emoji: '🌿', title: t('Just the essentials'), example: t('Calories left, protein and what you ate. The rest is a tap away.') },
+  { value: 'everything', emoji: '📊', title: t('Everything'), example: t('Every nutrient, score and chart, all on show.') },
+];
 
 /** What each level looks like in a real week, because "moderately active" means something different to everybody. */
 const ACTIVITY_COPY: Record<Activity, { emoji: string; example: string; mood: Mood; say: string }> = {
@@ -543,6 +549,31 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
             </div>
           )}
 
+          {step === 'detail' && (
+            <div className="stack">
+              <Buddy mood={draft.detail === 'essentials' ? 'calm' : draft.detail ? 'excited' : 'thinking'} say={draft.detail ? t('Change it any time on You.') : t('Pick one — you can change it later.')}>
+                <h1>{t('How much detail do you want?')}</h1>
+              </Buddy>
+              {DETAIL_CHOICES.map((choice) => (
+                <button
+                  key={choice.value}
+                  type="button"
+                  className={`choice ${draft.detail === choice.value ? 'is-on' : ''}`}
+                  onClick={() => set({ detail: choice.value })}
+                  aria-pressed={draft.detail === choice.value}
+                >
+                  <span className="choice-emoji" aria-hidden="true">
+                    {choice.emoji}
+                  </span>
+                  <span>
+                    <b>{choice.title}</b>
+                    <span className="muted small"> {choice.example}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {step === 'heard' && (
             <div className="stack">
               <Buddy mood="calm" say={t('Last question, promise.')}>
@@ -756,7 +787,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
               <button type="button" className="btn grow" onClick={next}>
                 {step === 'welcome'
                   ? t('Get started')
-                  : (step === 'name' && !name) || (step === 'aims' && !chosenAims)
+                  : (step === 'name' && !name) || (step === 'aims' && !chosenAims) || (step === 'detail' && !draft.detail)
                     ? t('Skip')
                     : step === 'target'
                       ? t('Sounds good')
