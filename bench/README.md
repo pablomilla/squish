@@ -77,7 +77,7 @@ Your photos and results stay out of git — they are meals from your kitchen, an
 
 | Flag | Default | What it does |
 | --- | --- | --- |
-| `--models a,b` | opus-5, sonnet-5, haiku-4-5, and gemini-3.8-flash when there is a Gemini key | Which models to compare — any `claude-…` or `gemini-…` model |
+| `--models a,b` | opus-5-5, opus-5, sonnet-5, haiku-4-5, and gemini-3.8-flash when there is a Gemini key | Which models to compare — any `claude-…` or `gemini-…` model |
 | `--runs 3` | 1 | Repeat each photo, to see run-to-run spread |
 | `--sub 6.99` | 6.99 | Subscription price for the margin table, VAT included as on the stores |
 | `--yes` | off | Skip the "this spends money" prompt |

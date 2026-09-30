@@ -29,6 +29,7 @@ import { hasDatabase, migrate, query } from './db';
 import { isAdmin } from './admin';
 import { DEFAULT_GEMINI, hasGeminiKey, isGeminiModel } from './gemini';
 import { PRICED_MODELS } from './pricing';
+import { MAIN_MODEL } from './providers';
 
 export type Feature = 'photo' | 'label' | 'words' | 'fill' | 'recipe' | 'chat' | 'weekplan' | 'swap' | 'cook' | 'coach' | 'translate';
 export type Audience = 'admins' | 'everyone';
@@ -37,7 +38,7 @@ export const AUDIENCES: Audience[] = ['admins', 'everyone'];
 /** The longest chain: the model and two backups. */
 export const MAX_CHAIN = 3;
 
-const MAIN = process.env.SQUISH_MODEL ?? 'claude-opus-5';
+const MAIN = MAIN_MODEL;
 /** Words rather than pictures go to a cheaper model first (see server/claude.ts). */
 const TEXT = process.env.SQUISH_TEXT_MODEL ?? 'claude-sonnet-5';
 const CHAT = process.env.SQUISH_CHAT_MODEL ?? MAIN;

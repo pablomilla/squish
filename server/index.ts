@@ -25,6 +25,7 @@ import { checkAnswer, signQuestion, withoutQuestion } from './clarify';
 import { ensureFoodTable } from './foodTable';
 import { hasGeminiKey } from './gemini';
 import { PRICED_MODELS, rateFor } from './pricing';
+import { MAIN_MODEL } from './providers';
 import {
   FEATURES, currentAudience, describeRoutes, everyoneMayUseGemini, readRoutes, recentFailures, saveRoutes, servedAs, servedBy, type Feature,
 } from './routing';
@@ -2290,7 +2291,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     ai: hasCredentials(),
-    model: process.env.SQUISH_MODEL ?? 'claude-opus-5',
+    model: MAIN_MODEL,
     // So the app knows whether to bother asking for a device, a backup or an
     // account. Without a database none of those exist and it stays local.
     accounts: hasDatabase(),
@@ -3101,7 +3102,7 @@ const server = app.listen(PORT, () => {
   const source = credentialSource();
   console.log(
     hasCredentials()
-      ? `    Claude enabled: photos on ${process.env.SQUISH_MODEL ?? 'claude-opus-5'}, words on ${TEXT_MODEL} (via ${source})`
+      ? `    Claude enabled: photos on ${MAIN_MODEL}, words on ${TEXT_MODEL} (via ${source})`
       : '    No Anthropic credentials found — serving offline estimates.',
   );
   if (!hasCredentials()) {

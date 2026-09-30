@@ -5,6 +5,7 @@ import { after, before, test } from 'node:test';
 import { analyseLabel, analysePhotoDetailed, analyseRecipe, briefSchema, MEAL_SCHEMA, planWeek, TEXT_MODEL } from '../server/claude';
 import { WEEKPLAN_SCHEMA, type WeekPlanRequest } from '../server/weekplan';
 import { useTableForTests, type TableFood } from '../server/foodTable';
+import { MAIN_MODEL } from '../server/providers';
 
 /**
  * Table first: with a food table loaded, the model is not asked for the
@@ -159,7 +160,8 @@ test('if the text model cannot fill the figures, the main one does', async () =>
   firstAnswer = meal([item('Teff', 'teff, cooked', 150, { calories: 150, freeSugar: 0 })]);
   fillAnswer = { items: [{ nutrients: { ...full, calories: 153 } }] };
   const { analysis } = await photo();
-  assert.deepEqual(sent.map((s) => [s.model, s.fill]), [['claude-opus-5', false], [TEXT_MODEL, true], ['claude-opus-5', true]]);
+  // The photo was read by the model named for it; the fill-in's backup is the route's main model.
+  assert.deepEqual(sent.map((s) => [s.model, s.fill]), [['claude-opus-5', false], [TEXT_MODEL, true], [MAIN_MODEL, true]]);
   assert.equal(analysis.items[0].nutrients.calories, 153);
   failing = new Set();
 });

@@ -34,6 +34,23 @@ export const alwaysThinks = (model: string): boolean => /^claude-(opus-5-5|sonne
 export const thinkingOff = (model: string): { thinking?: { type: 'disabled' } } => (alwaysThinks(model) ? {} : { thinking: { type: 'disabled' } });
 
 /**
+ * Room for the answer, and for thinking where the model always thinks.
+ * Thinking counts against `max_tokens` without being shown, so a limit sized
+ * for a one-line nudge can run out before the nudge is written. Room that is
+ * not used is not billed.
+ */
+export const THINKING_ROOM = 4000;
+export const withThinkingRoom = (model: string, answer: number): number => (alwaysThinks(model) ? answer + THINKING_ROOM : answer);
+
+/**
+ * The model for the jobs that need the best reading and reasoning — photos,
+ * labels, recipes, the nutritionist, meal plans — and the backup behind the
+ * cheaper one. `SQUISH_MODEL` in Render chooses another without a deploy; the
+ * dashboard's AI models card chooses per job.
+ */
+export const MAIN_MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5-5';
+
+/**
  * Claude models whose thinking is bound to the conversation that produced it
  * ("preserved thinking"): change an earlier part of it — the system prompt,
  * the tools, an earlier turn — and the thinking after it no longer counts,

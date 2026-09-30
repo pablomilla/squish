@@ -24,7 +24,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NUTRITIONIST_TOOLS, type ToolCall } from './nutritionist-tools';
 import { priceUsage } from './pricing';
 import { bill } from './billing';
-import { alwaysThinks, bindsThinking, createMessage } from './providers';
+import { MAIN_MODEL, alwaysThinks, bindsThinking, createMessage, withThinkingRoom } from './providers';
 import { withModels } from './routing';
 import { regionNote } from './region';
 import { aimLines, eatingLines, type About } from '../src/lib/eating';
@@ -36,7 +36,7 @@ const billed = (usd: number | null, model: string): number | null => {
 };
 
 /** What the request is built with until a route gives it a model (server/routing.ts). */
-const MODEL = process.env.SQUISH_CHAT_MODEL ?? process.env.SQUISH_MODEL ?? 'claude-opus-5';
+const MODEL = process.env.SQUISH_CHAT_MODEL ?? MAIN_MODEL;
 
 /**
  * A turn on the wire.
@@ -328,9 +328,10 @@ export function chatRequest(
   // cannot run away with somebody's money.
   const exhausted = toolRounds(messages) >= MAX_TOOL_ROUNDS;
 
+  const model = tuning.model ?? MODEL;
   return {
-    model: tuning.model ?? MODEL,
-    max_tokens: 2400,
+    model,
+    max_tokens: withThinkingRoom(model, 2400),
     /*
      * Two cache breakpoints, and the split between them is the point.
      *
@@ -407,11 +408,31 @@ export async function chatStep(
   tuning: Tuning = {},
 ): Promise<ChatStep> {
   // The eval names its model; the app asks the 'chat' route, backups and all.
-  return withModels(
-    'chat',
-    (model, attempt, signal) => chatStepOn(model, attempt > 0, messages, context, notes, tuning, signal),
-    tuning.model ? { models: [tuning.model] } : {},
-  );
+  try {
+    return await withModels(
+      'chat',
+      (model, attempt, signal) => chatStepOn(model, attempt > 0, messages, context, notes, tuning, signal),
+      tuning.model ? { models: [tuning.model] } : {},
+    );
+  } catch (error) {
+    // Declined by every model on the route: say so kindly, as one would.
+    if (error instanceof Declined) return { done: true, reply: REFUSAL, usage: error.usage };
+    throw error;
+  }
+}
+
+/**
+ * A question a model declined. The newer models' safety checks are broader
+ * than Opus 5's and can now and again catch an ordinary food question, so a
+ * decline goes to the route's backup like any other failure, and only when
+ * nobody will answer does the person hear that it cannot help.
+ */
+class Declined extends Error {
+  readonly usage: ChatUsage;
+  constructor(usage: ChatUsage) {
+    super('The model declined the question.');
+    this.usage = usage;
+  }
 }
 
 async function chatStepOn(
@@ -450,7 +471,7 @@ async function chatStepOn(
     latencyMs: Date.now() - startedAt,
   };
 
-  if (response.stop_reason === 'refusal') return { done: true, reply: REFUSAL, usage };
+  if (response.stop_reason === 'refusal') throw new Declined(usage);
 
   if (response.stop_reason === 'tool_use') {
     const calls = response.content

@@ -10,7 +10,7 @@ the way a nutrition app should, and works offline too.
 ## What it does
 
 **Logging**
-- 📸 **Photo analysis** — point the camera at a meal; Claude Opus 5 vision returns each food, its
+- 📸 **Photo analysis** — point the camera at a meal; Claude Opus 5.5 vision returns each food, its
   portion and its nutrition as structured JSON, plus a note in Squish's voice.
 - ✍️ **Describe it** — "two scrambled eggs on toast and a latte" becomes a full breakdown.
 - 🔍 **Food search** — 80+ everyday foods with per-100 g data, serving sizes and emoji.
@@ -283,8 +283,10 @@ job asks its model first; if that fails (an outage, an overload, a refusal, an a
 parse, or no answer in time), the backup answers instead, so one company's bad hour is a slower
 answer rather than a meal logged as a guess. The time allowed before handing over is set per job
 (`limit` in `server/routing.ts`: 75 seconds for a photo, 45 for words, ten minutes for a meal plan)
-and shown on the card; the last model in a chain is never cut off. Every job starts on the Claude model it always used, with the other Claude as its
-backup. Each failure is counted on the card, with the reason and whether a backup saved it.
+and shown on the card; the last model in a chain is never cut off. Every job starts on Claude — Opus 5.5 for pictures, recipes, the nutritionist, plans, the nudge and
+translating, Sonnet 5 for words, filling in, swaps and cooking steps — with the other Claude as its
+backup. A question the nutritionist's model declines goes to the backup too, and only when every
+model declines is the person told it cannot help. Each failure is counted on the card, with the reason and whether a backup saved it.
 
 There are two routes per job: **you and other admins**, for trying a model on your own meals (the
 Review screen then says which model read the meal, and which failed first), and **everybody else**.
@@ -383,7 +385,7 @@ stores.
 
 ## How the AI part works
 
-`server/claude.ts` sends the image (or description) to `claude-opus-5` with
+`server/claude.ts` sends the image (or description) to `claude-opus-5-5` (`SQUISH_MODEL` chooses another) with
 `output_config.format` set to a JSON schema, so the response is already the shape the app needs —
 no prose parsing. Adaptive thinking is on; effort is `medium` for analysis and `low` for the daily
 coach nudge. Values are coerced and clamped on the way in, and a model-supplied quality score is
@@ -445,7 +447,7 @@ and what it costs, because both decide whether this can be a product:
 
 ```bash
 cp bench/manifest.example.json bench/manifest.json   # your photos and their real figures
-npm run bench                                        # opus-5 vs sonnet-5 vs haiku-4-5
+npm run bench                                        # opus-5-5 vs opus-5 vs sonnet-5 vs haiku-4-5
 npm run bench -- --runs 3 --sub 6.99                 # spread across repeats, margin at £6.99
 ```
 

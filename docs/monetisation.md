@@ -236,11 +236,35 @@ up rather than letting the request be refused.
 Since 27 September 2026 a meal typed or spoken, a correction ("it was
 grilled, not fried") and the answer to the AI's own question go to
 **Sonnet 5** (`SQUISH_TEXT_MODEL`), at $2 / $10 per million tokens against
-Opus 5's $5 / $25, and quicker. Photos and labels stay on Opus 5: reading a
+Opus 5's $5 / $25, and quicker. Photos and labels stay on Opus: reading a
 picture is the hard part, and whether a cheaper model is good enough at it is
 a question for `npm run bench` against weighed meals, not a guess. If the text
 model fails a request, the main model answers it, so a cheaper model's bad
 moment never becomes an offline estimate.
+
+### Opus 5.5 is the main model
+
+Since 30 September 2026 the jobs that were on Opus 5 — photos, labels, recipe
+imports, the nutritionist, meal plans, the nudge and translation — are on
+**Opus 5.5** (`SQUISH_MODEL`), at $4 / $20 per million tokens against Opus 5's
+$5 / $25, with cached input at $0.20 rather than $0.50. That is a fifth off
+every call it answers, and more on the nutritionist, whose rules are read from
+the cache on every round. The per-action costs at the top of this page are
+Opus 5's; until the dashboard has a month of real ones, take about 20% off.
+
+Three things differ, and the server allows for each:
+
+- **It always thinks.** It cannot be told not to, so the calls that turned
+  thinking off (the nudge, cooking steps, swaps, translation) leave it on and
+  set how hard it thinks with effort instead, and the ones sized for an answer alone are given 4,000
+  tokens more room (`withThinkingRoom`), which costs nothing unless used.
+- **Its thinking belongs to the conversation.** The nutritionist asks for
+  thinking the conversation has outgrown to be dropped, not refused.
+- **Its safety checks are broader.** A question it declines is asked of the
+  backup, as a photo it declines already was.
+
+Setting `SQUISH_MODEL=claude-opus-5` in Render puts it all back, and the
+dashboard's AI models card changes any one job.
 
 ### The AI's one question, free
 

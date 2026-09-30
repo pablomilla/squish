@@ -12,7 +12,7 @@ import { addMicros, addOptional, qualityScore, ultraProcessedShare } from '../sr
 import { RECIPE_SYSTEM, recipePrompt, type RecipeImport, type RecipeSource } from './recipe';
 import { bill } from './billing';
 import { priceUsage } from './pricing';
-import { createMessage, streamMessage, thinkingOff } from './providers';
+import { createMessage, streamMessage, thinkingOff, withThinkingRoom } from './providers';
 import { repeating } from './runaway';
 import { withModels, type Feature } from './routing';
 
@@ -863,7 +863,7 @@ export async function coachMessage(ctx: CoachContext): Promise<string> {
 async function coachOn(model: string, ctx: CoachContext, signal: AbortSignal): Promise<string> {
   const response = await createMessage({
     model,
-    max_tokens: 400,
+    max_tokens: withThinkingRoom(model, 400),
     system:
       "You are Squish, a small round blob mascot who helps someone eat well. You speak in one or two short sentences, warm, playful and specific. Never shame food choices, never mention calories as something to 'burn off', never give medical advice. Reply with the message only — no quotes, no preamble.\n\n" +
       regionNote('coach'),
@@ -912,7 +912,7 @@ async function cookOn(model: string, ask: CookAsk, signal: AbortSignal): Promise
   const format = { type: 'json_schema', schema: COOK_SCHEMA } as const;
   const response = await createMessage({
     model,
-    max_tokens: 4000,
+    max_tokens: withThinkingRoom(model, 4000),
     system: `${COOK_SYSTEM}\n\n${regionNote('cook')}`,
     // Writing down a method is not a problem to reason about: no thinking where the model allows it, and little effort where it takes one.
     ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
@@ -942,7 +942,7 @@ async function labelOn(model: string, ask: LabelAsk, signal: AbortSignal): Promi
   const format = { type: 'json_schema', schema: COOK_LABEL_SCHEMA } as const;
   const response = await createMessage({
     model,
-    max_tokens: 800,
+    max_tokens: withThinkingRoom(model, 800),
     system: COOK_LABEL_SYSTEM,
     ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
       ? { ...thinkingOff(model), output_config: { effort: 'low' as const, format } }

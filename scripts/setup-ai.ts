@@ -9,13 +9,14 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { credentialSource } from '../server/claude';
+import { MAIN_MODEL } from '../server/providers';
 import { chmod, readFile, writeFile } from 'node:fs/promises';
 import { createInterface } from 'node:readline/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const ENV_PATH = resolve(process.cwd(), '.env');
-const MODEL = process.env.SQUISH_MODEL ?? 'claude-opus-5';
+const MODEL = MAIN_MODEL;
 const CONSOLE_URL = 'https://console.anthropic.com/settings/keys';
 
 const ESC = String.fromCharCode(27);

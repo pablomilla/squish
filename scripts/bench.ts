@@ -26,7 +26,7 @@ import type { MealSlot } from '../src/types';
 /** bench/ for your own meals; bench/<set>/ for another set, such as Nutrition5k's. */
 const SET = arg('set');
 const BENCH_DIR = resolve(process.cwd(), 'bench', ...(SET ? [SET.replace(/[^a-z0-9-]/gi, '')] : []));
-const CLAUDE_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
+const CLAUDE_MODELS = ['claude-opus-5-5', 'claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
 /**
  * Claude's three, and Gemini 2.5 Flash beside them when there is a key for
  * it (GEMINI_API_KEY in .env). Any Gemini model can be named with --models.
