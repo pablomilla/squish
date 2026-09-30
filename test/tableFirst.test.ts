@@ -18,6 +18,8 @@ import { MAIN_MODEL } from '../server/providers';
 
 type Sent = { model: string; system: string; prompt: string; itemNutrientsRequired: string[] | null; fill: boolean; seasoning: boolean; schema?: unknown };
 const sent: Sent[] = [];
+/** The seasoning checks asked. */
+const checks: Sent[] = [];
 let firstAnswer: Record<string, unknown> = {};
 let fillAnswer: Record<string, unknown> = {};
 let weekAnswer: Record<string, unknown> = {};
@@ -48,7 +50,8 @@ before(async () => {
       const prompt = typeof content === 'string' ? content : content.map((part) => part.text ?? '').join(' ');
       const fill = body.system.includes('You are given foods from one meal');
       const seasoning = body.system.startsWith('You check the ingredient lists');
-      sent.push({
+      // The seasoning check runs beside the rest, in whatever order it lands: kept apart from the reading and the fill-in.
+      (seasoning ? checks : sent).push({
         model: body.model, system: body.system, prompt, fill, seasoning,
         itemNutrientsRequired: body.output_config?.format?.schema?.properties?.items?.items?.properties?.nutrients?.required ?? null,
         schema: body.output_config?.format?.schema,
@@ -112,6 +115,7 @@ test('the schema, briefly: every nutrient optional, nothing else changed', () =>
 test('with a table: two figures for a named food, all for a dish, and only the unmatched named food filled in', async () => {
   useTableForTests(TABLE);
   sent.length = 0;
+  checks.length = 0;
   firstAnswer = meal([
     item('Banana', 'banana, raw', 120, { calories: 110, freeSugar: 0 }),
     item('Chicken curry', '', 350, full),
@@ -143,6 +147,7 @@ test('with a table: two figures for a named food, all for a dish, and only the u
 test('everything matched or described: one call, nothing filled', async () => {
   useTableForTests(TABLE);
   sent.length = 0;
+  checks.length = 0;
   firstAnswer = meal([item('Banana', 'banana, raw', 120, { calories: 110, freeSugar: 0 }), item('Chicken curry', '', 350, full)]);
   await photo();
   assert.equal(sent.length, 1);
@@ -151,6 +156,7 @@ test('everything matched or described: one call, nothing filled', async () => {
 test('no table loaded: every figure asked for, as before', async () => {
   useTableForTests([]);
   sent.length = 0;
+  checks.length = 0;
   firstAnswer = meal([item('Banana', 'banana, raw', 120, full)]);
   await photo();
   assert.equal(sent.length, 1);
@@ -161,6 +167,7 @@ test('no table loaded: every figure asked for, as before', async () => {
 test('a label is never brief: its printed figures are the point', async () => {
   useTableForTests(TABLE);
   sent.length = 0;
+  checks.length = 0;
   firstAnswer = meal([item('Oat bar', '', 40, full)]);
   await analyseLabel('aGVsbG8=', 'image/jpeg', 'snack');
   assert.equal(sent[0].itemNutrientsRequired?.length, 10);
@@ -169,6 +176,7 @@ test('a label is never brief: its printed figures are the point', async () => {
 test('if the text model cannot fill the figures, the main one does', async () => {
   useTableForTests(TABLE);
   sent.length = 0;
+  checks.length = 0;
   failing = new Set([TEXT_MODEL]);
   firstAnswer = meal([item('Teff', 'teff, cooked', 150, { calories: 150, freeSugar: 0 })]);
   fillAnswer = { items: [{ nutrients: { ...full, calories: 153 } }] };
@@ -182,6 +190,7 @@ test('if the text model cannot fill the figures, the main one does', async () =>
 test('a week’s ingredients: two figures each where the table can answer, one fill-in for the whole week', async () => {
   useTableForTests(TABLE);
   sent.length = 0;
+  checks.length = 0;
   const planNutrients = { calories: 400, protein: 25, carbs: 45, fat: 12, fibre: 6, satFat: 3, sugar: 8, freeSugar: 2, sodium: 700 };
   const ingredient = (name: string, lookup: string, grams: number, nutrients: Record<string, unknown>) => ({ name, emoji: '🍽️', portion: '1', grams, liquid: false, ultraProcessed: false, aisle: 'other', lookup, nutrients });
   weekAnswer = {
@@ -201,9 +210,9 @@ test('a week’s ingredients: two figures each where the table can answer, one f
   };
 
   const plan = await planWeek(ask);
-  assert.equal(sent.filter((s) => s.seasoning).length, 1, 'one seasoning check for the whole week');
-  const [week, fill] = sent.filter((s) => !s.seasoning);
-  assert.equal(sent.filter((s) => !s.seasoning).length, 2, 'the plan, and one fill-in for the whole week');
+  assert.equal(checks.length, 1, 'one seasoning check for the whole week');
+  const [week, fill] = sent;
+  assert.equal(sent.length, 2, 'the plan, and one fill-in for the whole week');
   const nested = JSON.stringify(week.schema);
   assert.ok(nested.includes('"required":[]'), 'ingredient nutrients optional in the plan');
   assert.match(week.system, /give only calories and freeSugar/);
@@ -234,6 +243,7 @@ test('a recipe’s ingredients, by their raw weights: from the table where it ca
     { source: 'cofid', id: '11-401', name: 'Pasta, white, boiled in unsalted water', per100: { calories: 145, protein: 5, carbs: 31, fat: 0.6, fibre: 1.2, sugar: 0.5, satFat: 0.1, sodium: 1 } },
   ]);
   sent.length = 0;
+  checks.length = 0;
   firstAnswer = {
     ...meal([
       item('Spaghetti', 'pasta, dried', 100, { calories: 350, freeSugar: 0 }),
@@ -245,12 +255,12 @@ test('a recipe’s ingredients, by their raw weights: from the table where it ca
   fillAnswer = { items: [{ nutrients: { ...full, calories: 67, protein: 1.4, carbs: 1.3, fat: 6.8 } }] };
 
   const recipe = await analyseRecipe({ url: 'https://example.com/pesto-pasta', title: 'Pesto pasta', ingredients: ['400 g spaghetti', '120 g pesto', '40 g pine nuts'] }, 'dinner');
-  assert.equal(sent.filter((s) => s.seasoning).length, 1, 'the recipe is checked for its seasoning once');
-  const [first, fill] = sent.filter((s) => !s.seasoning);
+  assert.equal(checks.length, 1, 'the recipe is checked for its seasoning once');
+  const [first, fill] = sent;
   assert.match(first.system, /in the state the recipe weighs it/, 'the recipe’s own rule for table names');
   assert.match(first.system, /give only calories and freeSugar/);
   assert.equal(first.itemNutrientsRequired?.length, 0);
-  assert.equal(sent.filter((s) => !s.seasoning).length, 2);
+  assert.equal(sent.length, 2);
   assert.match(fill.prompt, /Pine nuts/);
 
   const [pasta, pesto, nuts] = recipe.items;
@@ -279,6 +289,7 @@ const add = (name: string, grams: number, lookup: string) => ({ name, emoji: '�
 test('a meal short of what its title names, or of its seasoning, has it added, matched to the table', async () => {
   useTableForTests([...TABLE, ...SPICES]);
   sent.length = 0;
+  checks.length = 0;
   weekAnswer = weekOf(
     dinnerOf('Crispy Paprika Chicken & Wedges', [item('Chicken breast', '', 160, { ...full, calories: 260 }), item('Potato wedges', '', 200, { ...full, calories: 220 })]),
     { ...dinnerOf('Grilled Sirloin & Baked Potato', [item('Sirloin steak', '', 180, { ...full, calories: 380 }), item('Baking potato', '', 250, { ...full, calories: 230 })]), slot: 'lunch' },
@@ -300,7 +311,7 @@ test('a meal short of what its title names, or of its seasoning, has it added, m
   };
 
   const plan = await planWeek(oneDay);
-  const check = sent.find((s) => s.seasoning)!;
+  const check = checks.at(-1)!;
   assert.match(check.prompt, /1\. Crispy Paprika Chicken & Wedges: Chicken breast, Potato wedges/);
   assert.match(check.prompt, /2\. Grilled Sirloin & Baked Potato: Sirloin steak, Baking potato/);
   assert.match(check.prompt, /Allergic to sesame/, 'what they avoid goes with the question');
@@ -322,17 +333,19 @@ test('a meal short of what its title names, or of its seasoning, has it added, m
 test('a seasoning check that fails leaves the plan as it came', async () => {
   useTableForTests([...TABLE, ...SPICES]);
   sent.length = 0;
+  checks.length = 0;
   weekAnswer = weekOf(dinnerOf('Crispy Paprika Chicken & Wedges', [item('Chicken breast', '', 160, { ...full, calories: 260 })]));
   seasoningAnswer = 'fail';
   const plan = await planWeek(oneDay);
   assert.deepEqual(plan.days[0].meals[0].items.map((i) => i.name), ['Chicken breast']);
-  assert.ok(sent.filter((s) => s.seasoning).length >= 1, 'it was asked');
+  assert.ok(checks.length >= 1, 'it was asked');
   seasoningAnswer = { meals: [] };
 });
 
 test('an imported recipe gets back the paprika and the salt and pepper its reading let go', async () => {
   useTableForTests([...TABLE, ...SPICES]);
   sent.length = 0;
+  checks.length = 0;
   const page = {
     url: 'https://example.com/paprika-chicken', title: 'Crispy paprika chicken', yieldText: 'Serves 4',
     ingredients: ['4 chicken breasts', '800 g potatoes', '1 tbsp smoked paprika', 'Salt and pepper, to taste'],
@@ -343,7 +356,7 @@ test('an imported recipe gets back the paprika and the salt and pepper its readi
   };
 
   const recipe = await analyseRecipe(page, 'dinner');
-  const check = sent.find((s) => s.seasoning)!;
+  const check = checks.at(-1)!;
   assert.match(check.prompt, /1\. Crispy paprika chicken: Chicken breast, Potatoes/);
   assert.match(check.prompt, /The recipe's own list, for the whole recipe: 4 chicken breasts; 800 g potatoes; 1 tbsp smoked paprika; Salt and pepper, to taste/);
   assert.match(check.system, /nothing the recipe does not call for/);
@@ -354,6 +367,7 @@ test('an imported recipe gets back the paprika and the salt and pepper its readi
 
   // A check that fails leaves the recipe as it was read.
   sent.length = 0;
+  checks.length = 0;
   seasoningAnswer = 'fail';
   const asRead = await analyseRecipe(page, 'dinner');
   assert.deepEqual(asRead.items.map((i) => i.name), ['Chicken breast', 'Potatoes']);
@@ -363,4 +377,34 @@ test('an imported recipe gets back the paprika and the salt and pepper its readi
 test('recipes are told to keep their seasoning, at one serving’s share', () => {
   assert.match(RECIPE_SYSTEM, /spices, dried herbs, pastes, sauces and seasoning too/);
   assert.match(RECIPE_SYSTEM, /"salt and pepper, to taste" is a pinch of each/);
+});
+
+test('a photographed meal gets what its title names, and its salt and pepper, but a label is read as printed', async () => {
+  useTableForTests([...TABLE, ...SPICES]);
+  sent.length = 0;
+  checks.length = 0;
+  firstAnswer = { ...meal([item('Chicken thigh', '', 150, { ...full, calories: 280 }), item('Potato wedges', '', 180, { ...full, calories: 200 })]), title: 'Paprika chicken with wedges' };
+  seasoningAnswer = { meals: [{ meal: 1, add: [add('Paprika', 1.5, 'spices, paprika'), add('Salt', 1, 'salt, table')] }] };
+
+  const { analysis } = await photo();
+  assert.equal(checks.length, 1);
+  assert.match(checks[0].prompt, /1\. Paprika chicken with wedges \(read from a photo of it, as eaten\): Chicken thigh, Potato wedges/);
+  assert.match(checks[0].system, /never a sauce, dressing, topping or anything else the photo would have shown/);
+  assert.deepEqual(analysis.items.map((i) => i.name), ['Chicken thigh', 'Potato wedges', 'Paprika', 'Salt']);
+  assert.equal(analysis.items[2].source?.name, 'Spices, paprika');
+  assert.ok((analysis.nutrients.sodium ?? 0) > 300, 'the salt is in the meal');
+  assert.equal(Math.round(analysis.nutrients.calories), 280 + 200 + Math.round(analysis.items[2].nutrients.calories), 'the totals include what was added');
+
+  // A check that fails leaves the photo as it was read.
+  seasoningAnswer = 'fail';
+  const asRead = (await photo()).analysis;
+  assert.deepEqual(asRead.items.map((i) => i.name), ['Chicken thigh', 'Potato wedges']);
+
+  // A nutrition label's figures are printed: nothing is added to them.
+  checks.length = 0;
+  seasoningAnswer = { meals: [{ meal: 1, add: [add('Salt', 1, 'salt, table')] }] };
+  firstAnswer = meal([item('Oat bar', '', 40, full)]);
+  await analyseLabel('aGVsbG8=', 'image/jpeg', 'snack');
+  assert.equal(checks.length, 0, 'a label is not checked');
+  seasoningAnswer = { meals: [] };
 });

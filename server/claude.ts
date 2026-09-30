@@ -555,10 +555,10 @@ function requestMeal(
   system: string = SYSTEM,
   schema: Record<string, unknown> = MEAL_SCHEMA,
   pinned?: string,
-  /** Something to do with what was read before it is matched to the table: an imported recipe's seasoning check. */
-  complete?: (meal: ModelMeal) => Promise<ModelMeal>,
+  /** What to add to what was read (the seasoning check), asked while the rest is matched and filled in. */
+  extra?: (meal: ModelMeal) => Promise<ModelItem[]>,
 ): Promise<DetailedAnalysis> {
-  return withModels(feature, (model, _attempt, signal) => requestMealOn(model, content, fallbackSlot, system, schema, signal, complete), pinned ? { models: [pinned] } : {});
+  return withModels(feature, (model, _attempt, signal) => requestMealOn(model, content, fallbackSlot, system, schema, signal, extra), pinned ? { models: [pinned] } : {});
 }
 
 async function requestMealOn(
@@ -568,7 +568,7 @@ async function requestMealOn(
   system: string,
   schema: Record<string, unknown>,
   signal: AbortSignal,
-  complete?: (meal: ModelMeal) => Promise<ModelMeal>,
+  extra?: (meal: ModelMeal) => Promise<ModelItem[]>,
 ): Promise<DetailedAnalysis> {
   const startedAt = Date.now();
   const brief = await tableFirst(system);
@@ -607,12 +607,12 @@ async function requestMealOn(
   // A label's figures are printed, and are the truth; everything else is
   // checked against the food table where it names a plain food, and in
   // table-first mode the named foods it could not answer are filled in.
-  const answer = readAnswer<ModelMeal>(text, response.stop_reason);
-  const read = complete ? await complete(answer) : answer;
+  const read = readAnswer<ModelMeal>(text, response.stop_reason);
+  // Asked now and waited for last: somebody is watching a photo being read, and the check takes a few seconds.
+  const extras = extra ? extra(read) : Promise.resolve([]);
   let parsed = system === LABEL_SYSTEM ? read : await groundMeal(read);
   let fill: CallCost | null = null;
-  // Table first leaves figures to fill in, and so does a recipe's seasoning check, whose additions come with none.
-  if (brief || parsed.items?.some(missingFigures)) {
+  if (brief) {
     const done = await fillFigures(parsed);
     parsed = done.meal;
     fill = done.cost;
@@ -621,6 +621,18 @@ async function requestMealOn(
       `[squish] table first: ${fromTable} from the table, ${done.filled} filled in, ${(parsed.items?.length ?? 0) - fromTable - done.filled} from the first answer` +
         ` · ${outputTokens}${fill ? `+${fill.outputTokens}` : ''} output tokens`,
     );
+  }
+
+  // What the check added, matched and filled in like the rest (spices usually come from the table), then put with it.
+  const added = await extras;
+  if (added.length) {
+    let more = await groundMeal({ title: parsed.title, items: added });
+    if (more.items?.some(missingFigures)) {
+      const done = await fillFigures(more);
+      more = done.meal;
+      fill = fill ? { ...fill, inputTokens: fill.inputTokens + (done.cost?.inputTokens ?? 0), outputTokens: fill.outputTokens + (done.cost?.outputTokens ?? 0), costUsd: fill.costUsd === null ? null : fill.costUsd + (done.cost?.costUsd ?? 0), latencyMs: fill.latencyMs + (done.cost?.latencyMs ?? 0) } : done.cost;
+    }
+    parsed = { ...parsed, items: [...(parsed.items ?? []), ...(more.items ?? added)] };
   }
 
   return {
@@ -706,6 +718,7 @@ export async function analysePhotoDetailed(
     SYSTEM,
     MEAL_SCHEMA,
     model,
+    (meal) => seasoningFor(meal, { kind: 'photo' }),
   );
 }
 
@@ -797,7 +810,7 @@ export async function analyseRecipe(source: RecipeSource, slot?: MealSlot): Prom
     RECIPE_SYSTEM,
     RECIPE_SCHEMA,
     undefined,
-    (meal) => completeRecipe(meal, source),
+    (meal) => seasoningFor(meal, { kind: 'recipe', source }),
   );
 
   // A yield of nought or one-and-a-half servings is a misread, and dividing by
@@ -1210,23 +1223,33 @@ async function completeSeasoning(week: ModelWeek, who: Pick<WeekPlanRequest, 'ab
   }
 }
 
+type ModelItem = NonNullable<ModelMeal['items']>[number];
+
 /**
- * The same check for an imported recipe: its own ingredient list and title
- * against what was read, so the "1 tsp smoked paprika" and the "salt and
- * pepper, to taste" the reading let go are put back, one serving's share.
- * Only what the recipe calls for; if the check fails, the recipe as read.
+ * The same check for one meal read on its own: what to add to it, or nothing.
+ * If the check fails, nothing — the meal as read.
+ *
+ * - An imported recipe goes with its page's own ingredient list, so the "1
+ *   tsp smoked paprika" and the "salt and pepper, to taste" the reading let
+ *   go are put back at one serving's share, and only what the recipe calls for.
+ * - A photographed meal is what somebody ate: what its title names, and the
+ *   salt and pepper cooked savoury food is seasoned with, but never a sauce
+ *   or a topping, which the photo would have shown.
  */
-async function completeRecipe(meal: ModelMeal, source: RecipeSource): Promise<ModelMeal> {
+async function seasoningFor(meal: ModelMeal, what: { kind: 'recipe'; source: RecipeSource } | { kind: 'photo' }): Promise<ModelItem[]> {
   const items = (meal.items ?? []).map((item) => item.name ?? '').filter(Boolean);
-  if (!items.length) return meal;
+  if (!items.length) return [];
+  const asked: SeasoningMeal =
+    what.kind === 'recipe'
+      ? { title: meal.title || what.source.title || '', items, listed: what.source.ingredients }
+      : { title: meal.title || '', items, photo: true };
   try {
-    const added = (await askSeasoning([{ title: meal.title || source.title || '', items, listed: source.ingredients }], { notes: [] })).get(0);
-    if (!added?.length) return meal;
-    console.info(`[squish] recipe seasoning: ${added.map((item) => item.name).join(', ')} added`);
-    return { ...meal, items: [...(meal.items ?? []), ...added.map((item) => ({ ...item, ultraProcessed: false }))] };
+    const added = (await askSeasoning([asked], { notes: [] })).get(0) ?? [];
+    if (added.length) console.info(`[squish] ${what.kind} seasoning: ${added.map((item) => item.name).join(', ')} added`);
+    return added.map((item) => ({ ...item, ultraProcessed: false }));
   } catch (error) {
-    console.warn(`[squish] recipe seasoning check failed (${error instanceof Error ? error.message : String(error)}) — the recipe goes as read`);
-    return meal;
+    console.warn(`[squish] ${what.kind} seasoning check failed (${error instanceof Error ? error.message : String(error)}) — the meal goes as read`);
+    return [];
   }
 }
 

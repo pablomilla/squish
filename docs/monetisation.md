@@ -233,6 +233,17 @@ it adds only what the recipe calls for, so it needs no diet to go by. Under a
 penny an import, beside the $0.05 of the reading (`[squish] recipe seasoning:
 …`).
 
+A **photo** gets it too, as what somebody ate: what its title names (the
+paprika in a "paprika chicken") and the salt and pepper cooked savoury food is
+seasoned with, never a sauce or topping the photo would have shown. Labels are
+not checked: their figures are printed. It is asked as soon as the photo has
+been read, alongside the food-table matching and fill-in, so it adds little or
+nothing to the wait. About 900 tokens in and 100 out on the text model, roughly
+$0.003 a photo beside the photo's own $0.026 on Opus 5.5, so about 10% on the
+photo line of the bill; a Plus subscriber who uses all 60 photos costs about
+18¢ a month more. `[squish] photo seasoning: …` says what it added. The
+benchmark's cost column does not include it.
+
 **Dashboard → AI usage → Weekly plans** lists the last day's plans: whose,
 how long each took, how many tries, whether it has been seen, and why any
 failed (never what was planned). A plan that restarts is made, and paid to
