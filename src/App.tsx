@@ -275,7 +275,7 @@ function Shell() {
       */}
       <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
       {route.name === 'home' && <Home go={go} />}
-      {route.name === 'meals' && <Diary go={go} onEditMeal={editMeal} />}
+      {route.name === 'meals' && <Diary go={go} onEditMeal={editMeal} startDate={route.date} />}
       {route.name === 'insights' && <Insights go={go} />}
       {route.name === 'you' && <You go={go} opening={route.open} key={route.open ?? ''} />}
       {route.name === 'capture' && (
@@ -284,7 +284,7 @@ function Shell() {
       {route.name === 'add' && (
         <AddFood slot={route.slot} date={route.date} initialTab={route.tab} sharedUrl={route.recipeUrl} sharedText={route.text} onCancel={home} onReady={openReview} />
       )}
-      {route.name === 'ask' && <Ask key={`${route.question ?? ''}|${route.draft ?? ''}|${route.tab ?? ''}`} onClose={() => (route.back === 'meals' ? setRoute({ name: 'meals' }) : home())} question={route.question} draft={route.draft} tab={route.tab} />}
+      {route.name === 'ask' && <Ask key={`${route.question ?? ''}|${route.draft ?? ''}|${route.tab ?? ''}`} onClose={() => (route.back ? setRoute(route.back) : home())} question={route.question} draft={route.draft} tab={route.tab} />}
       {route.name === 'admin' && <Admin onClose={() => setRoute({ name: 'you' })} />}
       {route.name === 'review' && <Review draft={route.draft} onDone={home} onCancel={home} />}
       {route.name === 'snap' && <QuickSnap onClose={home} />}

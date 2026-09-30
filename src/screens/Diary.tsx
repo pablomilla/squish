@@ -41,13 +41,13 @@ const SLOTS: { key: MealSlot; label: string; plan: string; addTo: string; snap: 
   { key: 'snack', label: t('Snacks'), plan: t('Plan a snack'), addTo: t('Add to snacks'), snap: t('Snap a snack'), emoji: '🍎' },
 ];
 
-export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; onEditMeal: (meal: MealEntry) => void }) {
+export default function Diary({ go, onEditMeal, startDate }: { go: (route: Route) => void; onEditMeal: (meal: MealEntry) => void; startDate?: string }) {
   const toast = useToast();
   const { meals, days, targets, removeMeal, confirmMeal, setWater, setSteps, profile, plans } = useSquish();
   // Just the essentials: the day's calories, protein and meals; scores and the rest a tap away.
   const essentials = useEssentials();
   const more = useMoreDetail();
-  const [date, setDate] = useState(isoDate());
+  const [date, setDate] = useState(startDate ?? isoDate());
   const [selected, setSelected] = useState<MealEntry | null>(null);
   const [picking, setPicking] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -93,7 +93,7 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
             <BasketIcon size={18} />
           </button>
           {/* Logging is the + at the bottom, and a day's own buttons; this is the way to the week's plan, which was otherwise only on Home. */}
-          <button type="button" className="btn btn--sm" onClick={() => go({ name: 'ask', tab: 'plan', back: 'meals' })}>
+          <button type="button" className="btn btn--sm" onClick={() => go({ name: 'ask', tab: 'plan', back: { name: 'meals', date } })}>
             <CalendarIcon size={16} /> {t('Meal plan')}
           </button>
         </div>

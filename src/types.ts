@@ -382,7 +382,8 @@ export type YouSheet = 'plan' | 'food' | 'appearance' | 'plates' | 'reminders' |
  */
 export type Route =
   | { name: 'home' }
-  | { name: 'meals' }
+  /** `date` is the day it opens on: the one they were on, coming back from the meal plan. */
+  | { name: 'meals'; date?: string }
   | { name: 'insights' }
   /** `open` goes straight to one of its sheets, as a link to somebody's squad does. */
   | { name: 'you'; open?: YouSheet }
@@ -392,8 +393,8 @@ export type Route =
   | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites'; recipeUrl?: string; text?: string }
   /** `question` is asked as soon as the screen opens: a tap on a suggested question is the question. */
   /** `question` is asked on arrival; `draft` is only typed into the box, to send or change. */
-  /** `back` is where closing it returns to: the diary, when it was opened from there. */
-  | { name: 'ask'; question?: string; draft?: string; tab?: 'ask' | 'plan'; back?: 'meals' }
+  /** `back` is where closing it returns to: the diary, on the day it was opened from. */
+  | { name: 'ask'; question?: string; draft?: string; tab?: 'ask' | 'plan'; back?: { name: 'meals'; date?: string } }
   /** The dashboard, for whoever runs this Squish. Not a tab; reached from You. */
   | { name: 'admin' }
   | { name: 'review'; draft: Draft }
