@@ -44,10 +44,10 @@ export default function PlanCard({ plan, showSlot = false }: { plan: MealEntry; 
       <button
         type="button"
         className="icon-btn plan-card-drop"
-        aria-label={t('Remove the plan for {meal}', { meal: plan.title })}
+        aria-label={t('Remove {meal} from your plans', { meal: plan.title })}
         onClick={() => {
           removePlan(plan.id);
-          toast(t('Plan removed'), '🗓️');
+          toast(t('Meal removed'), '🗓️');
         }}
       >
         <CloseIcon size={16} />

@@ -1,5 +1,5 @@
 {
- "version": "04qxf27-uzg0ue",
+ "version": "16q4e7d0c0vx7n",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -108,13 +108,6 @@
    "other": "{n} tins of tuna",
    "where": [
     "src/lib/equivalents.ts"
-   ]
-  },
-  {
-   "id": "00k1sg20f7jvdy",
-   "text": "Plan removed",
-   "where": [
-    "src/components/PlanCard.tsx"
    ]
   },
   {
@@ -444,6 +437,7 @@
    "id": "02cb6q2-qd4att",
    "text": "Meal removed",
    "where": [
+    "src/components/PlanCard.tsx",
     "src/screens/Diary.tsx"
    ]
   },
@@ -1178,6 +1172,13 @@
    ]
   },
   {
+   "id": "060qm1d-92ka4p",
+   "text": "Remove {meal} from your plans",
+   "where": [
+    "src/components/PlanCard.tsx"
+   ]
+  },
+  {
    "id": "0634vlf-ya8lgb",
    "text": "Vitamins & minerals",
    "where": [
@@ -1569,13 +1570,6 @@
    "text": "<b>Reads your diary before it answers</b> — every meal, every day, every vitamin Squish tracks",
    "where": [
     "src/components/NutritionistPitch.tsx"
-   ]
-  },
-  {
-   "id": "0880u8r-t1if1j",
-   "text": "Remove the plan for {meal}",
-   "where": [
-    "src/components/PlanCard.tsx"
    ]
   },
   {
