@@ -27,7 +27,10 @@ import type { StepDetail } from '../src/lib/cooking';
 import { msg } from '../src/lib/i18n';
 
 const AISLE_IDS = AISLES.map((a) => a.id);
-import { WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, keptCalories, swapPrompt, weekPlanPrompt, type SwapRequest, type WeekPlanRequest } from './weekplan';
+import {
+  SEASONING_SCHEMA, SEASONING_SYSTEM, WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, keptCalories, seasoningPrompt, swapPrompt, toSeasoning, weekPlanPrompt,
+  type SeasoningMeal, type SwapRequest, type WeekPlanRequest,
+} from './weekplan';
 import { COOK_SCHEMA, COOK_SYSTEM, COOK_LABEL_SCHEMA, COOK_LABEL_SYSTEM, cookPrompt, labelPrompt, toCookSteps, toLabels, type CookAsk, type CookSteps, type LabelAsk } from './cook';
 import { aimLines, eatingLines, type About } from '../src/lib/eating';
 
@@ -1145,7 +1148,8 @@ async function groundWeek(week: ModelWeek, brief: boolean): Promise<{ week: Mode
 
   let items = (await groundMeal({ title: 'a week of planned meals', items: all })).items ?? all;
   let fill: CallCost | null = null;
-  if (brief) {
+  // Table first leaves figures to fill in, and so does the seasoning check, whose additions come with none.
+  if (brief || items.some(missingFigures)) {
     // Without vitamins and minerals, as the rest of a plan is.
     const done = await fillFigures({ title: 'a week of planned meals', items }, false);
     items = done.meal.items ?? items;
@@ -1159,6 +1163,63 @@ async function groundWeek(week: ModelWeek, brief: boolean): Promise<{ week: Mode
     days[day].meals![meal].items![item] = items[n];
   });
   return { week: { ...week, days }, fill };
+}
+
+/**
+ * The seasoning check (server/weekplan.ts has the why): one short question
+ * over every meal, on the fill-in's route, and what it adds put on each
+ * meal's list to be matched and filled in with the rest. A check that fails
+ * leaves the plan as it came: better without the paprika than not at all.
+ */
+async function completeSeasoning(week: ModelWeek, who: Pick<WeekPlanRequest, 'about' | 'notes'>): Promise<ModelWeek> {
+  const places: { day: number; meal: number }[] = [];
+  const meals: SeasoningMeal[] = [];
+  (week.days ?? []).forEach((day, d) =>
+    (day.meals ?? []).forEach((meal, m) => {
+      if (!(meal.items ?? []).length) return;
+      places.push({ day: d, meal: m });
+      meals.push({ title: meal.title ?? '', items: (meal.items ?? []).map((item) => item.name ?? '').filter(Boolean) });
+    }),
+  );
+  if (!meals.length) return week;
+
+  const format = { type: 'json_schema' as const, schema: SEASONING_SCHEMA as unknown as Record<string, unknown> };
+  try {
+    const added = await withModels('fill', async (model, _attempt, signal) => {
+      const response = await createMessage({
+        model,
+        max_tokens: withThinkingRoom(model, 4000),
+        system: `${SEASONING_SYSTEM}\n\n${regionNote('plan')}`,
+        messages: [{ role: 'user', content: seasoningPrompt(meals, who) }],
+        // Looking down a list, not a problem to reason about.
+        ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
+          ? { ...thinkingOff(model), output_config: { effort: 'low' as const, format } }
+          : { output_config: { format } }),
+      }, signal);
+      billed(priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model);
+      if (response.stop_reason === 'refusal') throw new Error('The model declined to check the seasoning.');
+      const text = response.content
+        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+        .map((block) => block.text)
+        .join('');
+      return toSeasoning(readAnswer(text, response.stop_reason), meals);
+    });
+    if (!added.size) return week;
+
+    const days = structuredClone(week.days ?? []);
+    let count = 0;
+    for (const [index, items] of added) {
+      const { day, meal } = places[index];
+      const target = days[day].meals![meal];
+      target.items = [...(target.items ?? []), ...items.map((item) => ({ ...item, ultraProcessed: false }))];
+      count += items.length;
+    }
+    console.info(`[squish] weekplan seasoning: ${count} added to ${added.size} of ${meals.length} meals`);
+    return { ...week, days };
+  } catch (error) {
+    console.warn(`[squish] weekplan seasoning check failed (${error instanceof Error ? error.message : String(error)}) — the plan goes as it came`);
+    return week;
+  }
 }
 
 /**
@@ -1224,7 +1285,7 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('');
-  const { week, fill } = await groundWeek(readAnswer<ModelWeek>(text, response.stop_reason), brief);
+  const { week, fill } = await groundWeek(await completeSeasoning(readAnswer<ModelWeek>(text, response.stop_reason), req), brief);
   if (fill) console.info(`[squish] weekplan fill-in: out=${fill.outputTokens} ${fill.costUsd === null ? 'unpriced' : `$${fill.costUsd.toFixed(4)}`}`);
   const { plan, fitted } = fitToTarget(
     withoutNever(withoutKept(toWeekPlan(week, req), req.kept), req.history?.never),
@@ -1280,7 +1341,7 @@ async function swapOn(model: string, req: SwapRequest, signal: AbortSignal): Pro
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('');
-  const { week } = await groundWeek(readAnswer<ModelWeek>(answer, response.stop_reason), brief);
+  const { week } = await groundWeek(await completeSeasoning(readAnswer<ModelWeek>(answer, response.stop_reason), req), brief);
   return fitSwap(week, req);
 }
 

@@ -4,7 +4,8 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { closeDatabase, hasDatabase } from '../server/db';
 import { fitSwap, fitToTarget, swapMeal, TEXT_MODEL, toWeekPlan, withoutKept } from '../server/claude';
-import { cleanSwapRequest, cleanWeekRequest, keptCalories, swapPrompt, weekPlanPrompt, WEEKPLAN_SYSTEM } from '../server/weekplan';
+import { cleanSwapRequest, cleanWeekRequest, keptCalories, seasoningPrompt, swapPrompt, toSeasoning, weekPlanPrompt, SEASONING_SYSTEM, WEEKPLAN_SYSTEM } from '../server/weekplan';
+import type { About } from '../src/lib/eating';
 import { FEATURES } from '../server/routing';
 import { NUTRITIONIST_PLAN_NOTE, likesFrom, replaceable, replacedOn, standingOn, weekDates } from '../src/lib/planner';
 import type { MealEntry, MealSlot, Nutrients } from '../src/types';
@@ -207,5 +208,35 @@ test('a plan lists what a meal is flavoured with, above all what its title names
   // and the recipe and the shopping list are made from the items alone.
   assert.match(WEEKPLAN_SYSTEM, /every spice, dried herb, paste and sauce it uses/);
   assert.match(WEEKPLAN_SYSTEM, /the paprika in a paprika chicken/);
-  assert.match(WEEKPLAN_SYSTEM, /Only salt, black pepper and water may go unlisted/);
+  assert.match(WEEKPLAN_SYSTEM, /Salt and black pepper too, whenever the meal is seasoned with them/);
+  assert.match(WEEKPLAN_SYSTEM, /Only water goes unlisted/);
+});
+
+test('what the seasoning check adds is small, new and for a meal that exists', () => {
+  const meals = [{ title: 'Crispy Paprika Chicken', items: ['Chicken breast', 'Potato wedges'] }, { title: 'Herb Omelette', items: ['Eggs', 'Mixed herbs'] }];
+  const add = (name: string, grams: number, extra: Record<string, unknown> = {}) => ({ name, emoji: '🌶️', portion: '1 tsp', grams, liquid: false, aisle: 'cupboard', lookup: '', ...extra });
+  const found = toSeasoning({
+    meals: [
+      { meal: 1, add: [add('Smoked paprika', 2), add('smoked paprika', 2), add('Chicken breast', 5), add('Oven chips', 200), add('Garlic', 0), add('Salt', 1, { aisle: 'jewellery' })] },
+      { meal: 2, add: [add('Salt', 1), add('Pepper', 0.5), add('Chives', 3), add('Parsley', 3), add('Paprika', 1)] },
+      { meal: 3, add: [add('Salt', 1)] },
+      { meal: 'first', add: [add('Salt', 1)] },
+    ],
+  }, meals);
+  assert.deepEqual(found.get(0)!.map((i) => i.name), ['Smoked paprika', 'Salt'], 'once each; nothing already there, too big, weightless');
+  assert.equal(found.get(0)![1].aisle, 'cupboard', 'an aisle that is not one is the cupboard');
+  assert.equal(found.get(1)!.length, 4, 'a few at most');
+  assert.equal(found.size, 2, 'no meal that is not on the list');
+  assert.equal(toSeasoning(null, meals).size, 0);
+  assert.equal(toSeasoning({ meals: 'none' }, meals).size, 0);
+});
+
+test('the seasoning check says what to look for and what never to add', () => {
+  assert.match(SEASONING_SYSTEM, /the paprika in "Crispy Paprika Chicken"/);
+  assert.match(SEASONING_SYSTEM, /salt and black pepper on a grilled steak, a baked potato/);
+  assert.match(SEASONING_SYSTEM, /avoid, are allergic or intolerant to/);
+  const prompt = seasoningPrompt([{ title: 'Satay Chicken', items: ['Chicken thigh', 'Rice'] }], { notes: ['Peanut allergy'], about: { diet: 'vegetarian' } as About });
+  assert.match(prompt, /1\. Satay Chicken: Chicken thigh, Rice/);
+  assert.match(prompt, /Peanut allergy/);
+  assert.match(prompt, /<how_they_eat>/);
 });

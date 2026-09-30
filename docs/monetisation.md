@@ -214,6 +214,18 @@ mostly plain ingredients, so this is where not asking for figures the table
 already has should save the most; each plan logs how many of its ingredients
 came from the table (`[squish] weekplan table first: …`).
 
+A plan, and a swap, then gets one more short question on the same cheaper
+model: **the seasoning check** (`SEASONING_SYSTEM` in `server/weekplan.ts`).
+It is shown every meal's title and ingredients and says what each is missing
+to taste of what it is — the paprika in a paprika chicken, the salt and pepper
+on a grilled steak — because the recipe and the shopping list are made from
+the ingredients alone, and a teaspoon of spice weighs so little that plans
+leave it off. What it adds is small (40 g at most, four to a meal), never
+something they avoid, and matched to the food table like any other
+ingredient. About 1,500 tokens in and a few hundred out: well under a penny
+a plan. If it fails, the plan goes as it came (`[squish] weekplan
+seasoning: …` says what it added).
+
 **Dashboard → AI usage → Weekly plans** lists the last day's plans: whose,
 how long each took, how many tries, whether it has been seen, and why any
 failed (never what was planned). A plan that restarts is made, and paid to

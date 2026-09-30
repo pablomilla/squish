@@ -15,11 +15,13 @@ import { MAIN_MODEL } from '../server/providers';
  * question; a dish gets everything in the first answer, as before.
  */
 
-type Sent = { model: string; system: string; prompt: string; itemNutrientsRequired: string[] | null; fill: boolean; schema?: unknown };
+type Sent = { model: string; system: string; prompt: string; itemNutrientsRequired: string[] | null; fill: boolean; seasoning: boolean; schema?: unknown };
 const sent: Sent[] = [];
 let firstAnswer: Record<string, unknown> = {};
 let fillAnswer: Record<string, unknown> = {};
 let weekAnswer: Record<string, unknown> = {};
+/** What the seasoning check says is missing: nothing, unless a test says otherwise. */
+let seasoningAnswer: Record<string, unknown> | 'fail' = { meals: [] };
 let failing = new Set<string>();
 let api: Server;
 
@@ -44,8 +46,9 @@ before(async () => {
       const content = body.messages[0].content;
       const prompt = typeof content === 'string' ? content : content.map((part) => part.text ?? '').join(' ');
       const fill = body.system.includes('You are given foods from one meal');
+      const seasoning = body.system.startsWith('You check the ingredient lists');
       sent.push({
-        model: body.model, system: body.system, prompt, fill,
+        model: body.model, system: body.system, prompt, fill, seasoning,
         itemNutrientsRequired: body.output_config?.format?.schema?.properties?.items?.items?.properties?.nutrients?.required ?? null,
         schema: body.output_config?.format?.schema,
       });
@@ -64,6 +67,15 @@ before(async () => {
         return;
       }
       res.setHeader('content-type', 'application/json');
+      if (seasoning) {
+        if (seasoningAnswer === 'fail') {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: 'down' } }));
+          return;
+        }
+        res.end(JSON.stringify(reply(body.model, seasoningAnswer)));
+        return;
+      }
       if (failing.has(body.model)) {
         res.statusCode = 400;
         res.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'not today' } }));
@@ -188,8 +200,9 @@ test('a week’s ingredients: two figures each where the table can answer, one f
   };
 
   const plan = await planWeek(ask);
-  const [week, fill] = sent;
-  assert.equal(sent.length, 2, 'the plan, and one fill-in for the whole week');
+  assert.equal(sent.filter((s) => s.seasoning).length, 1, 'one seasoning check for the whole week');
+  const [week, fill] = sent.filter((s) => !s.seasoning);
+  assert.equal(sent.filter((s) => !s.seasoning).length, 2, 'the plan, and one fill-in for the whole week');
   const nested = JSON.stringify(week.schema);
   assert.ok(nested.includes('"required":[]'), 'ingredient nutrients optional in the plan');
   assert.match(week.system, /give only calories and freeSugar/);
@@ -244,4 +257,73 @@ test('a recipe’s ingredients, by their raw weights: from the table where it ca
   assert.equal(pesto.nutrients.calories, 150, 'a jar of sauce keeps the AI’s figures');
   assert.equal(nuts.nutrients.fat, 6.8, 'filled in');
   assert.equal(recipe.servings, 4);
+});
+
+/* The seasoning check: what a meal needs to taste of its title, added and matched like any ingredient. */
+
+const SPICES: TableFood[] = [
+  { source: 'usda', id: '171329', name: 'Spices, paprika', per100: { calories: 282, protein: 14.1, fat: 12.9, carbs: 54, fibre: 34.9, sugar: 10.3, satFat: 2.1, sodium: 68 } },
+  { source: 'usda', id: '173468', name: 'Salt, table', per100: { calories: 0, protein: 0, fat: 0, carbs: 0, fibre: 0, sugar: 0, satFat: 0, sodium: 38758 } },
+  { source: 'usda', id: '170931', name: 'Spices, pepper, black', per100: { calories: 251, protein: 10.4, fat: 3.3, carbs: 64, fibre: 25.3, sugar: 0.6, satFat: 1.4, sodium: 20 } },
+];
+const dinnerOf = (title: string, items: Record<string, unknown>[]) => ({ slot: 'dinner', title, items });
+const weekOf = (...meals: Record<string, unknown>[]) => ({ summary: 'A calm week.', days: [{ day: 1, meals }] });
+const oneDay: WeekPlanRequest = {
+  startDate: '2026-10-05', days: 1, slots: ['lunch', 'dinner'], snacks: false, calorieTarget: 1800, proteinTarget: 100,
+  fibreTarget: 30, goal: 'maintain', sex: 'female', likes: [], notes: ['Allergic to sesame'], preferences: '', cooking: 'normal',
+};
+const add = (name: string, grams: number, lookup: string) => ({ name, emoji: '🧂', portion: 'a pinch', grams, liquid: false, aisle: 'cupboard', lookup });
+
+test('a meal short of what its title names, or of its seasoning, has it added, matched to the table', async () => {
+  useTableForTests([...TABLE, ...SPICES]);
+  sent.length = 0;
+  weekAnswer = weekOf(
+    dinnerOf('Crispy Paprika Chicken & Wedges', [item('Chicken breast', '', 160, { ...full, calories: 260 }), item('Potato wedges', '', 200, { ...full, calories: 220 })]),
+    { ...dinnerOf('Grilled Sirloin & Baked Potato', [item('Sirloin steak', '', 180, { ...full, calories: 380 }), item('Baking potato', '', 250, { ...full, calories: 230 })]), slot: 'lunch' },
+  );
+  seasoningAnswer = {
+    meals: [
+      { meal: 1, add: [add('Smoked paprika', 2, 'spices, paprika')] },
+      {
+        meal: 2,
+        add: [
+          add('Salt', 1, 'salt, table'),
+          add('Black pepper', 0.5, 'spices, pepper, black'),
+          add('sirloin steak', 10, ''), // already on the list, in other letters
+          add('Chips', 250, ''), // not seasoning: too much to be
+        ],
+      },
+      { meal: 9, add: [add('Salt', 1, 'salt, table')] }, // no such meal
+    ],
+  };
+
+  const plan = await planWeek(oneDay);
+  const check = sent.find((s) => s.seasoning)!;
+  assert.match(check.prompt, /1\. Crispy Paprika Chicken & Wedges: Chicken breast, Potato wedges/);
+  assert.match(check.prompt, /2\. Grilled Sirloin & Baked Potato: Sirloin steak, Baking potato/);
+  assert.match(check.prompt, /Allergic to sesame/, 'what they avoid goes with the question');
+  assert.equal(check.model, TEXT_MODEL, 'on the cheaper model, as the fill-in is');
+
+  const meal = (title: string) => plan.days[0].meals.find((m) => m.title.startsWith(title))!;
+  const paprika = meal('Crispy Paprika').items.find((i) => i.name === 'Smoked paprika');
+  assert.ok(paprika, 'the paprika is on the list');
+  assert.equal(paprika!.source?.name, 'Spices, paprika', 'its figures from the table');
+  assert.ok(paprika!.nutrients.calories > 0 && paprika!.nutrients.calories < 15);
+
+  const steak = meal('Grilled Sirloin').items.map((i) => i.name);
+  assert.deepEqual(steak, ['Sirloin steak', 'Baking potato', 'Salt', 'Black pepper'], 'salt and pepper, and nothing that was not seasoning');
+  assert.ok((meal('Grilled Sirloin').items.find((i) => i.name === 'Salt')!.nutrients.sodium ?? 0) > 300, 'the salt carries its sodium');
+  assert.equal(sent.filter((s) => s.fill).length, 0, 'all three found in the table: nothing left to fill in');
+  seasoningAnswer = { meals: [] };
+});
+
+test('a seasoning check that fails leaves the plan as it came', async () => {
+  useTableForTests([...TABLE, ...SPICES]);
+  sent.length = 0;
+  weekAnswer = weekOf(dinnerOf('Crispy Paprika Chicken & Wedges', [item('Chicken breast', '', 160, { ...full, calories: 260 })]));
+  seasoningAnswer = 'fail';
+  const plan = await planWeek(oneDay);
+  assert.deepEqual(plan.days[0].meals[0].items.map((i) => i.name), ['Chicken breast']);
+  assert.ok(sent.filter((s) => s.seasoning).length >= 1, 'it was asked');
+  seasoningAnswer = { meals: [] };
 });
