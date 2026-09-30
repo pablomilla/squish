@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AnalysisResult, FoodItem, MealSlot } from '../types';
 import Squish from '../components/Squish';
 import EmptyState from '../components/EmptyState';
-import DictateButton from '../components/DictateButton';
+import VoiceField from '../components/VoiceField';
 import { Segmented, Stepper, useToast } from '../components/ui';
 import { BookmarkIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
@@ -290,25 +290,41 @@ export default function AddFood({ slot, date, initialTab = 'search', sharedUrl, 
             <Squish mood="excited" size={92} bob={false} />
             <p className="speech">{t("Tell me what you ate in your own words — I'll turn it into calories and macros.")}</p>
           </div>
-          <textarea
-            className="textarea"
+          {/* Dictation is appended rather than replacing: people say the bulk
+              of it and then tidy up the bit it misheard. */}
+          <VoiceField
             value={description}
-            autoFocus
-            rows={4}
-            placeholder={t('e.g. chicken salad wrap, an apple and a flat white')}
-            onChange={(e) => setDescription(e.target.value)}
-            aria-label={t('Describe your meal')}
-          />
-          {/* Appended rather than replacing: people dictate the bulk of it and
-              then tidy up the bit it misheard. */}
-          <DictateButton
+            multiline
             label={t('your meal')}
             onText={(text) => {
               setDictated(true);
               setDescription((current) => (current ? `${current.trim()} ${text}` : text));
             }}
             onError={(message) => toast(message, '🎤')}
-          />
+          >
+            <textarea
+              className="textarea"
+              value={description}
+              autoFocus
+              rows={4}
+              enterKeyHint="go"
+              placeholder={t('e.g. chicken salad wrap, an apple and a flat white')}
+              onChange={(e) => setDescription(e.target.value)}
+              // Enter works it out, as the keyboard's own button says; a meal
+              // needs no new lines, and Shift+Enter still makes one.
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  void describe();
+                }
+              }}
+              aria-label={t('Describe your meal')}
+            />
+          </VoiceField>
+          {/* Straight under the box, so it is still there when the keyboard is up. */}
+          <button type="button" className="btn btn--block" onClick={() => void describe()}>
+            <SparkIcon size={18} /> {t('Work it out')}
+          </button>
           <div className="row wrap" style={{ gap: 8 }}>
             {EXAMPLES.map((example) => (
               <button key={example} type="button" className="chip" onClick={() => setDescription(example)}>
@@ -316,9 +332,6 @@ export default function AddFood({ slot, date, initialTab = 'search', sharedUrl, 
               </button>
             ))}
           </div>
-          <button type="button" className="btn btn--block" onClick={() => void describe()}>
-            <SparkIcon size={18} /> {t('Work it out')}
-          </button>
         </div>
       )}
 

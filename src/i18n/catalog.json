@@ -869,7 +869,7 @@
    "id": "045cux503pb7fl",
    "text": "your meal",
    "where": [
-    "src/components/DictateButton.tsx",
+    "src/components/VoiceField.tsx",
     "src/screens/AddFood.tsx"
    ]
   },
@@ -1913,7 +1913,7 @@
    "id": "09y0xk6-snomhh",
    "text": "Stop dictating",
    "where": [
-    "src/components/DictateButton.tsx"
+    "src/components/VoiceField.tsx"
    ]
   },
   {
@@ -3654,7 +3654,7 @@
    "id": "0jpk55v-2waaqc",
    "text": "Dictate {what}",
    "where": [
-    "src/components/DictateButton.tsx"
+    "src/components/VoiceField.tsx"
    ]
   },
   {
@@ -3939,7 +3939,6 @@
    "id": "0ky4lc5-vlyf6m",
    "text": "Stop",
    "where": [
-    "src/components/DictateButton.tsx",
     "src/components/cookParts.tsx"
    ]
   },
@@ -4933,7 +4932,7 @@
    "id": "0pavn8j0xh2oko",
    "text": "Dictation would not start. Typing still works.",
    "where": [
-    "src/components/DictateButton.tsx"
+    "src/components/VoiceField.tsx"
    ]
   },
   {
@@ -7289,7 +7288,6 @@
    "id": "11trkwd-r48nqa",
    "text": "Say it",
    "where": [
-    "src/components/DictateButton.tsx",
     "src/lib/achievements.ts"
    ]
   },
@@ -8778,7 +8776,7 @@
    "id": "18u3ykk-yqr7df",
    "text": "Listening…",
    "where": [
-    "src/components/DictateButton.tsx"
+    "src/components/VoiceField.tsx"
    ]
   },
   {
@@ -9081,7 +9079,7 @@
    "id": "1ahb4gz-79xorf",
    "text": "Say it instead of typing. Your browser handles the speech, and some browsers send it to their own servers to do it.",
    "where": [
-    "src/components/DictateButton.tsx"
+    "src/components/VoiceField.tsx"
    ]
   },
   {

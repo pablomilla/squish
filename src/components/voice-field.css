@@ -1,0 +1,43 @@
+/* A text box with the microphone inside it, at the end of the line. */
+.voice { position: relative; }
+.voice--mic > .input,
+.voice--mic > .textarea { padding-inline-end: 54px; }
+/* The corner a resize handle would take is the microphone's. */
+.voice--mic > .textarea { resize: none; }
+/* A block, so the box ends where the textarea does, with no gap under it for the words to spill into. */
+.voice > .textarea { display: block; }
+
+.voice-mic {
+  position: absolute; inset-inline-end: 6px; top: 50%; transform: translateY(-50%); z-index: 1;
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%;
+  border: 0; background: transparent; color: var(--brand); cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.voice--box .voice-mic { top: auto; bottom: 7px; transform: none; }
+.voice-mic:hover { background: var(--brand-soft); }
+.voice-mic:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* Live, and saying so without a wall of red: the button fills and pulses, and
+   nothing around it moves. */
+.voice-mic.is-live { background: var(--bad-soft); color: var(--bad); animation: voice-pulse 1.4s var(--ease) infinite; }
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--bad-soft); }
+  50% { box-shadow: 0 0 0 6px var(--bad-soft); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-mic.is-live { animation: none; }
+}
+
+/* The words as they are heard, laid over the box in its own place and type,
+   so it reads as the box filling in rather than something new appearing. */
+.voice-live {
+  position: absolute; inset: 1px; z-index: 0; pointer-events: none; overflow: hidden;
+  padding: 12px 13px; padding-inline-end: 53px; border-radius: var(--r-md);
+  background: var(--surface); color: var(--ink); line-height: inherit;
+  white-space: nowrap; scrollbar-width: none;
+}
+.voice--box .voice-live { white-space: pre-wrap; overflow-wrap: anywhere; }
+.voice-heard { color: var(--ink-3); font-style: italic; }
+
+/* Beside a send button, the box takes the room. */
+.fix-row > .voice { flex: 1; min-width: 0; }

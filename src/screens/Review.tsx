@@ -4,7 +4,7 @@ import Squish from '../components/Squish';
 import { MacroBars, MacroSplitBar, Micronutrients, MinorNutrients, ScoreMeter } from '../components/charts';
 import Comparison from '../components/Comparison';
 import { mealEquivalent, seedFrom } from '../lib/equivalents';
-import DictateButton from '../components/DictateButton';
+import VoiceField from '../components/VoiceField';
 import { Segmented, Sheet, Stepper, useToast } from '../components/ui';
 import { ChevronIcon, CloseIcon, HeartIcon, PlusIcon, SearchIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { NumberField } from '../components/fields';
@@ -506,31 +506,34 @@ export default function Review({ draft, onDone, onCancel }: { draft: Draft; onDo
           {t('Tell Squish in your own words — “two eggs, not one”, “no cheese”, “grilled not fried”.')}
         </p>
         <div className="fix-row">
-          <input
-            id="fix"
-            className="input"
+          {/* Corrections are short and said out loud faster than typed, and this
+              is the screen someone is on with a plate in front of them. */}
+          <VoiceField
             value={fix}
-            disabled={fixing}
-            placeholder={t('There were two eggs, not one')}
-            onChange={(e) => setFix(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void applyFix();
-              }
-            }}
-          />
+            label={t('your correction')}
+            onText={(text) => setFix((current) => (current ? `${current.trim()} ${text}` : text))}
+            onError={(message) => toast(message, '🎤')}
+          >
+            <input
+              id="fix"
+              className="input"
+              value={fix}
+              disabled={fixing}
+              enterKeyHint="send"
+              placeholder={t('There were two eggs, not one')}
+              onChange={(e) => setFix(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void applyFix();
+                }
+              }}
+            />
+          </VoiceField>
           <button type="button" className="btn btn--soft" disabled={!fix.trim() || fixing} onClick={() => void applyFix()}>
             {fixing ? t('Thinking…') : t('Fix it')}
           </button>
         </div>
-        {/* Corrections are short and said out loud faster than typed, and this
-            is the screen someone is on with a plate in front of them. */}
-        <DictateButton
-          label={t('your correction')}
-          onText={(text) => setFix((current) => (current ? `${current.trim()} ${text}` : text))}
-          onError={(message) => toast(message, '🎤')}
-        />
       </section>
 
       {canPlan && (

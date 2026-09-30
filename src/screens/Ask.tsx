@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Squish from '../components/Squish';
-import DictateButton from '../components/DictateButton';
+import VoiceField from '../components/VoiceField';
 import { CloseIcon, SparkIcon, TrashIcon } from '../components/icons';
 import { useSquish } from '../store/useSquish';
 import { askNutritionist, isPaywalled, SquishApiError, type ChatMessage } from '../lib/api';
@@ -374,29 +374,32 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
 
       {tab === 'ask' && !locked && <div className="ask-composer">
         <div className="fix-row">
-          <input
-            className="input"
+          <VoiceField
             value={draft}
-            disabled={thinking}
-            placeholder={t('Ask about your diary…')}
-            aria-label={t('Your question')}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void ask(draft);
-              }
-            }}
-          />
-          <button type="button" className="btn btn--soft" disabled={!draft.trim() || thinking} onClick={() => void ask(draft)}>
+            label={t('your question')}
+            onText={(text) => setDraft((current) => (current ? `${current.trim()} ${text}` : text))}
+            onError={(message) => toast(message, '🎤')}
+          >
+            <input
+              className="input"
+              value={draft}
+              disabled={thinking}
+              enterKeyHint="send"
+              placeholder={t('Ask about your diary…')}
+              aria-label={t('Your question')}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void ask(draft);
+                }
+              }}
+            />
+          </VoiceField>
+          <button type="button" className="btn btn--soft" disabled={!draft.trim() || thinking} onClick={() => void ask(draft)} aria-label={t('Ask')}>
             <SparkIcon size={17} />
           </button>
         </div>
-        <DictateButton
-          label={t('your question')}
-          onText={(text) => setDraft((current) => (current ? `${current.trim()} ${text}` : text))}
-          onError={(message) => toast(message, '🎤')}
-        />
       </div>}
 
       <Sheet open={listing} onClose={() => setListing(false)} title={t('Past chats')}>
