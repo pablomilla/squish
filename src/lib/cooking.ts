@@ -89,35 +89,101 @@ function followTheFood(steps: string[], details: StepDetail[], items: { name: st
   return intoTheBlender(steps, followed);
 }
 
-/** Words that put a step at the blender. */
-const BLENDER = /\b(blender|food processor|nutribullet|smoothie maker|blend|blends|blending|blitz|puree|purée)\b/i;
+/**
+ * Whole words in any script (`\b` knows only English letters), a pattern
+ * allowing endings with \p{L}*. No lookbehind: iOS 15's Safari has none, and
+ * one here would stop cook mode loading at all.
+ */
+const words = (...patterns: string[]) => new RegExp(`(?:^|[^\\p{L}\\p{M}])(?:${patterns.join('|')})(?![\\p{L}\\p{M}])`, 'iu');
+/** Found anywhere: for scripts written without spaces, and words joined to what comes before (Arabic's al-). */
+const within = (...fragments: string[]) => new RegExp(fragments.join('|'), 'u');
+const either = (...res: RegExp[]) => ({ test: (text: string) => res.some((re) => re.test(text)) });
+
+/**
+ * The blender, by name, in every language the app speaks — the steps are
+ * written in theirs. A plain "mixer" is left out in English, where it is the
+ * one for cakes.
+ */
+const BLENDER = either(
+  words(
+    'blender\\p{L}*', 'food processors?', 'nutribullet', 'smoothie makers?', 'blend', 'blends', 'blending', 'blitz', 'puree', 'purée',
+    'licuadora', 'batidora', 'procesador de alimentos', // es
+    'mixeur', 'blendeur', 'robot culinaire', 'robot mixeur', // fr
+    'standmixer', 'stabmixer', 'küchenmaschine', '(?:den|dem|im) mixer', // de
+    'frullatore', 'robot da cucina', // it
+    'liquidificadora?', 'processador de alimentos', 'robot de cozinha', // pt
+    'keukenmachine', 'staafmixer', // nl
+    'robot de bucătărie', 'mikser\\p{L}*', 'cumascóir', 'cymysgydd', 'prosesydd bwyd', 'máy xay', // ro, pl/tr, ga, cy, vi
+    'μπλέντερ', 'μίξερ', // el
+  ),
+  within('خلاط', 'بلینڈر', 'ब्लेंडर', 'मिक्सर', 'ਬਲੈਂਡਰ', 'ਮਿਕਸਰ', 'ব্লেন্ডার', 'মিক্সার', '搅拌机', '料理机', '破壁机', 'ミキサー', 'ブレンダー', 'フードプロセッサー', '블렌더', '믹서'),
+);
 /** The blending itself, after which what is poured out is being served. */
-const BLENDING = /\b(blend|blitz|puree|purée|whizz)\b/i;
-/** Knife work: on the board, whatever it goes into next. */
-const KNIFE = /\b(chop|slice|dice|cut|peel|grate|mince|halve|core|hull|stone|pit)\b/i;
+const BLENDING = words(
+  'blend', 'blends', 'blitz', 'blitzes', 'puree', 'purée', 'whizz',
+  'tritur\\p{L}*', 'licú[ae]', 'licuar', // es, pt
+  'mix(?:ez|e)', // fr
+  'pürier\\p{L}*', 'mixen', // de, nl
+  'frull(?:a|are|ate)', // it
+  'pureer\\p{L}*', // nl
+  'z?miksuj\\p{L}*', // pl
+  'mixeaz[ăa]', // ro
+);
+/** Knife work: on the board, whatever it goes into next. Whole words, so the raspberries are not grated. */
+const KNIFE = words(
+  'chop', 'slice', 'dice', 'cut', 'peel', 'grate', 'mince', 'halve', 'core', 'hull', 'stone', 'pit',
+  'pic(?:a|ar|ado|ada)', 'cort(?:a|ar|e|ado|ada)', 'pel(?:a|ar|ado|ada)', 'rall(?:a|ar)', 'trocea\\p{L}*', 'descasc\\p{L}*', 'fati\\p{L}*', // es, pt
+  'coup(?:e|ez|er)', 'émin\\p{L}*', 'hach(?:e|ez|er)', 'épluch\\p{L}*', 'pel(?:ez|er)', 'râp(?:e|ez|er)', 'tranch(?:e|ez|er)', // fr
+  'schneid\\p{L}*', 'hack\\p{L}*', 'schäl\\p{L}*', 'raspel\\p{L}*', 'würfel\\p{L}*', // de
+  'tagli\\p{L}*', 'trit(?:a|are|ato|ata)', 'sbucci\\p{L}*', 'grattugi\\p{L}*', 'affett\\p{L}*', // it
+  'snijd?\\p{L}*', 'schil\\p{L}*', 'rasp(?:en)?', 'hak(?:ken)?', // nl
+  'pokr[óo]j\\p{L}*', 'posiekaj', 'obierz', 'zetrzyj', // pl
+  'tai(?:e|ați)', 'toac[ăa]', 'cur[ăa]ț[ăa]', 'rade', // ro
+  'doğra\\p{L}*', 'kes(?:in|ip|erek)?', 'soy(?:un|up)', 'rendele\\p{L}*', // tr
+);
 /** A step putting something into something. */
-const PUTTING = /\b(add|adding|put|place|tip|pour|spoon|scoop|drop|throw|crumble|squeeze)\b/i;
+const PUTTING = words(
+  'add', 'adding', 'put', 'place', 'tip', 'pour', 'spoon', 'scoop', 'drop', 'throw', 'crumble', 'squeeze',
+  'añad\\p{L}*', 'agreg\\p{L}*', 'viert\\p{L}*', 'verter', 'ech(?:a|ar)', 'pon', 'ponga', 'incorpor\\p{L}*', 'mete', // es
+  'ajout\\p{L}*', 'vers(?:e|ez|er)', 'mett(?:e|ez|re)', 'plac(?:e|ez|er)', // fr
+  'gib', 'geben', 'füg\\p{L}*', 'hinzu\\p{L}*', 'gieß\\p{L}*', 'giess\\p{L}*', // de
+  'aggiung\\p{L}*', 'vers(?:a|are|ate)', 'mett(?:i|ete|ere)', 'unisc\\p{L}*', // it
+  'adicion\\p{L}*', 'junt(?:e|a|ar)', 'deit(?:e|a|ar)', 'coloqu\\p{L}*', 'acrescent\\p{L}*', // pt
+  'voeg\\p{L}*', 'doe', 'schenk\\p{L}*', 'giet', // nl
+  'dodaj\\p{L}*', 'wlej', 'wsyp', 'włóż', // pl
+  'adaug\\p{L}*', 'pune\\p{L}*', 'toarn\\p{L}*', // ro
+  'ekle\\p{L}*', 'koy\\p{L}*', 'dök\\p{L}*', // tr
+);
 /** What a step at the blender can have been labelled instead: the board, the bowl, the seasoning. */
 const MOVABLE = new Set<StepAction>(['prep', 'mix', 'season']);
 
 /**
  * A smoothie is a row of things going into the blender, and the board is
  * no picture for "add the berries". So a step that names the blender is at
- * it, and so is anything added after it is out and before it is switched on;
- * and anything added just before a step at the blender is going into it.
- * Chopping stays on the board, and pouring out once it is blended is serving.
+ * it, and so is every step after it until it is switched on; and anything
+ * added just before a step at the blender is going into it. Chopping stays
+ * on the board, and pouring out once it is blended is serving.
+ *
+ * The blender is known by name in every language the app speaks, and the
+ * blending by the model's own label for it, so a smoothie in Japanese
+ * follows its food too. Adding and chopping are known by their words in
+ * English and the main European languages; elsewhere, what goes in before
+ * the blender is named is left to the model, which relabels old steps in
+ * any language whenever it can be asked.
  */
 function intoTheBlender(steps: string[], details: StepDetail[]): StepDetail[] {
-  const actions = details.map((detail) => detail.action);
-  const atBlender = (i: number) => MOVABLE.has(actions[i]) && !(KNIFE.test(steps[i]) && !BLENDER.test(steps[i]));
-  let out = false;
-  steps.forEach((step, i) => {
-    if (BLENDER.test(step) && atBlender(i)) actions[i] = 'blend';
-    else if (out && PUTTING.test(step) && atBlender(i)) actions[i] = 'blend';
-    if (BLENDER.test(step)) out = !BLENDING.test(step);
+  const given = details.map((detail) => detail.action);
+  const actions = [...given];
+  const named = steps.map((step) => BLENDER.test(step));
+  const blending = steps.map((step, i) => BLENDING.test(step) || (given[i] === 'blend' && !named[i]));
+  const movable = (i: number) => MOVABLE.has(given[i]) && !(KNIFE.test(steps[i]) && !named[i]);
+  let open = false;
+  steps.forEach((_, i) => {
+    if ((named[i] || open) && movable(i)) actions[i] = 'blend';
+    if (named[i] || blending[i]) open = !blending[i];
   });
   for (let i = steps.length - 2; i >= 0; i--) {
-    if (actions[i + 1] === 'blend' && PUTTING.test(steps[i]) && atBlender(i)) actions[i] = 'blend';
+    if (actions[i + 1] === 'blend' && PUTTING.test(steps[i]) && movable(i)) actions[i] = 'blend';
   }
   return details.map((detail, i) => (actions[i] === detail.action ? detail : { ...detail, action: actions[i] }));
 }

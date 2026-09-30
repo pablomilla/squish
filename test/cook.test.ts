@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
@@ -172,4 +173,18 @@ test('labelling is small and quick: the cheaper model, no thinking, a word and a
   assert.equal(request.output_config?.effort, 'low');
   assert.deepEqual(request.output_config?.format?.schema?.required, ['actions', 'timers']);
   assert.ok(request.max_tokens <= 1000);
+});
+
+test('a smoothie in any language is labelled again by the rule that puts its adding at the blender', () => {
+  assert.match(COOK_LABEL_SYSTEM, /Putting things into a blender or food processor is blend/, 'the same rule new methods are written by');
+  assert.match(COOK_SYSTEM, /Putting things into a blender or food processor is blend/);
+  const batido = cleanLabelAsk({
+    steps: ['Añade 150 g de frutos rojos congelados a la licuadora.', 'Vierte 250 ml de leche.', 'Tritura hasta que quede suave.'],
+    items: ['frutos rojos congelados', 'leche semidesnatada'],
+  })!;
+  assert.match(labelPrompt(batido), /1\. Añade 150 g de frutos rojos congelados a la licuadora\./, 'asked as written, in Spanish');
+  // Labels kept under the rule before are not handed back for the same steps: they are asked for again.
+  const before = createHash('sha256').update(JSON.stringify(['labels', STEP_LABELS - 1, batido.steps, batido.items])).digest('hex');
+  assert.notEqual(labelKey(batido), before);
+  assert.equal(STEP_LABELS, 3);
 });

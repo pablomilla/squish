@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { test } from 'node:test';
-import { STEP_ACTIONS, detailsFor, guessDetail, usedIn, type StepDetail } from '../src/lib/cooking';
+import { STEP_ACTIONS, detailsFor, guessDetail, usedIn, type StepAction, type StepDetail } from '../src/lib/cooking';
 import { COOK_SCHEMA, COOK_SYSTEM, toCookSteps } from '../server/cook';
 
 /**
@@ -124,4 +124,33 @@ test('a smoothie is at the blender from the first thing that goes in, not on the
 test('the model is told that what goes into the blender is blend, and the board is only for the knife', () => {
   assert.match(COOK_SYSTEM, /Putting things into a blender or food processor is blend/);
   assert.match(COOK_SYSTEM, /prep is the knife and board/);
+});
+
+test('a smoothie follows its food in other languages too, from the blender’s name and the model’s own labels', () => {
+  // As labelled before, by what each step mostly does: the adding on the board, the blending at the blender.
+  const actions = (steps: string[], given: StepAction[]) =>
+    detailsFor(steps, given.map((action) => ({ action })), [{ name: 'fresas' }]).map((d) => d.action);
+  const smoothie: StepAction[] = ['prep', 'prep', 'mix', 'blend', 'serve'];
+
+  assert.deepEqual(actions([
+    'Añade 150 g de frutos rojos congelados a la licuadora.',
+    'Añade el plátano y 30 g de avena.',
+    'Vierte 250 ml de leche y la proteína en polvo.',
+    'Tritura durante un minuto hasta que quede suave.',
+    'Sírvelo en un vaso.',
+  ], smoothie), ['blend', 'blend', 'blend', 'blend', 'serve'], 'Spanish');
+  assert.deepEqual(actions(['Añade las fresas y el plátano.', 'Vierte la leche.', 'Tritura hasta que quede suave.'], ['prep', 'prep', 'blend']), ['blend', 'blend', 'blend'], 'Spanish, the blender never named');
+  assert.deepEqual(actions(['Pela y corta el plátano.', 'Pon el plátano en la licuadora.', 'Tritura.'], ['prep', 'prep', 'blend']), ['prep', 'blend', 'blend'], 'Spanish chopping stays on the board');
+  assert.deepEqual(actions(['Mettez les fruits rouges dans le blender.', 'Ajoutez la banane.', 'Mixez jusqu’à ce que ce soit lisse.'], ['prep', 'prep', 'blend']), ['blend', 'blend', 'blend'], 'French');
+  assert.deepEqual(actions(['Gib die Beeren und die Banane in den Mixer.', 'Gieße 250 ml Milch dazu.', 'Püriere alles fein.'], ['prep', 'mix', 'blend']), ['blend', 'blend', 'blend'], 'German');
+  assert.deepEqual(actions(['Włóż owoce do blendera.', 'Dodaj mleko.', 'Zmiksuj na gładko.'], ['prep', 'mix', 'blend']), ['blend', 'blend', 'blend'], 'Polish, the blender inflected');
+  assert.deepEqual(actions(['把冷冻莓果放入搅拌机。', '加入香蕉和燕麦。', '搅打一分钟至顺滑。'], ['prep', 'prep', 'blend']), ['blend', 'blend', 'blend'], 'Chinese');
+  assert.deepEqual(actions(['冷凍ベリーをミキサーに入れる。', '牛乳を加える。', 'なめらかになるまで撹拌する。', 'グラスに注ぐ。'], ['prep', 'mix', 'blend', 'serve']), ['blend', 'blend', 'blend', 'serve'], 'Japanese');
+  assert.deepEqual(actions(['ضع التوت في الخلاط.', 'أضف الحليب.', 'اخلط حتى يصبح ناعماً.'], ['prep', 'mix', 'blend']), ['blend', 'blend', 'blend'], 'Arabic, the blender joined to its "the"');
+  assert.deepEqual(actions(['बेरी को ब्लेंडर में डालें।', 'दूध डालें।', 'चिकना होने तक ब्लेंड करें।'], ['prep', 'mix', 'blend']), ['blend', 'blend', 'blend'], 'Hindi');
+
+  // Nothing in these is a blender: the words must be whole words, in any script.
+  assert.deepEqual(actions(['Add the raspberries and the banana.', 'Blend until smooth.'], ['prep', 'blend']), ['blend', 'blend'], 'raspberries are not grated');
+  assert.deepEqual(actions(['Beat the butter and sugar in a stand mixer.', 'Fold in the flour.'], ['mix', 'mix']), ['mix', 'mix'], 'a cake mixer is not a blender');
+  assert.deepEqual(actions(['Pica la cebolla.', 'Sofríe la cebolla.'], ['prep', 'fry']), ['prep', 'fry']);
 });
