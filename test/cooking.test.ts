@@ -90,3 +90,38 @@ test('"add the tomatoes and simmer" joins the frying pan, even naming nothing al
   assert.deepEqual(actions([...lentils, 'Tip the onion into the lentils and simmer for 2 minutes.']), ['boil', 'fry', 'boil']);
   assert.deepEqual(actions([...lentils, 'Simmer the lentils for 5 minutes more.']), ['boil', 'fry', 'boil'], 'food in the pot keeps its pot');
 });
+
+test('a smoothie is at the blender from the first thing that goes in, not on the chopping board', () => {
+  const items = [{ name: 'Frozen mixed berries' }, { name: 'Banana' }, { name: 'Semi-skimmed milk' }, { name: 'Vanilla protein powder' }, { name: 'Rolled oats' }];
+  const smoothie = [
+    'Add the 150 g of frozen berries to the blender.',
+    'Add the banana and the 30 g of oats.',
+    'Pour in the 250 ml of milk and add the 30 g of protein powder.',
+    'Blend for about a minute until smooth.',
+    'Pour into a glass and serve straight away.',
+  ];
+  // As a model labelling by "the one thing it mostly does" had it: weighing out on the board.
+  const labelled: StepDetail[] = [{ action: 'prep' }, { action: 'prep' }, { action: 'mix' }, { action: 'blend', minutes: 1 }, { action: 'serve' }];
+  const actions = (steps: string[], detail?: StepDetail[]) => detailsFor(steps, detail, items).map((d) => d.action);
+  assert.deepEqual(actions(smoothie, labelled), ['blend', 'blend', 'blend', 'blend', 'serve']);
+  assert.equal(detailsFor(smoothie, labelled, items)[3].minutes, 1, 'the timer stays');
+  assert.deepEqual(actions(smoothie), ['blend', 'blend', 'blend', 'blend', 'serve'], 'guessed from the words too');
+
+  // Without naming the blender until it is switched on: what goes in just before is going into it.
+  assert.deepEqual(actions(['Add the berries and the banana.', 'Pour in the milk.', 'Blitz until smooth.']), ['blend', 'blend', 'blend']);
+  // Chopping stays on the board; pouring it out afterwards is not more blending.
+  assert.deepEqual(
+    actions(['Peel and slice the banana.', 'Put the banana and berries in the blender.', 'Blend until smooth.', 'Pour into a glass.']),
+    ['prep', 'blend', 'blend', 'prep'],
+  );
+  // A soup blended at the end keeps its pan for the steps that cook it (the stock joins the onion's pan, as before).
+  assert.deepEqual(
+    actions(['Fry the onion.', 'Add the stock and simmer for 15 minutes.', 'Blend until smooth.'], [{ action: 'fry' }, { action: 'boil', minutes: 15 }, { action: 'blend' }]),
+    ['fry', 'fry', 'blend'],
+  );
+});
+
+test('the model is told that what goes into the blender is blend, and the board is only for the knife', () => {
+  assert.match(COOK_SYSTEM, /Putting things into a blender or food processor is blend/);
+  assert.match(COOK_SYSTEM, /prep is the knife and board/);
+});

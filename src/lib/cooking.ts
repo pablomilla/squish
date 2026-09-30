@@ -18,9 +18,10 @@ export interface StepDetail {
 /**
  * Which way of labelling the steps they were labelled by. 2: each label is
  * where the food is (a sauce simmered in the frying pan is fry), told to the
- * model in any language. Steps from before are relabelled when opened.
+ * model in any language. 3: and what goes into the blender is at the blender,
+ * not on the chopping board. Steps from before are relabelled when opened.
  */
-export const STEP_LABELS = 2;
+export const STEP_LABELS = 3;
 
 export const isStepAction = (value: unknown): value is StepAction => STEP_ACTIONS.includes(value as StepAction);
 
@@ -76,7 +77,7 @@ const COOKING = new Set<StepAction>(['boil', 'fry', 'bake', 'grill']);
 function followTheFood(steps: string[], details: StepDetail[], items: { name: string }[]): StepDetail[] {
   const where = new Map<string, StepAction>();
   let fried = false;
-  return details.map((detail, i) => {
+  const followed = details.map((detail, i) => {
     const using = usedIn(steps[i], items).map((item) => item.name);
     const into = intoWhat(steps[i]);
     const target = into ? usedIn(into, items).map((item) => where.get(item.name)) : [];
@@ -85,6 +86,40 @@ function followTheFood(steps: string[], details: StepDetail[], items: { name: st
     if (action === 'fry') fried = true;
     return action === detail.action ? detail : { ...detail, action };
   });
+  return intoTheBlender(steps, followed);
+}
+
+/** Words that put a step at the blender. */
+const BLENDER = /\b(blender|food processor|nutribullet|smoothie maker|blend|blends|blending|blitz|puree|purée)\b/i;
+/** The blending itself, after which what is poured out is being served. */
+const BLENDING = /\b(blend|blitz|puree|purée|whizz)\b/i;
+/** Knife work: on the board, whatever it goes into next. */
+const KNIFE = /\b(chop|slice|dice|cut|peel|grate|mince|halve|core|hull|stone|pit)\b/i;
+/** A step putting something into something. */
+const PUTTING = /\b(add|adding|put|place|tip|pour|spoon|scoop|drop|throw|crumble|squeeze)\b/i;
+/** What a step at the blender can have been labelled instead: the board, the bowl, the seasoning. */
+const MOVABLE = new Set<StepAction>(['prep', 'mix', 'season']);
+
+/**
+ * A smoothie is a row of things going into the blender, and the board is
+ * no picture for "add the berries". So a step that names the blender is at
+ * it, and so is anything added after it is out and before it is switched on;
+ * and anything added just before a step at the blender is going into it.
+ * Chopping stays on the board, and pouring out once it is blended is serving.
+ */
+function intoTheBlender(steps: string[], details: StepDetail[]): StepDetail[] {
+  const actions = details.map((detail) => detail.action);
+  const atBlender = (i: number) => MOVABLE.has(actions[i]) && !(KNIFE.test(steps[i]) && !BLENDER.test(steps[i]));
+  let out = false;
+  steps.forEach((step, i) => {
+    if (BLENDER.test(step) && atBlender(i)) actions[i] = 'blend';
+    else if (out && PUTTING.test(step) && atBlender(i)) actions[i] = 'blend';
+    if (BLENDER.test(step)) out = !BLENDING.test(step);
+  });
+  for (let i = steps.length - 2; i >= 0; i--) {
+    if (actions[i + 1] === 'blend' && PUTTING.test(steps[i]) && atBlender(i)) actions[i] = 'blend';
+  }
+  return details.map((detail, i) => (actions[i] === detail.action ? detail : { ...detail, action: actions[i] }));
 }
 
 /** Words that put a step in a saucepan of water, whatever else it says. */
