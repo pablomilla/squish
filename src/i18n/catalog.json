@@ -1,5 +1,5 @@
 {
- "version": "0vqgivk-pq0hzz",
+ "version": "0qzx2kk0wley3s",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -3109,6 +3109,13 @@
    ]
   },
   {
+   "id": "0h2xggm-ikjanz",
+   "text": "From {date}. Carry on below, and I will look things up afresh.",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "0h4uzq50xb8oai",
    "text": "Chicken burrito",
    "where": [
@@ -3266,6 +3273,13 @@
   {
    "id": "0hrl73r0tks7cf",
    "text": "Looking something up",
+   "where": [
+    "src/lib/nutritionist-tools.ts"
+   ]
+  },
+  {
+   "id": "0huior7-mfuygx",
+   "text": "Looking back at our earlier chats",
    "where": [
     "src/lib/nutritionist-tools.ts"
    ]
@@ -3437,6 +3451,13 @@
    "text": "Beach day",
    "where": [
     "src/lib/scenes.ts"
+   ]
+  },
+  {
+   "id": "0iqo0g1-1z4rjv",
+   "text": "Past chats ({n})",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -4185,6 +4206,13 @@
    "text": "Show password",
    "where": [
     "src/components/PasswordField.tsx"
+   ]
+  },
+  {
+   "id": "0m7uk3t-g3mdg6",
+   "text": "Kept on this phone only, for 90 days. They go with Reset, and are in your data export.",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -7791,6 +7819,13 @@
    ]
   },
   {
+   "id": "151aad503teu0e",
+   "text": "Delete the chat: {title}",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "152t0ju0czerie",
    "text": "Japanese",
    "where": [
@@ -8068,6 +8103,13 @@
    ]
   },
   {
+   "id": "16cnavt-kxlgot",
+   "text": "No past chats.",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "16d6uim01x4du3",
    "text": "over {limit} {unit}",
    "where": [
@@ -8112,6 +8154,13 @@
     "src/screens/Insights.tsx",
     "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "16ic1qw-4fl5di",
+   "text": "Chat deleted.",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -9397,6 +9446,14 @@
    "text": "Planning your meals…",
    "where": [
     "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
+   "id": "1darwby-9i64mh",
+   "one": "{n} question",
+   "other": "{n} questions",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -10869,6 +10926,13 @@
    ]
   },
   {
+   "id": "1k5ek9p0x02jv3",
+   "text": "New chat",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "1k6g0sf09v5ouf",
    "text": "Your Plus runs to {date}, saved months included.",
    "where": [
@@ -11573,6 +11637,13 @@
    "other": "made {n} times",
    "where": [
     "src/components/RecipeBoxSheet.tsx"
+   ]
+  },
+  {
+   "id": "1nrnczi06nfeei",
+   "text": "Past chats",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {

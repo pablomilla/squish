@@ -23,6 +23,7 @@ import { mealsOn, dayScore, totalsOn } from './selectors';
 import { CEILING_LABEL, MICRO_LABEL, MICRO_UNIT, ceilingLimit, dayVerdict, microTargets } from './nutrition';
 import { saltGrams } from './units';
 import { t, uiLocale } from './i18n';
+import type { PastChat } from './pastChats';
 
 /** Something the nutritionist decided to keep. */
 export interface NutritionistNote {
@@ -39,6 +40,8 @@ export interface Diary {
   profile: Profile;
   targets: Targets;
   notes: NutritionistNote[];
+  /** Earlier chats on this phone (src/lib/chats.ts), not counting the one under way. */
+  chats?: PastChat[];
   /** Today, passed in rather than read, so a test can sit on a fixed date. */
   today: string;
 }
@@ -301,6 +304,52 @@ function nutrientReport(input: Record<string, unknown>, diary: Diary): string {
     .join('\n');
 }
 
+const MAX_CHATS_BACK = 5;
+/** Enough of each earlier chat to answer from, and no more: they are sent in full on every round. */
+const CHAT_TURN_CHARS = 700;
+const CHAT_CHARS = 2400;
+
+/**
+ * Earlier chats: the ones that match, or the most recent. Each is its date,
+ * its first question, then what was said — the turns that match first, cut
+ * short, so a long chat cannot fill the answer.
+ */
+function pastChats(input: Record<string, unknown>, diary: Diary): string {
+  const chats = diary.chats ?? [];
+  if (!chats.length) return 'There are no earlier chats on this phone. Say so rather than guessing at what you might have said.';
+  const limit = Math.min(MAX_CHATS_BACK, Math.max(1, Math.round(Number(input.limit)) || 3));
+  const query = str(input.query)?.toLocaleLowerCase();
+  const words = query ? query.split(/[^\p{L}\p{N}]+/u).filter((word) => word.length >= 3) : [];
+  const hits = (text: string) => words.filter((word) => text.toLocaleLowerCase().includes(word)).length;
+  const found = chats
+    .map((chat) => ({ chat, score: words.length ? hits(chat.turns.map((turn) => turn.text).join(' ')) : 1 }))
+    .filter((match) => match.score > 0)
+    .sort((a, b) => b.score - a.score || b.chat.updatedAt - a.chat.updatedAt)
+    .slice(0, limit);
+  const when = (chat: PastChat) => sayDate(isoDate(new Date(chat.updatedAt)));
+  if (!found.length) {
+    return [
+      `None of the ${chats.length} earlier chats mentions "${query}". What they were about, newest first:`,
+      ...chats.slice(0, 10).map((chat) => `- ${when(chat)}: "${chat.title}"`),
+    ].join('\n');
+  }
+  return found
+    .map(({ chat }) => {
+      // The turns that match come first; the rest follow in order until the chat's share is used.
+      const turns = words.length ? [...chat.turns].sort((a, b) => hits(b.text) - hits(a.text)) : chat.turns;
+      const lines: string[] = [];
+      let used = 0;
+      for (const turn of turns) {
+        const text = turn.text.length > CHAT_TURN_CHARS ? `${turn.text.slice(0, CHAT_TURN_CHARS)}…` : turn.text;
+        if (used + text.length > CHAT_CHARS && lines.length) break;
+        used += text.length;
+        lines.push(`${turn.role === 'user' ? 'They asked' : 'You said'}: ${text}`);
+      }
+      return [`${when(chat)} — "${chat.title}"`, ...lines].join('\n');
+    })
+    .join('\n\n');
+}
+
 function remember(input: Record<string, unknown>, diary: Diary, actions: DiaryActions): string {
   const note = str(input.note);
   if (!note) return 'Nothing to remember — the note was empty.';
@@ -340,6 +389,8 @@ export function runTool(call: ToolCall, diary: Diary, actions: DiaryActions): To
         return answer(findMeals(call.input, diary));
       case 'nutrient_report':
         return answer(nutrientReport(call.input, diary));
+      case 'past_chats':
+        return answer(pastChats(call.input, diary));
       case 'remember':
         return answer(remember(call.input, diary, actions));
       case 'forget':
@@ -371,6 +422,8 @@ export function toolLabel(call: ToolCall): string {
     }
     case 'nutrient_report':
       return range ? t('Checking your nutrients {from} to {to}', range) : t('Checking your nutrients');
+    case 'past_chats':
+      return t('Looking back at our earlier chats');
     case 'remember':
       return t('Making a note');
     case 'forget':

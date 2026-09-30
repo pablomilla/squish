@@ -65,6 +65,21 @@ export const NUTRITIONIST_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'past_chats',
+    description:
+      'Your earlier conversations with this person, kept on their phone, newest first: what they asked and what you answered. ' +
+      'Use this when they refer back to something you discussed before — "what did you suggest for breakfast last week", "the snack ideas you gave me", "remind me what you said about iron". ' +
+      'Give words to match, or leave them out to see the most recent. It is not about their food: for what they ate, use the diary tools.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Words to match in the earlier chats. Omit to see the most recent.' },
+        limit: { type: 'number', description: 'How many chats to return, up to 5. Default 3.' },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'remember',
     description:
       'Save something about this person that should shape every future conversation: what they will not eat, an allergy, a condition they have mentioned, what they are training for, a preference they have stated. ' +

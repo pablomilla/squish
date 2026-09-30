@@ -6,16 +6,17 @@ import { useSquish } from '../store/useSquish';
 import { askNutritionist, isPaywalled, SquishApiError, type ChatMessage } from '../lib/api';
 import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
 import { contextFor } from '../lib/nutritionist-session';
-import { isoDate } from '../lib/date';
+import { friendlyDate, isoDate } from '../lib/date';
+import { deleteChat, listChats, newChatId, saveChat, titleOf, wireOf, type ChatTurn, type PastChat } from '../lib/chats';
 import { PLUS } from '../lib/plan';
 import { showPaywall } from '../lib/paywall';
 import { suggestedQuestions } from '../lib/askSuggestions';
 import { useNutritionistAccess } from '../components/useSubscribed';
 import NutritionistPitch from '../components/NutritionistPitch';
 import MealPlanPanel from '../components/MealPlanPanel';
-import { Segmented, useToast } from '../components/ui';
+import { Segmented, Sheet, useToast } from '../components/ui';
 import './ask.css';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 
 /**
  * A stand-in for what the server would have said, so the explainer can open
@@ -23,13 +24,10 @@ import { t } from '../lib/i18n';
  */
 const WALL = { plan: 'free', kind: 'chat', used: 0, allowance: 0, resets: '', message: '' } as const;
 
-/** What is on screen, as opposed to what is on the wire. */
-interface Bubble {
-  role: 'user' | 'assistant';
-  text: string;
-  /** The lookups that went into this answer, shown above it. */
-  lookups?: string[];
-}
+/** What is on screen, as opposed to what is on the wire — and what a past chat keeps. */
+type Bubble = ChatTurn;
+
+
 
 /**
  * Squish Nutritionist.
@@ -41,10 +39,10 @@ interface Bubble {
  * in the browser, against the store; they are shown as they happen, because a
  * thing that reads your food diary should say so while it does it.
  *
- * The conversation lives in this component and nowhere else — not in the
- * store, not on the server. Close the screen and it is gone. What does
- * survive is the handful of notes it writes about you, which are listed on
- * the You screen and can be deleted one by one.
+ * Each conversation is kept on this phone as it goes (src/lib/chats.ts) —
+ * never on the server — so it can be read again, carried on, or looked back
+ * on by the nutritionist itself. Beside that, the handful of notes it writes
+ * about you, listed on the You screen and deletable one by one.
  */
 export default function Ask({ onClose, question, draft: startDraft, tab: startTab }: { onClose: () => void; question?: string; draft?: string; tab?: 'ask' | 'plan' }) {
   const toast = useToast();
@@ -56,6 +54,21 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
   const [thinking, setThinking] = useState(false);
   const [lookups, setLookups] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // This conversation, as it will be kept, and the ones before it.
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState(0);
+  const [past, setPast] = useState<PastChat[]>([]);
+  const [listing, setListing] = useState(false);
+  /** When the chat on screen was last carried on, if it was opened from the past chats. */
+  const [reopened, setReopened] = useState<number | null>(null);
+  const pastRef = useRef<PastChat[]>([]);
+  const refreshPast = () =>
+    void listChats().then((chats) => {
+      pastRef.current = chats;
+      setPast(chats);
+    });
+  useEffect(refreshPast, []);
 
   // Locked where there is nothing to ask with: signed out, or a free taste
   // used up. Somebody on Plus who has used the month gets the composer and
@@ -98,6 +111,8 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
       profile: state.profile,
       targets: state.targets,
       notes: state.nutritionistNotes,
+      // Not the one under way: it is on the wire already.
+      chats: pastRef.current.filter((chat) => chat.id !== chatId),
       today: isoDate(),
     };
     return runTool(call, diary, {
@@ -111,7 +126,12 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
     if (!text || thinking) return;
 
     const nextWire: ChatMessage[] = [...wire, { role: 'user', content: text }];
-    setBubbles((current) => [...current, { role: 'user', text }]);
+    const asked: Bubble[] = [...bubbles, { role: 'user', text }];
+    const id = chatId ?? newChatId();
+    const started = chatId ? startedAt : Date.now();
+    setChatId(id);
+    setStartedAt(started);
+    setBubbles(asked);
     setWire(nextWire);
     setDraft('');
     setThinking(true);
@@ -133,13 +153,18 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
       });
       useSquish.getState().unlock('first-question');
       setWire([...messages, { role: 'assistant', content: reply }]);
-      setBubbles((current) => [...current, { role: 'assistant', text: reply, lookups: used.length ? used : undefined }]);
+      const answered: Bubble[] = [...asked, { role: 'assistant', text: reply, ...(used.length ? { lookups: used } : {}) }];
+      setBubbles(answered);
+      // Kept as it goes, so a chat closed mid-way is still there to come back to.
+      void saveChat({ id, title: titleOf(answered), startedAt: started, updatedAt: Date.now(), turns: answered }).then(refreshPast);
     } catch (error) {
       // The question goes back into the box rather than staying stranded in
       // the thread, so it can be sent again with one press. The failure is
       // said out loud rather than swallowed.
       setWire(wire);
-      setBubbles((current) => current.filter((b, i) => !(i === current.length - 1 && b.role === 'user')));
+      setBubbles(bubbles);
+      // A first question that failed leaves no chat behind.
+      if (!bubbles.length) setChatId(null);
       setDraft(text);
       if (!isPaywalled(error)) toast(error instanceof SquishApiError ? error.message : t('I could not answer just then.'), '💭');
     } finally {
@@ -147,6 +172,30 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
       setLookups([]);
     }
   };
+
+  /** Back to a chat from before: to read, and to carry on where it stopped. */
+  const reopen = (chat: PastChat) => {
+    setChatId(chat.id);
+    setStartedAt(chat.startedAt);
+    setBubbles(chat.turns);
+    setWire(wireOf(chat.turns));
+    setDraft('');
+    setReopened(chat.updatedAt);
+  };
+
+  const newChat = () => {
+    setChatId(null);
+    setBubbles([]);
+    setWire([]);
+    setDraft('');
+    setReopened(null);
+  };
+
+  const forgetChat = (chat: PastChat) => {
+    void deleteChat(chat.id).then(refreshPast);
+    toast(t('Chat deleted.'), '🗑️');
+  };
+
 
   // A question tapped elsewhere — on Home, in the diary — is asked on arrival.
   const askedOnArrival = useRef(false);
@@ -213,6 +262,28 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
       )}
 
       {tab === 'ask' && !locked && <div className="ask-thread">
+        {(bubbles.length > 0 || past.length > 0) && (
+          <div className="ask-thread-bar">
+            {past.length > 0 ? (
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setListing(true)} disabled={thinking}>
+                {t('Past chats ({n})', { n: past.length })}
+              </button>
+            ) : (
+              <span />
+            )}
+            {bubbles.length > 0 && (
+              <button type="button" className="btn btn--sm btn--ghost" onClick={newChat} disabled={thinking}>
+                {t('New chat')}
+              </button>
+            )}
+          </div>
+        )}
+        {reopened !== null && bubbles.length > 0 && (
+          <p className="tiny muted ask-reopened">
+            {t('From {date}. Carry on below, and I will look things up afresh.', { date: friendlyDate(isoDate(new Date(reopened))).toLocaleLowerCase() })}
+          </p>
+        )}
+
         {bubbles.length === 0 && (
           <div className="ask-empty">
             <Squish mood="calm" size={104} />
@@ -322,6 +393,35 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
           onError={(message) => toast(message, '🎤')}
         />
       </div>}
+
+      <Sheet open={listing} onClose={() => setListing(false)} title={t('Past chats')}>
+        <div className="ask-past">
+          <ul>
+            {past.map((chat) => (
+              <li key={chat.id}>
+                <button
+                  type="button"
+                  className="ask-past-open"
+                  onClick={() => {
+                    reopen(chat);
+                    setListing(false);
+                  }}
+                >
+                  <span className="ask-past-title" dir="auto">{chat.title}</span>
+                  <span className="tiny muted">
+                    {friendlyDate(isoDate(new Date(chat.updatedAt)))} · {plural(chat.turns.filter((turn) => turn.role === 'user').length, { one: '{n} question', other: '{n} questions' })}
+                  </span>
+                </button>
+                <button type="button" className="btn btn--sm btn--ghost" aria-label={t('Delete the chat: {title}', { title: chat.title })} onClick={() => forgetChat(chat)}>
+                  <TrashIcon size={15} />
+                </button>
+              </li>
+            ))}
+          </ul>
+          {past.length === 0 && <p className="small muted">{t('No past chats.')}</p>}
+          <p className="tiny muted">{t('Kept on this phone only, for 90 days. They go with Reset, and are in your data export.')}</p>
+        </div>
+      </Sheet>
     </div>
   );
 }

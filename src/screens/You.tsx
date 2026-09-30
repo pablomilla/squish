@@ -36,6 +36,7 @@ import { AimFields, EatingFields } from '../components/EatingFields';
 import { DIETS } from '../lib/eating';
 import type { Activity, Goal, Route, Sex, YouSheet } from '../types';
 import QuickSnapHelp from '../components/QuickSnapHelp';
+import { clearChats, listChats } from '../lib/chats';
 import './you.css';
 import { plural, t } from '../lib/i18n';
 import { rich } from '../lib/i18n-react';
@@ -118,8 +119,9 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
   const customised = suggested.calories !== targets.calories;
   const plan = useMemo(() => explainPlan(profile, targets), [profile, targets]);
 
-  const exportData = () => {
-    const blob = new Blob([JSON.stringify(useSquish.getState(), null, 2)], { type: 'application/json' });
+  const exportData = async () => {
+    // Past chats are kept outside the store, on this phone: they are part of what is theirs.
+    const blob = new Blob([JSON.stringify({ ...useSquish.getState(), pastChats: await listChats() }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -878,7 +880,8 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
               // Deleted first: the automatic backup would otherwise push the
               // emptied diary up a few seconds later, which gets to the same
               // place by accident rather than because anybody asked.
-              void forgetBackup().finally(() => resetAll());
+              // Past chats are kept outside the store (src/lib/chats.ts), so they go on their own.
+              void Promise.allSettled([forgetBackup(), clearChats()]).finally(() => resetAll());
               setConfirmReset(false);
               toast(t('All cleared'), '🧼');
             }}

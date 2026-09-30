@@ -42,12 +42,13 @@ an account or a backup.
 | Your days | Water, weight entries, and the day's totals |
 | Your settings | Saved foods, achievements earned, colourway, light or dark, reminder times |
 | Nutritionist notes | Anything the nutritionist wrote down because you told it — an allergy, a food you avoid, what you are training for |
+| Past chats with the nutritionist | **What you asked and what it answered, which stay here.** The newest 30, none older than 90 days. They are not part of the backup below |
 
 ### On our server, if you use the backup or an account
 
 Backup is on by default where this copy of Squish has a database.
 
-- **Everything in the table above except the photographs**, which stay on your
+- **Everything in the table above except the photographs and past chats**, which stay on your
   device. What is backed up is a thumbnail of each — roughly five kilobytes,
   the small square you see in the diary list. It is stored as one document per
   person, updated as you log.
@@ -193,7 +194,7 @@ one of these things:
 | Take a quick snap (the widget) | The same as photographing a meal. The difference is where it waits: so that you can put your phone away at once, the photo is handed to our server, which has it read whether or not the app is still open. Our server holds the photo only until it has been read — usually a few seconds — and what was read only until your app next opens and collects it. Anything not collected is deleted after a week |
 | Describe a meal in words or by voice | What you wrote or said, and your diet if you told Squish one |
 | Import a recipe from a link | The text of that page |
-| Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept — and how you eat and what you want from Squish, if you told it when setting up |
+| Ask the nutritionist something | Your message, and whatever it looks up from your diary to answer you — meals, totals, trends, and any notes it has kept — and how you eat and what you want from Squish, if you told it when setting up. Carrying on a past chat sends that chat's earlier questions and answers with it; and when you refer back to something from an earlier chat, the parts of your past chats it looks up to answer |
 | Ask the nutritionist to plan your week | Your daily targets, goal and sex (for the minimum it will plan to), the names of meals you eat often, meals you kept from a plan and foods you have saved, the meals already planned on those days (so it plans around them), how many you cook for if it is more than you, how your last plans went (the names of planned meals you made, skipped or swapped, and any you marked "Not for me"), the notes it has kept, how you eat (your diet, allergies and foods you never eat) and what you want from Squish, and anything you typed for the plan |
 | Swap a planned meal for another (Plus) | The meal being swapped (its name, calories and protein), the names of the other meals on your plans, your goal and sex, the notes the nutritionist has kept, and how you eat (your diet, allergies and foods you never eat) |
 | Open a planned meal for its recipe (Plus) | The meal's name and its ingredients with their amounts, how many it is cooked for, and your diet if you told Squish one. Nothing else about you: the steps written are kept and shown to anybody who plans the same meal, so they hold nothing personal |
@@ -347,6 +348,9 @@ where those services are makes no difference to you.
   Reset removes it immediately.
 - **Your photographs:** on your device only, until you delete the meal or press
   Reset. Deleting a meal deletes its picture.
+- **Past chats with the nutritionist:** on your device only, the newest 30
+  and none older than 90 days. Delete any of them from the list of past chats;
+  Reset deletes them all.
 - **A quick snap on our server:** the photo until it has been read (seconds,
   as a rule), and the reading until your app collects it, the next time it is
   open. Neither is kept for more than a week.

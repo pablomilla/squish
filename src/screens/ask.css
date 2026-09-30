@@ -47,6 +47,19 @@
 .ask-memory li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .ask-memory li span { flex: 1 1 auto; }
 
+/* Past chats (src/lib/chats.ts), in their sheet: each one a row to open again, with room to read its question. */
+.ask-past { display: flex; flex-direction: column; gap: var(--s2); }
+.ask-past ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ask-past li { display: flex; align-items: center; gap: 8px; }
+.ask-past li + li { border-top: 1px solid var(--line); }
+.ask-past-open { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px 0; text-align: start; }
+.ask-past-title { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Above a conversation: the chats before it, and a way to start afresh. */
+.ask-thread-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ask-thread-bar .btn { flex: none; white-space: nowrap; }
+.ask-reopened { margin: 0; }
+
 /*
  * The free-plan state: the whole screen, not a banner over a chat somebody
  * cannot use. A disabled composer invites people to try typing into it.
