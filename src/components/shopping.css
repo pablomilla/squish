@@ -25,3 +25,4 @@
 .shopping-add { display: flex; gap: 8px; margin-top: 8px; }
 .shopping-add .input { flex: 1; min-width: 0; }
 .shopping-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 6px; }
+.shopping-from { font-weight: 600; }

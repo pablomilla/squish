@@ -3,7 +3,7 @@ import { Segmented, Sheet, useToast } from './ui';
 import HouseholdPicker from './HouseholdPicker';
 import { CloseIcon } from './icons';
 import { useSquish } from '../store/useSquish';
-import { addDays, isoDate } from '../lib/date';
+import { addDays, friendlyDate, isoDate } from '../lib/date';
 import { AISLES, listAsText, shoppingList } from '../lib/shopping';
 import './shopping.css';
 import { plural, t } from '../lib/i18n';
@@ -18,8 +18,11 @@ type Range = '3' | '7';
  * Nothing here is saved but the ticks and the hand-added lines: the list
  * itself is made fresh from the plans every time it opens, so planning
  * another dinner puts its food straight on it.
+ *
+ * Opened from a day ahead in the diary, it starts from that day: looking at
+ * Saturday and opening the list is shopping for the weekend.
  */
-export default function ShoppingSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function ShoppingSheet({ open, onClose, from: fromDay }: { open: boolean; onClose: () => void; from?: string }) {
   const plans = useSquish((s) => s.plans);
   const shopping = useSquish((s) => s.shopping);
   const household = useSquish((s) => s.household);
@@ -29,9 +32,12 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
   const [adding, setAdding] = useState('');
 
   const today = isoDate();
-  const until = addDays(today, Number(range) - 1);
-  const lines = useMemo(() => shoppingList(plans, today, until, household), [plans, today, until, household]);
-  const planned = plans.filter((p) => p.date >= today && p.date <= until).length;
+  // Nothing is bought for a day gone: a day before today starts from today.
+  const from = fromDay && fromDay > today ? fromDay : today;
+  const until = addDays(from, Number(range) - 1);
+  const lines = useMemo(() => shoppingList(plans, from, until, household), [plans, from, until, household]);
+  const planned = plans.filter((p) => p.date >= from && p.date <= until).length;
+  const days = (n: number) => (from === today ? t('Next {n} days', { n }) : plural(n, { one: '{n} day', other: '{n} days' }));
   const ticked = new Set(shopping.ticked);
   const left = lines.filter((l) => !ticked.has(l.key)).length + shopping.extras.filter((e) => !ticked.has(`extra:${e.id}`)).length;
 
@@ -56,13 +62,18 @@ export default function ShoppingSheet({ open, onClose }: { open: boolean; onClos
   return (
     <Sheet open={open} onClose={onClose} title={t('Shopping list')}>
       <div className="shopping">
+        {from !== today && (
+          <p className="small shopping-from">
+            {t('Starting {day}', { day: from === addDays(today, 1) ? friendlyDate(from).toLocaleLowerCase() : friendlyDate(from) })}
+          </p>
+        )}
         <Segmented<Range>
           label={t('How far ahead')}
           value={range}
           onChange={setRange}
           options={[
-            { value: '3', label: t('Next {n} days', { n: 3 }) },
-            { value: '7', label: t('Next {n} days', { n: 7 }) },
+            { value: '3', label: days(3) },
+            { value: '7', label: days(7) },
           ]}
         />
         <HouseholdPicker />

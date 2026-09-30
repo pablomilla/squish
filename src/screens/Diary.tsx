@@ -99,7 +99,7 @@ export default function Diary({ go, onEditMeal, startDate }: { go: (route: Route
         </div>
       </header>
 
-      <ShoppingSheet open={shopping} onClose={() => setShopping(false)} />
+      <ShoppingSheet open={shopping} onClose={() => setShopping(false)} from={date} />
       <WeekPlanSheet open={weekPlanning} onClose={() => setWeekPlanning(false)} />
       <CalendarSheet key={`${date}-${picking}`} open={picking} date={date} onClose={() => setPicking(false)} onPick={setDate} />
       <SearchSheet

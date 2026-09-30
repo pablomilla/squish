@@ -1,5 +1,5 @@
 {
- "version": "0oras540q4ssa0",
+ "version": "0d6547l-9qdvnj",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1762,6 +1762,13 @@
    "text": "It arrives for you both once they have made an account, confirmed their email and used Squish on {days} different days.",
    "where": [
     "src/components/InviteCard.tsx"
+   ]
+  },
+  {
+   "id": "099hoqd0tmkr8g",
+   "text": "Starting {day}",
+   "where": [
+    "src/components/ShoppingSheet.tsx"
    ]
   },
   {
@@ -7319,6 +7326,7 @@
    "one": "{n} day",
    "other": "{n} days",
    "where": [
+    "src/components/ShoppingSheet.tsx",
     "src/components/WeekPlanSheet.tsx",
     "src/lib/friends.ts"
    ]
