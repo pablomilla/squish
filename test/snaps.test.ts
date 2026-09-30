@@ -105,13 +105,14 @@ test('a read cut off by a restart is started again when the app next asks, and f
     await startSnap(devd, cleanSnap({ id: 'snap_ddddddd1', image: IMAGE, date: '2026-09-29', time: '08:10' })!, true);
     assert.equal((await snapsFor(devd))[0].status, 'working');
     assert.equal(reads.length, 1, 'not taken over while it is still fresh');
+    // A second past, not a millisecond: the database's clock can run a few milliseconds ahead of this one.
     for (let n = 2; n <= MAX_ATTEMPTS; n++) {
-      mock.timers.tick(DEAD_MS + 1);
+      mock.timers.tick(DEAD_MS + 1000);
       await snapsFor(devd);
       assert.equal(reads.length, n, `try ${n}`);
       assert.equal(reads.at(-1)?.image, 'A'.repeat(400), 'the photo is kept for another try');
     }
-    mock.timers.tick(DEAD_MS + 1);
+    mock.timers.tick(DEAD_MS + 1000);
     const [snap] = await snapsFor(devd);
     assert.equal(snap.status, 'failed');
     assert.equal(reads.length, MAX_ATTEMPTS, 'no more tries');
