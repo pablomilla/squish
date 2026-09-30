@@ -392,7 +392,8 @@ export type Route =
   | { name: 'add'; slot?: MealSlot; date?: string; tab?: 'search' | 'describe' | 'recipe' | 'favourites'; recipeUrl?: string; text?: string }
   /** `question` is asked as soon as the screen opens: a tap on a suggested question is the question. */
   /** `question` is asked on arrival; `draft` is only typed into the box, to send or change. */
-  | { name: 'ask'; question?: string; draft?: string; tab?: 'ask' | 'plan' }
+  /** `back` is where closing it returns to: the diary, when it was opened from there. */
+  | { name: 'ask'; question?: string; draft?: string; tab?: 'ask' | 'plan'; back?: 'meals' }
   /** The dashboard, for whoever runs this Squish. Not a tab; reached from You. */
   | { name: 'admin' }
   | { name: 'review'; draft: Draft }

@@ -1,5 +1,5 @@
 {
- "version": "16q4e7d0c0vx7n",
+ "version": "0oras540q4ssa0",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1634,13 +1634,6 @@
    "text": "This clears every meal, day log and badge on this device. It cannot be undone.",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "08icj760nw5n6t",
-   "text": "Plan",
-   "where": [
-    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -5819,7 +5812,8 @@
    "id": "0u8vufp-vdzh68",
    "text": "Meal plan",
    "where": [
-    "src/screens/Ask.tsx"
+    "src/screens/Ask.tsx",
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -8784,8 +8778,7 @@
    "id": "18wtqlt0cx1v4s",
    "text": "Log",
    "where": [
-    "src/components/CheckinTiles.tsx",
-    "src/screens/Diary.tsx"
+    "src/components/CheckinTiles.tsx"
    ]
   },
   {

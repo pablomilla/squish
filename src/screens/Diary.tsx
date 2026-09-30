@@ -92,8 +92,9 @@ export default function Diary({ go, onEditMeal }: { go: (route: Route) => void; 
           <button type="button" className="icon-btn" onClick={() => setShopping(true)} aria-label={t('Shopping list')}>
             <BasketIcon size={18} />
           </button>
-          <button type="button" className="btn btn--sm" onClick={() => go(ahead ? { name: 'add', date, tab: 'search' } : { name: 'capture', date })}>
-            <PlusIcon size={16} /> {ahead ? t('Plan') : t('Log')}
+          {/* Logging is the + at the bottom, and a day's own buttons; this is the way to the week's plan, which was otherwise only on Home. */}
+          <button type="button" className="btn btn--sm" onClick={() => go({ name: 'ask', tab: 'plan', back: 'meals' })}>
+            <CalendarIcon size={16} /> {t('Meal plan')}
           </button>
         </div>
       </header>
