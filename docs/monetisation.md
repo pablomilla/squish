@@ -226,6 +226,13 @@ ingredient. About 1,500 tokens in and a few hundred out: well under a penny
 a plan. If it fails, the plan goes as it came (`[squish] weekplan
 seasoning: …` says what it added).
 
+A **recipe import** gets the same check, with the page's own ingredient list
+beside what was read: the "1 tbsp smoked paprika" and the "salt and pepper,
+to taste" a reading lets go are put back at one serving's share. For a recipe
+it adds only what the recipe calls for, so it needs no diet to go by. Under a
+penny an import, beside the $0.05 of the reading (`[squish] recipe seasoning:
+…`).
+
 **Dashboard → AI usage → Weekly plans** lists the last day's plans: whose,
 how long each took, how many tries, whether it has been seen, and why any
 failed (never what was planned). A plan that restarts is made, and paid to

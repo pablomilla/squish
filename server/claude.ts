@@ -29,7 +29,7 @@ import { msg } from '../src/lib/i18n';
 const AISLE_IDS = AISLES.map((a) => a.id);
 import {
   SEASONING_SCHEMA, SEASONING_SYSTEM, WEEKPLAN_SCHEMA, WEEKPLAN_SYSTEM, floorFor, keptCalories, seasoningPrompt, swapPrompt, toSeasoning, weekPlanPrompt,
-  type SeasoningMeal, type SwapRequest, type WeekPlanRequest,
+  type SeasoningItem, type SeasoningMeal, type SwapRequest, type WeekPlanRequest,
 } from './weekplan';
 import { COOK_SCHEMA, COOK_SYSTEM, COOK_LABEL_SCHEMA, COOK_LABEL_SYSTEM, cookPrompt, labelPrompt, toCookSteps, toLabels, type CookAsk, type CookSteps, type LabelAsk } from './cook';
 import { aimLines, eatingLines, type About } from '../src/lib/eating';
@@ -555,8 +555,10 @@ function requestMeal(
   system: string = SYSTEM,
   schema: Record<string, unknown> = MEAL_SCHEMA,
   pinned?: string,
+  /** Something to do with what was read before it is matched to the table: an imported recipe's seasoning check. */
+  complete?: (meal: ModelMeal) => Promise<ModelMeal>,
 ): Promise<DetailedAnalysis> {
-  return withModels(feature, (model, _attempt, signal) => requestMealOn(model, content, fallbackSlot, system, schema, signal), pinned ? { models: [pinned] } : {});
+  return withModels(feature, (model, _attempt, signal) => requestMealOn(model, content, fallbackSlot, system, schema, signal, complete), pinned ? { models: [pinned] } : {});
 }
 
 async function requestMealOn(
@@ -566,6 +568,7 @@ async function requestMealOn(
   system: string,
   schema: Record<string, unknown>,
   signal: AbortSignal,
+  complete?: (meal: ModelMeal) => Promise<ModelMeal>,
 ): Promise<DetailedAnalysis> {
   const startedAt = Date.now();
   const brief = await tableFirst(system);
@@ -604,10 +607,12 @@ async function requestMealOn(
   // A label's figures are printed, and are the truth; everything else is
   // checked against the food table where it names a plain food, and in
   // table-first mode the named foods it could not answer are filled in.
-  const read = readAnswer<ModelMeal>(text, response.stop_reason);
+  const answer = readAnswer<ModelMeal>(text, response.stop_reason);
+  const read = complete ? await complete(answer) : answer;
   let parsed = system === LABEL_SYSTEM ? read : await groundMeal(read);
   let fill: CallCost | null = null;
-  if (brief) {
+  // Table first leaves figures to fill in, and so does a recipe's seasoning check, whose additions come with none.
+  if (brief || parsed.items?.some(missingFigures)) {
     const done = await fillFigures(parsed);
     parsed = done.meal;
     fill = done.cost;
@@ -791,6 +796,8 @@ export async function analyseRecipe(source: RecipeSource, slot?: MealSlot): Prom
     'recipe',
     RECIPE_SYSTEM,
     RECIPE_SCHEMA,
+    undefined,
+    (meal) => completeRecipe(meal, source),
   );
 
   // A yield of nought or one-and-a-half servings is a misread, and dividing by
@@ -1183,27 +1190,8 @@ async function completeSeasoning(week: ModelWeek, who: Pick<WeekPlanRequest, 'ab
   );
   if (!meals.length) return week;
 
-  const format = { type: 'json_schema' as const, schema: SEASONING_SCHEMA as unknown as Record<string, unknown> };
   try {
-    const added = await withModels('fill', async (model, _attempt, signal) => {
-      const response = await createMessage({
-        model,
-        max_tokens: withThinkingRoom(model, 4000),
-        system: `${SEASONING_SYSTEM}\n\n${regionNote('plan')}`,
-        messages: [{ role: 'user', content: seasoningPrompt(meals, who) }],
-        // Looking down a list, not a problem to reason about.
-        ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
-          ? { ...thinkingOff(model), output_config: { effort: 'low' as const, format } }
-          : { output_config: { format } }),
-      }, signal);
-      billed(priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model);
-      if (response.stop_reason === 'refusal') throw new Error('The model declined to check the seasoning.');
-      const text = response.content
-        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-        .map((block) => block.text)
-        .join('');
-      return toSeasoning(readAnswer(text, response.stop_reason), meals);
-    });
+    const added = await askSeasoning(meals, who);
     if (!added.size) return week;
 
     const days = structuredClone(week.days ?? []);
@@ -1220,6 +1208,50 @@ async function completeSeasoning(week: ModelWeek, who: Pick<WeekPlanRequest, 'ab
     console.warn(`[squish] weekplan seasoning check failed (${error instanceof Error ? error.message : String(error)}) — the plan goes as it came`);
     return week;
   }
+}
+
+/**
+ * The same check for an imported recipe: its own ingredient list and title
+ * against what was read, so the "1 tsp smoked paprika" and the "salt and
+ * pepper, to taste" the reading let go are put back, one serving's share.
+ * Only what the recipe calls for; if the check fails, the recipe as read.
+ */
+async function completeRecipe(meal: ModelMeal, source: RecipeSource): Promise<ModelMeal> {
+  const items = (meal.items ?? []).map((item) => item.name ?? '').filter(Boolean);
+  if (!items.length) return meal;
+  try {
+    const added = (await askSeasoning([{ title: meal.title || source.title || '', items, listed: source.ingredients }], { notes: [] })).get(0);
+    if (!added?.length) return meal;
+    console.info(`[squish] recipe seasoning: ${added.map((item) => item.name).join(', ')} added`);
+    return { ...meal, items: [...(meal.items ?? []), ...added.map((item) => ({ ...item, ultraProcessed: false }))] };
+  } catch (error) {
+    console.warn(`[squish] recipe seasoning check failed (${error instanceof Error ? error.message : String(error)}) — the recipe goes as read`);
+    return meal;
+  }
+}
+
+/** Ask the seasoning check about some meals, on the fill-in's route. By each meal's place in the list. */
+async function askSeasoning(meals: SeasoningMeal[], who: Pick<WeekPlanRequest, 'about' | 'notes'>): Promise<Map<number, SeasoningItem[]>> {
+  const format = { type: 'json_schema' as const, schema: SEASONING_SCHEMA as unknown as Record<string, unknown> };
+  return withModels('fill', async (model, _attempt, signal) => {
+    const response = await createMessage({
+      model,
+      max_tokens: withThinkingRoom(model, 4000),
+      system: `${SEASONING_SYSTEM}\n\n${regionNote('plan')}`,
+      messages: [{ role: 'user', content: seasoningPrompt(meals, who) }],
+      // Looking down a list, not a problem to reason about.
+      ...(model.startsWith('claude-') && !model.startsWith('claude-haiku')
+        ? { ...thinkingOff(model), output_config: { effort: 'low' as const, format } }
+        : { output_config: { format } }),
+    }, signal);
+    billed(priceUsage(response.model, { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens }), response.model);
+    if (response.stop_reason === 'refusal') throw new Error('The model declined to check the seasoning.');
+    const text = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+    return toSeasoning(readAnswer(text, response.stop_reason), meals);
+  });
 }
 
 /**

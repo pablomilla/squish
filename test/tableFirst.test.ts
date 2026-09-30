@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { analyseLabel, analysePhotoDetailed, analyseRecipe, briefSchema, MEAL_SCHEMA, planWeek, TEXT_MODEL } from '../server/claude';
 import { WEEKPLAN_SCHEMA, type WeekPlanRequest } from '../server/weekplan';
+import { RECIPE_SYSTEM } from '../server/recipe';
 import { useTableForTests, type TableFood } from '../server/foodTable';
 import { MAIN_MODEL } from '../server/providers';
 
@@ -244,11 +245,12 @@ test('a recipe’s ingredients, by their raw weights: from the table where it ca
   fillAnswer = { items: [{ nutrients: { ...full, calories: 67, protein: 1.4, carbs: 1.3, fat: 6.8 } }] };
 
   const recipe = await analyseRecipe({ url: 'https://example.com/pesto-pasta', title: 'Pesto pasta', ingredients: ['400 g spaghetti', '120 g pesto', '40 g pine nuts'] }, 'dinner');
-  const [first, fill] = sent;
+  assert.equal(sent.filter((s) => s.seasoning).length, 1, 'the recipe is checked for its seasoning once');
+  const [first, fill] = sent.filter((s) => !s.seasoning);
   assert.match(first.system, /in the state the recipe weighs it/, 'the recipe’s own rule for table names');
   assert.match(first.system, /give only calories and freeSugar/);
   assert.equal(first.itemNutrientsRequired?.length, 0);
-  assert.equal(sent.length, 2);
+  assert.equal(sent.filter((s) => !s.seasoning).length, 2);
   assert.match(fill.prompt, /Pine nuts/);
 
   const [pasta, pesto, nuts] = recipe.items;
@@ -326,4 +328,39 @@ test('a seasoning check that fails leaves the plan as it came', async () => {
   assert.deepEqual(plan.days[0].meals[0].items.map((i) => i.name), ['Chicken breast']);
   assert.ok(sent.filter((s) => s.seasoning).length >= 1, 'it was asked');
   seasoningAnswer = { meals: [] };
+});
+
+test('an imported recipe gets back the paprika and the salt and pepper its reading let go', async () => {
+  useTableForTests([...TABLE, ...SPICES]);
+  sent.length = 0;
+  const page = {
+    url: 'https://example.com/paprika-chicken', title: 'Crispy paprika chicken', yieldText: 'Serves 4',
+    ingredients: ['4 chicken breasts', '800 g potatoes', '1 tbsp smoked paprika', 'Salt and pepper, to taste'],
+  };
+  firstAnswer = { ...meal([item('Chicken breast', '', 160, { ...full, calories: 260 }), item('Potatoes', '', 200, { ...full, calories: 160 })]), title: 'Crispy paprika chicken', servings: 4 };
+  seasoningAnswer = {
+    meals: [{ meal: 1, add: [add('Smoked paprika', 1.5, 'spices, paprika'), add('Salt', 1, 'salt, table'), add('Black pepper', 0.5, 'spices, pepper, black')] }],
+  };
+
+  const recipe = await analyseRecipe(page, 'dinner');
+  const check = sent.find((s) => s.seasoning)!;
+  assert.match(check.prompt, /1\. Crispy paprika chicken: Chicken breast, Potatoes/);
+  assert.match(check.prompt, /The recipe's own list, for the whole recipe: 4 chicken breasts; 800 g potatoes; 1 tbsp smoked paprika; Salt and pepper, to taste/);
+  assert.match(check.system, /nothing the recipe does not call for/);
+  assert.deepEqual(recipe.items.map((i) => i.name), ['Chicken breast', 'Potatoes', 'Smoked paprika', 'Salt', 'Black pepper']);
+  assert.equal(recipe.items[2].source?.name, 'Spices, paprika', 'matched to the table like the rest');
+  assert.ok((recipe.nutrients.sodium ?? 0) > 300, 'the salt is in the serving');
+  assert.equal(recipe.servings, 4);
+
+  // A check that fails leaves the recipe as it was read.
+  sent.length = 0;
+  seasoningAnswer = 'fail';
+  const asRead = await analyseRecipe(page, 'dinner');
+  assert.deepEqual(asRead.items.map((i) => i.name), ['Chicken breast', 'Potatoes']);
+  seasoningAnswer = { meals: [] };
+});
+
+test('recipes are told to keep their seasoning, at one serving’s share', () => {
+  assert.match(RECIPE_SYSTEM, /spices, dried herbs, pastes, sauces and seasoning too/);
+  assert.match(RECIPE_SYSTEM, /"salt and pepper, to taste" is a pinch of each/);
 });
