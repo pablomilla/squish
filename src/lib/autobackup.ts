@@ -13,6 +13,7 @@
 import { useSquish } from '../store/useSquish';
 import { knownVersion, pushDiary, rememberVersion, type BackupState, type RemoteDiary } from './backup';
 import { isBlank } from './blankDiary';
+import { chatsForBackup, importChats, listChats, onChatsChanged } from './chats';
 
 /** Long enough that a burst of edits is one push, short enough to be a backup. */
 const QUIET_MS = 6_000;
@@ -36,10 +37,17 @@ export function watchBackup(listener: (state: BackupState) => void): () => void 
   return () => listeners.delete(listener);
 }
 
-/** Everything worth keeping, which is the persisted store minus nothing. */
+/**
+ * Everything worth keeping, which is the persisted store minus nothing — and
+ * the past chats with the nutritionist, where they have chosen to take them
+ * with them (they live outside the store, in src/lib/chats.ts).
+ */
 function snapshot(): unknown {
-  const { profile, targets, meals, days, favourites, plans, shopping, household, recipes, planLog, notForMe, unlocked, nutritionistNotes, look, outfit, scene, shareDecor, theme, comparisons } = useSquish.getState();
-  return { profile, targets, meals, days, favourites, plans, shopping, household, recipes, planLog, notForMe, unlocked, nutritionistNotes, look, outfit, scene, shareDecor, theme, comparisons };
+  const { profile, targets, meals, days, favourites, plans, shopping, household, recipes, planLog, notForMe, unlocked, nutritionistNotes, look, outfit, scene, shareDecor, theme, comparisons, backupChats } = useSquish.getState();
+  return {
+    profile, targets, meals, days, favourites, plans, shopping, household, recipes, planLog, notForMe, unlocked, nutritionistNotes, look, outfit, scene, shareDecor, theme, comparisons, backupChats,
+    ...(backupChats ? { pastChats: chatsForBackup() } : {}),
+  };
 }
 
 let retried = false;
@@ -98,11 +106,16 @@ export function startBackup(enabled: boolean): () => void {
   stopped = false;
   announce({ kind: 'idle', at: null });
 
-  const unsubscribe = useSquish.subscribe(() => {
+  const soon = () => {
     if (stopped) return;
     clearTimeout(timer);
     timer = setTimeout(() => void push(), QUIET_MS);
-  });
+  };
+  const unsubscribe = useSquish.subscribe(soon);
+  // A chat kept or deleted is not a change to the store, but where chats are backed up it is one to the backup.
+  const unsubscribeChats = onChatsChanged(() => useSquish.getState().backupChats && soon());
+  // Read once now, so the first backup has them: they are read from IndexedDB, not the store.
+  void listChats();
 
   // A tab being closed is the commonest moment for the last few minutes to be
   // lost, and it is too late for a debounce by then.
@@ -116,6 +129,7 @@ export function startBackup(enabled: boolean): () => void {
 
   return () => {
     unsubscribe();
+    unsubscribeChats();
     document.removeEventListener('visibilitychange', onHide);
     clearTimeout(timer);
   };
@@ -130,7 +144,10 @@ export function startBackup(enabled: boolean): () => void {
  * undefined halfway down the app.
  */
 export function adoptBackup(found: RemoteDiary): void {
-  useSquish.setState(found.state as Partial<ReturnType<typeof useSquish.getState>>);
+  // Past chats are not the store's: they go back where chats live, beside any already on this phone.
+  const { pastChats, ...state } = (found.state ?? {}) as Record<string, unknown>;
+  useSquish.setState(state as Partial<ReturnType<typeof useSquish.getState>>);
+  if (pastChats) void importChats(pastChats);
   resumeBackup(found.version);
 }
 

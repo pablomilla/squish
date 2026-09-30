@@ -42,20 +42,27 @@ an account or a backup.
 | Your days | Water, weight entries, and the day's totals |
 | Your settings | Saved foods, achievements earned, colourway, light or dark, reminder times |
 | Nutritionist notes | Anything the nutritionist wrote down because you told it — an allergy, a food you avoid, what you are training for |
-| Past chats with the nutritionist | **What you asked and what it answered, which stay here.** The newest 30, none older than 90 days. They are not part of the backup below |
+| Past chats with the nutritionist | **What you asked and what it answered, which stay here** unless you choose to back them up (below). The newest 30, none older than 90 days |
 
 ### On our server, if you use the backup or an account
 
 Backup is on by default where this copy of Squish has a database.
 
-- **Everything in the table above except the photographs and past chats**, which stay on your
-  device. What is backed up is a thumbnail of each — roughly five kilobytes,
+- **Everything in the table above except the photographs**, which stay on your
+  device, **and past chats**, unless you choose to back them up (below). What
+  is backed up of a photograph is a thumbnail — roughly five kilobytes,
   the small square you see in the diary list. It is stored as one document per
   person, updated as you log.
 
   This means a restore onto a new phone brings your diary and those
   thumbnails, but not the full pictures: those were never sent. If that
   matters to you, export before you change phones.
+- **Your past chats with the nutritionist, only if you turn on "Backed up"**
+  in the list of past chats. They are off unless you do: a chat can say a lot
+  about your health. Backed up, they go in the same document as your diary
+  (the newest first, up to about half a megabyte of them) and come back when
+  you restore it or sign in on another phone. Turn it off and they leave the
+  backup the next time it saves.
 - **A device identifier** — a random token your browser is given on first use,
   stored in a form we cannot reverse, plus when it was created and last seen,
   and which days it was used — a date, not what was done. It is how a limit
@@ -348,9 +355,10 @@ where those services are makes no difference to you.
   Reset removes it immediately.
 - **Your photographs:** on your device only, until you delete the meal or press
   Reset. Deleting a meal deletes its picture.
-- **Past chats with the nutritionist:** on your device only, the newest 30
-  and none older than 90 days. Delete any of them from the list of past chats;
-  Reset deletes them all.
+- **Past chats with the nutritionist:** on your device, the newest 30 and
+  none older than 90 days. Delete any of them from the list of past chats;
+  Reset deletes them all from the device. If you back them up, the backup
+  holds them until you turn that off or delete your account.
 - **A quick snap on our server:** the photo until it has been read (seconds,
   as a rule), and the reading until your app collects it, the next time it is
   open. Neither is kept for more than a week.

@@ -65,3 +65,54 @@ export function wireOf(turns: ChatTurn[]): ChatMessage[] {
   if (wire.at(-1)?.role === 'user') wire.pop();
   return wire;
 }
+
+/* ------------------------------------------------------------------ *
+ * Taking them to a new phone, in the diary backup, where they choose to.
+ * ------------------------------------------------------------------ */
+
+/**
+ * A chat's room in the backup. The backup is one document with a size limit
+ * (6 MB on the server), shared with the whole diary: chats never take more
+ * than this of it, the newest kept first.
+ */
+export const BACKUP_CHAT_CHARS = 500_000;
+
+/** A chat as something else wrote it (a backup), checked before it is trusted. */
+export function isPastChat(value: unknown): value is PastChat {
+  const chat = value as PastChat;
+  return (
+    Boolean(chat) &&
+    typeof chat.id === 'string' &&
+    typeof chat.title === 'string' &&
+    typeof chat.startedAt === 'number' &&
+    typeof chat.updatedAt === 'number' &&
+    Array.isArray(chat.turns) &&
+    chat.turns.every((turn) => (turn?.role === 'user' || turn?.role === 'assistant') && typeof turn.text === 'string')
+  );
+}
+
+/** The chats that go in the backup: newest first, until their share of it is used. */
+export function forBackup(chats: PastChat[], room = BACKUP_CHAT_CHARS): PastChat[] {
+  const taken: PastChat[] = [];
+  let used = 0;
+  for (const chat of keepFrom(chats).keep) {
+    const size = JSON.stringify(chat).length;
+    if (used + size > room) break;
+    used += size;
+    taken.push(chat);
+  }
+  return taken;
+}
+
+/**
+ * Chats from a backup, with the ones already on this phone: the same chat
+ * twice is the one carried on further, and the limits still hold.
+ */
+export function mergeChats(here: PastChat[], arriving: unknown, now = Date.now()): PastChat[] {
+  const byId = new Map(here.map((chat) => [chat.id, chat]));
+  for (const chat of Array.isArray(arriving) ? arriving.filter(isPastChat) : []) {
+    const mine = byId.get(chat.id);
+    if (!mine || chat.updatedAt > mine.updatedAt) byId.set(chat.id, chat);
+  }
+  return keepFrom([...byId.values()], now).keep;
+}

@@ -7,6 +7,7 @@ import { askNutritionist, isPaywalled, SquishApiError, type ChatMessage } from '
 import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
 import { contextFor } from '../lib/nutritionist-session';
 import { friendlyDate, isoDate } from '../lib/date';
+import { watchBackup } from '../lib/autobackup';
 import { deleteChat, listChats, newChatId, saveChat, titleOf, wireOf, type ChatTurn, type PastChat } from '../lib/chats';
 import { PLUS } from '../lib/plan';
 import { showPaywall } from '../lib/paywall';
@@ -69,6 +70,10 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
       setPast(chats);
     });
   useEffect(refreshPast, []);
+  // Whether there is a backup for chats to go in: only where the server keeps diaries.
+  const [backupOn, setBackupOn] = useState(false);
+  useEffect(() => watchBackup((state) => setBackupOn(state.kind !== 'off')), []);
+  const backupChats = useSquish((s) => s.backupChats);
 
   // Locked where there is nothing to ask with: signed out, or a free taste
   // used up. Somebody on Plus who has used the month gets the composer and
@@ -419,7 +424,26 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
             ))}
           </ul>
           {past.length === 0 && <p className="small muted">{t('No past chats.')}</p>}
-          <p className="tiny muted">{t('Kept on this phone only, for 90 days. They go with Reset, and are in your data export.')}</p>
+          {backupOn && (
+            <div className="ask-past-backup">
+              <h4 className="small">{t('Take them to a new phone')}</h4>
+              <Segmented
+                label={t('Back up past chats')}
+                value={backupChats ? 'on' : 'off'}
+                onChange={(value) => useSquish.getState().setBackupChats(value === 'on')}
+                options={[
+                  { value: 'on' as const, label: t('Backed up') },
+                  { value: 'off' as const, label: t('This phone only') },
+                ]}
+              />
+              <p className="tiny muted">
+                {backupChats
+                  ? t('Your past chats go in your diary backup, so they come back when you restore it or sign in on a new phone. Turn this off and they leave the backup at its next save.')
+                  : t('Your past chats stay on this phone and nowhere else. Back them up to have them on a new phone, with your diary.')}
+              </p>
+            </div>
+          )}
+          <p className="tiny muted">{t('Kept for 90 days. They go with Reset, and are in your data export.')}</p>
         </div>
       </Sheet>
     </div>

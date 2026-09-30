@@ -1,5 +1,5 @@
 {
- "version": "0qzx2kk0wley3s",
+ "version": "17fh63h04v6gc1",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -2923,6 +2923,13 @@
    ]
   },
   {
+   "id": "0fv7zdw0twmc82",
+   "text": "Kept for 90 days. They go with Reset, and are in your data export.",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "0fwc5ed-5kfpk1",
    "text": "(you)",
    "where": [
@@ -4209,13 +4216,6 @@
    ]
   },
   {
-   "id": "0m7uk3t-g3mdg6",
-   "text": "Kept on this phone only, for 90 days. They go with Reset, and are in your data export.",
-   "where": [
-    "src/screens/Ask.tsx"
-   ]
-  },
-  {
    "id": "0m90bu20wey33t",
    "text": "Cheer",
    "where": [
@@ -4739,6 +4739,13 @@
    ]
   },
   {
+   "id": "0ol05mc-3lpvp4",
+   "text": "Your past chats stay on this phone and nowhere else. Back them up to have them on a new phone, with your diary.",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "0olzpk3-ov11r2",
    "text": "{pack}: {contents}. Not on sale yet.",
    "where": [
@@ -5152,6 +5159,13 @@
    "text": "Log 100 different foods",
    "where": [
     "src/lib/achievements.ts"
+   ]
+  },
+  {
+   "id": "0qlkthe-g1b221",
+   "text": "Your past chats go in your diary backup, so they come back when you restore it or sign in on a new phone. Turn this off and they leave the backup at its next save.",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -5720,6 +5734,13 @@
    "text": "Food quality",
    "where": [
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "0tslpgt0v2b8kk",
+   "text": "This phone only",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -8372,6 +8393,13 @@
    "text": "Well over the limit",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "17bgpes-xsdmny",
+   "text": "Take them to a new phone",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -11262,6 +11290,13 @@
    ]
   },
   {
+   "id": "1lxvnbu-9dpwfd",
+   "text": "Back up past chats",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "1lxxbb0-i4bzvj",
    "text": "Right you are",
    "where": [
@@ -11280,6 +11315,13 @@
    "text": "a snack",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "1m0c5sc-5cg1e1",
+   "text": "Backed up",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {

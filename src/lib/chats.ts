@@ -15,7 +15,7 @@
  * and the lookups above them — not the lookups' results. Carried on, a chat
  * sends its words back and the nutritionist looks things up again, fresh.
  */
-import { keepFrom, type PastChat } from './pastChats';
+import { forBackup, isPastChat, keepFrom, mergeChats, type PastChat } from './pastChats';
 
 export { MAX_AGE_DAYS, MAX_CHATS, newChatId, titleOf, wireOf, type ChatTurn, type PastChat } from './pastChats';
 
@@ -70,17 +70,31 @@ function run<T>(mode: IDBTransactionMode, body: (store: IDBObjectStore) => IDBRe
   );
 }
 
-const isChat = (value: unknown): value is PastChat => {
-  const chat = value as PastChat;
-  return Boolean(chat) && typeof chat.id === 'string' && Array.isArray(chat.turns) && typeof chat.updatedAt === 'number';
+/*
+ * The chats as last read, for the backup, which is built in one go and cannot
+ * wait on IndexedDB; and who to tell when they change, so it goes again.
+ */
+let latest: PastChat[] = [];
+const listeners = new Set<() => void>();
+const changed = () => {
+  for (const listener of listeners) listener();
 };
+
+export function onChatsChanged(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** The chats to put in the diary backup, from the last time they were read. */
+export const chatsForBackup = (): PastChat[] => forBackup(latest);
 
 /** Every past chat, newest first, the ones past their time let go on the way. */
 export async function listChats(): Promise<PastChat[]> {
   const db = await open();
-  const all = db ? ((await run<unknown[]>('readonly', (store) => store.getAll())) ?? []).filter(isChat) : [...memory.values()];
+  const all = db ? ((await run<unknown[]>('readonly', (store) => store.getAll())) ?? []).filter(isPastChat) : [...memory.values()];
   const { keep, drop } = keepFrom(all);
-  if (drop.length) await Promise.all(drop.map((chat) => deleteChat(chat.id)));
+  if (drop.length) await Promise.all(drop.map((chat) => deleteChat(chat.id, false)));
+  latest = keep;
   return keep;
 }
 
@@ -91,15 +105,36 @@ export async function saveChat(chat: PastChat): Promise<void> {
   if (db) await run('readwrite', (store) => store.put(chat));
   else memory.set(chat.id, chat);
   await listChats();
+  changed();
 }
 
-export async function deleteChat(id: string): Promise<void> {
+/**
+ * Chats from a backup (a new phone, a restore), merged with any already
+ * here: nothing on this phone is lost, and the same chat carried on in two
+ * places keeps the longer of the two.
+ */
+export async function importChats(arriving: unknown): Promise<void> {
+  const merged = mergeChats(await listChats(), arriving);
+  const db = await open();
+  for (const chat of merged) {
+    if (db) await run('readwrite', (store) => store.put(chat));
+    else memory.set(chat.id, chat);
+  }
+  await listChats();
+  changed();
+}
+
+export async function deleteChat(id: string, announce = true): Promise<void> {
   memory.delete(id);
   await run('readwrite', (store) => store.delete(id));
+  latest = latest.filter((chat) => chat.id !== id);
+  if (announce) changed();
 }
 
 /** Everything, for Reset. */
 export async function clearChats(): Promise<void> {
   memory.clear();
   await run('readwrite', (store) => store.clear());
+  latest = [];
+  changed();
 }

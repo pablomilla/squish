@@ -83,6 +83,12 @@ interface SquishState {
   theme: 'light' | 'dark' | 'system';
   /** "The protein of 3 eggs" on meals and the day. On unless turned off in You → Appearance. */
   comparisons: boolean;
+  /**
+   * Past chats with the nutritionist go in the diary backup too, so they come
+   * with them to a new phone (src/lib/chats.ts). Off unless they turn it on:
+   * a chat can say a lot about somebody's health.
+   */
+  backupChats: boolean;
   /** Which colourway Squish is wearing. Earned, never bought. */
   look: string;
   /** What Squish has on, one item per slot. Checked against what they may wear at every render. */
@@ -179,6 +185,7 @@ interface SquishState {
   countPhotoAnalysis: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setComparisons: (on: boolean) => void;
+  setBackupChats: (on: boolean) => void;
   setHousehold: (household: Household) => void;
   /** Keep a meal in the recipe box; one of the same name is updated rather than kept twice. */
   saveRecipe: (recipe: Omit<Recipe, 'id'>) => Recipe;
@@ -337,6 +344,7 @@ export const useSquish = create<SquishState>()(
       unlocked: {},
       theme: 'system',
       comparisons: true,
+      backupChats: false,
       look: DEFAULT_LOOK,
       outfit: {},
       scene: '',
@@ -532,6 +540,7 @@ export const useSquish = create<SquishState>()(
 
       setTheme: (theme) => set({ theme }),
       setComparisons: (comparisons) => set({ comparisons }),
+      setBackupChats: (backupChats) => set({ backupChats }),
       setHousehold: (household) => set({ household: cleanHousehold(household) }),
 
       saveRecipe: (recipe) => {
@@ -614,6 +623,7 @@ export const useSquish = create<SquishState>()(
           scene: '',
           shareDecor: { frame: '', stickers: [] },
           comparisons: true,
+          backupChats: false,
         }),
     }),
     {
