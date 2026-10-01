@@ -69,12 +69,17 @@ chat somebody deletes is noted with its id and when (`chatsGone`, kept for
 four months), carried with the diary whether or not chats are backed up, and
 deleted on every device that has it; no device takes it back from a copy that
 still does. Chats let go by the limits (90 days, 30 chats) are not noted:
-every device lets them go by itself.
+every device lets them go by itself. A chat carried on after another device
+deleted it — open at the time, or carried on offline before the deletion
+arrived — is not lost: it carries on as a new chat, everything said so far
+included, and reaches the other devices like any other.
 
 **Two different people's diaries are never merged without asking.** A device
-that has never been in step with the account's diary — one that has just
-signed in, holding a diary of its own — is not merged automatically when both
-are real diaries: the You screen asks whether to use the account's, keep the
+that has just signed in (or out), holding a diary of its own, is not merged
+with the diary the server holds for it until something settles it — when both
+are real diaries. It is the switch that asks, not a missing version: a device
+can lose its version (a save cut off by the page closing) and still be
+talking to its own diary. In that case: the You screen asks whether to use the account's, keep the
 device's, or combine both. Signing in where the account has no diary still
 moves the device's diary to it, as before.
 

@@ -15,7 +15,7 @@
  * and the lookups above them — not the lookups' results. Carried on, a chat
  * sends its words back and the nutritionist looks things up again, fresh.
  */
-import { forBackup, isPastChat, keepFrom, keepGone, mergeChats, mergeGone, withoutGone, type GoneChats, type PastChat } from './pastChats';
+import { forBackup, isPastChat, keepFrom, keepGone, mergeChats, mergeGone, newChatId, withoutGone, type GoneChats, type PastChat } from './pastChats';
 
 export { MAX_AGE_DAYS, MAX_CHATS, newChatId, titleOf, wireOf, type ChatTurn, type GoneChats, type PastChat } from './pastChats';
 
@@ -115,13 +115,38 @@ function keepGoneHere(next: GoneChats): void {
 /** The chats deleted by hand here or on another device, for the diary to carry. */
 export const goneChats = (): GoneChats => keepGone(gone);
 
-/** Chats another device deleted: noted here too, and deleted here if they are here. */
+/**
+ * A chat carried on after another device deleted it is a conversation still
+ * going, not one to throw away: it carries on as a new chat, everything said
+ * so far included, so it reaches the other devices too while the deleted one
+ * stays deleted. By the deleted chat's id, the new one it became — so a chat
+ * carried on over several turns becomes one new chat, not one a turn.
+ */
+const carriedOn = new Map<string, string>();
+const carryOn = (id: string): string => {
+  let next = carriedOn.get(id);
+  if (!next) {
+    next = newChatId();
+    carriedOn.set(id, next);
+  }
+  return next;
+};
+
+/**
+ * Chats another device deleted: noted here too, and deleted here if they are
+ * here — unless carried on here after they were deleted (offline, say), when
+ * they carry on as a new chat instead.
+ */
 export async function forgetChats(arriving: unknown): Promise<void> {
   keepGoneHere(mergeGone(gone, arriving));
   const here = await listChats();
   const going = here.filter((chat) => chat.id in gone);
   if (!going.length) return;
-  await Promise.all(going.map((chat) => deleteChat(chat.id, false)));
+  for (const chat of going) {
+    if (chat.updatedAt > gone[chat.id]) await put({ ...chat, id: carryOn(chat.id) });
+    await deleteChat(chat.id, false);
+  }
+  await listChats();
   changed();
 }
 
@@ -135,14 +160,24 @@ export async function listChats(): Promise<PastChat[]> {
   return keep;
 }
 
-/** Keep a chat as it stands now; the oldest go if there are more than there should be. */
-export async function saveChat(chat: PastChat): Promise<void> {
-  if (!chat.turns.length) return;
+/**
+ * Keep a chat as it stands now; the oldest go if there are more than there
+ * should be. Answers the id it was kept under: a new one, where the chat had
+ * been deleted on another device and is being carried on here.
+ */
+export async function saveChat(chat: PastChat): Promise<string> {
+  if (!chat.turns.length) return chat.id;
+  const kept = chat.id in gone ? { ...chat, id: carryOn(chat.id) } : chat;
+  await put(kept);
+  await listChats();
+  changed();
+  return kept.id;
+}
+
+async function put(chat: PastChat): Promise<void> {
   const db = await open();
   if (db) await run('readwrite', (store) => store.put(chat));
   else memory.set(chat.id, chat);
-  await listChats();
-  changed();
 }
 
 /**

@@ -92,6 +92,21 @@ let times: SyncTimes = load<SyncTimes>(TIMES_KEY, {});
 let dirty: boolean = load<boolean>(DIRTY_KEY, true);
 let chatsPrint: string = load<string>(CHATS_KEY, '');
 
+/**
+ * Whose diary the server holds changed under this device — signed in, out,
+ * or the account deleted — and nothing has been settled since: a diary
+ * waiting there may be somebody else's. Set by the switch, and cleared by
+ * the first save, the diary being taken, or a choice on the You screen.
+ * Not "has no version": a device can lose that (a save cut off by closing
+ * the page) and still be talking to its own diary.
+ */
+const ASK_KEY = 'squish-sync-ask';
+let askFirst: boolean = load<boolean>(ASK_KEY, false);
+function setAskFirst(next: boolean): void {
+  askFirst = next;
+  save(ASK_KEY, next);
+}
+
 function setTimes(next: SyncTimes): void {
   times = next;
   save(TIMES_KEY, times);
@@ -147,6 +162,7 @@ function apply(diary: Record<string, unknown>, diaryTimes: SyncTimes): void {
 
 /** Another device's diary, as it is: nothing had changed here to keep. */
 function adopt(found: RemoteDiary): void {
+  setAskFirst(false);
   const diary = (found.state ?? {}) as Record<string, unknown>;
   const sent = timesIn(diary);
   // A diary from an app that sent no times: every part as old as can be, so nothing in it outranks a later change.
@@ -157,6 +173,7 @@ function adopt(found: RemoteDiary): void {
 
 /** Both devices' changes, as one diary, to be saved. */
 function combine(found: RemoteDiary): void {
+  setAskFirst(false);
   const theirs = (found.state ?? {}) as Record<string, unknown>;
   noteChanges();
   const merged = mergeDiaries(snapshot(), times, theirs, timesIn(theirs));
@@ -183,7 +200,7 @@ function takeIn(found: RemoteDiary): 'adopted' | 'merged' | 'ask' {
     return 'merged';
   }
   noteChanges();
-  if (knownVersion() === null) {
+  if (askFirst) {
     if (isBlank(snapshot())) {
       adopt(found);
       return 'adopted';
@@ -218,6 +235,8 @@ async function push(): Promise<void> {
   inFlight = false;
 
   if (result.kind === 'saved') {
+    // Saved: whatever the server holds is this diary now.
+    setAskFirst(false);
     rememberVersion(result.version);
     setDirty(false);
     rounds = 0;
@@ -365,6 +384,7 @@ export function combineWithBackup(found: RemoteDiary): void {
 
 /** After "Keep this device's", or a switch of account: this device's diary is the one to save. */
 export function resumeBackup(version: number | null): void {
+  setAskFirst(false);
   rememberVersion(version);
   setDirty(true);
   stopped = false;
@@ -400,5 +420,7 @@ export function switchedIdentity({ broughtDiary = false }: { broughtDiary?: bool
   // account holding whatever was saved before, which at the end of
   // onboarding was a diary not yet set up.
   resumeBackup(broughtDiary ? knownVersion() : null);
+  // A diary already on the account may not be this one's: ask before mixing them. One brought along is this one.
+  setAskFirst(!broughtDiary);
   for (const listener of onSwitch) listener();
 }

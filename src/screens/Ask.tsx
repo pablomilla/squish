@@ -163,7 +163,11 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
       const answered: Bubble[] = [...asked, { role: 'assistant', text: reply, ...(used.length ? { lookups: used } : {}) }];
       setBubbles(answered);
       // Kept as it goes, so a chat closed mid-way is still there to come back to.
-      void saveChat({ id, title: titleOf(answered), startedAt: started, updatedAt: Date.now(), turns: answered }).then(refreshPast);
+      void saveChat({ id, title: titleOf(answered), startedAt: started, updatedAt: Date.now(), turns: answered }).then((kept) => {
+        // Deleted on another device and carried on here: it goes on as a new chat, under its new id.
+        if (kept !== id) setChatId((current) => (current === id ? kept : current));
+        refreshPast();
+      });
     } catch (error) {
       // The question goes back into the box rather than staying stranded in
       // the thread, so it can be sent again with one press. The failure is
