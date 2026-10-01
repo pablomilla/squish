@@ -186,5 +186,5 @@ test('a smoothie in any language is labelled again by the rule that puts its add
   // Labels kept under the rule before are not handed back for the same steps: they are asked for again.
   const before = createHash('sha256').update(JSON.stringify(['labels', STEP_LABELS - 1, batido.steps, batido.items])).digest('hex');
   assert.notEqual(labelKey(batido), before);
-  assert.equal(STEP_LABELS, 3);
+  assert.equal(STEP_LABELS, 4);
 });

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { test } from 'node:test';
-import { STEP_ACTIONS, detailsFor, guessDetail, usedIn, type StepAction, type StepDetail } from '../src/lib/cooking';
+import { AWAITING_PICTURES, STEP_ACTIONS, detailsFor, guessDetail, usedIn, type StepAction, type StepDetail } from '../src/lib/cooking';
 import { COOK_SCHEMA, COOK_SYSTEM, toCookSteps } from '../server/cook';
 
 /**
@@ -30,7 +30,7 @@ test('a step written before the labels is read from its words, timer and all', (
   assert.deepEqual(guessDetail('Bake at 200°C for 25 minutes.'), { action: 'bake', minutes: 25 });
   assert.deepEqual(guessDetail('Finely chop the onion.'), { action: 'prep' });
   assert.deepEqual(guessDetail('Plate up and enjoy.'), { action: 'serve' });
-  assert.deepEqual(guessDetail('Something unusual.'), { action: 'prep' }, 'a guess, never nothing');
+  assert.deepEqual(guessDetail('Something unusual.'), { action: 'other' }, 'nothing to go on: no picture, not the chopping board');
   const steps = ['Chop it.', 'Fry it for 5 minutes.'];
   assert.deepEqual(detailsFor(steps, [{ action: 'mix' }, { action: 'fry', minutes: 5 }]), [{ action: 'mix' }, { action: 'fry', minutes: 5 }], 'the model’s labels first');
   assert.deepEqual(detailsFor(steps), [{ action: 'prep' }, { action: 'fry', minutes: 5 }]);
@@ -47,10 +47,47 @@ test('a step shows the foods it names, by any particular word of their name', ()
   assert.deepEqual(usedIn('Añade el arroz basmati.', [{ name: 'arroz basmati' }]).length, 1, 'in any language the steps are written in');
 });
 
-test('every kind of step has its picture', () => {
+test('every kind of step has its picture, but other and the ones still being painted', () => {
   for (const action of STEP_ACTIONS) {
-    assert.ok(existsSync(new URL(`../src/assets/cook/${action}.webp`, import.meta.url)), `src/assets/cook/${action}.webp`);
+    const painted = existsSync(new URL(`../src/assets/cook/${action}.webp`, import.meta.url));
+    if (action === 'other') assert.ok(!painted, 'other is shown without a picture: the nearest one would be wrong');
+    else if (!AWAITING_PICTURES.includes(action)) assert.ok(painted, `src/assets/cook/${action}.webp`);
   }
+  // A picture painted is taken off the list, so the test above checks it stays.
+  for (const action of AWAITING_PICTURES) {
+    assert.ok(!existsSync(new URL(`../src/assets/cook/${action}.webp`, import.meta.url)), `${action} is painted: take it off AWAITING_PICTURES`);
+  }
+});
+
+test('a protein shake is at the shaker bottle, not in a mixing bowl', () => {
+  const items = [{ name: 'Whey protein powder' }, { name: 'Water' }];
+  const steps = [
+    'Add the 34 g of whey protein powder to a shaker bottle with 250–300 ml of cold water.',
+    'Seal and shake hard for 20 seconds until smooth.',
+    'Drink straight away.',
+  ];
+  assert.deepEqual(detailsFor(steps, undefined, items).map((d) => d.action), ['shake', 'shake', 'pour'], 'from the words: and a drink is not on a plate');
+  const asLabelled: StepDetail[] = [{ action: 'mix' }, { action: 'mix' }, { action: 'serve' }];
+  assert.deepEqual(detailsFor(steps, asLabelled, items).map((d) => d.action), ['shake', 'shake', 'pour'], 'labelled mix the old way: at the bottle from where it is named until it is shaken');
+  assert.equal(detailsFor(steps, asLabelled, items)[2].action, 'pour', 'and labelled serve, a drink is still not a plate');
+  assert.deepEqual(
+    detailsFor(['Put the oats in a shaker.', 'Add the milk.', 'Shake well.', 'Mix the yoghurt and honey in a bowl.'], [{ action: 'mix' }, { action: 'mix' }, { action: 'mix' }, { action: 'mix' }], items).map((d) => d.action),
+    ['shake', 'shake', 'shake', 'mix'],
+    'and not after it',
+  );
+  assert.equal(detailsFor(['Añade 30 g de proteína al shaker con 250 ml de agua.'], [{ action: 'mix' }], [{ name: 'proteína' }])[0].action, 'shake', 'in Spanish too');
+});
+
+test('the new places, from the words, and not where the words only sound like them', () => {
+  const guess = (step: string) => guessDetail(step).action;
+  assert.equal(guess('Microwave the porridge for 2 minutes, stirring halfway.'), 'microwave');
+  assert.equal(guess('Air fry the chicken at 200°C for 18 minutes.'), 'airfry');
+  assert.equal(guess('Put 2 slices of bread in the toaster.'), 'toast');
+  assert.equal(guess('Toast the oats in a dry pan for 3 minutes.'), 'fry', 'oats toasted in a pan are in the pan');
+  assert.equal(guess('Fry the onion, shaking the pan now and then.'), 'fry');
+  assert.equal(guess('Cover and leave in the fridge overnight.'), 'chill');
+  assert.equal(guess('Spread the hummus over the wrap and layer the chicken on top.'), 'assemble');
+  assert.equal(guess('Pour the milk into a glass.'), 'pour');
 });
 
 test('a sauce simmering where the meat was browned shows the frying pan, not the pasta pot', () => {
@@ -109,10 +146,10 @@ test('a smoothie is at the blender from the first thing that goes in, not on the
 
   // Without naming the blender until it is switched on: what goes in just before is going into it.
   assert.deepEqual(actions(['Add the berries and the banana.', 'Pour in the milk.', 'Blitz until smooth.']), ['blend', 'blend', 'blend']);
-  // Chopping stays on the board; pouring it out afterwards is not more blending.
+  // Chopping stays on the board; pouring it out afterwards is pouring, not more blending.
   assert.deepEqual(
     actions(['Peel and slice the banana.', 'Put the banana and berries in the blender.', 'Blend until smooth.', 'Pour into a glass.']),
-    ['prep', 'blend', 'blend', 'prep'],
+    ['prep', 'blend', 'blend', 'pour'],
   );
   // A soup blended at the end keeps its pan for the steps that cook it (the stock joins the onion's pan, as before).
   assert.deepEqual(

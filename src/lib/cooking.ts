@@ -6,8 +6,20 @@
  * before it did are read here instead, by their words — English only, and a
  * guess, which is why the model is asked.
  */
-export const STEP_ACTIONS = ['prep', 'rinse', 'mix', 'season', 'boil', 'fry', 'bake', 'grill', 'blend', 'rest', 'serve'] as const;
+export const STEP_ACTIONS = [
+  'prep', 'rinse', 'mix', 'season', 'boil', 'fry', 'bake', 'grill', 'blend', 'rest', 'serve',
+  'shake', 'microwave', 'toast', 'airfry', 'chill', 'assemble', 'pour',
+  // None of them: shown without a picture, because the wrong one is worse than none.
+  'other',
+] as const;
 export type StepAction = (typeof STEP_ACTIONS)[number];
+
+/**
+ * Kinds of step whose picture is still to be painted (design/cook/README.md).
+ * Until it is in src/assets/cook/, a step of that kind is shown without one;
+ * a test checks every other kind has its picture.
+ */
+export const AWAITING_PICTURES: readonly StepAction[] = ['shake', 'microwave', 'toast', 'airfry', 'chill', 'assemble', 'pour'];
 
 export interface StepDetail {
   action: StepAction;
@@ -19,14 +31,23 @@ export interface StepDetail {
  * Which way of labelling the steps they were labelled by. 2: each label is
  * where the food is (a sauce simmered in the frying pan is fry), told to the
  * model in any language. 3: and what goes into the blender is at the blender,
- * not on the chopping board. Steps from before are relabelled when opened.
+ * not on the chopping board. 4: more places to be (a shaker bottle, the
+ * microwave, the toaster, the air fryer, the fridge, a board where a
+ * sandwich is put together, a jug), and other where none of them is right.
+ * Steps from before are relabelled when opened.
  */
-export const STEP_LABELS = 3;
+export const STEP_LABELS = 4;
 
 export const isStepAction = (value: unknown): value is StepAction => STEP_ACTIONS.includes(value as StepAction);
 
 /** Checked in order: "bring to the boil, then simmer" is boiling, however it was chopped first. */
 const WORDS: [StepAction, RegExp][] = [
+  ['airfry', /\bair[- ]?fr(y|yer|ied)\b/i],
+  ['microwave', /\b(microwave|microwaveable)\b/i],
+  // The bottle, or shaking that is the whole point: "shake the pan now and then" is still frying.
+  ['shake', /\bshaker\b|\bshake (?:it |them )?(?:well|hard|vigorously|until|for)\b/i],
+  // The toaster, or bread in it: toasting the oats or the seeds is in a pan.
+  ['toast', /\btoaster\b|\btoast (?:the |a |two |\d+ )?(?:slices?|bread|bagels?|muffins?|crumpets?|pittas?|teacakes?)\b/i],
   ['bake', /\b(bake|roast|oven)\b/i],
   ['grill', /\b(grill|broil|barbecue|bbq|griddle)\b/i],
   ['boil', /\b(boil|simmer|bubble|poach|steam|blanch|pasta|rice|noodles)\b/i],
@@ -34,15 +55,20 @@ const WORDS: [StepAction, RegExp][] = [
   ['blend', /\b(blend|blitz|puree|purée|smoothie|food processor)\b/i],
   ['rinse', /\b(rinse|drain|wash)\b/i],
   ['season', /\b(season|salt|pepper|sprinkle|spice)\b/i],
+  ['chill', /\b(fridge|refrigerat\w*|chill|overnight)\b/i],
   ['mix', /\b(mix|stir|whisk|combine|toss|fold)\b/i],
-  ['rest', /\b(rest|cool|chill|marinate|leave|set aside|soak)\b/i],
-  ['serve', /\b(serve|plate|top with|enjoy)\b/i],
+  ['assemble', /\b(assemble|spread|layer|sandwich|wrap|fill)\b/i],
+  ['rest', /\b(rest|cool|marinate|leave|set aside|soak)\b/i],
+  ['serve', /\b(serve|plate|top with|enjoy|eat)\b/i],
+  // A drink is not served on a plate.
+  ['pour', /\bpour\b.*\b(glass|mug|cup|jug)\b|\bdrink\b/i],
   ['prep', /\b(chop|slice|dice|cut|peel|grate|mince|halve)\b/i],
 ];
 
 /** A step's detail from its words, for steps written before the model labelled them. */
 export function guessDetail(step: string): StepDetail {
-  const action = WORDS.find(([, re]) => re.test(step))?.[0] ?? 'prep';
+  // Nothing it says gives it away: no picture, rather than the chopping board for a step that may be nowhere near one.
+  const action = WORDS.find(([, re]) => re.test(step))?.[0] ?? 'other';
   // The longest time in it, taking the top of a range: "10–12 minutes" is 12.
   let minutes: number | undefined;
   for (const m of step.matchAll(/(\d+)(?:\s*[–-]\s*(\d+))?\s*(?:min|minute)/gi)) {
@@ -86,7 +112,7 @@ function followTheFood(steps: string[], details: StepDetail[], items: { name: st
     if (action === 'fry') fried = true;
     return action === detail.action ? detail : { ...detail, action };
   });
-  return intoTheBlender(steps, followed);
+  return aDrinkIsPoured(steps, intoTheShaker(steps, intoTheBlender(steps, followed)));
 }
 
 /**
@@ -154,8 +180,8 @@ const PUTTING = words(
   'adaug\\p{L}*', 'pune\\p{L}*', 'toarn\\p{L}*', // ro
   'ekle\\p{L}*', 'koy\\p{L}*', 'dök\\p{L}*', // tr
 );
-/** What a step at the blender can have been labelled instead: the board, the bowl, the seasoning. */
-const MOVABLE = new Set<StepAction>(['prep', 'mix', 'season']);
+/** What a step at the blender can have been labelled instead: the board, the bowl, the seasoning, or nowhere in particular. */
+const MOVABLE = new Set<StepAction>(['prep', 'mix', 'season', 'other']);
 
 /**
  * A smoothie is a row of things going into the blender, and the board is
@@ -186,6 +212,45 @@ function intoTheBlender(steps: string[], details: StepDetail[]): StepDetail[] {
     if (actions[i + 1] === 'blend' && PUTTING.test(steps[i]) && movable(i)) actions[i] = 'blend';
   }
   return details.map((detail, i) => (actions[i] === detail.action ? detail : { ...detail, action: actions[i] }));
+}
+
+/** A shaker bottle, as named in most of the languages the app speaks: the English word, borrowed. */
+const SHAKER = words('shaker\\p{L}*', 'coctelera', 'shakeuse', 'シェイカー', 'シェーカー', '쉐이커', '摇摇杯', 'شيكر');
+
+/** The shaking itself, after which it is drunk. */
+const SHAKING = words(
+  'shake', 'shakes', 'shaking', 'shook',
+  'agit(?:a|e|ez|ar|er|are)', 'sacud\\p{L}*', // es, fr, it, pt
+  'secou(?:e|ez|er)', // fr
+  'schüttel\\p{L}*', 'schud\\p{L}*', // de, nl
+  'scuoti\\p{L}*', // it
+  'wstrząśnij', 'potrząśnij', // pl
+);
+
+/**
+ * Whatever goes into the shaker bottle is at the shaker, not in a mixing
+ * bowl: the step that names it, and every one after until it is shaken —
+ * "seal and shake hard" does not say what it is shaking.
+ */
+function intoTheShaker(steps: string[], details: StepDetail[]): StepDetail[] {
+  let open = false;
+  return details.map((detail, i) => {
+    const named = SHAKER.test(steps[i]);
+    const at = (named || open) && MOVABLE.has(detail.action);
+    if (named) open = true;
+    if (SHAKING.test(steps[i])) open = false;
+    return at ? { ...detail, action: 'shake' } : detail;
+  });
+}
+
+/** Drinking it, in the main languages the app speaks. */
+const DRINKING = words(
+  'drink', 'drinks', 'sip', 'bebe', 'bébalo', 'bébela', 'beber', 'bois', 'buvez', 'boire', 'trink\\p{L}*', 'bevi', 'bevete', 'bere', 'drinken', 'drink het', 'wypij', 'pij', 'bea', 'beți', 'iç', 'için',
+);
+
+/** Served as a drink is not served on a plate: the plate is for food. */
+function aDrinkIsPoured(steps: string[], details: StepDetail[]): StepDetail[] {
+  return details.map((detail, i) => (detail.action === 'serve' && DRINKING.test(steps[i]) ? { ...detail, action: 'pour' } : detail));
 }
 
 /** Words that put a step in a saucepan of water, whatever else it says. */

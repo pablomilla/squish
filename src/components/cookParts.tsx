@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { CookSteps, FoodItem, MealEntry } from '../types';
 import StepArt from './StepArt';
+import { hasArt } from './stepPictures';
 import { STEP_LABELS, detailsFor, usedIn, type StepDetail } from '../lib/cooking';
 import Squish from './Squish';
 import { CloseIcon } from './icons';
@@ -281,9 +282,11 @@ export function CookMode({
       <p className="tiny muted cook-mode-title" dir="auto">{plan.title}</p>
 
       <div className="cook-mode-body">
-        <div className="cook-mode-art" key={at}>
-          <StepArt action={step.action} />
-        </div>
+        {hasArt(step.action) && (
+          <div className="cook-mode-art" key={at}>
+            <StepArt action={step.action} />
+          </div>
+        )}
 
         <p className="cook-mode-step" dir="auto" aria-live="polite">
           {steps[at]}
