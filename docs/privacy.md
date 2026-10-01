@@ -62,7 +62,10 @@ Backup is on by default where this copy of Squish has a database.
 
   With more than one device signed in, each one checks this copy when you
   open Squish and every few minutes while it is open, and takes in what the
-  others have changed. When two have changed things at the same time, the
+  others have changed. While Squish is open on your screen it also keeps a
+  line open to our server, which says when another of your devices has saved
+  — the copy's version number, nothing else — so the change shows in a
+  couple of seconds. When two have changed things at the same time, the
   changes are put together on your device, not on our server: a meal logged
   on each is two meals, the same one changed on both keeps the later change,
   and something deleted on one is deleted on the others. To do that, the

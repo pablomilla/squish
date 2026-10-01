@@ -53,6 +53,28 @@ the app opens, comes back to the front or back online, and every three minutes
 while open (`GET /api/diary?known=N`, answered in a few bytes when nothing has),
 and takes the newer copy as it is when nothing has changed on the device.
 
+**Told at once, while open.** (Since 1 October 2026.) A device saves two
+seconds after the last change (`QUIET_MS`), and at once when put away. While
+the app is on screen it holds one request open, `GET /api/diary/live`
+(server-sent events, read with `fetch` so the device token goes in the
+`Authorization` header as everywhere else), and the server writes the diary's
+version down it as the line opens and each time the account's diary is saved
+(`server/live.ts`). A version newer than the device's own is its cue to check
+as above, so another device open beside it shows a change in about two
+seconds. The line carries the version number and nothing else.
+
+Saves are announced with Postgres `NOTIFY` on `squish_diary`, and each
+instance `LISTEN`s on a connection of its own (`listen` in `server/db.ts`,
+reopened if it drops), so a save on one instance reaches devices held open by
+another. With that connection down, an instance still tells its own. The line
+is closed when the app is put away (a phone would pause it anyway) and
+reopened when it comes back, comes back online, or signs in or out; after 20
+minutes, and on shutdown, the server closes it and the app reconnects. A
+comment every 25 seconds keeps proxies from dropping it as idle. One person
+keeps at most ten lines, the oldest going first, and an instance at most
+5,000; past that the app is turned away and checks every three minutes, which
+is all it did before.
+
 **Merging is not guessing.** Every meal, plan, recipe and shopping line has an
 id, so a lunch logged on each device is two lunches, whatever they are called.
 The diary is merged part by part — things with ids, days by date, badges, sets

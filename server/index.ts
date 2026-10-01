@@ -31,6 +31,7 @@ import {
 } from './routing';
 import { handOver, latestMadePlan, planCosts, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
 import { deleteDiary, diaryVersion, ownerOf, readDiary, writeDiary } from './diary';
+import { announceDiary, stopWatching, watchDiary } from './live';
 import { privacyPage, registerPrivacyStrings, registerTermsStrings, standalonePage, termsPage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
 import { adminChangeEmail, confirmEmailChange, peekEmailChange, peekEmailUndo, requestEmailChange, undoEmailChange } from './emailChange';
@@ -529,6 +530,20 @@ app.get('/api/diary', requireDevice, async (req, res) => {
   }
 });
 
+/**
+ * Held open by each app, to be told the moment another device saves
+ * (server/live.ts): the version, never the diary.
+ */
+app.get('/api/diary/live', requireDevice, async (req, res) => {
+  try {
+    const owner = ownerOf(req.device!);
+    watchDiary(owner, await diaryVersion(owner), req, res);
+  } catch (error) {
+    logFailure('diary live', error);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
 app.put('/api/diary', requireDevice, async (req, res) => {
   const { state, version } = req.body ?? {};
   if (state === undefined || state === null) {
@@ -544,9 +559,12 @@ app.put('/api/diary', requireDevice, async (req, res) => {
   }
 
   try {
-    const result = await writeDiary(ownerOf(req.device!), state, version);
+    const owner = ownerOf(req.device!);
+    const result = await writeDiary(owner, state, version);
     if (result.ok) {
       res.json(result);
+      // The owner's other open devices, told at once rather than at their next look.
+      void announceDiary(owner, result.version).catch(() => {});
       return;
     }
     if (result.reason === 'too_big') {
@@ -3132,6 +3150,7 @@ const server = app.listen(PORT, () => {
  */
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.once(signal, () => {
+    void stopWatching().catch(() => {});
     void handOver()
       .then((count) => {
         if (count) console.info(`[squish] ${signal}: handed over ${count} weekly plan${count === 1 ? '' : 's'} being made`);

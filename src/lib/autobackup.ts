@@ -11,9 +11,11 @@
  *
  * - Before each save, what changed is noted, part by part, with when
  *   (src/lib/sync.ts). The times go up with the diary.
- * - When the app opens, comes back to the front or back online, and every
- *   few minutes while it is open, it asks whether another device has saved.
- *   The server answers in a few bytes when nothing has.
+ * - While the app is open on screen it holds a line to the server, which
+ *   says the moment another device saves (server/live.ts). It also asks
+ *   when it opens, comes back to the front or back online, and every few
+ *   minutes, in case a cue was missed. The server answers in a few bytes
+ *   when nothing has changed.
  * - If another device has saved and nothing has changed here, its diary is
  *   simply taken. If both have changed, the two are merged — every meal and
  *   plan has an id, so lunch logged on each is two lunches, and the same one
@@ -28,14 +30,14 @@
  * could interrupt somebody logging their lunch would be worse than none.
  */
 import { useSquish } from '../store/useSquish';
-import { knownVersion, newerDiary, pushDiary, rememberVersion, type BackupState, type RemoteDiary } from './backup';
+import { hearSaves, knownVersion, newerDiary, pushDiary, rememberVersion, type BackupState, type RemoteDiary } from './backup';
 import { isBlank } from './blankDiary';
 import { chatsForBackup, forgetChats, goneChats, importChats, listChats, onChatsChanged } from './chats';
 import { fingerprintOf, mergeDiaries, prune, stamp, timesIn, type SyncTimes } from './sync';
 
-/** Long enough that a burst of edits is one push, short enough to be a backup. */
-const QUIET_MS = 6_000;
-/** How often an open app asks whether another device has saved. */
+/** Long enough that a burst of edits is one push, short enough that another device open beside this one shows it straight away. */
+const QUIET_MS = 2_000;
+/** How often an open app asks whether another device has saved, in case it missed being told. */
 const CHECK_MS = 3 * 60_000;
 /** Merges in a row before giving up for now: another device saving faster than this one can merge is not a loop to stay in. */
 const MAX_ROUNDS = 3;
@@ -45,6 +47,8 @@ let inFlight = false;
 let checking = false;
 let stopped = false;
 let rounds = 0;
+/** Told of a save while busy saving or looking: look again once done. */
+let missed = false;
 let state: BackupState = { kind: 'off' };
 const listeners = new Set<(state: BackupState) => void>();
 
@@ -216,6 +220,11 @@ function takeIn(found: RemoteDiary): 'adopted' | 'merged' | 'ask' {
 }
 
 async function push(): Promise<void> {
+  await pushOnce();
+  lookAgain();
+}
+
+async function pushOnce(): Promise<void> {
   if (inFlight || stopped) return;
   if (checking) {
     soon();
@@ -268,7 +277,7 @@ async function push(): Promise<void> {
         soon();
         return;
       }
-      await push();
+      await pushOnce();
       return;
     }
     rounds = 0;
@@ -280,7 +289,11 @@ async function push(): Promise<void> {
 
 /** Has another device saved? Then take its changes in now, rather than when this one next saves. */
 async function check(): Promise<void> {
-  if (stopped || inFlight || checking || state.kind === 'off') return;
+  if (stopped || state.kind === 'off') return;
+  if (inFlight || checking) {
+    missed = true;
+    return;
+  }
   const known = knownVersion();
   // Never saved here: the first save will find out what is there, and ask if it must.
   if (known === null) return;
@@ -300,6 +313,66 @@ async function check(): Promise<void> {
   } finally {
     checking = false;
   }
+  lookAgain();
+}
+
+/** Done saving or looking: if told of a save meanwhile that neither brought in, look now. */
+function lookAgain(): void {
+  if (!missed || inFlight || checking) return;
+  missed = false;
+  if (heard > (knownVersion() ?? 0)) void check();
+}
+
+/* ------------------------------------------------------------------ *
+ * Being told: a line held open to the server while the app is on screen.
+ * ------------------------------------------------------------------ */
+
+let line: AbortController | null = null;
+let lineRetry: ReturnType<typeof setTimeout> | undefined;
+let linePause = 2_000;
+/** The newest version the server has said there is. */
+let heard = 0;
+
+/** A device saved: look, unless it was this one and this one already knows. */
+function heardSave(version: number): void {
+  heard = Math.max(heard, version);
+  const known = knownVersion();
+  if (known === null || version <= known) return;
+  void check();
+}
+
+function openLine(): void {
+  if (line || state.kind === 'off' || document.visibilityState !== 'visible') return;
+  clearTimeout(lineRetry);
+  const mine = new AbortController();
+  line = mine;
+  const opened = Date.now();
+  void hearSaves(heardSave, mine.signal).then((how) => {
+    // Closed here, on purpose: nothing to reopen.
+    if (line !== mine) return;
+    line = null;
+    if (how === 'refused') return;
+    // One that had been open a while was working: back straight away. One that keeps failing waits longer each time.
+    const lasted = Date.now() - opened > 30_000;
+    if (lasted) linePause = 2_000;
+    lineRetry = setTimeout(openLine, lasted ? 1_000 : linePause);
+    if (!lasted) linePause = Math.min(linePause * 2, 60_000);
+  });
+}
+
+function closeLine(): void {
+  clearTimeout(lineRetry);
+  const mine = line;
+  line = null;
+  mine?.abort();
+}
+
+function reopenLine(): void {
+  closeLine();
+  linePause = 2_000;
+  // Perhaps another diary's now (signed in or out): it says its version as the line opens.
+  heard = 0;
+  openLine();
 }
 
 function soon(): void {
@@ -332,11 +405,18 @@ export function startBackup(enabled: boolean): () => void {
   const every = setInterval(() => {
     if (document.visibilityState === 'visible') void check();
   }, CHECK_MS);
+  // And told the moment one does, while on screen.
+  openLine();
+  // Signed in or out: whose diary to hear about has changed.
+  onSwitch.add(reopenLine);
 
   // A tab being closed is the commonest moment for the last few minutes to be
   // lost, and it is too late for a debounce by then. Coming back to it is the
   // commonest moment for another device to have been used in the meantime.
   const onVisibility = () => {
+    // Put away: a phone would pause the line anyway, and the server need not hold it.
+    if (document.visibilityState === 'hidden') closeLine();
+    else reopenLine();
     if (stopped) return;
     if (document.visibilityState === 'hidden') {
       clearTimeout(timer);
@@ -345,7 +425,10 @@ export function startBackup(enabled: boolean): () => void {
       void check();
     }
   };
-  const onOnline = () => void check();
+  const onOnline = () => {
+    void check();
+    reopenLine();
+  };
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('online', onOnline);
 
@@ -354,6 +437,8 @@ export function startBackup(enabled: boolean): () => void {
     unsubscribeChats();
     clearTimeout(first);
     clearInterval(every);
+    onSwitch.delete(reopenLine);
+    closeLine();
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('online', onOnline);
     clearTimeout(timer);

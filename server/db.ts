@@ -13,7 +13,7 @@
  * somebody's laptop, and it is what stops a database outage taking the whole
  * app down with it.
  */
-import { Pool, type PoolClient } from 'pg';
+import { Client, Pool, type PoolClient } from 'pg';
 
 const URL = process.env.DATABASE_URL?.trim();
 
@@ -22,15 +22,21 @@ let pool: Pool | null = null;
 /** True when there is somewhere to write. Checked before anything is offered. */
 export const hasDatabase = (): boolean => Boolean(URL);
 
-function getPool(): Pool {
+function connection(): { connectionString: string; ssl: { rejectUnauthorized: false } | undefined } {
   if (!URL) throw new Error('No DATABASE_URL — nothing here should have been called.');
-  pool ??= new Pool({
+  return {
     connectionString: URL,
     // Render's managed Postgres presents a certificate this does not have a
     // root for. The connection is still encrypted; what is not checked is who
     // is on the other end, which is acceptable inside their network and would
     // not be across the open internet.
     ssl: URL.includes('localhost') || URL.includes('/tmp') ? undefined : { rejectUnauthorized: false },
+  };
+}
+
+function getPool(): Pool {
+  pool ??= new Pool({
+    ...connection(),
     max: 8,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
@@ -54,6 +60,72 @@ async function withClient<T>(body: (client: PoolClient) => Promise<T>): Promise<
   } finally {
     client.release();
   }
+}
+
+/**
+ * Being told when something happens, on whichever instance it happened:
+ * Postgres LISTEN, on a connection of its own (a pooled one would be handed
+ * to somebody else and stop listening). Reopened when it drops, after a
+ * pause that grows, because a database restarting is not a reason to give
+ * up on it.
+ */
+export interface Listening {
+  /** True while the connection is up: until then, nothing said elsewhere arrives. */
+  connected(): boolean;
+  stop(): Promise<void>;
+}
+
+export function listen(channel: string, heard: (payload: string) => void): Listening {
+  let client: Client | null = null;
+  let up = false;
+  let stopped = false;
+  let pause = 1_000;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+
+  const again = () => {
+    up = false;
+    const gone = client;
+    client = null;
+    gone?.removeAllListeners();
+    void gone?.end().catch(() => {});
+    if (stopped) return;
+    retry = setTimeout(open, pause);
+    retry.unref();
+    pause = Math.min(pause * 2, 60_000);
+  };
+
+  async function open(): Promise<void> {
+    if (stopped) return;
+    const next = new Client(connection());
+    client = next;
+    next.on('error', again);
+    next.on('end', () => client === next && again());
+    next.on('notification', (message) => message.channel === channel && heard(message.payload ?? ''));
+    try {
+      await next.connect();
+      // The channel is ours, never somebody's input; quoted all the same.
+      await next.query(`listen "${channel.replace(/"/g, '')}"`);
+      if (client !== next) return;
+      up = true;
+      pause = 1_000;
+    } catch {
+      if (client === next) again();
+    }
+  }
+
+  void open();
+  return {
+    connected: () => up,
+    async stop() {
+      stopped = true;
+      clearTimeout(retry);
+      up = false;
+      const gone = client;
+      client = null;
+      gone?.removeAllListeners();
+      await gone?.end().catch(() => {});
+    },
+  };
 }
 
 /** Several statements that must all happen, or none of them. */

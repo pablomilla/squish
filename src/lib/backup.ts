@@ -11,6 +11,7 @@
  */
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
+import { splitEvents } from './events';
 
 export type BackupState =
   | { kind: 'off' }
@@ -63,6 +64,47 @@ export async function newerDiary(known: number | null): Promise<RemoteDiary | 's
     return found.version === known ? 'same' : found;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Listen for saves: the server says the diary's version when this starts and
+ * whenever a device saves (server/live.ts). Read with fetch, not
+ * EventSource, because EventSource cannot say who is asking.
+ *
+ * - `ended`: the server closed it, as it does now and then; open another.
+ * - `refused`: a server that does not do this, or will not now; the app
+ *   goes on asking every few minutes until it next comes to the front.
+ * - `failed`: the network; try again in a while.
+ */
+export async function hearSaves(heard: (version: number) => void, signal: AbortSignal): Promise<'ended' | 'refused' | 'failed'> {
+  try {
+    const response = await fetch(apiUrl('/api/diary/live'), {
+      headers: { ...(await headers()), Accept: 'text/event-stream' },
+      cache: 'no-store',
+      signal,
+    });
+    if (!response.ok || !response.body) return response.status >= 500 && response.status !== 503 ? 'failed' : 'refused';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return 'ended';
+      const { events, rest } = splitEvents(buffer + decoder.decode(value, { stream: true }));
+      buffer = rest;
+      for (const { event, data } of events) {
+        if (event !== 'version') continue;
+        try {
+          const { version } = JSON.parse(data) as { version?: unknown };
+          if (typeof version === 'number') heard(version);
+        } catch {
+          /* not one of ours */
+        }
+      }
+    }
+  } catch {
+    return 'failed';
   }
 }
 
