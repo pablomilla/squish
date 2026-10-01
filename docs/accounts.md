@@ -43,16 +43,32 @@ browser's localStorage is about 5 MB, and seventeen photographed meals filled
 it — the eighteenth could not be saved at all. Thumbnails put a thousand meals
 inside the 6 MB backup where nineteen used to fit.
 
-**Backup, not sync.** The browser holds the diary and decides what is true; the
-server holds a spare. Nothing the backup does changes what is on the device
-without somebody pressing Restore.
+**Every signed-in device kept in step.** (Since 1 October 2026; before, it was a
+backup only, and two phones in use stopped it.) Each device still holds the
+diary and works without a network; the server holds the account's copy. A
+device that saves without having seen the latest is still refused with a 409
+and handed it — and now merges it in (`src/lib/sync.ts`) and saves both,
+rather than stopping. It also asks the server whether anything has changed when
+the app opens, comes back to the front or back online, and every three minutes
+while open (`GET /api/diary?known=N`, answered in a few bytes when nothing has),
+and takes the newer copy as it is when nothing has changed on the device.
 
-**Two diaries are never merged.** Merging food diaries by machine means guessing
-whether two similar lunches are one lunch logged twice or two lunches actually
-eaten. There is no answer right often enough to apply behind somebody's back.
-So a device whose backup is stale is refused with a 409 and shown what it is up
-against, and the You screen asks which to keep. The same rule governs signing
-in: the diary on the phone moves to the account only when the account has none.
+**Merging is not guessing.** Every meal, plan, recipe and shopping line has an
+id, so a lunch logged on each device is two lunches, whatever they are called.
+The diary is merged part by part — things with ids, days by date, badges, sets
+of words, and each setting's fields — and beside it go the times each part last
+changed and when it was deleted, found by comparing the diary with itself, so
+nothing that changes the diary has to remember to say so. Same on both: kept.
+On one only: kept, unless the other deleted it after it last changed.
+Different: the later change. Full-size photos are not part of it: other
+devices show the thumbnail.
+
+**Two different people's diaries are never merged without asking.** A device
+that has never been in step with the account's diary — one that has just
+signed in, holding a diary of its own — is not merged automatically when both
+are real diaries: the You screen asks whether to use the account's, keep the
+device's, or combine both. Signing in where the account has no diary still
+moves the device's diary to it, as before.
 
 **No session token.** Signing in attaches the account to the device row, and
 the device token stays the only credential anything presents. It is already

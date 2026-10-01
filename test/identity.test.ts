@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test, before, after } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { deviceFor, registerDevice, spend, spentToday } from '../server/identity';
-import { deleteDiary, ownerOf, readDiary, writeDiary } from '../server/diary';
+import { deleteDiary, diaryVersion, ownerOf, readDiary, writeDiary } from '../server/diary';
 
 /**
  * Device identity, against a real Postgres.
@@ -125,6 +125,15 @@ when('two phones at once: the second is refused and shown the first', async () =
   assert.ok(!laptop.ok && laptop.reason === 'stale', 'the refusal should be about staleness');
   assert.deepEqual(laptop.current.state, { meals: ['breakfast', 'lunch'] }, 'and it should be handed what it is up against');
   assert.equal(laptop.current.version, 2);
+});
+
+when('a device keeping in step can ask for just the version', async () => {
+  const device = await registerDevice();
+  const owner = ownerOf({ id: device.id, accountId: null });
+  assert.equal(await diaryVersion(owner), 0, 'nothing kept yet');
+  await writeDiary(owner, { meals: ['breakfast'] }, null);
+  await writeDiary(owner, { meals: ['breakfast', 'lunch'] }, 1);
+  assert.equal(await diaryVersion(owner), 2);
 });
 
 when('two first-writes race and only one wins', async () => {

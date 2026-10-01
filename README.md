@@ -370,16 +370,17 @@ Postgres and three things switch on, in this order:
 - **A device token**, automatically, so the daily allowance is counted per phone
   rather than per IP address — everybody on the same mobile network used to
   share one.
-- **A backup** of the diary, automatically, so a cleared browser or a lost phone
-  is an inconvenience rather than the end of six weeks of logging. It is a
-  backup and not a sync: Restore is a button, never a behaviour.
-- **An account**, only if somebody asks for one. It does the one thing a device
-  cannot — follow them to a new phone.
+- **A copy of the diary on the server**, automatically, so a cleared browser or
+  a lost phone is an inconvenience rather than the end of six weeks of logging.
+- **An account**, only if somebody asks for one. It follows them to a new phone,
+  and keeps every device they sign in on in step: each checks for the others'
+  changes when it opens and every few minutes, and where two have changed
+  things at once they are merged by id (`src/lib/sync.ts`) — lunch logged on
+  each is two lunches, the same meal changed on both keeps the later change.
 
-Squish will not merge two diaries. Whether it is two phones backing up or
-somebody signing in where the account already has one, it stops and asks which
-to keep, because merging means guessing whether two similar lunches are one
-lunch logged twice. See [`docs/accounts.md`](docs/accounts.md), which also
+A device that signs in holding a diary of its own is the one case that asks
+first (use the account's, keep this one's, or combine both), because two
+real diaries might be two people's. See [`docs/accounts.md`](docs/accounts.md), which also
 covers reset emails, the schema, and what is still missing before the app
 stores.
 

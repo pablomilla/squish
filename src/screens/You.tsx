@@ -20,7 +20,7 @@ import { SCENES, canUseScene, sceneOnShow } from '../lib/scenes';
 import { sceneUrl } from '../components/sceneArt';
 import { listWords, packLocked, packsAmong } from '../lib/packs';
 import { explainPlan } from '../lib/planExplained';
-import { adoptBackup, backupState, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
+import { adoptBackup, backupState, combineWithBackup, resumeBackup, watchBackup, watchIdentity } from '../lib/autobackup';
 import { forgetBackup, pullDiary, type BackupState, type RemoteDiary } from '../lib/backup';
 import { summariseDiary, type DiarySummary } from '../lib/diarySummary';
 import { PLUS, planNow, redeemInvite, watchStanding, type Standing } from '../lib/plan';
@@ -994,13 +994,13 @@ function BackupCard() {
       ) : state.kind === 'conflict' ? (
         <>
           <p className="tiny muted">
-            {t('Another device has backed up something this one has not seen. Squish will not merge two diaries — that means guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say which to keep.')}
+            {t('This device has a diary of its own, and so does your account. They might be two different people’s, so Squish has paused rather than mixing them. Keep one, or combine them to keep everything from both.')}
           </p>
           {remote && <Choices here={here} backup={summariseDiary(remote.state)} savedAt={remote.updatedAt} />}
         </>
       ) : (
         <p className="tiny muted">
-          {t('A copy of your diary is kept so a cleared browser or a lost phone is an inconvenience rather than the end of it. Your diary still lives on this device; this is the spare.')}
+          {t('Your diary is kept with your account, so every device you sign in on has it — meals, plans, recipes and your shopping list — and they keep each other up to date. A cleared browser or a lost phone loses nothing. Full-size photos stay on the device that took them; other devices show a small one.')}
         </p>
       )}
 
@@ -1025,6 +1025,19 @@ function BackupCard() {
           </button>
         )}
       </div>
+      {/* Both, for somebody whose two diaries are both theirs: everything kept, each meal once. */}
+      {state.kind === 'conflict' && remote?.state != null && (
+        <button
+          type="button"
+          className="btn btn--sm btn--block backup-combine"
+          onClick={() => {
+            combineWithBackup(remote);
+            toast(t('Combined. Everything from both is here, and on your other devices.'), '🫧');
+          }}
+        >
+          {t('Combine both')}
+        </button>
+      )}
     </section>
   );
 }
@@ -1045,7 +1058,7 @@ function Choices({ here, backup, savedAt }: { here: DiarySummary; backup: DiaryS
       ? t('This device has no meals in it, so the backup is almost certainly the one to keep.')
       : backup.meals === 0 && here.meals > 0
         ? t('The backup has no meals in it, so this device’s diary is almost certainly the one to keep.')
-        : t('Keep the one with your meals in it. The other is replaced, so anything only in that one is lost.');
+        : t('If both are yours, combine them and nothing is lost. Keeping one replaces the other, so anything only in that one goes.');
   return (
     <div className="backup-choices">
       <dl>

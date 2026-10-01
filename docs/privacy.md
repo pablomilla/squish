@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 29 September 2026**
+**Last updated: 1 October 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -14,8 +14,10 @@ contact address is at the bottom.
 ## The short version
 
 - Your diary lives on your device. A copy is kept on our server so you can get
-  it back if you lose the device.
-- Meal photos are part of that copy.
+  it back if you lose the device, and so every device you sign in on has it
+  and they keep each other up to date.
+- A small version of each meal photo is part of that copy; the full photo
+  stays on the device that took it.
 - Photos, meal descriptions and anything you say to the nutritionist are sent
   to an AI company to be read: Anthropic, whose Claude reads most of them, or
   Google, whose Gemini we use for some of the work and as a backup when Claude
@@ -54,9 +56,19 @@ Backup is on by default where this copy of Squish has a database.
   the small square you see in the diary list. It is stored as one document per
   person, updated as you log.
 
-  This means a restore onto a new phone brings your diary and those
-  thumbnails, but not the full pictures: those were never sent. If that
-  matters to you, export before you change phones.
+  This means a new phone, or any other device you sign in on, has your diary
+  and those thumbnails, but not the full pictures: those were never sent. If
+  that matters to you, export before you change phones.
+
+  With more than one device signed in, each one checks this copy when you
+  open Squish and every few minutes while it is open, and takes in what the
+  others have changed. When two have changed things at the same time, the
+  changes are put together on your device, not on our server: a meal logged
+  on each is two meals, the same one changed on both keeps the later change,
+  and something deleted on one is deleted on the others. To do that, the
+  copy also holds when each part of your diary last changed — times, nothing
+  more. A device that signs in holding a diary of its own is never mixed
+  with yours without asking: it might be somebody else's.
 - **Your past chats with the nutritionist, only if you turn on "Backed up"**
   in the list of past chats. They are off unless you do: a chat can say a lot
   about your health. Backed up, they go in the same document as your diary

@@ -93,6 +93,12 @@ export async function writeDiary(owner: string, state: unknown, expected: number
   return { ok: false, reason: 'stale', current: current ?? { state: null, version: 0, updatedAt: new Date(0).toISOString() } };
 }
 
+/** Only the version, for a device asking whether anything has changed: cheap enough to ask every few minutes. */
+export async function diaryVersion(owner: string): Promise<number> {
+  const rows = await query<{ version: string }>('select version from diaries where owner_id = $1', [owner]);
+  return rows[0] ? Number(rows[0].version) : 0;
+}
+
 /** Everything belonging to an owner, for account deletion. */
 export async function deleteDiary(owner: string): Promise<void> {
   await query('delete from diaries where owner_id = $1', [owner]);

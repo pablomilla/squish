@@ -1,5 +1,5 @@
 {
- "version": "0d6547l-9qdvnj",
+ "version": "01wctb30hdeq0d",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -420,13 +420,6 @@
    ]
   },
   {
-   "id": "02as8tb-6zxxoz",
-   "text": "Keep the one with your meals in it. The other is replaced, so anything only in that one is lost.",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "02burf6-4old28",
    "text": "Saved to your recipes — plan it again from the meal plan.",
    "where": [
@@ -798,13 +791,6 @@
   {
    "id": "03tlu3u0brbxex",
    "text": "Off",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "03uecrq-fpy9wp",
-   "text": "Another device has backed up something this one has not seen. Squish will not merge two diaries — that means guessing whether two similar lunches are one lunch logged twice — so backing up has stopped until you say which to keep.",
    "where": [
     "src/screens/You.tsx"
    ]
@@ -1700,6 +1686,13 @@
    ]
   },
   {
+   "id": "08uisv70xxjlq9",
+   "text": "This device has a diary of its own, and so does your account. They might be two different people’s, so Squish has paused rather than mixing them. Keep one, or combine them to keep everything from both.",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "08w2p7y0isrsr2",
    "text": "Greek yoghurt, 2%",
    "where": [
@@ -1930,6 +1923,13 @@
    "where": [
     "src/screens/AddFood.tsx",
     "src/screens/Diary.tsx"
+   ]
+  },
+  {
+   "id": "09zn6op-5r51xs",
+   "text": "If both are yours, combine them and nothing is lost. Keeping one replaces the other, so anything only in that one goes.",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -5579,6 +5579,13 @@
    "text": "Your progress",
    "where": [
     "src/screens/Insights.tsx"
+   ]
+  },
+  {
+   "id": "0sttary0gqd01k",
+   "text": "Combined. Everything from both is here, and on your other devices.",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -11461,6 +11468,13 @@
    ]
   },
   {
+   "id": "1m7vb8l02pgjap",
+   "text": "Combine both",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "1m83m5x0lpsxa1",
    "text": "Muesli bar",
    "where": [
@@ -11529,13 +11543,6 @@
    "text": "Invites come from your account, so a reward has somewhere to go.",
    "where": [
     "src/components/InviteCard.tsx"
-   ]
-  },
-  {
-   "id": "1mno2au0to45ie",
-   "text": "A copy of your diary is kept so a cleared browser or a lost phone is an inconvenience rather than the end of it. Your diary still lives on this device; this is the spare.",
-   "where": [
-    "src/screens/You.tsx"
    ]
   },
   {
@@ -11984,6 +11991,13 @@
    "text": "2 tbsp",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1p7j845-vcoyou",
+   "text": "Your diary is kept with your account, so every device you sign in on has it — meals, plans, recipes and your shopping list — and they keep each other up to date. A cleared browser or a lost phone loses nothing. Full-size photos stay on the device that took them; other devices show a small one.",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {

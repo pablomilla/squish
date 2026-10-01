@@ -30,7 +30,7 @@ import {
   FEATURES, currentAudience, describeRoutes, everyoneMayUseGemini, readRoutes, recentFailures, saveRoutes, servedAs, servedBy, type Feature,
 } from './routing';
 import { handOver, latestMadePlan, planCosts, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
-import { deleteDiary, ownerOf, readDiary, writeDiary } from './diary';
+import { deleteDiary, diaryVersion, ownerOf, readDiary, writeDiary } from './diary';
 import { privacyPage, registerPrivacyStrings, registerTermsStrings, standalonePage, termsPage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
 import { adminChangeEmail, confirmEmailChange, peekEmailChange, peekEmailUndo, requestEmailChange, undoEmailChange } from './emailChange';
@@ -515,6 +515,12 @@ app.post('/api/device/claim', rateLimit, async (req, res) => {
 
 app.get('/api/diary', requireDevice, async (req, res) => {
   try {
+    // A device keeping in step asks with the version it has: the same version is answered without the diary.
+    const known = Number(req.query.known);
+    if (Number.isInteger(known) && known > 0 && (await diaryVersion(ownerOf(req.device!))) === known) {
+      res.json({ unchanged: true, version: known });
+      return;
+    }
     const found = await readDiary(ownerOf(req.device!));
     res.json(found ?? { state: null, version: 0, updatedAt: null });
   } catch (error) {

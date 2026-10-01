@@ -1,18 +1,13 @@
 /**
- * Keeping a copy of the diary on the server.
+ * Keeping the diary on the server, for every device signed in to it.
  *
- * One-directional on purpose. The browser holds the diary and decides what is
- * true; this pushes a copy up so that a cleared browser, a lost phone or a new
- * laptop is an inconvenience rather than the end of six weeks of logging. It
- * is a backup, not a sync — nothing it does ever changes what is on this
- * device without somebody asking.
+ * Talking to the server is all this does: fetching the diary, saving it, and
+ * remembering which version this device last agreed about. Keeping devices in
+ * step — fetching what another has saved, and putting two sets of changes
+ * together — is src/lib/autobackup.ts, with the merge in src/lib/sync.ts.
  *
- * The one case it will not decide is a conflict: the server holding a version
- * this browser has not seen. That only happens with two devices signed into
- * one account, and merging two food diaries by machine means guessing whether
- * two similar lunches are one lunch logged twice or two lunches actually
- * eaten. There is no answer to that which is right often enough to apply
- * behind somebody's back, so backing up stops and says so.
+ * The server takes a save only from a device that has seen the latest
+ * version; a device that has not is handed the latest instead, to merge with.
  */
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
@@ -48,6 +43,24 @@ export async function pullDiary(): Promise<RemoteDiary | null> {
     if (!response.ok) return null;
     const found = (await response.json()) as RemoteDiary;
     return found.version ? found : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether another device has saved since this one last agreed: `same` if not
+ * (the server says so without sending the diary), the newer diary if so, null
+ * where it cannot say or there is none.
+ */
+export async function newerDiary(known: number | null): Promise<RemoteDiary | 'same' | null> {
+  try {
+    const response = await fetch(apiUrl(`/api/diary${known ? `?known=${known}` : ''}`), { headers: await headers() });
+    if (!response.ok) return null;
+    const found = (await response.json()) as RemoteDiary & { unchanged?: boolean };
+    if (found.unchanged) return 'same';
+    if (!found.version) return null;
+    return found.version === known ? 'same' : found;
   } catch {
     return null;
   }
