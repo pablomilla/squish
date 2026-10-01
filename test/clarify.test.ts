@@ -26,9 +26,18 @@ before(async () => {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
-      const { model } = JSON.parse(body) as { model: string };
-      asked.push(model);
+      const { model, system } = JSON.parse(body) as { model: string; system?: unknown };
       res.setHeader('content-type', 'application/json');
+      // The seasoning check, asked beside a described meal: nothing missing, and not one of the models counted here.
+      if (String(system ?? '').startsWith('You check the ingredient lists')) {
+        res.end(JSON.stringify({
+          id: 'msg_s', type: 'message', role: 'assistant', model, stop_reason: 'end_turn', stop_sequence: null,
+          content: [{ type: 'text', text: JSON.stringify({ meals: [] }) }],
+          usage: { input_tokens: 300, output_tokens: 10 },
+        }));
+        return;
+      }
+      asked.push(model);
       if (failing.has(model)) {
         res.statusCode = 400;
         res.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'not today' } }));

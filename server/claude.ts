@@ -779,8 +779,8 @@ export async function analysePhoto(
  * cheap to ask about twice; a meal logged as a rough offline guess because
  * the cheaper model had a bad moment is not.
  */
-function requestText(content: Anthropic.ContentBlockParam[], slot: MealSlot | undefined): Promise<DetailedAnalysis> {
-  return requestMeal(content, slot, 'words');
+function requestText(content: Anthropic.ContentBlockParam[], slot: MealSlot | undefined, extra?: (meal: ModelMeal) => Promise<ModelItem[]>): Promise<DetailedAnalysis> {
+  return requestMeal(content, slot, 'words', SYSTEM, MEAL_SCHEMA, undefined, extra);
 }
 
 export async function analyseText(description: string, slot?: MealSlot): Promise<AnalysisResult> {
@@ -792,6 +792,8 @@ export async function analyseText(description: string, slot?: MealSlot): Promise
       },
     ],
     slot,
+    // Only a meal described afresh: a correction ("no salt") or an answer is never checked, or the check could put back what was taken out.
+    (meal) => seasoningFor(meal, { kind: 'words', said: description }),
   );
   return analysis;
 }
@@ -1235,14 +1237,22 @@ type ModelItem = NonNullable<ModelMeal['items']>[number];
  * - A photographed meal is what somebody ate: what its title names, and the
  *   salt and pepper cooked savoury food is seasoned with, but never a sauce
  *   or a topping, which the photo would have shown.
+ * - A typed or spoken meal likewise, with their own words as the record:
+ *   what the words or the title name, and the salt and pepper, but nothing
+ *   they did not mention.
  */
-async function seasoningFor(meal: ModelMeal, what: { kind: 'recipe'; source: RecipeSource } | { kind: 'photo' }): Promise<ModelItem[]> {
+async function seasoningFor(
+  meal: ModelMeal,
+  what: { kind: 'recipe'; source: RecipeSource } | { kind: 'photo' } | { kind: 'words'; said: string },
+): Promise<ModelItem[]> {
   const items = (meal.items ?? []).map((item) => item.name ?? '').filter(Boolean);
   if (!items.length) return [];
   const asked: SeasoningMeal =
     what.kind === 'recipe'
       ? { title: meal.title || what.source.title || '', items, listed: what.source.ingredients }
-      : { title: meal.title || '', items, photo: true };
+      : what.kind === 'words'
+        ? { title: meal.title || '', items, said: what.said.slice(0, 500) }
+        : { title: meal.title || '', items, photo: true };
   try {
     const added = (await askSeasoning([asked], { notes: [] })).get(0) ?? [];
     if (added.length) console.info(`[squish] ${what.kind} seasoning: ${added.map((item) => item.name).join(', ')} added`);

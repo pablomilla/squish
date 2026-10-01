@@ -244,6 +244,14 @@ photo line of the bill; a Plus subscriber who uses all 60 photos costs about
 18¢ a month more. `[squish] photo seasoning: …` says what it added. The
 benchmark's cost column does not include it.
 
+A **typed or spoken meal** gets it as well, with their own words as the record:
+what the words or the title name, and salt and pepper on cooked savoury food,
+never anything they did not mention. A correction ("no salt") or the answer to
+the AI's question is never checked, so it cannot put back what was taken out.
+Words are read on the cheaper model already, so the same $0.003 is a larger
+share there: about a third on top of a typed meal's roughly $0.009
+(`[squish] words seasoning: …`).
+
 **Dashboard → AI usage → Weekly plans** lists the last day's plans: whose,
 how long each took, how many tries, whether it has been seen, and why any
 failed (never what was planned). A plan that restarts is made, and paid to

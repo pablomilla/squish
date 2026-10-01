@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
-import { analyseLabel, analysePhotoDetailed, analyseRecipe, briefSchema, MEAL_SCHEMA, planWeek, TEXT_MODEL } from '../server/claude';
+import { analyseLabel, analysePhotoDetailed, analyseRecipe, analyseText, briefSchema, MEAL_SCHEMA, planWeek, refineAnalysis, TEXT_MODEL } from '../server/claude';
 import { WEEKPLAN_SCHEMA, type WeekPlanRequest } from '../server/weekplan';
 import { RECIPE_SYSTEM } from '../server/recipe';
 import { useTableForTests, type TableFood } from '../server/foodTable';
@@ -406,5 +406,29 @@ test('a photographed meal gets what its title names, and its salt and pepper, bu
   firstAnswer = meal([item('Oat bar', '', 40, full)]);
   await analyseLabel('aGVsbG8=', 'image/jpeg', 'snack');
   assert.equal(checks.length, 0, 'a label is not checked');
+  seasoningAnswer = { meals: [] };
+});
+
+test('a typed or spoken meal gets what its words name, and its salt and pepper; a correction is never checked', async () => {
+  useTableForTests([...TABLE, ...SPICES]);
+  sent.length = 0;
+  checks.length = 0;
+  firstAnswer = { ...meal([item('Sirloin steak', '', 200, { ...full, calories: 400 }), item('Chips', '', 150, { ...full, calories: 300 })]), title: 'Steak and chips' };
+  seasoningAnswer = { meals: [{ meal: 1, add: [add('Salt', 1, 'salt, table'), add('Black pepper', 0.5, 'spices, pepper, black')] }] };
+
+  const typed = await analyseText('steak and chips, cooked at home', 'dinner');
+  assert.equal(checks.length, 1);
+  assert.match(checks[0].prompt, /1\. Steak and chips: Sirloin steak, Chips/);
+  assert.match(checks[0].prompt, /What they ate, in their own words: "steak and chips, cooked at home"/);
+  assert.match(checks[0].system, /never a sauce, dressing, topping or anything else they did not mention/);
+  assert.deepEqual(typed.items.map((i) => i.name), ['Sirloin steak', 'Chips', 'Salt', 'Black pepper']);
+  assert.ok((typed.nutrients.sodium ?? 0) > 300);
+
+  // "No salt": the correction is read again, and the check is not asked, so the salt cannot come back.
+  checks.length = 0;
+  firstAnswer = { ...meal([item('Sirloin steak', '', 200, { ...full, calories: 400 }), item('Chips', '', 150, { ...full, calories: 300 })]), title: 'Steak and chips' };
+  const corrected = await refineAnalysis(typed, 'no salt on it', 'dinner');
+  assert.equal(checks.length, 0, 'a correction is never checked');
+  assert.ok(!corrected.items.some((i) => i.name === 'Salt'));
   seasoningAnswer = { meals: [] };
 });
