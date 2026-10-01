@@ -75,6 +75,10 @@ Backup is on by default where this copy of Squish has a database.
   (the newest first, up to about half a megabyte of them) and come back when
   you restore it or sign in on another phone. Turn it off and they leave the
   backup the next time it saves.
+- **Which past chats you have deleted** — their random ids and when, nothing
+  of what was in them — so a chat you delete on one device is deleted on your
+  other devices too, and never comes back from one that still had it. Kept
+  for four months, longer than any chat is.
 - **A device identifier** — a random token your browser is given on first use,
   stored in a form we cannot reverse, plus when it was created and last seen,
   and which days it was used — a date, not what was done. It is how a limit

@@ -116,3 +116,31 @@ export function mergeChats(here: PastChat[], arriving: unknown, now = Date.now()
   }
   return keepFrom([...byId.values()], now).keep;
 }
+
+/**
+ * Chats deleted by hand, by id, with when. Passed between devices with the
+ * diary, so a chat deleted on one goes from all of them, and never comes back
+ * from another device's copy. Only a deletion somebody chose: a chat let go
+ * for being old, or one too many, is the same on every device anyway.
+ */
+export type GoneChats = Record<string, number>;
+
+/** Remembered for longer than any chat is kept, so none can outlive the note that it was deleted. */
+export const GONE_CHAT_DAYS = MAX_AGE_DAYS + 30;
+
+/** Deletions as kept: ids with a time, none too old to matter. */
+export function keepGone(gone: unknown, now = Date.now()): GoneChats {
+  if (!gone || typeof gone !== 'object' || Array.isArray(gone)) return {};
+  const oldest = now - GONE_CHAT_DAYS * 86_400_000;
+  return Object.fromEntries(Object.entries(gone).filter(([id, at]) => id && typeof at === 'number' && Number.isFinite(at) && at >= oldest));
+}
+
+/** Two devices' deletions as one: every chat deleted on either, at the later time. */
+export function mergeGone(here: GoneChats, arriving: unknown, now = Date.now()): GoneChats {
+  const out: GoneChats = { ...keepGone(here, now) };
+  for (const [id, at] of Object.entries(keepGone(arriving, now))) out[id] = Math.max(out[id] ?? 0, at);
+  return out;
+}
+
+/** Chats, without the ones deleted. */
+export const withoutGone = (chats: PastChat[], gone: GoneChats): PastChat[] => chats.filter((chat) => !(chat.id in gone));

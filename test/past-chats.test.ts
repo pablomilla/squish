@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { CHAT_SYSTEM } from '../server/chat';
 import { NUTRITIONIST_TOOLS } from '../server/nutritionist-tools';
-import { BACKUP_CHAT_CHARS, MAX_AGE_DAYS, MAX_CHATS, forBackup, isPastChat, keepFrom, mergeChats, titleOf, wireOf, type ChatTurn, type PastChat } from '../src/lib/pastChats';
+import { BACKUP_CHAT_CHARS, GONE_CHAT_DAYS, MAX_AGE_DAYS, MAX_CHATS, forBackup, isPastChat, keepFrom, keepGone, mergeChats, mergeGone, titleOf, wireOf, withoutGone, type ChatTurn, type PastChat } from '../src/lib/pastChats';
 import { runTool, toolLabel, type Diary } from '../src/lib/nutritionist-tools';
 import { DEFAULT_PROFILE } from '../src/store/useSquish';
 import { computeTargets } from '../src/lib/nutrition';
@@ -120,4 +120,16 @@ test('what arrives in a backup is checked before it is trusted', () => {
   const here = [chat('a', said('q', 'a'))];
   assert.deepEqual(mergeChats(here, 'nonsense').map((c) => c.id), ['a']);
   assert.deepEqual(mergeChats(here, [null, 7, { id: 'bad' }]).map((c) => c.id), ['a']);
+});
+
+test('a chat deleted by hand is noted, merged between devices, and kept out of every copy', () => {
+  const now = Date.UTC(2026, 9, 1);
+  const day = 86_400_000;
+  const chat = (id: string): PastChat => ({ id, title: id, startedAt: now - day, updatedAt: now - day, turns: [{ role: 'user', text: 'Hi' }] });
+
+  assert.deepEqual(keepGone({ a: now, b: 'yesterday', c: now - (GONE_CHAT_DAYS + 1) * day, '': now }, now), { a: now }, 'ids with a time, none too old');
+  assert.deepEqual(keepGone(null, now), {});
+  assert.deepEqual(mergeGone({ a: now - 5 }, { a: now, b: now - 1 }, now), { a: now, b: now - 1 }, 'every deletion from either, the later time');
+  assert.deepEqual(withoutGone([chat('a'), chat('b'), chat('c')], { b: now }).map((c) => c.id), ['a', 'c']);
+  assert.ok(GONE_CHAT_DAYS > MAX_AGE_DAYS, 'remembered for longer than any chat is kept');
 });

@@ -55,6 +55,7 @@ export const SHAPES: Record<string, Shape> = {
   planLog: { kind: 'list', key: (item) => `${String(item.date)}#${String(item.slot)}#${String(item.title)}` },
   days: record,
   unlocked: record,
+  chatsGone: record,
   notForMe: set,
   shopping: { kind: 'object', parts: { ticked: set, extras: byId } },
   profile: fields,
@@ -84,6 +85,9 @@ export function stableJson(input: unknown): string {
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableJson(v)}`).join(',')}}`;
 }
+
+/** A thing's fingerprint, whatever order its keys were written in: for what is kept outside the parts. */
+export const fingerprintOf = (thing: unknown): string => fingerprint(stableJson(thing));
 
 /** A short fingerprint: enough to tell whether a part has changed. */
 function fingerprint(text: string): string {

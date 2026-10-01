@@ -8,7 +8,7 @@ import { runTool, type Diary, type ToolCall } from '../lib/nutritionist-tools';
 import { contextFor } from '../lib/nutritionist-session';
 import { friendlyDate, isoDate } from '../lib/date';
 import { watchBackup } from '../lib/autobackup';
-import { deleteChat, listChats, newChatId, saveChat, titleOf, wireOf, type ChatTurn, type PastChat } from '../lib/chats';
+import { deleteChat, listChats, newChatId, saveChat, titleOf, wireOf, type ChatTurn, type PastChat, onChatsChanged } from '../lib/chats';
 import { PLUS } from '../lib/plan';
 import { showPaywall } from '../lib/paywall';
 import { suggestedQuestions } from '../lib/askSuggestions';
@@ -70,6 +70,8 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
       setPast(chats);
     });
   useEffect(refreshPast, []);
+  // Chats deleted on another device go from the list while it is open.
+  useEffect(() => onChatsChanged(refreshPast), []);
   // Whether there is a backup for chats to go in: only where the server keeps diaries.
   const [backupOn, setBackupOn] = useState(false);
   useEffect(() => watchBackup((state) => setBackupOn(state.kind !== 'off')), []);

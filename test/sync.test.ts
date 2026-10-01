@@ -159,3 +159,9 @@ test('deletions are remembered long enough, then let go', () => {
 test('fingerprints do not depend on the order keys were written in', () => {
   assert.equal(stableJson({ b: 1, a: { d: 2, c: [3, { f: 1, e: 0 }] } }), stableJson({ a: { c: [3, { e: 0, f: 1 }], d: 2 }, b: 1 }));
 });
+
+test('chats deleted by hand on either device are deleted on both', () => {
+  const phone = new Device(diary({ chatsGone: {} }), 1).change(100, (d) => ((d.chatsGone as Record<string, number>).chat_a = 100));
+  const ipad = new Device(diary({ chatsGone: {} }), 1).change(120, (d) => ((d.chatsGone as Record<string, number>).chat_b = 120));
+  assert.deepEqual(phone.meet(ipad).diary.chatsGone, { chat_a: 100, chat_b: 120 });
+});

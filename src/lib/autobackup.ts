@@ -30,8 +30,8 @@
 import { useSquish } from '../store/useSquish';
 import { knownVersion, newerDiary, pushDiary, rememberVersion, type BackupState, type RemoteDiary } from './backup';
 import { isBlank } from './blankDiary';
-import { chatsForBackup, importChats, listChats, onChatsChanged } from './chats';
-import { mergeDiaries, prune, stamp, timesIn, type SyncTimes } from './sync';
+import { chatsForBackup, forgetChats, goneChats, importChats, listChats, onChatsChanged } from './chats';
+import { fingerprintOf, mergeDiaries, prune, stamp, timesIn, type SyncTimes } from './sync';
 
 /** Long enough that a burst of edits is one push, short enough to be a backup. */
 const QUIET_MS = 6_000;
@@ -68,6 +68,8 @@ export function watchBackup(listener: (state: BackupState) => void): () => void 
 
 const TIMES_KEY = 'squish-sync-times';
 const DIRTY_KEY = 'squish-sync-dirty';
+/** The past chats as last saved: they are merged by their own rules, outside the parts, but a change to them is still something to save. */
+const CHATS_KEY = 'squish-sync-chats';
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -88,6 +90,7 @@ function save(key: string, value: unknown): void {
 let times: SyncTimes = load<SyncTimes>(TIMES_KEY, {});
 // Absent the first time this runs: there is something to say, the diary as it stands.
 let dirty: boolean = load<boolean>(DIRTY_KEY, true);
+let chatsPrint: string = load<string>(CHATS_KEY, '');
 
 function setTimes(next: SyncTimes): void {
   times = next;
@@ -108,26 +111,36 @@ function snapshot(): Record<string, unknown> {
   return {
     profile, targets, meals, days, favourites, plans, shopping, household, recipes, planLog, notForMe, unlocked, nutritionistNotes, look, outfit, scene, shareDecor, theme, comparisons, backupChats,
     ...(backupChats ? { pastChats: chatsForBackup() } : {}),
+    // Chats deleted by hand go from every device, whether or not chats themselves are backed up.
+    chatsGone: goneChats(),
   };
 }
 
 /** Note what has changed since last time, with when. True if anything had. */
 function noteChanges(): boolean {
   const now = Date.now();
-  const found = stamp(snapshot(), times, now);
-  if (!found.changed) return false;
-  setTimes(prune(found.times, now));
+  const diary = snapshot();
+  const found = stamp(diary, times, now);
+  // Past chats are not parts (src/lib/chats.ts merges them), but one kept, carried on or deleted is still news.
+  const print = fingerprintOf(diary.pastChats ?? null);
+  const chatsChanged = print !== chatsPrint;
+  if (chatsChanged) {
+    chatsPrint = print;
+    save(CHATS_KEY, print);
+  }
+  if (!found.changed && !chatsChanged) return false;
+  if (found.changed) setTimes(prune(found.times, now));
   setDirty(true);
   return true;
 }
 
 /** Put a diary on this device: its times first, so taking it is not mistaken for a change made here. */
 function apply(diary: Record<string, unknown>, diaryTimes: SyncTimes): void {
-  const { pastChats, _sync: _left, ...rest } = diary;
+  const { pastChats, chatsGone, _sync: _left, ...rest } = diary;
   setTimes(diaryTimes);
   useSquish.setState(rest as Partial<ReturnType<typeof useSquish.getState>>);
-  // Past chats live where chats live, merged with any already here.
-  if (pastChats) void importChats(pastChats);
+  // Past chats live where chats live: the ones deleted elsewhere go first, then the rest are merged with any already here.
+  void forgetChats(chatsGone).then(() => (pastChats ? importChats(pastChats) : undefined));
   // Whatever the store filled in that the diary did not have, from now on.
   noteChanges();
 }
@@ -147,7 +160,8 @@ function combine(found: RemoteDiary): void {
   const theirs = (found.state ?? {}) as Record<string, unknown>;
   noteChanges();
   const merged = mergeDiaries(snapshot(), times, theirs, timesIn(theirs));
-  apply(merged.diary, merged.times);
+  // The other device's past chats, which the diary's merge leaves to the chats' own (by id, the longer kept).
+  apply(theirs.pastChats ? { ...merged.diary, pastChats: theirs.pastChats } : merged.diary, merged.times);
   rememberVersion(found.version);
   setDirty(true);
   if (merged.took || merged.dropped) console.info(`[squish] kept in step: ${merged.took} from another device, ${merged.dropped} deleted there`);
@@ -291,8 +305,8 @@ export function startBackup(enabled: boolean): () => void {
   const unsubscribe = useSquish.subscribe(soon);
   // A chat kept or deleted is not a change to the store, but where chats are backed up it is one to the backup.
   const unsubscribeChats = onChatsChanged(() => useSquish.getState().backupChats && soon());
-  // Read once now, so the first backup has them: they are read from IndexedDB, not the store.
-  void listChats();
+  // Read once now, so the backup has them — they are read from IndexedDB, not the store — and saved if that is news.
+  void listChats().then(soon);
 
   // What another device saved while this one was closed, as soon as it opens.
   const first = setTimeout(() => void check(), 1_500);

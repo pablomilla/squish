@@ -15,9 +15,9 @@
  * and the lookups above them — not the lookups' results. Carried on, a chat
  * sends its words back and the nutritionist looks things up again, fresh.
  */
-import { forBackup, isPastChat, keepFrom, mergeChats, type PastChat } from './pastChats';
+import { forBackup, isPastChat, keepFrom, keepGone, mergeChats, mergeGone, withoutGone, type GoneChats, type PastChat } from './pastChats';
 
-export { MAX_AGE_DAYS, MAX_CHATS, newChatId, titleOf, wireOf, type ChatTurn, type PastChat } from './pastChats';
+export { MAX_AGE_DAYS, MAX_CHATS, newChatId, titleOf, wireOf, type ChatTurn, type GoneChats, type PastChat } from './pastChats';
 
 const DB = 'squish-chats';
 const STORE = 'chats';
@@ -86,7 +86,44 @@ export function onChatsChanged(listener: () => void): () => void {
 }
 
 /** The chats to put in the diary backup, from the last time they were read. */
-export const chatsForBackup = (): PastChat[] => forBackup(latest);
+export const chatsForBackup = (): PastChat[] => withoutGone(forBackup(latest), gone);
+
+/* ------------------------------------------------------------------ *
+ * Chats deleted by hand, so they go from every device (src/lib/pastChats.ts
+ * has the why). Beside the chats rather than in IndexedDB: it is small, and
+ * the backup reads it at once.
+ * ------------------------------------------------------------------ */
+
+const GONE_KEY = 'squish-chats-gone';
+let gone: GoneChats = (() => {
+  try {
+    return keepGone(JSON.parse(localStorage.getItem(GONE_KEY) ?? '{}'));
+  } catch {
+    return {};
+  }
+})();
+
+function keepGoneHere(next: GoneChats): void {
+  gone = next;
+  try {
+    localStorage.setItem(GONE_KEY, JSON.stringify(gone));
+  } catch {
+    /* private browsing: remembered while the page is open */
+  }
+}
+
+/** The chats deleted by hand here or on another device, for the diary to carry. */
+export const goneChats = (): GoneChats => keepGone(gone);
+
+/** Chats another device deleted: noted here too, and deleted here if they are here. */
+export async function forgetChats(arriving: unknown): Promise<void> {
+  keepGoneHere(mergeGone(gone, arriving));
+  const here = await listChats();
+  const going = here.filter((chat) => chat.id in gone);
+  if (!going.length) return;
+  await Promise.all(going.map((chat) => deleteChat(chat.id, false)));
+  changed();
+}
 
 /** Every past chat, newest first, the ones past their time let go on the way. */
 export async function listChats(): Promise<PastChat[]> {
@@ -114,7 +151,8 @@ export async function saveChat(chat: PastChat): Promise<void> {
  * places keeps the longer of the two.
  */
 export async function importChats(arriving: unknown): Promise<void> {
-  const merged = mergeChats(await listChats(), arriving);
+  // A chat deleted here, or on another device, is not taken back from a copy that still has it.
+  const merged = withoutGone(mergeChats(await listChats(), arriving), gone);
   const db = await open();
   for (const chat of merged) {
     if (db) await run('readwrite', (store) => store.put(chat));
@@ -124,7 +162,13 @@ export async function importChats(arriving: unknown): Promise<void> {
   changed();
 }
 
+/**
+ * Delete a chat. `announce` is somebody deleting it: noted, so it goes from
+ * their other devices too. Without it, it is the limits letting an old chat
+ * go, which every device does for itself.
+ */
 export async function deleteChat(id: string, announce = true): Promise<void> {
+  if (announce) keepGoneHere({ ...gone, [id]: Date.now() });
   memory.delete(id);
   await run('readwrite', (store) => store.delete(id));
   latest = latest.filter((chat) => chat.id !== id);
@@ -133,6 +177,7 @@ export async function deleteChat(id: string, announce = true): Promise<void> {
 
 /** Everything, for Reset. */
 export async function clearChats(): Promise<void> {
+  keepGoneHere({});
   memory.clear();
   await run('readwrite', (store) => store.clear());
   latest = [];

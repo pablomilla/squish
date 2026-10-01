@@ -63,6 +63,14 @@ On one only: kept, unless the other deleted it after it last changed.
 Different: the later change. Full-size photos are not part of it: other
 devices show the thumbnail.
 
+Past chats with the nutritionist (where they are backed up) are merged by
+their own rules: the same chat on both keeps the one carried on further. A
+chat somebody deletes is noted with its id and when (`chatsGone`, kept for
+four months), carried with the diary whether or not chats are backed up, and
+deleted on every device that has it; no device takes it back from a copy that
+still does. Chats let go by the limits (90 days, 30 chats) are not noted:
+every device lets them go by itself.
+
 **Two different people's diaries are never merged without asking.** A device
 that has never been in step with the account's diary — one that has just
 signed in, holding a diary of its own — is not merged automatically when both
