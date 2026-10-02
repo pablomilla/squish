@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { GONE_FOR_MS, mergeDiaries, prune, stableJson, stamp, timesIn, type SyncTimes } from '../src/lib/sync';
+import { GONE_FOR_MS, applyChange, changeOf, mergeDiaries, prune, stableJson, stamp, timesIn, type SyncTimes } from '../src/lib/sync';
 
 /**
  * Two devices, one diary: what each did since they last agreed, put
@@ -164,4 +164,89 @@ test('chats deleted by hand on either device are deleted on both', () => {
   const phone = new Device(diary({ chatsGone: {} }), 1).change(100, (d) => ((d.chatsGone as Record<string, number>).chat_a = 100));
   const ipad = new Device(diary({ chatsGone: {} }), 1).change(120, (d) => ((d.chatsGone as Record<string, number>).chat_b = 120));
   assert.deepEqual(phone.meet(ipad).diary.chatsGone, { chat_a: 100, chat_b: 120 });
+});
+
+/* ------------------------------------------------------------------ *
+ * What changed, sent on its own.
+ * ------------------------------------------------------------------ */
+
+/** What a device would send: the parts stamped since it last saved. */
+function changed(device: Device, edit: (d: Record<string, unknown>) => void, at: number) {
+  edit(device.diary);
+  const found = stamp(device.diary, device.times, at);
+  device.times = found.times;
+  return changeOf(device.diary, device.times, found.parts);
+}
+
+test('a change is only what changed: one lunch, not the diary', () => {
+  const phone = new Device(diary({ meals: Array.from({ length: 200 }, (_, i) => meal(`m${i}`, `Meal ${i}`)) }), 1);
+  const change = changed(phone, (d) => (d.meals as unknown[]).push(meal('lunch', 'Chicken wrap')), 100);
+  assert.deepEqual(Object.keys(change.parts).map((k) => k.split('\u0001')[1]), ['lunch']);
+  assert.ok(JSON.stringify(change).length < 1_000, `a few hundred bytes, not ${JSON.stringify(phone.diary).length}`);
+  assert.ok(change.containers.includes('meals'));
+});
+
+test('a change put into another copy: the same as merging the whole diaries', () => {
+  const start = diary({ meals: [meal('m1', 'Porridge'), meal('m2', 'Toast')] });
+  const phone = new Device(start, 1);
+  const ipad = new Device(start, 1);
+  const fromPhone = changed(phone, (d) => {
+    (d.meals as unknown[]).push(meal('m3', 'Chicken wrap'));
+    d.meals = (d.meals as { id: string }[]).filter((m) => m.id !== 'm2');
+    (d.profile as { weightKg: number }).weightKg = 71.2;
+  }, 200);
+  ipad.change(150, (d) => ((d.profile as { language: string }).language = 'es'));
+
+  const applied = applyChange(ipad.diary, ipad.times, fromPhone, 10_000);
+  const merged = mergeDiaries(ipad.diary, ipad.times, phone.diary, phone.times, 10_000);
+  assert.equal(stableJson(applied.diary), stableJson(merged.diary), 'by parts or whole, one answer');
+  assert.deepEqual(titles(applied.diary), ['Porridge', 'Chicken wrap']);
+  assert.deepEqual(applied.diary.profile, { name: 'Sam', weightKg: 71.2, language: 'es' });
+  assert.equal(applied.dropped, 1);
+});
+
+test('the later change wins either way round, and an earlier one is not taken', () => {
+  const ipad = new Device(diary(), 1);
+  const phone = new Device(diary(), 1);
+  const later = changed(phone, (d) => ((d.meals as { title: string }[])[0].title = 'Porridge with banana'), 300);
+  const earlier = changed(ipad, (d) => ((d.meals as { title: string }[])[0].title = 'Porridge with honey'), 200);
+  const onIpad = applyChange(ipad.diary, ipad.times, later);
+  assert.equal(titles(onIpad.diary)[0], 'Porridge with banana');
+  assert.equal(onIpad.taken.length, 1);
+  const onPhone = applyChange(phone.diary, phone.times, earlier);
+  assert.equal(titles(onPhone.diary)[0], 'Porridge with banana', 'the phone keeps its later change');
+  assert.deepEqual(onPhone.taken, [], 'and says it did not take the earlier one');
+});
+
+test('a deletion wins over a change made at the same moment, and loses to one made after', () => {
+  const start = diary({ meals: [meal('m1', 'Porridge'), meal('m2', 'Toast')] });
+  const phone = new Device(start, 1);
+  const gone = changed(phone, (d) => (d.meals = (d.meals as { id: string }[]).filter((m) => m.id !== 'm2')), 500);
+  const same = new Device(start, 1).change(500, (d) => ((d.meals as { title: string }[])[1].title = 'Toast and jam'));
+  assert.deepEqual(titles(applyChange(same.diary, same.times, gone).diary), ['Porridge']);
+  const after = new Device(start, 1).change(600, (d) => ((d.meals as { title: string }[])[1].title = 'Toast and jam'));
+  assert.deepEqual(titles(applyChange(after.diary, after.times, gone).diary), ['Porridge', 'Toast and jam']);
+});
+
+test('a change keeps the order of what it does not mention, and an emptied list arrives empty', () => {
+  const ipad = new Device(diary({ meals: [meal('a', 'A'), meal('b', 'B'), meal('c', 'C')], plans: [meal('p1', 'Chilli')] }), 1);
+  const phone = new Device(diary({ meals: [meal('a', 'A'), meal('b', 'B'), meal('c', 'C')], plans: [meal('p1', 'Chilli')] }), 1);
+  const change = changed(phone, (d) => {
+    (d.meals as { title: string }[])[1].title = 'B, changed';
+    d.plans = [];
+  }, 100);
+  const applied = applyChange(ipad.diary, ipad.times, change);
+  assert.deepEqual(titles(applied.diary), ['A', 'B, changed', 'C']);
+  assert.deepEqual(applied.diary.plans, []);
+});
+
+test('nonsense in a change is left out, not put in the diary', () => {
+  const ipad = new Device(diary(), 1);
+  const applied = applyChange(ipad.diary, ipad.times, {
+    parts: { 'meals\u0001x': meal('x', 'Real'), 'pastChats\u0001y': 'no', 'nokey': 1 },
+    times: { 'meals\u0001x': { t: 5, h: 'a' }, 'pastChats\u0001y': { t: 5, h: 'a' }, 'nokey': { t: 5, h: 'a' }, 'meals\u0001z': { t: 'soon' } as never },
+    containers: ['meals', '_sync', 'pastChats'],
+  });
+  assert.deepEqual(titles(applied.diary), ['Porridge', 'Real']);
+  assert.ok(!('pastChats' in applied.diary) && !('_sync' in applied.diary) && !('nokey' in applied.diary));
 });

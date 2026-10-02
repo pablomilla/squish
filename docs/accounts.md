@@ -53,6 +53,33 @@ the app opens, comes back to the front or back online, and every three minutes
 while open (`GET /api/diary?known=N`, answered in a few bytes when nothing has),
 and takes the newer copy as it is when nothing has changed on the device.
 
+**What changed, not the whole diary.** (Since 2 October 2026.) A device in
+step sends only the parts it changed since its last save — a lunch is a few
+hundred bytes where the diary is hundreds of kilobytes — as
+`PATCH /api/diary` with the version it was in step with (`base`), and asks
+for what changed since its version with `GET /api/diary/changes?since=N`.
+The parts are the ones `src/lib/sync.ts` merges by (`changeOf`); the server
+puts them into its copy by the same rules (`applyChange`): the later change
+wins, a deletion wins over a change at the same moment, and two devices
+saving from the same version are both kept rather than one being refused. The
+answer is what other devices changed since `base`, plus anything the device
+sent that the server did not take (its copy was later), so the device is in
+step after one request. Past chats, not parts, are sent whole when they
+change and merged on the server by their own rules; `null` stops keeping them.
+
+To answer "since N", each diary keeps the version each part last changed in
+(`part_versions`, worked out on every write by comparing the parts' times
+before and after) and the version since which that is known (`parts_from`).
+A device further behind than that is sent the whole diary, as before: one
+written before this existed, until it is next written; one behind a deletion
+let go of after four months, which parts can no longer tell it about; and one
+behind a whole diary written by an app that kept no times. A device that has
+not been in step with this account's diary (just signed in, holding its own)
+still sends the whole diary and asks first; so does one after "Combine both"
+or "Keep this device's". A server from before this answers 404, and the app
+goes back to whole diaries until it is next opened. The 6 MB limit is on the
+diary as stored, however it was sent.
+
 **Told at once, while open.** (Since 1 October 2026.) A device saves two
 seconds after the last change (`QUIET_MS`), and at once when put away. While
 the app is on screen it holds one request open, `GET /api/diary/live`

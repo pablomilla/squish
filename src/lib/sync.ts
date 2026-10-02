@@ -24,7 +24,12 @@
  * with what it was the last time it was looked at (`stamp`), so nothing that
  * changes the diary has to remember to say so.
  *
- * Pure, so it runs in the tests as it runs in the app.
+ * Saved as what changed rather than as the whole diary: a device sends the
+ * parts it changed since its last save (`changeOf`), and the server puts them
+ * into its copy by the same rules (`applyChange`) — and hands back, the same
+ * way, whatever other devices changed meanwhile.
+ *
+ * Pure, so it runs in the tests as it runs in the app, and on the server.
  */
 
 /** When each part of the diary last changed, by part: its time, a fingerprint of it, and whether it has gone. */
@@ -230,25 +235,25 @@ const containerOf = (part: string) => part.slice(0, part.indexOf(SEP)).split('.'
  * the containers this diary has are looked at, so a part of the diary not
  * sent (past chats, where they are not backed up) is not taken for deleted.
  */
-export function stamp(diary: Record<string, unknown>, times: SyncTimes, now: number): { times: SyncTimes; changed: boolean } {
+export function stamp(diary: Record<string, unknown>, times: SyncTimes, now: number): { times: SyncTimes; changed: boolean; parts: string[] } {
   const parts = partsOf(diary);
   const containers = containersOf(diary);
   const next: SyncTimes = { ...times };
-  let changed = false;
+  const changed: string[] = [];
   for (const [part, held] of parts) {
     const h = fingerprint(stableJson(held));
     const was = times[part];
     if (!was || was.gone || was.h !== h) {
       next[part] = { t: now, h };
-      changed = true;
+      changed.push(part);
     }
   }
   for (const [part, was] of Object.entries(times)) {
     if (was.gone || parts.has(part) || !containers.has(containerOf(part))) continue;
     next[part] = { t: now, h: '', gone: 1 };
-    changed = true;
+    changed.push(part);
   }
-  return { times: changed ? next : times, changed };
+  return { times: changed.length ? next : times, changed: changed.length > 0, parts: changed };
 }
 
 /** Deletions older than anybody needs to hear about, let go. */
@@ -331,6 +336,113 @@ export function mergeDiaries(local: Record<string, unknown>, localTimes: SyncTim
 
   const containers = new Set([...containersOf(local), ...containersOf(remote)]);
   return { diary: diaryFrom(merged, containers), times: prune(times, now), took, dropped };
+}
+
+/* ------------------------------------------------------------------ *
+ * What changed, sent on its own.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Some parts of a diary, with their times: what a device sends when it
+ * saves, and what the server sends back of other devices' changes. A part
+ * deleted is its time alone, marked gone. The containers say which lists and
+ * records the diary has, so one emptied arrives empty rather than missing.
+ */
+export interface Change {
+  parts: Record<string, unknown>;
+  times: SyncTimes;
+  containers: string[];
+}
+
+/** The parts named, out of a diary, for sending. */
+export function changeOf(diary: Record<string, unknown>, times: SyncTimes, keys: Iterable<string>): Change {
+  const parts = partsOf(diary);
+  const change: Change = { parts: {}, times: {}, containers: [...containersOf(diary)] };
+  for (const key of keys) {
+    const entry = times[key];
+    if (!entry) continue;
+    if (entry.gone) change.times[key] = entry;
+    else if (parts.has(key)) {
+      change.times[key] = entry;
+      change.parts[key] = parts.get(key);
+    }
+  }
+  return change;
+}
+
+const isEntry = (entry: unknown): entry is SyncTimes[string] =>
+  !!entry && typeof entry === 'object' && typeof (entry as { t?: unknown }).t === 'number' && typeof (entry as { h?: unknown }).h === 'string';
+
+/** A container's name, as a change may give one: any top-level key the diary could have. */
+const isContainer = (name: unknown): name is string => typeof name === 'string' && name.length > 0 && name.length <= 64 && !OUTSIDE.has(name) && !name.includes(SEP);
+
+export interface Applied {
+  diary: Record<string, unknown>;
+  times: SyncTimes;
+  /** The parts that are now as the change had them: taken from it, or already the same. */
+  taken: string[];
+  took: number;
+  dropped: number;
+}
+
+/**
+ * Some parts, from another device or from the server, put into a diary by
+ * the rules the whole-diary merge follows: a part changed on both is the
+ * later change; a part deleted on one stays deleted unless the other changed
+ * it afterwards; a deletion at the same moment as a change wins. Exactly the
+ * same moment, with two different versions, is settled by fingerprint, so
+ * both sides settle it the same way. Parts the change does not mention are
+ * left as they are, in their order; new ones join the end of their list.
+ */
+export function applyChange(diary: Record<string, unknown>, times: SyncTimes, change: Change, now = Date.now()): Applied {
+  const parts = partsOf(diary);
+  const next: SyncTimes = { ...times };
+  const containers = containersOf(diary);
+  for (const name of Array.isArray(change.containers) ? change.containers : []) if (isContainer(name)) containers.add(name);
+  const taken: string[] = [];
+  let took = 0;
+  let dropped = 0;
+
+  for (const [key, entry] of Object.entries(change.times ?? {})) {
+    const at = key.indexOf(SEP);
+    if (at <= 0 || !isEntry(entry) || !isContainer(containerOf(key))) continue;
+    const mine = times[key];
+    const here = mine?.t ?? 0;
+    if (entry.gone) {
+      if (parts.has(key)) {
+        if (entry.t >= here) {
+          parts.delete(key);
+          next[key] = { t: entry.t, h: '', gone: 1 };
+          taken.push(key);
+          dropped++;
+        }
+      } else if (!mine || entry.t >= here) {
+        next[key] = { t: entry.t, h: '', gone: 1 };
+        taken.push(key);
+      }
+      continue;
+    }
+    if (!Object.prototype.hasOwnProperty.call(change.parts ?? {}, key)) continue;
+    const there = change.parts[key];
+    containers.add(containerOf(key));
+    if (parts.has(key)) {
+      if (stableJson(parts.get(key)) === stableJson(there)) {
+        if (!mine || entry.t > here) next[key] = { t: entry.t, h: entry.h };
+        taken.push(key);
+      } else if (entry.t > here || (entry.t === here && entry.h > (mine?.h ?? ''))) {
+        parts.set(key, there);
+        next[key] = { t: entry.t, h: entry.h };
+        taken.push(key);
+        took++;
+      }
+    } else if (!(mine?.gone && here >= entry.t)) {
+      parts.set(key, there);
+      next[key] = { t: entry.t, h: entry.h };
+      taken.push(key);
+      took++;
+    }
+  }
+  return { diary: diaryFrom(parts, containers), times: prune(next, now), taken, took, dropped };
 }
 
 /** A copy's times, as sent inside it; none for a copy from an app that did not send them. */

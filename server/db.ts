@@ -942,6 +942,17 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index snaps_created on snaps(created_at);
     `,
   },
+  {
+    id: 35,
+    sql: `
+      -- Saving what changed rather than the whole diary (server/diary.ts):
+      -- the version each part of a diary last changed in, so a device can be
+      -- sent only what changed since the version it has; and the version
+      -- from which that is known, before which a device is sent the whole.
+      alter table diaries add column part_versions jsonb not null default '{}'::jsonb;
+      alter table diaries add column parts_from bigint;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

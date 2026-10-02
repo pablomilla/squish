@@ -373,8 +373,9 @@ Postgres and three things switch on, in this order:
 - **A copy of the diary on the server**, automatically, so a cleared browser or
   a lost phone is an inconvenience rather than the end of six weeks of logging.
 - **An account**, only if somebody asks for one. It follows them to a new phone,
-  and keeps every device they sign in on in step: a device saves two seconds
-  after a change, the server tells the others that are open at once
+  and keeps every device they sign in on in step: a device saves what it
+  changed (not the whole diary) two seconds after a change, the server merges
+  it in and tells the others that are open at once
   (`server/live.ts`) and they fetch it — a couple of seconds end to end. Each
   also checks when it opens and every few minutes, and where two have changed
   things at once they are merged by id (`src/lib/sync.ts`) — lunch logged on

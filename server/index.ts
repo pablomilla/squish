@@ -30,8 +30,9 @@ import {
   FEATURES, currentAudience, describeRoutes, everyoneMayUseGemini, readRoutes, recentFailures, saveRoutes, servedAs, servedBy, type Feature,
 } from './routing';
 import { handOver, latestMadePlan, planCosts, plansOnTheWay, readJob, recentPlans, setWorker, startJob, startSweeping, waitingJob } from './weekplanJobs';
-import { deleteDiary, diaryVersion, ownerOf, readDiary, writeDiary } from './diary';
+import { deleteDiary, diaryChanges, diaryVersion, ownerOf, patchDiary, readDiary, writeDiary } from './diary';
 import { announceDiary, stopWatching, watchDiary } from './live';
+import type { Change } from '../src/lib/sync';
 import { privacyPage, registerPrivacyStrings, registerTermsStrings, standalonePage, termsPage } from './privacy';
 import { confirm, isVerified, sendVerification } from './verify';
 import { adminChangeEmail, confirmEmailChange, peekEmailChange, peekEmailUndo, requestEmailChange, undoEmailChange } from './emailChange';
@@ -527,6 +528,68 @@ app.get('/api/diary', requireDevice, async (req, res) => {
   } catch (error) {
     logFailure('diary read', error);
     res.status(503).json({ error: 'unavailable', message: msg('Could not fetch your backup just now.') });
+  }
+});
+
+/**
+ * What changed since the version a device has, part by part (server/diary.ts):
+ * a few bytes when nothing has, the parts that did, or the whole diary for a
+ * device further behind than that is known.
+ */
+app.get('/api/diary/changes', requireDevice, async (req, res) => {
+  const since = Number(req.query.since);
+  if (!Number.isInteger(since) || since < 0) {
+    res.status(400).json({ error: 'bad_version', message: msg('A backup needs to say which version it last saw.') });
+    return;
+  }
+  try {
+    const found = await diaryChanges(ownerOf(req.device!), since);
+    if (!found) res.json({ state: null, version: 0, updatedAt: null });
+    else if (found.kind === 'same') res.json({ unchanged: true, version: found.version });
+    else if (found.kind === 'whole') res.json({ whole: found.backup });
+    else res.json({ version: found.version, updatedAt: found.updatedAt, change: found.change, ...('pastChats' in found ? { pastChats: found.pastChats } : {}) });
+  } catch (error) {
+    logFailure('diary changes', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not fetch your backup just now.') });
+  }
+});
+
+/** A change is parts, their times, and the diary's containers: checked for shape, not for what is in it. */
+const isChange = (value: unknown): value is Change => {
+  const change = value as Change | null;
+  return (
+    !!change &&
+    typeof change === 'object' &&
+    !!change.parts && typeof change.parts === 'object' && !Array.isArray(change.parts) &&
+    !!change.times && typeof change.times === 'object' && !Array.isArray(change.times) &&
+    Array.isArray(change.containers) && change.containers.length <= 200
+  );
+};
+
+/**
+ * Save what changed, rather than the whole diary: merged with anything other
+ * devices saved since `base`, and answered with what they changed.
+ */
+app.patch('/api/diary', requireDevice, async (req, res) => {
+  const { base, change, pastChats } = req.body ?? {};
+  if (!Number.isInteger(base) || base < 1 || !isChange(change) || (pastChats !== undefined && pastChats !== null && !Array.isArray(pastChats))) {
+    res.status(400).json({ error: 'bad_change', message: msg('Nothing to back up.') });
+    return;
+  }
+  try {
+    const owner = ownerOf(req.device!);
+    const result = await patchDiary(owner, base, change, pastChats);
+    if (!result.ok) {
+      if (result.reason === 'too_big') res.status(413).json({ ...result, error: 'too_big', message: msg('This diary is too large to back up.') });
+      // Nothing here to change, or not the diary the device was in step with: it saves the whole diary instead.
+      else res.status(409).json({ error: result.reason });
+      return;
+    }
+    res.json(result);
+    void announceDiary(owner, result.version).catch(() => {});
+  } catch (error) {
+    logFailure('diary change', error);
+    res.status(503).json({ error: 'unavailable', message: msg('Could not save your backup just now.') });
   }
 });
 

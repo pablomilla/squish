@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 1 October 2026**
+**Last updated: 2 October 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -65,12 +65,14 @@ Backup is on by default where this copy of Squish has a database.
   others have changed. While Squish is open on your screen it also keeps a
   line open to our server, which says when another of your devices has saved
   — the copy's version number, nothing else — so the change shows in a
-  couple of seconds. When two have changed things at the same time, the
-  changes are put together on your device, not on our server: a meal logged
-  on each is two meals, the same one changed on both keeps the later change,
-  and something deleted on one is deleted on the others. To do that, the
-  copy also holds when each part of your diary last changed — times, nothing
-  more. A device that signs in holding a diary of its own is never mixed
+  couple of seconds. A device sends only what it changed, not the whole
+  diary each time, and our server puts that into the copy it holds. When two
+  have changed things at the same time, the changes are put together by the
+  same rules wherever that happens — on a device or on our server: a meal
+  logged on each is two meals, the same one changed on both keeps the later
+  change, and something deleted on one is deleted on the others. To do that,
+  the copy also holds when each part of your diary last changed, and which
+  save changed it — times and numbers, nothing more. A device that signs in holding a diary of its own is never mixed
   with yours without asking: it might be somebody else's.
 - **Your past chats with the nutritionist, only if you turn on "Backed up"**
   in the list of past chats. They are off unless you do: a chat can say a lot

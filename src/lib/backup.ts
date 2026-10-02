@@ -12,6 +12,7 @@
 import { apiUrl } from './origin';
 import { deviceToken } from './identity';
 import { splitEvents } from './events';
+import type { Change } from './sync';
 
 export type BackupState =
   | { kind: 'off' }
@@ -105,6 +106,63 @@ export async function hearSaves(heard: (version: number) => void, signal: AbortS
     }
   } catch {
     return 'failed';
+  }
+}
+
+/** What another device changed, as parts (src/lib/sync.ts), with the past chats where they changed. */
+export interface RemoteChanges {
+  version: number;
+  updatedAt: string | null;
+  change: Change;
+  /** The past chats, where they changed; null where they are no longer kept. */
+  pastChats?: unknown;
+}
+
+/**
+ * What changed since the version this device has: `same`, the parts that
+ * did, or the whole diary for a device further behind than the server can
+ * say by parts. `unsupported` is a server from before it could say.
+ */
+export async function changesSince(known: number): Promise<'same' | 'unsupported' | { whole: RemoteDiary } | RemoteChanges | null> {
+  try {
+    const response = await fetch(apiUrl(`/api/diary/changes?since=${known}`), { headers: await headers() });
+    if (response.status === 404) return 'unsupported';
+    if (!response.ok) return null;
+    const found = (await response.json()) as Partial<RemoteChanges> & { unchanged?: boolean; whole?: RemoteDiary; version?: number };
+    if (found.unchanged) return 'same';
+    if (found.whole) return found.whole.version ? { whole: found.whole } : null;
+    if (found.change && typeof found.version === 'number') return found as RemoteChanges;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export type PatchResult =
+  | ({ kind: 'saved'; at: string } & RemoteChanges)
+  /** Saved; but what else changed could not be said by parts, so here is the whole diary. */
+  | { kind: 'saved'; version: number; at: string; whole: RemoteDiary }
+  /** Not saved: no diary there, a different one, or a server from before parts. Save the whole diary. */
+  | { kind: 'whole' }
+  | { kind: 'too_big' }
+  | { kind: 'failed' };
+
+/** Save what changed since `base`; the answer brings what other devices changed meanwhile. */
+export async function patchDiary(base: number, change: Change, pastChats?: unknown): Promise<PatchResult> {
+  try {
+    const response = await fetch(apiUrl('/api/diary'), {
+      method: 'PATCH',
+      headers: await headers(),
+      body: JSON.stringify({ base, change, ...(pastChats === undefined ? {} : { pastChats }) }),
+    });
+    if (response.status === 404 || response.status === 405 || response.status === 409) return { kind: 'whole' };
+    if (response.status === 413) return { kind: 'too_big' };
+    if (!response.ok) return { kind: 'failed' };
+    const body = (await response.json()) as { version: number; updatedAt: string; change?: Change; pastChats?: unknown; whole?: RemoteDiary };
+    if (body.whole) return { kind: 'saved', version: body.version, at: body.updatedAt, whole: body.whole };
+    return { kind: 'saved', version: body.version, at: body.updatedAt, updatedAt: body.updatedAt, change: body.change ?? { parts: {}, times: {}, containers: [] }, ...('pastChats' in body ? { pastChats: body.pastChats } : {}) };
+  } catch {
+    return { kind: 'failed' };
   }
 }
 

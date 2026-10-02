@@ -10,7 +10,11 @@
  * device had saved":
  *
  * - Before each save, what changed is noted, part by part, with when
- *   (src/lib/sync.ts). The times go up with the diary.
+ *   (src/lib/sync.ts), and only those parts are sent — the server puts them
+ *   into the account's diary by the same rules, and answers with what other
+ *   devices changed meanwhile. The whole diary goes up only where a device
+ *   has to start again: just signed in, holding a diary of its own, or
+ *   further behind than the server can say by parts.
  * - While the app is open on screen it holds a line to the server, which
  *   says the moment another device saves (server/live.ts). It also asks
  *   when it opens, comes back to the front or back online, and every few
@@ -30,10 +34,10 @@
  * could interrupt somebody logging their lunch would be worse than none.
  */
 import { useSquish } from '../store/useSquish';
-import { hearSaves, knownVersion, newerDiary, pushDiary, rememberVersion, type BackupState, type RemoteDiary } from './backup';
+import { changesSince, hearSaves, knownVersion, newerDiary, patchDiary, pushDiary, rememberVersion, type BackupState, type RemoteChanges, type RemoteDiary } from './backup';
 import { isBlank } from './blankDiary';
 import { chatsForBackup, forgetChats, goneChats, importChats, listChats, onChatsChanged } from './chats';
-import { fingerprintOf, mergeDiaries, prune, stamp, timesIn, type SyncTimes } from './sync';
+import { applyChange, changeOf, fingerprintOf, mergeDiaries, prune, stamp, timesIn, type SyncTimes } from './sync';
 
 /** Long enough that a burst of edits is one push, short enough that another device open beside this one shows it straight away. */
 const QUIET_MS = 2_000;
@@ -71,7 +75,14 @@ export function watchBackup(listener: (state: BackupState) => void): () => void 
  * ------------------------------------------------------------------ */
 
 const TIMES_KEY = 'squish-sync-times';
+/** Before parts were sent on their own: whether there was anything to say at all. Read once, to start from. */
 const DIRTY_KEY = 'squish-sync-dirty';
+/** The parts changed since the last save, by key, to send next time. */
+const PENDING_KEY = 'squish-sync-pending';
+/** The whole diary to send next time, not its parts: after a whole-diary merge, or starting again. */
+const WHOLE_KEY = 'squish-sync-whole';
+/** The past chats, among what is pending: a name no part can have. */
+const CHATS_PART = '~chats';
 /** The past chats as last saved: they are merged by their own rules, outside the parts, but a change to them is still something to save. */
 const CHATS_KEY = 'squish-sync-chats';
 
@@ -93,7 +104,8 @@ function save(key: string, value: unknown): void {
 
 let times: SyncTimes = load<SyncTimes>(TIMES_KEY, {});
 // Absent the first time this runs: there is something to say, the diary as it stands.
-let dirty: boolean = load<boolean>(DIRTY_KEY, true);
+let whole: boolean = load<boolean>(WHOLE_KEY, load<boolean>(DIRTY_KEY, true));
+let pending = new Set<string>(load<string[]>(PENDING_KEY, []));
 let chatsPrint: string = load<string>(CHATS_KEY, '');
 
 /**
@@ -115,10 +127,26 @@ function setTimes(next: SyncTimes): void {
   times = next;
   save(TIMES_KEY, times);
 }
-function setDirty(next: boolean): void {
-  dirty = next;
-  save(DIRTY_KEY, next);
+function setWhole(next: boolean): void {
+  whole = next;
+  save(WHOLE_KEY, next);
 }
+function savePending(): void {
+  save(PENDING_KEY, [...pending]);
+}
+/** Anything this device has to say. */
+const hasNews = (): boolean => whole || pending.size > 0;
+/** Said, all of it: the server has this diary. */
+function allSaid(): void {
+  setWhole(false);
+  pending.clear();
+  savePending();
+}
+/** Not yet in step part by part with this account's diary, or a server that cannot take parts: the whole diary. */
+let partsRefused = false;
+/** A server from before parts: asked for the whole diary, for as long as this app is open. */
+let partsWhole = false;
+const byParts = (): boolean => !whole && !askFirst && !partsRefused && !partsWhole && knownVersion() !== null;
 
 /**
  * Everything worth keeping, which is the persisted store minus nothing — and
@@ -149,7 +177,9 @@ function noteChanges(): boolean {
   }
   if (!found.changed && !chatsChanged) return false;
   if (found.changed) setTimes(prune(found.times, now));
-  setDirty(true);
+  for (const part of found.parts) pending.add(part);
+  if (chatsChanged) pending.add(CHATS_PART);
+  savePending();
   return true;
 }
 
@@ -172,7 +202,7 @@ function adopt(found: RemoteDiary): void {
   // A diary from an app that sent no times: every part as old as can be, so nothing in it outranks a later change.
   apply(diary, Object.keys(sent).length ? sent : stamp(diary, {}, 0).times);
   rememberVersion(found.version);
-  setDirty(false);
+  allSaid();
 }
 
 /** Both devices' changes, as one diary, to be saved. */
@@ -184,7 +214,7 @@ function combine(found: RemoteDiary): void {
   // The other device's past chats, which the diary's merge leaves to the chats' own (by id, the longer kept).
   apply(theirs.pastChats ? { ...merged.diary, pastChats: theirs.pastChats } : merged.diary, merged.times);
   rememberVersion(found.version);
-  setDirty(true);
+  setWhole(true);
   if (merged.took || merged.dropped) console.info(`[squish] kept in step: ${merged.took} from another device, ${merged.dropped} deleted there`);
 }
 
@@ -199,8 +229,8 @@ function combine(found: RemoteDiary): void {
 function takeIn(found: RemoteDiary): 'adopted' | 'merged' | 'ask' {
   if (isBlank(found.state)) {
     // Nothing there worth keeping: this device's diary goes up over it.
-    rememberVersion(found.version);
-    setDirty(true);
+    rememberVersion(found.version || null);
+    setWhole(true);
     return 'merged';
   }
   noteChanges();
@@ -211,7 +241,7 @@ function takeIn(found: RemoteDiary): 'adopted' | 'merged' | 'ask' {
     }
     return 'ask';
   }
-  if (!dirty) {
+  if (!hasNews()) {
     adopt(found);
     return 'adopted';
   }
@@ -232,8 +262,12 @@ async function pushOnce(): Promise<void> {
   }
   noteChanges();
   // Nothing new to say, and the server already has it.
-  if (!dirty && knownVersion() !== null) {
+  if (!hasNews() && knownVersion() !== null) {
     if (state.kind !== 'idle') announce({ kind: 'idle', at: null });
+    return;
+  }
+  if (byParts()) {
+    await pushParts();
     return;
   }
   inFlight = true;
@@ -247,7 +281,7 @@ async function pushOnce(): Promise<void> {
     // Saved: whatever the server holds is this diary now.
     setAskFirst(false);
     rememberVersion(result.version);
-    setDirty(false);
+    allSaid();
     rounds = 0;
     announce({ kind: 'idle', at: result.at });
     // Changed again while that was on its way: say that too.
@@ -287,6 +321,78 @@ async function pushOnce(): Promise<void> {
   announce({ kind: 'failed' });
 }
 
+/**
+ * Another device's changes, as parts, put into this diary by the same rules
+ * the whole-diary merge follows. A part changed here since, and later, stays
+ * as it is here, still to be sent; one the other device changed later is
+ * theirs, and no longer this device's to send.
+ */
+function takeInChanges(found: Pick<RemoteChanges, 'change' | 'pastChats'>): void {
+  const hasParts = Object.keys(found.change.times).length > 0;
+  if (!hasParts && found.pastChats === undefined) return;
+  noteChanges();
+  const applied = applyChange(snapshot(), times, found.change);
+  for (const part of applied.taken) pending.delete(part);
+  savePending();
+  // Past chats arriving are merged with these by the chats' own rules (by id, the longer kept); none arriving leaves them be.
+  apply(Array.isArray(found.pastChats) ? { ...applied.diary, pastChats: found.pastChats } : applied.diary, applied.times);
+  if (applied.took || applied.dropped) console.info(`[squish] kept in step: ${applied.took} from another device, ${applied.dropped} deleted there`);
+}
+
+/**
+ * Save what changed since the last save, and only that. The answer is what
+ * other devices changed in the meantime, so one request leaves this device in
+ * step. A server that cannot take parts, or no longer holds the diary this
+ * device was in step with, is sent the whole diary instead.
+ */
+async function pushParts(): Promise<void> {
+  const base = knownVersion()!;
+  const sending = [...pending];
+  const diary = snapshot();
+  const change = changeOf(diary, times, sending.filter((part) => part !== CHATS_PART));
+  const chats = pending.has(CHATS_PART) ? (diary.pastChats ?? null) : undefined;
+  inFlight = true;
+  announce({ kind: 'saving' });
+  const result = await patchDiary(base, change, chats);
+  inFlight = false;
+
+  if (result.kind === 'saved') {
+    // What was sent is said. Nothing here is noted while a save is on its way, so nothing else is cleared with it.
+    for (const part of sending) pending.delete(part);
+    savePending();
+    rounds = 0;
+    if ('whole' in result) {
+      // Saved, but what else had changed could not be said by parts: the whole diary, taken in as any other.
+      const outcome = takeIn(result.whole);
+      if (outcome === 'ask') {
+        stopped = true;
+        announce({ kind: 'conflict' });
+        return;
+      }
+    } else {
+      takeInChanges(result);
+      rememberVersion(result.version);
+    }
+    announce({ kind: 'idle', at: result.at });
+    // Changed again while that was on its way: say that too.
+    if (noteChanges() || hasNews()) soon();
+    return;
+  }
+  if (result.kind === 'whole') {
+    // No diary there by parts: the whole of this one, as a device starting again sends it.
+    partsRefused = true;
+    await pushOnce();
+    partsRefused = false;
+    return;
+  }
+  if (result.kind === 'too_big') {
+    stopped = true;
+    announce({ kind: 'too_big' });
+    return;
+  }
+  announce({ kind: 'failed' });
+}
+
 /** Has another device saved? Then take its changes in now, rather than when this one next saves. */
 async function check(): Promise<void> {
   if (stopped || state.kind === 'off') return;
@@ -299,7 +405,18 @@ async function check(): Promise<void> {
   if (known === null) return;
   checking = true;
   try {
-    const found = await newerDiary(known);
+    // In step: only what changed since. Otherwise, or from a server that cannot say, the whole diary if it is newer.
+    const asked = !askFirst && !partsWhole ? await changesSince(known) : 'unsupported';
+    if (asked === 'unsupported' && !askFirst) partsWhole = true;
+    if (asked && asked !== 'unsupported' && asked !== 'same' && !('whole' in asked)) {
+      if (inFlight) return;
+      takeInChanges(asked);
+      rememberVersion(asked.version);
+      announce({ kind: 'idle', at: asked.updatedAt });
+      if (hasNews()) soon();
+      return;
+    }
+    const found = asked === 'unsupported' ? await newerDiary(known) : asked && asked !== 'same' ? asked.whole : null;
     if (!found || found === 'same' || inFlight) return;
     const outcome = takeIn(found);
     if (outcome === 'ask') {
@@ -471,7 +588,7 @@ export function combineWithBackup(found: RemoteDiary): void {
 export function resumeBackup(version: number | null): void {
   setAskFirst(false);
   rememberVersion(version);
-  setDirty(true);
+  setWhole(true);
   stopped = false;
   announce({ kind: 'idle', at: null });
 }
