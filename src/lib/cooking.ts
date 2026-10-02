@@ -19,7 +19,7 @@ export type StepAction = (typeof STEP_ACTIONS)[number];
  * Until it is in src/assets/cook/, a step of that kind is shown without one;
  * a test checks every other kind has its picture.
  */
-export const AWAITING_PICTURES: readonly StepAction[] = ['shake', 'microwave', 'toast', 'airfry', 'chill', 'assemble', 'pour'];
+export const AWAITING_PICTURES: readonly StepAction[] = ['assemble', 'pour'];
 
 export interface StepDetail {
   action: StepAction;

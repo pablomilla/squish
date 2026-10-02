@@ -20,13 +20,18 @@ with transparent backgrounds (3:2, about 1536 × 1024), named exactly:
 Each one with its pot, pan or plate **empty**: the step's words and the
 ingredient chips under the picture say what goes in.
 
-## Seven more, to paint (since 1 October 2026)
+## Seven more (since 1 October 2026): five in, two to paint
 
 Cook mode only shows a picture that is right: a step that happens somewhere
 none of these shows is labelled `other` and shown without one, and so are the
 kinds below until their picture is here. A protein shake made in a shaker
-bottle used to show the mixing bowl; it now shows nothing, until `shake.png`
-arrives.
+bottle used to show the mixing bowl; it now shows the shaker.
+
+In (2 October 2026), cut out of their painted checkerboard like the first
+eleven: `shake`, `microwave`, `toast`, `airfry`, `chill` (painted as a small
+fridge). These came at about 1024 wide rather than 1536, so their WebPs are
+kept at the size the cut-out came to (up to 720) rather than stretched.
+Still to paint: `assemble` and `pour`.
 
 | File | Step | Paint |
 |---|---|---|
