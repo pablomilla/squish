@@ -31,10 +31,9 @@ In (2 October 2026), cut out of their painted checkerboard like the first
 eleven: `shake`, `microwave`, `toast`, `airfry`, `chill` (painted as a small
 fridge). These came at about 1024 wide rather than 1536, so their WebPs are
 kept at the size the cut-out came to (up to 720) rather than stretched.
-`assemble` and `pour` followed the same day, the same way. `assemble` came
-with a chef's knife rather than a butter knife, so it is close to `prep` in
-all but colour; a repaint with a butter knife and a slice of bread would tell
-them apart better.
+`assemble` and `pour` followed the same day, the same way. The first
+`assemble` came with only a chef's knife, too close to `prep`; it was
+repainted with a slice of bread on the board, which tells them apart.
 
 | File | Step | Paint |
 |---|---|---|
