@@ -20,7 +20,7 @@ with transparent backgrounds (3:2, about 1536 × 1024), named exactly:
 Each one with its pot, pan or plate **empty**: the step's words and the
 ingredient chips under the picture say what goes in.
 
-## Seven more (since 1 October 2026): five in, two to paint
+## Seven more (since 1 October 2026): all in
 
 Cook mode only shows a picture that is right: a step that happens somewhere
 none of these shows is labelled `other` and shown without one, and so are the
@@ -31,7 +31,10 @@ In (2 October 2026), cut out of their painted checkerboard like the first
 eleven: `shake`, `microwave`, `toast`, `airfry`, `chill` (painted as a small
 fridge). These came at about 1024 wide rather than 1536, so their WebPs are
 kept at the size the cut-out came to (up to 720) rather than stretched.
-Still to paint: `assemble` and `pour`.
+`assemble` and `pour` followed the same day, the same way. `assemble` came
+with a chef's knife rather than a butter knife, so it is close to `prep` in
+all but colour; a repaint with a butter knife and a slice of bread would tell
+them apart better.
 
 | File | Step | Paint |
 |---|---|---|
