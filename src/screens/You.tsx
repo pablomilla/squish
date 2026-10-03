@@ -1085,12 +1085,14 @@ function Choices({ here, backup, savedAt }: { here: DiarySummary; backup: DiaryS
 }
 
 /**
- * Which plan, and what is left of the month.
+ * Which plan, and what is left: of the free taste, or — on Plus, which is
+ * unlimited — whether today's fair-use ceiling has been reached, with the
+ * ceilings themselves said plainly underneath.
  *
  * Shown rather than hidden behind a limit somebody runs into. A person who
- * can see they have eleven photo analyses left will spend them differently
- * from one who discovers the number by being refused, and the second is how
- * an app earns a one-star review about being "secretly limited".
+ * can see what they have will spend it differently from one who discovers it
+ * by being refused, and the second is how an app earns a one-star review
+ * about being "secretly limited".
  *
  * Nothing here decides anything: it is a reading of what the server said.
  */
@@ -1122,7 +1124,7 @@ function PlanCard({ standing }: { standing: Standing }) {
               ) : standing.allowance[row.kind] === 0 ? (
                 <span className="muted">{PLUS}</span>
               ) : plus ? (
-                t('{left} of {total} left', { left: standing.left[row.kind], total: standing.allowance[row.kind] })
+                standing.left[row.kind] > 0 ? t('Unlimited') : <span className="muted">{t('Back tomorrow')}</span>
               ) : (
                 t('{left} of {total} free left', { left: standing.left[row.kind], total: standing.allowance[row.kind] })
               )}
@@ -1132,8 +1134,14 @@ function PlanCard({ standing }: { standing: Standing }) {
       </div>
 
       <p className="tiny muted" style={{ marginTop: 10 }}>
-        {plus && standing.resets
-          ? t('The month starts again on {date}.', { date: friendlyDate(standing.resets.slice(0, 10)).toLocaleLowerCase() })
+        {plus
+          ? t('Fair use: {plus} is for one person’s own eating, with daily ceilings far past a real day — {photos} analyses, {questions} questions and {recipes} recipe imports — and {plans} weekly plans a week.', {
+              plus: PLUS,
+              photos: standing.allowance.photo,
+              questions: standing.allowance.chat,
+              recipes: standing.allowance.recipe,
+              plans: standing.weekplans?.allowance ?? 2,
+            })
           : standing.needsAccount
             ? t('Make a free account below to try {n} AI meal analyses.', { n: standing.taste })
             : t('The free analyses are a one-off taste of the AI; they do not reset.')}{' '}

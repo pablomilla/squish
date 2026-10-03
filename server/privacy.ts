@@ -106,7 +106,10 @@ export function render(markdown: string): string {
     if (heading) {
       flushAll();
       const level = heading[1].length;
-      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      // "## Fair use {#fair-use}": a heading something links to, by a name that stays the same in every language.
+      const anchor = /\s*\{#([a-z0-9-]+)\}$/.exec(heading[2]);
+      const text = anchor ? heading[2].slice(0, anchor.index) : heading[2];
+      out.push(`<h${level}${anchor ? ` id="${anchor[1]}"` : ''}>${inline(text)}</h${level}>`);
       continue;
     }
 

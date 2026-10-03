@@ -32,15 +32,19 @@ const usd = (value: number) => `$${value.toFixed(value < 1 ? 4 : 2)}`;
 export default function People({ metrics, usdToGbp }: { metrics: Metrics | null; usdToGbp: number }) {
   const [people, setPeople] = useState<Person[]>([]);
   const [search, setSearch] = useState('');
+  const [overFairUse, setOverFairUse] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [moving, setMoving] = useState<string | null>(null);
   const [invites, setInvites] = useState<{ invites: Invite[]; suggestion: string } | null>(null);
   const toast = useToast();
 
-  const load = useCallback(async (q: string) => {
-    const list = await fetchPeople(q);
-    if (list) setPeople(list.people);
-  }, []);
+  const load = useCallback(
+    async (q: string) => {
+      const list = await fetchPeople(q, overFairUse);
+      if (list) setPeople(list.people);
+    },
+    [overFairUse],
+  );
 
   const loadInvites = useCallback(async () => {
     const next = await fetchInvites();
@@ -176,9 +180,13 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
             aria-label="Search people"
             onChange={(event) => setSearch(event.target.value)}
           />
+          <label className="row tiny admin-fair-filter">
+            <input type="checkbox" checked={overFairUse} onChange={(event) => setOverFairUse(event.target.checked)} />
+            Only those at a fair-use ceiling on 3 or more days this month
+          </label>
 
           <div className="admin-people">
-            {people.length === 0 && <p className="tiny muted">Nobody yet.</p>}
+            {people.length === 0 && <p className="tiny muted">{overFairUse ? 'Nobody over fair use this month.' : 'Nobody yet.'}</p>}
             {people.map((person) => (
               <div className="admin-person" key={person.id}>
                 <div className="admin-person-head">
@@ -186,8 +194,15 @@ export default function People({ metrics, usdToGbp }: { metrics: Metrics | null;
                     {person.email}
                     {!person.verified && <span className="tiny muted admin-unconfirmed"> · unconfirmed</span>}
                   </b>
-                  <span className={`badge ${person.plan === 'plus' ? 'badge--good' : ''}`}>
-                    {person.plan === 'plus' ? PLUS : 'Free'}
+                  <span className="row" style={{ gap: 6 }}>
+                    {person.overFairUse && (
+                      <span className="badge badge--warn" title="Days this month at a daily ceiling or the speed limit. Nothing happens automatically.">
+                        Over fair use · {person.fairUseDays} days
+                      </span>
+                    )}
+                    <span className={`badge ${person.plan === 'plus' ? 'badge--good' : ''}`}>
+                      {person.plan === 'plus' ? PLUS : 'Free'}
+                    </span>
                   </span>
                 </div>
                 <p className="tiny muted">

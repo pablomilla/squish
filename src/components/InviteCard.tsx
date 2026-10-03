@@ -78,11 +78,7 @@ export default function InviteCard() {
       </div>
       <p className="small">
         {onPlus && friends
-          ? t('Give a friend {period} of Squish Plus — and get {photos} extra photo analyses and {questions} extra questions straight away, with {period} of Plus saved for after your current Plus.', {
-              period,
-              photos: friends.boost.photo,
-              questions: friends.boost.chat,
-            })
+          ? t('Give a friend {period} of Squish Plus — and get {period} of Plus yourself, saved for after your current Plus.', { period })
           : t('Give a friend {period} of Squish Plus — and get {period} yourself.', { period })}
       </p>
       <p className="tiny muted">
@@ -92,15 +88,9 @@ export default function InviteCard() {
 
       {celebrate && <SquadUnlocked />}
 
-      {friends?.extra && (
-        <p className="tiny invite-extra">
-          {t('✨ Invite bonus: +{photos} photo analyses and +{questions} questions, until {date}.', {
-            photos: friends.extra.photo,
-            questions: friends.extra.chat,
-            date: shortDay(friends.extra.until),
-          })}
-          {friends.plusUntil ? ` ${t('Your Plus runs to {date}, saved months included.', { date: shortDay(friends.plusUntil) })}` : ''}
-        </p>
+      {/* A month saved by an invite is the only bonus now that Plus's AI is unlimited. */}
+      {onPlus && friends && friends.daysEarned > 0 && friends.plusUntil && (
+        <p className="tiny invite-extra">✨ {t('Your Plus runs to {date}, saved months included.', { date: shortDay(friends.plusUntil) })}</p>
       )}
 
       {friends?.mine && !friends.mine.rewarded && (

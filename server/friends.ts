@@ -128,10 +128,9 @@ export type RewardKind = 'started' | 'extended';
  * Give one side its reward, fitted to where they are.
  *
  * - **Not on Plus:** Plus starts now, for `days`.
- * - **Already on Plus** (and above all on a yearly plan): a month more at the
- *   far end is a thank-you nobody notices for months. So they get extra AI
- *   now — the thing a subscriber actually runs into — and the month is saved
- *   for when their current Plus ends, by adding it to the end.
+ * - **Already on Plus:** the month is saved for when their current Plus
+ *   ends, by adding it to the end. (It used to come with extra AI now, too;
+ *   with Plus's AI unlimited there is nothing to add — see server/plan.ts.)
  */
 async function reward(client: PoolClient, accountId: string, days: number): Promise<{ kind: RewardKind; plusUntil: Date }> {
   const before = await client.query<{ live: boolean }>(
@@ -144,14 +143,6 @@ async function reward(client: PoolClient, accountId: string, days: number): Prom
       where id = $1 returning plus_until`,
     [accountId, days],
   );
-  if (live) {
-    const extra = boost();
-    await client.query(
-      `insert into allowance_boosts (account_id, photo, chat, expires_at, reason)
-       values ($1, $2, $3, now() + make_interval(days => $4), 'friend invite')`,
-      [accountId, extra.photo, extra.chat, extra.days],
-    );
-  }
   return { kind: live ? 'extended' : 'started', plusUntil: after.rows[0].plus_until };
 }
 
@@ -167,7 +158,6 @@ export function rewardWords(
   plusUntil: Date,
   words: Speaker = ENGLISH,
   zone = 'Europe/London',
-  boostUntil: Date = new Date(Date.now() + boost().days * 86_400_000),
 ): string {
   const { t } = words;
   const date = (when: Date) => {
@@ -180,11 +170,7 @@ export function rewardWords(
   };
   const until = date(plusUntil);
   if (kind === 'started') return t('We have switched Squish Plus on for you — {days} days of it, until {until}. There is nothing to do.', { days, until });
-  const extra = boost();
-  return t(
-    'As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, until {boostUntil}. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.',
-    { photo: extra.photo, chat: extra.chat, boostUntil: date(boostUntil), days, until },
-  );
+  return t('As you are already on Plus, the {days} days are saved for you, added to the end of your current Plus — it now runs until {until}.', { days, until });
 }
 
 const ENGLISH = speaker({ language: 'en', locale: 'en-GB' });
@@ -288,17 +274,13 @@ export async function thankInviter(referrerId: string, appOrigin: string): Promi
   if (!newest?.referrer_kind || !newest.plus_until) return false;
   if (Date.now() - newest.rewarded_at.getTime() > THANKS_WITHIN_DAYS * 86_400_000) return false;
 
-  const boosts = await query<{ until: Date | null }>(
-    `select max(expires_at) as until from allowance_boosts where account_id = $1 and reason = 'friend invite'`,
-    [referrerId],
-  );
   const link = `${appOrigin}/`;
   const reader = await readerOf(referrerId);
   const { referrer_kind: kind, referrer_days: days, plus_until: plusUntil } = newest;
   const mail = await compose(
     'friend-reward',
     newest.email,
-    (words) => ({ reward: rewardWords(kind, days, plusUntil, words, reader.zone, boosts[0]?.until ?? undefined), app_link: link }),
+    (words) => ({ reward: rewardWords(kind, days, plusUntil, words, reader.zone), app_link: link }),
     originOf(link),
     reader,
   );

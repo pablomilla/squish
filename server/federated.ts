@@ -23,6 +23,7 @@
  * Google, APPLE_CLIENT_ID (a Services ID) for Apple. Without one, that
  * button is not offered.
  */
+import { keepNewestDevices } from './fairUse';
 import { createPublicKey, randomBytes, verify, type JsonWebKey } from 'node:crypto';
 import { hasDatabase, migrate, transaction } from './db';
 import { hashPassword, looksLikeEmail, normaliseEmail, type Account } from './accounts';
@@ -208,6 +209,7 @@ export async function enterWith(deviceId: string, who: Identity): Promise<Entere
     // As signIn does: this device is theirs now, and its diary becomes the
     // account's only where the account has none.
     await client.query('update devices set account_id = $1 where id = $2', [account.id, deviceId]);
+    await keepNewestDevices(client, account.id, deviceId);
     await client.query('delete from admin_sessions where device_id = $1', [deviceId]);
     const held = await client.query('select 1 from diaries where owner_id = $1', [account.id]);
     let broughtDiary = false;

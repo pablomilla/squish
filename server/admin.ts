@@ -23,6 +23,7 @@
 import { query } from './db';
 import type { Device } from './identity';
 import { ALLOWANCE, type Plan } from './plan';
+import { FLAG_DAYS } from './fairUse';
 import { canSendMail, sendMail } from './mail';
 import { compose } from './emails';
 import { isHeard, type Heard } from '../src/lib/heard';
@@ -124,6 +125,10 @@ export interface Person {
   usd: number;
   /** This month's cost by feature and model, the dearest first. Use from before models were kept is in `usd` only. */
   byModel: { kind: string; model: string; calls: number; usd: number }[];
+  /** Different days this month at a fair-use ceiling or the speed limit (server/fairUse.ts). */
+  fairUseDays: number;
+  /** At FLAG_DAYS or more: for a person to look at. Nothing is done automatically. */
+  overFairUse: boolean;
 }
 
 /**
@@ -133,7 +138,7 @@ export interface Person {
  * over at ten thousand accounts is a list that will fall over exactly when
  * the app has succeeded.
  */
-export async function people(search: string, limit = 50): Promise<Person[]> {
+export async function people(search: string, limit = 50, overFairUseOnly = false): Promise<Person[]> {
   const like = `%${search.trim().toLowerCase()}%`;
   const rows = await query<{
     id: string;
@@ -146,21 +151,26 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
     recipe: string;
     weekplan: string;
     usd: string;
+    fair_days: number;
   }>(
     `select a.id, a.email, a.email_verified_at is not null as verified, a.plus_until, a.created_at,
             coalesce(sum(u.count) filter (where u.kind = 'photo'), 0)::text  as photo,
             coalesce(sum(u.count) filter (where u.kind = 'chat'), 0)::text   as chat,
             coalesce(sum(u.count) filter (where u.kind = 'recipe'), 0)::text as recipe,
             coalesce(sum(u.count) filter (where u.kind = 'weekplan'), 0)::text as weekplan,
-            coalesce(sum(u.cost_usd), 0)::text                               as usd
+            coalesce(sum(u.cost_usd), 0)::text                               as usd,
+            (select count(distinct h.day) from fair_use_hits h
+              where h.owner_id = a.id and h.day >= date_trunc('month', current_date))::int as fair_days
        from accounts a
        left join devices d on d.account_id = a.id
        left join usage u on u.device_id = d.id and u.day >= date_trunc('month', current_date)
       where ($1 = '%%' or lower(a.email) like $1)
+        and (not $3 or (select count(distinct h.day) from fair_use_hits h
+                         where h.owner_id = a.id and h.day >= date_trunc('month', current_date)) >= $4)
       group by a.id
       order by a.created_at desc
       limit $2`,
-    [like, limit],
+    [like, limit, overFairUseOnly, FLAG_DAYS],
   );
 
   // Split by model in a second read rather than the first: joined in, every
@@ -189,6 +199,8 @@ export async function people(search: string, limit = 50): Promise<Person[]> {
     byModel: models
       .filter((m) => m.account_id === row.id)
       .map((m) => ({ kind: m.kind, model: m.model, calls: Number(m.calls), usd: Number(m.usd) })),
+    fairUseDays: row.fair_days,
+    overFairUse: row.fair_days >= FLAG_DAYS,
   }));
 }
 

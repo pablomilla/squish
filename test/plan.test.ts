@@ -3,7 +3,7 @@ import { test, before, after } from 'node:test';
 import { closeDatabase, hasDatabase, migrate, query } from '../server/db';
 import { registerDevice, spend } from '../server/identity';
 import { signUp } from '../server/accounts';
-import { ALLOWANCE, PERIOD, allowanceFor, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, usedThisMonth } from '../server/plan';
+import { ALLOWANCE, PERIOD, WEEKPLANS_PER_WEEK, allowanceFor, isBillable, needsAccount, nextReset, nextWeek, planFor, standingOf, usedFor, usedThisMonth, usedToday } from '../server/plan';
 
 /**
  * Tiers, against a real Postgres.
@@ -68,19 +68,31 @@ when('a subscription that has run out is free again, with nothing having to run'
 when('the free plan gets a taste of the analysis and the nutritionist, and nothing else that costs money', async () => {
   // Straight from docs/monetisation.md: everything cheap to serve is free, and
   // of the AI, only enough to find out whether it is any good.
-  assert.equal(ALLOWANCE.free.photo, 5, 'somebody has to be able to try the analysis');
-  assert.equal(ALLOWANCE.free.chat, 3, 'and the nutritionist, which is what Plus is sold on');
+  assert.equal(ALLOWANCE.free.photo, 10, 'somebody has to be able to try the analysis');
+  assert.equal(ALLOWANCE.free.chat, 5, 'and the nutritionist, which is what Plus is sold on');
   assert.ok(ALLOWANCE.plus.chat > ALLOWANCE.free.chat);
   assert.equal(ALLOWANCE.free.recipe, 0);
   assert.ok(ALLOWANCE.plus.photo > ALLOWANCE.free.photo);
   assert.ok(ALLOWANCE.plus.chat > 0);
 });
 
-when('the free taste is once, and Plus is by the month', async () => {
+when('the free taste is once, and Plus is unlimited with a fair-use ceiling a day', async () => {
   // A monthly free allowance is a bill that grows with every free user who
   // never pays. A taste costs once per person.
   assert.equal(PERIOD.free, 'ever');
-  assert.equal(PERIOD.plus, 'month');
+  assert.equal(PERIOD.plus, 'day');
+  // Far past a heavy day of real eating (five meals, three questions): only a script or a household reaches them.
+  assert.deepEqual(ALLOWANCE.plus, { photo: 40, chat: 50, recipe: 10 });
+  assert.equal(WEEKPLANS_PER_WEEK, 2);
+});
+
+when('a day at the ceiling is that day: tomorrow starts again', async () => {
+  const { device } = await anAccount(30);
+  for (let i = 0; i < 5; i++) await spend(device.id, 'photo');
+  assert.equal(await usedFor(device, 'photo', 'plus'), 5);
+  await query("update usage set day = current_date - 1 where device_id = $1", [device.id]);
+  assert.equal(await usedToday(device, 'photo'), 0, 'yesterday is not today');
+  assert.equal((await standingOf(device)).left.photo, ALLOWANCE.plus.photo);
 });
 
 when('the taste needs an account; a signed-out browser is told so, not given it', async () => {
@@ -129,9 +141,7 @@ when('a subscriber who lapses to free has already had their taste', async () => 
   assert.equal(standing.left.photo, 0);
 });
 
-when('Plus has an allowance too', async () => {
-  // Not meanness. A heavy user costs more per month than Plus charges, so
-  // without a ceiling the best customers lose the most money.
+when('Plus has a fair-use ceiling for every kind, so unlimited is never a blank cheque', async () => {
   for (const kind of ['photo', 'chat', 'recipe'] as const) {
     assert.ok(ALLOWANCE.plus[kind] > 0 && Number.isFinite(ALLOWANCE.plus[kind]), `${kind} must have a ceiling`);
   }
@@ -185,9 +195,11 @@ when('what is left is the allowance minus what has gone, and never below nought'
   assert.ok(after.used.photo > ALLOWANCE.free.photo);
 });
 
-when('the allowance comes back on the first of next month', async () => {
-  const reset = new Date(nextReset(new Date('2026-09-22T12:00:00Z')));
-  assert.equal(reset.toISOString(), '2026-10-01T00:00:00.000Z');
-  // December has to roll the year, which is the one this gets wrong.
-  assert.equal(new Date(nextReset(new Date('2026-12-15T12:00:00Z'))).toISOString(), '2027-01-01T00:00:00.000Z');
+when('a ceiling comes back at the next midnight, and weekly plans on the next Monday', async () => {
+  assert.equal(nextReset(new Date('2026-09-22T12:00:00Z')), '2026-09-23T00:00:00.000Z');
+  // The year's last day has to roll the year, which is the one this gets wrong.
+  assert.equal(nextReset(new Date('2026-12-31T23:59:00Z')), '2027-01-01T00:00:00.000Z');
+  assert.equal(nextWeek(new Date('2026-10-01T12:00:00Z')), '2026-10-05T00:00:00.000Z', 'a Thursday: the coming Monday');
+  assert.equal(nextWeek(new Date('2026-10-05T09:00:00Z')), '2026-10-12T00:00:00.000Z', 'a Monday: the next one');
+  assert.equal(nextWeek(new Date('2026-10-04T23:00:00Z')), '2026-10-05T00:00:00.000Z', 'a Sunday night: tomorrow');
 });

@@ -97,7 +97,7 @@ test('a page reached from an email does not send people into an empty Squish', a
 test('the policy names every company the AI can send somebody’s data to', () => {
   const policy = readFileSync('docs/privacy.md', 'utf8');
   // Everything a route can choose (server/pricing.ts) is Anthropic's or Google's; both must be named, with their terms.
-  assert.match(policy, /Anthropic's Claude API or Google's Gemini API/);
+  assert.match(policy, /Google's Gemini API or Anthropic's Claude API/);
   assert.match(policy, /ai\.google\.dev\/gemini-api\/terms/);
   assert.match(policy, /paid Gemini API/, 'the free tier lets Google use what is sent: the policy promises the paid one');
   assert.match(policy, /Four companies process data on our behalf/);

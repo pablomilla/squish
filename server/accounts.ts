@@ -18,6 +18,7 @@
  * chose, which means it is in a list somewhere, which means the only defence
  * is making each guess expensive.
  */
+import { keepNewestDevices } from './fairUse';
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { migrate, query, transaction } from './db';
@@ -173,6 +174,8 @@ export async function signIn(deviceId: string, email: string, password: string):
 
   const broughtDiary = await transaction(async (client) => {
     await client.query('update devices set account_id = $1 where id = $2', [found.id, deviceId]);
+    // One person per account: past a handful of devices, the one used longest ago is signed out (server/fairUse.ts).
+    await keepNewestDevices(client, found.id, deviceId);
     // A new sign-in starts without the dashboard's second step, whoever held
     // this device before and whatever they had passed.
     await client.query('delete from admin_sessions where device_id = $1', [deviceId]);
@@ -287,6 +290,7 @@ export async function deleteAccount(id: string): Promise<void> {
   await migrate();
   await transaction(async (client) => {
     await client.query('delete from diaries where owner_id = $1', [id]);
+    await client.query('delete from fair_use_hits where owner_id = $1', [id]);
     await client.query('delete from accounts where id = $1', [id]);
   });
 }

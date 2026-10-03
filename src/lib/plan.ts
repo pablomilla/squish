@@ -20,13 +20,13 @@ import { t } from './i18n';
 export type Plan = 'free' | 'plus';
 export type Billable = 'photo' | 'chat' | 'recipe';
 
-export type Period = 'month' | 'ever';
+export type Period = 'day' | 'ever';
 
 export interface Standing {
   /** False until the server has answered once. */
   known: boolean;
   plan: Plan;
-  /** 'month' comes back on the 1st (Plus); 'ever' is the free taste, which does not. */
+  /** 'day' is Plus's fair-use ceiling, back tomorrow; 'ever' is the free taste, which does not come back. */
   period: Period;
   /** Signed out on the free plan: an account would unlock a taste of the AI. */
   needsAccount: boolean;
@@ -35,9 +35,9 @@ export interface Standing {
   used: Record<Billable, number>;
   allowance: Record<Billable, number>;
   left: Record<Billable, number>;
-  /** The nutritionist's weekly plans this month (Plus), where the server said. */
-  weekplans: { used: number; allowance: number } | null;
-  /** ISO date the month rolls over, where the server said. */
+  /** The nutritionist's weekly plans this week (Plus), and when they come back, where the server said. */
+  weekplans: { used: number; allowance: number; resets?: string } | null;
+  /** When Plus's daily fair-use ceilings come back (the next midnight, UTC), where the server said. */
   resets: string | null;
   /** True where this Squish keeps nothing, so there are no tiers at all. */
   off: boolean;
@@ -97,7 +97,7 @@ export async function refreshPlan(): Promise<Standing> {
       known: true,
       off: false,
       plan: body.plan === 'plus' ? 'plus' : 'free',
-      period: body.period === 'month' ? 'month' : 'ever',
+      period: body.period === 'day' ? 'day' : 'ever',
       needsAccount: Boolean(body.needsAccount),
       taste: Number(body.taste) || 0,
       used: { ...NONE, ...body.used },
@@ -106,7 +106,7 @@ export async function refreshPlan(): Promise<Standing> {
       resets: body.resets ?? null,
       weekplans:
         body.weekplans && typeof body.weekplans.used === 'number' && typeof body.weekplans.allowance === 'number'
-          ? { used: body.weekplans.used, allowance: body.weekplans.allowance }
+          ? { used: body.weekplans.used, allowance: body.weekplans.allowance, ...(typeof body.weekplans.resets === 'string' ? { resets: body.weekplans.resets } : {}) }
           : null,
       invites: Boolean(body.invites),
       account: Boolean(body.account),

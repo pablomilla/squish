@@ -36,13 +36,18 @@ services:
       # docs/monetisation.md. Set these only to change policy.
       - key: SQUISH_FREE_TASTE
         sync: false
-      - key: SQUISH_PLUS_PHOTOS
+      - key: SQUISH_FREE_CHATS
         sync: false
-      - key: SQUISH_PLUS_CHATS
+      # Plus is unlimited under fair use: these are the daily ceilings
+      # (defaults 40 and 50). The old monthly SQUISH_PLUS_PHOTOS and
+      # SQUISH_PLUS_CHATS are no longer read.
+      - key: SQUISH_PLUS_PHOTOS_A_DAY
         sync: false
-      # Weekly plans from the nutritionist a month (default 4), and optionally a
+      - key: SQUISH_PLUS_CHATS_A_DAY
+        sync: false
+      # Weekly plans from the nutritionist a week (default 2), and optionally a
       # cheaper model for them alone. See docs/monetisation.md.
-      - key: SQUISH_PLUS_WEEKPLANS
+      - key: SQUISH_PLUS_WEEKPLANS_A_WEEK
         sync: false
       - key: SQUISH_WEEKPLAN_MODEL
         sync: false

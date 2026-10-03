@@ -1,5 +1,5 @@
 {
- "version": "0pulmyy-p83h1x",
+ "version": "0zutmli0padcay",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -740,6 +740,13 @@
    ]
   },
   {
+   "id": "03lco0502cgik8",
+   "text": "Google’s Gemini now reads most of your photos, meals and questions, with Anthropic’s Claude as a backup when Gemini cannot answer. Google do not use them to improve their products. On Squish Plus we also note the days an account reaches a fair-use ceiling — a day and which kind, nothing more.",
+   "where": [
+    "src/components/PolicyNotice.tsx"
+   ]
+  },
+  {
    "id": "03lz0bn-fwiclv",
    "text": "Nothing to back up.",
    "where": [
@@ -818,13 +825,6 @@
    ]
   },
   {
-   "id": "03umvz50q8iq2t",
-   "text": "Make a free account and your first three questions are on us.",
-   "where": [
-    "src/screens/Ask.tsx"
-   ]
-  },
-  {
    "id": "03vfu8f0n75z9f",
    "text": "Squad code: {code}",
    "where": [
@@ -832,10 +832,11 @@
    ]
   },
   {
-   "id": "0416z140idiewc",
-   "text": "That is this month's weekly plans. They come back on the 1st.",
+   "id": "03zph0t-b46yp0",
+   "text": "Back tomorrow",
    "where": [
-    "src/components/WeekPlanSheet.tsx"
+    "src/components/useSubscribed.ts",
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -1659,13 +1660,6 @@
    ]
   },
   {
-   "id": "08npnhc-unjr4v",
-   "text": "{left} of {total} left",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "08tcxza07ue4rh",
    "text": "Protein shake",
    "where": [
@@ -2290,6 +2284,14 @@
    ]
   },
   {
+   "id": "0cj28hs-2es6w8",
+   "text": "Unlimited",
+   "where": [
+    "src/components/useSubscribed.ts",
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "0cj6jwo0biyefq",
    "one": "{n} item",
    "other": "{n} items",
@@ -2332,13 +2334,6 @@
    "text": "Invite a friend to get going",
    "where": [
     "src/components/squad/SquadStrip.tsx"
-   ]
-  },
-  {
-   "id": "0cq8gv1-j2drz3",
-   "text": "<b>{n} AI meal analyses a month</b> — snap the plate, or say or type what you ate",
-   "where": [
-    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -2538,13 +2533,6 @@
     "src/lib/looks.ts",
     "src/lib/outfit.ts",
     "src/lib/shareDecor.ts"
-   ]
-  },
-  {
-   "id": "0dsszm60m5p2o3",
-   "text": "That is this month",
-   "where": [
-    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -2964,6 +2952,14 @@
    "text": "New badge: {badge} — {how}",
    "where": [
     "src/components/AchievementSync.tsx"
+   ]
+  },
+  {
+   "id": "0g05ax8-ly5is8",
+   "one": "{n} weekly plan left this week.",
+   "other": "{n} weekly plans left this week.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -3513,6 +3509,13 @@
    ]
   },
   {
+   "id": "0j097230yaeyyy",
+   "text": "Ask me {n} questions, free",
+   "where": [
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "0j0j11s07pe1fr",
    "text": "That did not work — give it another go.",
    "where": [
@@ -3668,6 +3671,13 @@
    ]
   },
   {
+   "id": "0jqz4p3-p8yuqq",
+   "text": "It comes back tomorrow.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "0jrdk8j0spovb3",
    "text": "1 bagel",
    "where": [
@@ -3686,6 +3696,13 @@
    "text": "Here’s your plan!",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0jz4zik-qpjbhz",
+   "text": "As you are already on Plus, the {days} days are saved for you, added to the end of your current Plus — it now runs until {until}.",
+   "where": [
+    "server/friends.ts"
    ]
   },
   {
@@ -4346,13 +4363,6 @@
    ]
   },
   {
-   "id": "0mpo2pr-umi1o6",
-   "text": "You have used your free questions. With {plus} it is {n} a month, and a meal plan for your week.",
-   "where": [
-    "src/screens/Ask.tsx"
-   ]
-  },
-  {
    "id": "0mppl1z-jcrxda",
    "text": "Tuna, tinned in water",
    "where": [
@@ -4378,13 +4388,6 @@
    "text": "You have left the squad.",
    "where": [
     "src/components/squad/SquadSheet.tsx"
-   ]
-  },
-  {
-   "id": "0mxf1ss0gxk25c",
-   "text": "That is this month's allowance.",
-   "where": [
-    "src/lib/api.ts"
    ]
   },
   {
@@ -4434,6 +4437,13 @@
    "text": "Open",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0n7fe99-69djh2",
+   "text": "That is this week's weekly plans. They come back on Monday.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -5166,13 +5176,6 @@
    ]
   },
   {
-   "id": "0qjkzt70-ntag4",
-   "text": "Ask me three questions, free",
-   "where": [
-    "src/screens/Ask.tsx"
-   ]
-  },
-  {
    "id": "0qlag12-6j4i75",
    "text": "Log 100 different foods",
    "where": [
@@ -5213,6 +5216,13 @@
    "text": "Insights",
    "where": [
     "src/App.tsx"
+   ]
+  },
+  {
+   "id": "0qptcvx0co4md0",
+   "text": "<b>Fair use:</b> {plus} is for one person’s own eating, with daily ceilings far past a real day — {photos} analyses, {questions} questions and {recipes} recipe imports — and {plans} weekly plans a week. <terms>The terms</terms> say more.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -5669,13 +5679,6 @@
    ]
   },
   {
-   "id": "0t9pr9t-m14o96",
-   "text": "You have used this month's weekly plans from the nutritionist.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "0tcol9100ej246",
    "text": "Rolled oats, dry",
    "where": [
@@ -5703,6 +5706,13 @@
    "where": [
     "src/components/AccountCard.tsx",
     "src/screens/ResetPassword.tsx"
+   ]
+  },
+  {
+   "id": "0tjs6ow-r0elty",
+   "text": "Fair use",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -5848,13 +5858,6 @@
    ]
   },
   {
-   "id": "0u9x9t5-49pycq",
-   "text": "<b>The nutritionist</b> — {n} questions a month about your own diary, and a weekly meal plan with its shopping list",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "0uc0dps-7k9sgc",
    "text": "How do you eat?",
    "where": [
@@ -5894,6 +5897,13 @@
    "text": "Plan redone — {energy} a day",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0uk5rkr0sir7cx",
+   "text": "That is the fair-use ceiling for questions to the nutritionist today.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -6620,13 +6630,6 @@
    "text": "80 g",
    "where": [
     "src/lib/foods.ts"
-   ]
-  },
-  {
-   "id": "0xtttcr0y2zs5l",
-   "text": "There is a limit even on {plus} because the analysis costs real money to run, and a plan with no ceiling would have to cost more for everybody. Logging by hand, food search and everything already in your diary carry on as normal.",
-   "where": [
-    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -7664,13 +7667,6 @@
    ]
   },
   {
-   "id": "13cdwxf0-3tae8",
-   "text": "Give a friend {period} of Squish Plus — and get {photos} extra photo analyses and {questions} extra questions straight away, with {period} of Plus saved for after your current Plus.",
-   "where": [
-    "src/components/InviteCard.tsx"
-   ]
-  },
-  {
    "id": "13cn9g1-se3vlu",
    "text": "Done",
    "where": [
@@ -8091,13 +8087,6 @@
    ]
   },
   {
-   "id": "15vjpaa0-9lzda",
-   "text": "The month starts again on {date}.",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
    "id": "15vshf9-eicfto",
    "text": "Saturates",
    "where": [
@@ -8443,13 +8432,6 @@
    ]
   },
   {
-   "id": "17a92hl-vckyvv",
-   "text": "Uses one of this month's questions for the nutritionist.",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
-   ]
-  },
-  {
    "id": "17alsnd-dmryt3",
    "text": "Well over the limit",
    "where": [
@@ -8741,13 +8723,6 @@
    "text": "Your question",
    "where": [
     "src/screens/Ask.tsx"
-   ]
-  },
-  {
-   "id": "18m3ayb00oyje1",
-   "text": "✨ Invite bonus: +{photos} photo analyses and +{questions} questions, until {date}.",
-   "where": [
-    "src/components/InviteCard.tsx"
    ]
   },
   {
@@ -9067,6 +9042,13 @@
    ]
   },
   {
+   "id": "1a9cdvz0hrxr5v",
+   "text": "They come back on Monday.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "1aaii2y0926use",
    "text": "Chef pack",
    "where": [
@@ -9333,6 +9315,13 @@
    ]
   },
   {
+   "id": "1boisq4-m86k57",
+   "text": "Give a friend {period} of Squish Plus — and get {period} of Plus yourself, saved for after your current Plus.",
+   "where": [
+    "src/components/InviteCard.tsx"
+   ]
+  },
+  {
    "id": "1bq8vfp-2zt6cm",
    "text": "We have switched Squish Plus on for you — {days} days of it, until {until}. There is nothing to do.",
    "where": [
@@ -9422,6 +9411,13 @@
    "text": "Good food, feeling good. Love that.",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "1ce62010hvf3du",
+   "text": "{plus} is unlimited for one person’s own eating. The daily ceilings sit far past a real day of meals, to keep Squish fast and affordable for everybody.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -9882,13 +9878,6 @@
    ]
   },
   {
-   "id": "1em31kv-hs6hem",
-   "text": "They come back next month.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "1em4e7h-l7wx5h",
    "text": "🎯 You’d reach <b>{target}</b> around <b>{when}</b>.",
    "where": [
@@ -10066,6 +10055,13 @@
    ]
   },
   {
+   "id": "1fpsu650a4wevu",
+   "text": "<b>Unlimited recipe imports</b> — paste a link, get a portion's nutrition",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "1fqe8100cr09ex",
    "text": "Show and tell",
    "where": [
@@ -10180,6 +10176,13 @@
    ]
   },
   {
+   "id": "1gdo3pz0vnmwki",
+   "text": "Throw this plan away? It still counts as one of this week’s plans.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "1gdrfs60bn5tx6",
    "text": "Desk job, not much walking",
    "where": [
@@ -10206,6 +10209,13 @@
    "where": [
     "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1gid3i9-xal14f",
+   "text": "<b>Unlimited AI meal analyses</b> — snap the plate, or say or type what you ate",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -10444,13 +10454,6 @@
    ]
   },
   {
-   "id": "1hi8jfi-njcu2q",
-   "text": "You have used this month's questions for the nutritionist.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "1hjlzzl-njw57u",
    "text": "Export, privacy",
    "where": [
@@ -10490,6 +10493,13 @@
    "text": "Strawberry heart",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "1hon0ej08d3bin",
+   "text": "<b>The nutritionist</b> — unlimited questions about your own diary, and a weekly meal plan with its shopping list",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -10556,6 +10566,13 @@
    ]
   },
   {
+   "id": "1hwvv8f0lwuneg",
+   "text": "Fair use: {plus} is for one person’s own eating, with daily ceilings far past a real day — {photos} analyses, {questions} questions and {recipes} recipe imports — and {plans} weekly plans a week.",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "1hwwhcz04tux0n",
    "text": "For when there is no time, or holding your phone up would be rude: one tap opens the camera, one tap takes it, and you can put your phone away. Squish logs the meal for you to check later.",
    "where": [
@@ -10618,13 +10635,6 @@
    "text": "Offline mode",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "1i6ya3a-c2nd4x",
-   "text": "{n} left this month",
-   "where": [
-    "src/components/useSubscribed.ts"
    ]
   },
   {
@@ -10832,6 +10842,13 @@
    "text": "Ask anything…",
    "where": [
     "src/components/NutritionistCard.tsx"
+   ]
+  },
+  {
+   "id": "1j4f0tj0mp4ojt",
+   "text": "You have used your free questions. With {plus} they are unlimited, with a meal plan for your week.",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -11242,14 +11259,6 @@
    ]
   },
   {
-   "id": "1l5z9k008ubpws",
-   "one": "{n} weekly plan left this month.",
-   "other": "{n} weekly plans left this month.",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
-   ]
-  },
-  {
    "id": "1l6s0iw-xw6cgn",
    "text": "Scrambled eggs",
    "where": [
@@ -11282,6 +11291,13 @@
    "text": "That question has gone stale — tell me in words instead.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "1lc67cs-y2ftk2",
+   "text": "That is the fair-use ceiling for recipe imports today.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -11325,13 +11341,6 @@
    "text": "lunch",
    "where": [
     "src/lib/words.ts"
-   ]
-  },
-  {
-   "id": "1li3wxt-4rh5sf",
-   "text": "<b>{n} recipe imports a month</b> — paste a link, get a portion's nutrition",
-   "where": [
-    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -11546,6 +11555,13 @@
    "text": "Hearts",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "1mgo3j90s578jm",
+   "text": "Make a free account and your first {n} questions are on us.",
+   "where": [
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -12148,6 +12164,20 @@
    ]
   },
   {
+   "id": "1q31u44-z899a4",
+   "text": "A week of meals is the most the nutritionist does at once, so {plus} has two a week. Asking about your meals and planning by hand carry on as normal.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "1q3mb4d0ejcaev",
+   "text": "You have had this week's weekly plans from the nutritionist.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "1q5vc07-10vi9y",
    "text": "Snowflake",
    "where": [
@@ -12223,13 +12253,6 @@
    "text": "Log again after a week or more away",
    "where": [
     "src/lib/achievements.ts"
-   ]
-  },
-  {
-   "id": "1qfz5bf0pwdgk3",
-   "text": "Throw this plan away? It still counts as one of this month’s plans.",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -12829,13 +12852,6 @@
    ]
   },
   {
-   "id": "1tk4bqc-ljyyq2",
-   "text": "You have used this month's AI meal analyses.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "1tldvuc-ypz0yi",
    "text": "Saved meals",
    "where": [
@@ -13004,6 +13020,13 @@
    ]
   },
   {
+   "id": "1ue7cgv0dr5ol4",
+   "text": "That is a lot at once. Give it a minute and try again.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1ufcem104qc14g",
    "text": "Bengali",
    "where": [
@@ -13075,13 +13098,6 @@
    ]
   },
   {
-   "id": "1uuz9dn0zgu657",
-   "text": "You have used this month's recipe imports.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "1uwisyc0wwkbk2",
    "text": "Hit your fibre target in a day",
    "where": [
@@ -13100,13 +13116,6 @@
    "text": "Measure and set them",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "1uyutjm-o6icte",
-   "text": "As you are already on Plus, you get {photo} extra photo analyses and {chat} extra questions for the nutritionist, until {boostUntil}. And the {days} days of Plus are saved for you, added to the end of your current Plus — it now runs until {until}.",
-   "where": [
-    "server/friends.ts"
    ]
   },
   {
@@ -13284,6 +13293,13 @@
    "text": "Log on fifty days, any fifty",
    "where": [
     "src/lib/outfit.ts"
+   ]
+  },
+  {
+   "id": "1vspmnj-twvbap",
+   "text": "That is the limit for now.",
+   "where": [
+    "src/lib/api.ts"
    ]
   },
   {
@@ -13804,10 +13820,10 @@
    ]
   },
   {
-   "id": "1yixhnc0966oba",
-   "text": "Your photos, meals and questions can now be read by Google’s Gemini as well as Anthropic’s Claude — for some jobs, and as a backup when Claude cannot answer. Google do not use them to improve their products. You can also now sign in with Google or Apple, and tell Squish how you eat so the AI can respect it.",
+   "id": "1yjc2yn0f2cv6c",
+   "text": "That is the fair-use ceiling for AI meal analyses today.",
    "where": [
-    "src/components/PolicyNotice.tsx"
+    "src/components/Paywall.tsx"
    ]
   },
   {

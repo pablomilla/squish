@@ -35,10 +35,72 @@ paying for them.
 
 ## What to charge
 
-**£6.99 a month, or £49.99 a year**, with a usage allowance **even on the paid
-tier**. The allowance is not meanness: a heavy user costs £5.65, so without one
-the best customers are the ones losing the most money. Every app in this
-category caps AI usage on paid plans for exactly this reason.
+**£6.99 a month, or £49.99 a year.** Until 3 October 2026 Plus had a monthly
+allowance (60 analyses, 30 questions, 10 recipe imports), because on Claude a
+heavy user cost £5.65 a month and without one the best customers lost the
+most money. With Gemini as the main AI, Plus is **unlimited under fair use** —
+see "Fair use" below; the reasoning that follows about prices still holds.
+
+## Fair use (since 3 October 2026)
+
+Gemini made "unlimited" affordable. At Gemini 3.8 Flash's price from 2027
+($1.50 / $7.50 per million tokens; less until the end of 2026), with the
+token sizes behind today's Claude figures:
+
+| | Photo analysis | Question |
+|---|---|---|
+| Claude Opus 5.5 | 2.6¢ | 4.7¢ |
+| Gemini 3.8 Flash (2027 price) | 1.0¢ | 1.8¢ |
+
+A real heavy user — five meals photographed and three questions a day, a few
+recipes and plans — is about **$3–4 a month**, inside even the yearly price
+(about $3.75 a month after store fees). Estimates until the dashboard has a
+month of real Gemini spend; Gemini counts image tokens differently and
+usually fewer.
+
+**What Plus promises:** unlimited analyses, questions and recipe imports for
+one person's own eating, and two weekly plans a week (the largest single
+request, so a stated number rather than "unlimited").
+
+**What keeps it unlimited** (server/plan.ts, server/fairUse.ts):
+
+| | Limit | Why there |
+|---|---|---|
+| Analyses a day | 40 | eight times a heavy day |
+| Questions a day | 50 | about fifteen times a heavy day |
+| Recipe imports a day | 10 | a busy Sunday of meal prep is three or four |
+| Weekly plans | 2 a week (Mon–Sun) | a fresh plan when the first does not suit |
+| Starting in a minute | 10 analyses, 15 questions, 5 recipes | a person never does; a script does at once |
+| Devices signed in | 5 | a sixth signs out the one used longest ago |
+
+The daily ceilings reset at midnight UTC. Somebody at every ceiling every
+day would cost about $40 a month, which is why there are ceilings at all —
+but nobody eating reaches them, and an account that reaches one on 3 or more
+days in a month is marked "Over fair use" on the dashboard's People list (with
+a filter for just those). Nothing happens automatically: a person looks.
+
+**The advertising rules.** In the UK, "unlimited" is acceptable only when a
+legitimate user is not charged or cut off for passing a fair-use threshold,
+and the limits are moderate and stated where "unlimited" is said (the ASA's
+guidance on unlimited claims, written for broadband but the principle is
+general). So: reaching a ceiling never charges anybody or stops their
+account, only that one thing until midnight; the ceilings are far past real
+use; and they are stated on the plans page, in the app beside "unlimited",
+and in the terms ("Fair use"). Lowering them far changes whether "unlimited"
+is honest, not only the margin. Not legal advice — worth a look from whoever
+handles the terms.
+
+**The free taste** grew with the switch: 10 analyses and 5 questions, once,
+about 20 cents on Gemini, because the taste is what converts.
+
+**Inviting a friend while on Plus** used to add extra AI as well as saving
+the month; with Plus unlimited there is nothing to add, so it is the month
+saved, at the end of their current Plus.
+
+**Before switching everything to Gemini**, run the photo benchmark (`bench/`)
+on real keys and compare portion accuracy with Claude; then set
+`SQUISH_GEMINI_FOR_EVERYONE=on` in Render and change everybody's routes on
+the dashboard's Models card. Claude stays as the backup.
 
 It was £4.99 and £39.99 until 23 September 2026, before anything was sold.
 What changed was doing the sum properly. UK store prices include 20% VAT, and
@@ -51,8 +113,8 @@ the store's cut comes off what is left:
 | £6.99 a month | £4.95 | £4.95 |
 | £49.99 a year | £35.41 | £2.95 |
 
-Somebody who uses all of Plus's allowance costs about £2.65 a month before
-recipe imports. On the old yearly price, the people most likely to buy a year
+On Claude, somebody who used all of the old allowance cost about £2.65 a month
+before recipe imports. On the old yearly price, the people most likely to buy a year
 — the heavy users — would each have lost money. At £49.99 they do not, and
 the year is still about 40% cheaper than twelve months, which is the reason
 to choose it.
@@ -126,10 +188,10 @@ dearest thing Squish does — about $0.05 each, estimated from its prompt size.
 At 30, a yearly subscriber who used all of Plus cost about £3.70 a month in AI
 against the £2.70 they leave after VAT, the store, refunds and affiliates.
 At 10 that is about £2.92 — about 20p a month short, and only for somebody who
-uses every last allowance; everybody else is comfortably profitable. `SQUISH_PLUS_RECIPES`
-changes it without a deploy.
+uses every last allowance; everybody else is comfortably profitable. (Since 3 October
+2026 recipes are unlimited under fair use, 10 a day: see "Fair use".)
 
-### Plus weekly plans: 4 a month
+### Plus weekly plans: 2 a week (4 a month until 3 October 2026)
 
 The nutritionist's weekly plan (`/api/weekplan`, `server/weekplan.ts`) counts
 as one of the month's 30 questions for the nutritionist, and is capped at 4 a
@@ -143,7 +205,7 @@ nutritionist.
 
 At an estimated $0.20–0.30 a plan, four a month is up to about 80p on top of
 the figures above, for somebody who uses everything. Two knobs, neither
-needing a deploy: `SQUISH_PLUS_WEEKPLANS` sets the monthly cap, and
+needing a deploy: `SQUISH_PLUS_WEEKPLANS_A_WEEK` sets the weekly cap (2), and
 `SQUISH_WEEKPLAN_MODEL` can put plans on a cheaper model (Sonnet 5's output
 is $10 per million tokens against Opus 5's $25) without touching the rest.
 Check the logged costs after the first week and set them from those.

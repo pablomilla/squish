@@ -45,7 +45,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
   const { profile, targets, meals, favourites, nutritionistNotes, addPlan, removePlans, plans, household, recipes, planLog, notForMe } = useSquish();
   const subscribed = useSubscribed();
   const planCounts = useStanding().weekplans;
-  /** Weekly plans left this month, where the server has said (Plus only). */
+  /** Weekly plans left this week, where the server has said (Plus only). */
   const plansLeft = subscribed && planCounts ? Math.max(0, planCounts.allowance - planCounts.used) : null;
   const toast = useToast();
   const today = isoDate();
@@ -268,11 +268,8 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
           </button>
           <p className="tiny muted center">
             {plansLeft === 0
-              ? t("That is this month's weekly plans. They come back on the 1st.")
-              : t("Uses one of this month's questions for the nutritionist.")}
-            {plansLeft !== null && plansLeft > 0 && (
-              <> {plural(plansLeft, { one: '{n} weekly plan left this month.', other: '{n} weekly plans left this month.' })}</>
-            )}
+              ? t("That is this week's weekly plans. They come back on Monday.")
+              : plansLeft !== null && plural(plansLeft, { one: '{n} weekly plan left this week.', other: '{n} weekly plans left this week.' })}
           </p>
         </div>
       )}
@@ -367,7 +364,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
             // Asked here, in Squish's own words, not in a browser box headed with the web address.
             <div className="week-discard" role="alertdialog" aria-labelledby="week-discard-q">
               <p className="small" id="week-discard-q">
-                {t('Throw this plan away? It still counts as one of this month’s plans.')}
+                {t('Throw this plan away? It still counts as one of this week’s plans.')}
               </p>
               <div className="row" style={{ gap: 10 }}>
                 <button type="button" className="btn btn--sm btn--ghost grow" onClick={() => setDiscarding(false)}>

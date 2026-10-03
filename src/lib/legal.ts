@@ -7,5 +7,5 @@ import { apiUrl } from './origin';
 import { currentLanguage } from './language';
 import { currentRegion } from './region';
 
-export const legalHref = (path: '/privacy' | '/terms'): string =>
-  apiUrl(`${path}?lang=${currentLanguage().id}&country=${currentRegion().id}`);
+export const legalHref = (path: '/privacy' | '/terms', section?: string): string =>
+  apiUrl(`${path}?lang=${currentLanguage().id}&country=${currentRegion().id}${section ? `#${section}` : ''}`);

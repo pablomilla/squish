@@ -953,6 +953,21 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table diaries add column parts_from bigint;
     `,
   },
+  {
+    id: 36,
+    sql: `
+      -- Fair use on Plus (server/fairUse.ts): the days somebody reached a daily
+      -- ceiling, or the speed limit, by kind — so the dashboard can show who
+      -- does it often. One row a day a kind, whatever the number of refusals.
+      create table fair_use_hits (
+        owner_id text not null,
+        day      date not null default current_date,
+        kind     text not null,
+        primary key (owner_id, day, kind)
+      );
+      create index fair_use_hits_day on fair_use_hits(day);
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

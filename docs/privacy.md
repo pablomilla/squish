@@ -1,6 +1,6 @@
 # Squish privacy policy
 
-**Last updated: 2 October 2026**
+**Last updated: 3 October 2026**
 
 Squish is a food diary. This explains what it keeps, where it goes, and how to
 get rid of it. It is written to be read rather than to be defensible, and it
@@ -19,9 +19,8 @@ contact address is at the bottom.
 - A small version of each meal photo is part of that copy; the full photo
   stays on the device that took it.
 - Photos, meal descriptions and anything you say to the nutritionist are sent
-  to an AI company to be read: Anthropic, whose Claude reads most of them, or
-  Google, whose Gemini we use for some of the work and as a backup when Claude
-  cannot answer.
+  to an AI company to be read: Google, whose Gemini reads most of them, or
+  Anthropic, whose Claude we use as a backup when Gemini cannot answer.
 - We do not use analytics, advertising, or trackers of any kind, and we do not
   sell or share your data with anyone not named here.
 - You can export everything, and you can delete everything, from inside the
@@ -90,6 +89,10 @@ Backup is on by default where this copy of Squish has a database.
   can be counted per phone rather than per network, and how we know how many
   people use Squish each day.
 - **How many photos, chats and recipes you have used today.** Counts only.
+  On Plus, also **the days you reached a fair-use ceiling**, and which one
+  (photos, questions or recipes, or starting too many in a minute) — so we
+  can see an account that reaches them often. A day and a kind, nothing about
+  what was in them. Kept for three months, and deleted with your account.
 - **If you make an account:** your email address, and your password stored as
   a scrypt hash. We never store the password itself and cannot read it.
 - **If you sign in with Google or Apple:** the id Google or Apple gives your
@@ -211,9 +214,9 @@ person from spending everyone else's allowance.
 Four companies process data on our behalf. We have no other recipients, and we
 do not sell data to anybody.
 
-### Anthropic and Google — the AI
+### Google and Anthropic — the AI
 
-Sent to Anthropic's Claude API or Google's Gemini API, and only when you do
+Sent to Google's Gemini API or Anthropic's Claude API, and only when you do
 one of these things:
 
 | When you | What is sent |
@@ -240,16 +243,12 @@ Separately, the app's own wording (buttons, headings, help text) is translated
 by the same AI once for everybody; nothing about you goes with that.
 
 **Which of the two reads it.** Each kind of request above goes to one AI
-first, chosen by us for how well and how cheaply it does that job; most go to
-Claude. If that one is down, overloaded or gives an answer that makes no
-sense, the same request is sent to the other instead, so that your meal is
-read rather than guessed at. A request goes to a second company only when the
+first, chosen by us for how well and how cheaply it does that job; that is
+Gemini. If it is down, overloaded or gives an answer that makes no sense, the
+same request is sent to Claude instead, so that your meal is read rather than
+guessed at. A request goes to a second company only when the
 first has failed to answer it. Which AI does which job can change as the
 models improve; this section is kept up to date if the companies change.
-
-**Anthropic** process what they are sent to produce the answer and return it.
-Their handling is governed by their own terms and privacy policy, at
-[anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy).
 
 **Google** are used through the paid Gemini API. On the paid service, Google
 do not use what we send — photos included — or the answers, to improve their
@@ -258,6 +257,10 @@ service and meet their legal obligations. They process it on our behalf under
 their data processing terms. Their handling is governed by the
 [Gemini API terms](https://ai.google.dev/gemini-api/terms) and Google's
 privacy policy, at [policies.google.com/privacy](https://policies.google.com/privacy).
+
+**Anthropic** process what they are sent to produce the answer and return it.
+Their handling is governed by their own terms and privacy policy, at
+[anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy).
 
 The nutritionist is the one to be aware of: answering "am I getting enough
 protein?" means sending a slice of your diary along with the question.

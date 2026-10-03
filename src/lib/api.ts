@@ -72,7 +72,7 @@ async function unwrap<T>(path: string, response: Response): Promise<T> {
     // gets the throw and can say its own thing as well.
     showPaywall(standing);
     void refreshPlan();
-    throw new SquishApiError('out_of_allowance', payload.message ? t(payload.message) : t("That is this month's allowance."), standing);
+    throw new SquishApiError('out_of_allowance', payload.message ? t(payload.message) : t('That is the limit for now.'), standing);
   }
   if (response.status === 429) {
     const payload = (await response.json().catch(() => ({}))) as { message?: string; error?: string };

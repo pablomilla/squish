@@ -26,3 +26,6 @@
 .paywall-headline { margin: 0; font-size: var(--text-section); }
 .paywall-star { background: var(--brand-soft) !important; }
 .paywall-star b { color: var(--brand-ink); }
+
+/* Beside "unlimited", as the advertising rules ask: its own line, with room before the price. */
+.paywall-fair { margin: 4px 0 10px; line-height: 1.5; }

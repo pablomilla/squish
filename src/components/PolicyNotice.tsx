@@ -15,7 +15,7 @@ import { languageOf } from '../lib/language';
 import { regionOf } from '../lib/region';
 import { t } from '../lib/i18n';
 
-export const POLICY_CHANGED = '2026-09-27';
+export const POLICY_CHANGED = '2026-10-03';
 const KEY = 'squish-policy-seen';
 
 function seen(): string {
@@ -62,7 +62,7 @@ export default function PolicyNotice() {
       </div>
       <p className="small">
         {t(
-          'Your photos, meals and questions can now be read by Google’s Gemini as well as Anthropic’s Claude — for some jobs, and as a backup when Claude cannot answer. Google do not use them to improve their products. You can also now sign in with Google or Apple, and tell Squish how you eat so the AI can respect it.',
+          'Google’s Gemini now reads most of your photos, meals and questions, with Anthropic’s Claude as a backup when Gemini cannot answer. Google do not use them to improve their products. On Squish Plus we also note the days an account reaches a fair-use ceiling — a day and which kind, nothing more.',
         )}
       </p>
       <div className="row" style={{ gap: 10, marginTop: 12 }}>

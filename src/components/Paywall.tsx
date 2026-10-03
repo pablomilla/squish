@@ -10,9 +10,10 @@
  * hand, food search, the diary, charts, streaks. A paywall that implies the
  * app is now useless is lying, and they will find out.
  *
- * Somebody already paying has run into the ceiling that keeps the price
- * honest. There is nothing to sell them and nothing for them to do, so this
- * says when it comes back and gets out of the way. Being shown an upgrade
+ * Somebody already paying has run into a fair-use ceiling — far past a real
+ * day's eating, so rare — or the week's weekly plans. There is nothing to
+ * sell them and nothing for them to do, so this says when it comes back and
+ * gets out of the way. Being shown an upgrade
  * prompt you have already bought is the fastest way to lose somebody.
  */
 import { Sheet } from './ui';
@@ -31,11 +32,11 @@ import { legalHref } from '../lib/legal';
  * dropped in: in most languages the words round "questions" change with it.
  */
 const USED: Record<OutOfAllowance['kind'], () => string> = {
-  photo: () => t("You have used this month's AI meal analyses."),
-  chat: () => t("You have used this month's questions for the nutritionist."),
-  recipe: () => t("You have used this month's recipe imports."),
-  weekplan: () => t("You have used this month's weekly plans from the nutritionist."),
-  // Never counted against a month; here so every kind has its words.
+  photo: () => t('That is the fair-use ceiling for AI meal analyses today.'),
+  chat: () => t('That is the fair-use ceiling for questions to the nutritionist today.'),
+  recipe: () => t('That is the fair-use ceiling for recipe imports today.'),
+  weekplan: () => t("You have had this week's weekly plans from the nutritionist."),
+  // Never counted against a limit; here so every kind has its words.
   swap: () => t('Swapping planned meals comes with {plus}.', { plus: PLUS }),
   cook: () => t('Cooking steps for your planned meals come with {plus}.', { plus: PLUS }),
 };
@@ -61,10 +62,11 @@ const THAT_WAS: Record<OutOfAllowance['kind'], (n: number) => string> = {
 /** Reached by trying to use the nutritionist: the sheet leads with it. */
 const aboutNutritionist = (kind: OutOfAllowance['kind']) => kind === 'chat' || kind === 'weekplan' || kind === 'swap' || kind === 'cook';
 
-/** The day the month turns over, said the way a person would say it. */
-function comesBack(iso: string | null | undefined): string {
+/** When it comes back, said the way a person would say it: a day's ceiling tomorrow, the week's plans on Monday. */
+function comesBack(kind: OutOfAllowance['kind'], iso: string | null | undefined): string {
+  if (kind === 'weekplan') return t('They come back on Monday.');
   const when = iso ? new Date(iso) : null;
-  if (!when || Number.isNaN(when.getTime())) return t('They come back next month.');
+  if (!when || Number.isNaN(when.getTime()) || when.getTime() - Date.now() < 36 * 3_600_000) return t('It comes back tomorrow.');
   return t('They come back on {date}.', { date: when.toLocaleDateString(uiLocale(), { day: 'numeric', month: 'long' }) });
 }
 
@@ -83,14 +85,14 @@ export default function Paywall({
   const signUp = Boolean(standing?.needsAccount);
 
   return (
-    <Sheet open={Boolean(standing)} onClose={onClose} title={paying ? t('That is this month') : signUp ? t('Try it free') : PLUS}>
+    <Sheet open={Boolean(standing)} onClose={onClose} title={paying ? t('Fair use') : signUp ? t('Try it free') : PLUS}>
       {standing && signUp && (
         <div className="stack paywall">
           <Squish mood="excited" size={84} />
           <p className="small">
             {aboutNutritionist(standing.kind)
-              ? t('Make a free account and ask the nutritionist {n} questions on us — it reads your diary before it answers.', { n: standing.taste ?? 3 })
-              : t('Make a free account and your first {n} AI meal analyses are on us — snap the plate, or just say what you ate.', { n: standing.taste ?? 5 })}
+              ? t('Make a free account and ask the nutritionist {n} questions on us — it reads your diary before it answers.', { n: standing.taste ?? 5 })
+              : t('Make a free account and your first {n} AI meal analyses are on us — snap the plate, or just say what you ate.', { n: standing.taste ?? 10 })}
           </p>
           {aboutNutritionist(standing.kind) && <NutritionistPitch compact />}
           <p className="tiny muted">
@@ -111,10 +113,12 @@ export default function Paywall({
           {paying ? (
             <>
               <p className="small">
-                {USED[standing.kind]()} {comesBack(standing.resets)}
+                {USED[standing.kind]()} {comesBack(standing.kind, standing.resets)}
               </p>
               <p className="tiny muted">
-                {t('There is a limit even on {plus} because the analysis costs real money to run, and a plan with no ceiling would have to cost more for everybody. Logging by hand, food search and everything already in your diary carry on as normal.', { plus: PLUS })}
+                {standing.kind === 'weekplan'
+                  ? t('A week of meals is the most the nutritionist does at once, so {plus} has two a week. Asking about your meals and planning by hand carry on as normal.', { plus: PLUS })
+                  : t('{plus} is unlimited for one person’s own eating. The daily ceilings sit far past a real day of meals, to keep Squish fast and affordable for everybody.', { plus: PLUS })}
               </p>
             </>
           ) : (
@@ -133,18 +137,29 @@ export default function Paywall({
 
               <ul className="paywall-list">
                 <li className="paywall-star">
-                  {rich('<b>The nutritionist</b> — {n} questions a month about your own diary, and a weekly meal plan with its shopping list', { n: 30 }, { b: (text) => <b>{text}</b> })}
+                  {rich('<b>The nutritionist</b> — unlimited questions about your own diary, and a weekly meal plan with its shopping list', {}, { b: (text) => <b>{text}</b> })}
                 </li>
                 <li>
-                  {rich('<b>{n} AI meal analyses a month</b> — snap the plate, or say or type what you ate', { n: 60 }, { b: (text) => <b>{text}</b> })}
+                  {rich('<b>Unlimited AI meal analyses</b> — snap the plate, or say or type what you ate', {}, { b: (text) => <b>{text}</b> })}
                 </li>
                 <li>
-                  {rich("<b>{n} recipe imports a month</b> — paste a link, get a portion's nutrition", { n: 10 }, { b: (text) => <b>{text}</b> })}
+                  {rich("<b>Unlimited recipe imports</b> — paste a link, get a portion's nutrition", {}, { b: (text) => <b>{text}</b> })}
                 </li>
                 <li>
                   {rich('<b>Wild finishes</b> for Squish — rainbow, gold, holographic and more', {}, { b: (text) => <b>{text}</b> })}
                 </li>
               </ul>
+              {/* Said where "unlimited" is said: the advertising rules ask for both together. */}
+              <p className="tiny muted paywall-fair">
+                {rich('<b>Fair use:</b> {plus} is for one person’s own eating, with daily ceilings far past a real day — {photos} analyses, {questions} questions and {recipes} recipe imports — and {plans} weekly plans a week. <terms>The terms</terms> say more.', { plus: PLUS, photos: 40, questions: 50, recipes: 10, plans: 2 }, {
+                  b: (text) => <b>{text}</b>,
+                  terms: (text) => (
+                    <a href={legalHref('/terms', 'fair-use')} target="_blank" rel="noopener noreferrer">
+                      {text}
+                    </a>
+                  ),
+                })}
+              </p>
 
               <p className="paywall-price">
                 {rich('<b>{monthly}</b> a month, or <b>{yearly}</b> a year', {

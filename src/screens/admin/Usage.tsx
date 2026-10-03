@@ -132,9 +132,11 @@ export default function Usage({ metrics, finance, overview }: { metrics: Metrics
             </p>
             {overview && (
               <p className="tiny muted admin-note">
-                Allowances: free accounts get a one-off taste of {overview.allowances.free.photo} meal analyses. {PLUS} gets{' '}
+                Allowances: free accounts get a one-off taste of {overview.allowances.free.photo} meal analyses and{' '}
+                {overview.allowances.free.chat} questions. {PLUS} is unlimited, with fair-use ceilings of{' '}
                 {overview.allowances.plus.photo} analyses, {overview.allowances.plus.chat} questions and{' '}
-                {overview.allowances.plus.recipe} recipe imports a month.
+                {overview.allowances.plus.recipe} recipe imports a day; accounts that reach one on 3 or more days a month
+                are marked under People.
               </p>
             )}
           </section>

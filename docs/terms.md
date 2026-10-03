@@ -1,6 +1,6 @@
 # Squish terms of use
 
-**Last updated: 28 September 2026**
+**Last updated: 3 October 2026**
 
 These are the terms for using Squish: the app, the website at squish.online,
 and Squish Plus. They are written to be read. Where the law gives you rights,
@@ -120,13 +120,39 @@ exporting your data are free, and we intend to keep them that way.
 meal analyses and nutritionist questions to try, as shown in the app. It is
 once per person, not once per account.
 
-**Squish Plus** is a subscription that adds more AI: meal analysis,
-questions to the nutritionist, recipe imports and weekly meal plans, each up
-to a **monthly allowance** shown in the app. The allowances keep Squish
-affordable to run; they are not a punishment. We may adjust them, and will
-tell you in the app before a reduction takes effect. If a change makes Plus
-materially worse for you, you can cancel and ask the store for a refund of
-the part you have not used.
+**Squish Plus** is a subscription that adds the AI: **unlimited** meal
+analysis, questions to the nutritionist and recipe imports for your own
+eating, under the fair use below, and **two weekly meal plans a week**. We
+may adjust the fair-use ceilings, and will tell you in the app before a
+reduction takes effect. If a change makes Plus materially worse for you, you
+can cancel and ask the store for a refund of the part you have not used.
+
+### Fair use {#fair-use}
+
+Plus is for **one person's own eating**. To keep Squish fast and affordable
+for everybody, it has ceilings that sit far past anything a person eats in a
+day:
+
+| Each day | Up to |
+|---|---|
+| AI meal analyses (photo, words or voice) | 40 |
+| Questions to the nutritionist | 50 |
+| Recipe imports | 10 |
+
+They reset every day at midnight UTC (1am UK time in summer). Weekly meal plans
+are two a week, Monday to Sunday. Reaching a ceiling never costs you
+anything and never stops your account: the app says when that one comes back,
+and everything else — logging by hand, food search, your diary — carries on.
+
+To tell a person from a program, starting more than **10 analyses, 15
+questions or 5 recipe imports in a minute** asks you to wait a moment, and an
+account can be signed in on **five devices** at once; signing in on a sixth
+signs out the one used longest ago.
+
+Using Squish through scripts or other automation, or sharing one account
+between several people, is not fair use. If an account reaches the ceilings
+often, we may get in touch to ask about it; we will not cut Plus short without
+telling you why and giving you the chance to put it right, as below.
 
 **Buying Plus.** Plus is sold through the **Apple App Store** and **Google
 Play**, at the price shown there before you buy. Your purchase is with Apple
@@ -204,8 +230,8 @@ Please do not:
 - break the law with Squish, or use it to harm anybody;
 - upload photos of other people, or anything that is not yours to share —
   photos are for your food;
-- try to get around the allowances, the age check or the safety limits, or to
-  make the nutritionist say something harmful;
+- try to get around the free taste, the fair-use limits, the age check or
+  the safety limits, or to make the nutritionist say something harmful;
 - copy, scrape or resell Squish or what it produces, or use it to build a
   competing service;
 - automate it, overload it, probe it for weaknesses, or try to get into

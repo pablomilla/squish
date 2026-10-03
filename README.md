@@ -154,10 +154,15 @@ If the dashboard's **Blueprints** list is empty, it was by hand.
 | Setting | What it is |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Your key. Lives in the host's dashboard, never in the repo. |
-| `SQUISH_FREE_TASTE` | AI analyses a free account gets to try, once — not monthly. Default 5. |
-| `SQUISH_PLUS_PHOTOS` | And on Squish Plus. Default 60. |
-| `SQUISH_PLUS_CHATS` | Nutritionist questions a month on Plus. Default 30. |
-| `SQUISH_PLUS_RECIPES` | Recipe imports a month on Plus. Default 10 — the dearest thing Squish does. |
+| `SQUISH_FREE_TASTE` | AI analyses a free account gets to try, once — not monthly. Default 10. |
+| `SQUISH_FREE_CHATS` | Nutritionist questions a free account gets to try, once. Default 5. |
+| `SQUISH_PLUS_PHOTOS_A_DAY` | Plus is unlimited under fair use; this is its daily ceiling for analyses. Default 40. |
+| `SQUISH_PLUS_CHATS_A_DAY` | Plus's daily ceiling for nutritionist questions. Default 50. |
+| `SQUISH_PLUS_RECIPES_A_DAY` | Plus's daily ceiling for recipe imports. Default 10. |
+| `SQUISH_PLUS_WEEKPLANS_A_WEEK` | Weekly plans a week on Plus, Monday to Sunday. Default 2. |
+| `SQUISH_PHOTOS_A_MINUTE`, `SQUISH_CHATS_A_MINUTE`, `SQUISH_RECIPES_A_MINUTE` | Fair use's speed limit, per person. Defaults 10, 15, 5. |
+| `SQUISH_MAX_DEVICES` | Devices signed in to one account at once; a new one signs out the oldest. Default 5. |
+| `SQUISH_FAIR_USE_FLAG_DAYS` | Days at a ceiling in a month before the dashboard marks an account. Default 3. |
 | `SQUISH_RATE_LIMIT` | Analyses per visitor per hour, default 80. A backstop on the bill. |
 | `DATABASE_URL` | Filled in by the blueprint from the Postgres it creates. Turns on backup and accounts. Delete both and Squish stays local. |
 | `SQUISH_PUBLIC_ORIGIN` | Where the app lives — `https://app.squish.online`. Links in emails point here. |

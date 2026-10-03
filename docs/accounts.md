@@ -43,6 +43,13 @@ browser's localStorage is about 5 MB, and seventeen photographed meals filled
 it — the eighteenth could not be saved at all. Thumbnails put a thousand meals
 inside the 6 MB backup where nineteen used to fit.
 
+**Five devices at once.** (Since 3 October 2026, part of fair use — see
+docs/monetisation.md.) Signing in on a sixth device signs out the one used
+longest ago (`keepNewestDevices` in `server/fairUse.ts`, on password and on
+Google or Apple sign-in), detaching it as signing out everywhere does: it goes
+on working as a device of its own. The new device is never the one refused.
+`SQUISH_MAX_DEVICES` changes the number.
+
 **Every signed-in device kept in step.** (Since 1 October 2026; before, it was a
 backup only, and two phones in use stopped it.) Each device still holds the
 diary and works without a network; the server holds the account's copy. A

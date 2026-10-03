@@ -52,6 +52,10 @@ export interface Person {
   usd: number;
   /** This month's cost by feature and model, the dearest first. Use from before models were kept is in `usd` only. */
   byModel: { kind: string; model: string; calls: number; usd: number }[];
+  /** Different days this month at a fair-use ceiling or the speed limit. */
+  fairUseDays: number;
+  /** Often enough to look at. */
+  overFairUse: boolean;
 }
 
 export interface AdminAction {
@@ -79,8 +83,8 @@ async function ask<T>(path: string, method = 'GET', body?: unknown): Promise<T |
 
 export const fetchOverview = (): Promise<Overview | null> => ask<Overview>('/api/admin/overview');
 
-export const fetchPeople = (search: string): Promise<{ people: Person[]; actions: AdminAction[] } | null> =>
-  ask(`/api/admin/people?q=${encodeURIComponent(search)}`);
+export const fetchPeople = (search: string, overFairUse = false): Promise<{ people: Person[]; actions: AdminAction[] } | null> =>
+  ask(`/api/admin/people?q=${encodeURIComponent(search)}${overFairUse ? '&fair=1' : ''}`);
 
 export type PlanChange = { ok: true; until: string | null } | { ok: false; message: string };
 

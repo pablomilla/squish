@@ -41,7 +41,8 @@ import { noticePasswordChanged, noticeSignIn } from './notices';
 import { canSendMail, sendMail } from './mail';
 import { EMAILS, isEmailKey, listWording, problemsWith, resetWording, samplesFor, saveWording, type Wording } from './emails';
 import { renderEmail } from './emailRender';
-import { ALLOWANCE, PERIOD, WEEKPLANS_PER_MONTH, allowanceWithExtras, isBillable, needsAccount, nextReset, planFor, standingOf, usedFor, usedThisMonth, type Billable, type Plan } from './plan';
+import { noteCeiling, withinSpeed } from './fairUse';
+import { ALLOWANCE, PERIOD, WEEKPLANS_PER_WEEK, allowanceWithExtras, isBillable, needsAccount, nextReset, nextWeek, planFor, standingOf, usedFor, usedThisWeek, type Billable, type Plan } from './plan';
 import {
   createInvite,
   deleteInvite,
@@ -325,6 +326,14 @@ function meter(kind: Spend) {
 
       const plan = await planFor(req.device);
       const allowance = (await allowanceWithExtras(req.device, plan))[kind];
+      const owner = req.device.accountId ?? req.device.id;
+
+      // No person does this many in a minute; a program does. Nothing is counted for it (server/fairUse.ts).
+      if (!withinSpeed(owner, kind)) {
+        void noteCeiling(owner, `${kind}-speed`).catch(() => undefined);
+        res.status(429).json({ error: 'rate_limited', message: msg('That is a lot at once. Give it a minute and try again.') });
+        return;
+      }
 
       // Signed out, on the free plan: nothing is spent and nothing is served,
       // but the answer says an account would change that.
@@ -359,6 +368,8 @@ function meter(kind: Spend) {
 
       // Counted to settle a race, not spent: it is refused, so it comes off again.
       await refund(req.device.id, kind).catch(() => undefined);
+      // On Plus, a day's fair-use ceiling: noted, for the dashboard to show who reaches it often.
+      if (plan === 'plus') void noteCeiling(owner, kind).catch(() => undefined);
       res.status(402).json({
         error: 'out_of_allowance',
         plan,
@@ -367,7 +378,7 @@ function meter(kind: Spend) {
         allowance,
         period: PERIOD[plan],
         needsAccount: false,
-        resets: PERIOD[plan] === 'month' ? nextReset() : null,
+        resets: PERIOD[plan] === 'day' ? nextReset() : null,
         message: OUT_OF[plan][kind],
       });
       return;
@@ -395,14 +406,14 @@ const KIND_WORDS: Record<Billable, string> = {
 
 const OUT_OF: Record<Plan, Record<Billable, string>> = {
   free: {
-    photo: `That was your free taste of the AI. ${PLUS} has ${ALLOWANCE.plus.photo} analyses a month — and logging by hand, food search and your diary stay free.`,
-    chat: `That was your ${ALLOWANCE.free.chat} free questions for the nutritionist. ${PLUS} has ${ALLOWANCE.plus.chat} a month, and weekly meal plans.`,
+    photo: `That was your free taste of the AI. ${PLUS} has unlimited analyses — and logging by hand, food search and your diary stay free.`,
+    chat: `That was your ${ALLOWANCE.free.chat} free questions for the nutritionist. ${PLUS} has unlimited questions, and weekly meal plans.`,
     recipe: `Recipe imports are part of ${PLUS}.`,
   },
   plus: {
-    photo: `That is this month's AI meal analyses. They come back on the 1st — logging by hand and food search are unaffected.`,
-    chat: `That is this month's questions for the nutritionist. They come back on the 1st.`,
-    recipe: `That is this month's recipe imports. They come back on the 1st.`,
+    photo: `That is ${ALLOWANCE.plus.photo} AI meal analyses today, the fair-use ceiling for a day. They come back tomorrow — logging by hand and food search are unaffected.`,
+    chat: `That is ${ALLOWANCE.plus.chat} questions for the nutritionist today, the fair-use ceiling for a day. They come back tomorrow.`,
+    recipe: `That is ${ALLOWANCE.plus.recipe} recipe imports today, the fair-use ceiling for a day. They come back tomorrow.`,
   },
 };
 
@@ -712,6 +723,7 @@ app.get('/api/allowance', async (req, res) => {
     res.json({
       known: true,
       account: Boolean(req.device.accountId),
+      // When Plus's daily fair-use ceilings come back.
       resets: nextReset(),
       // How big the taste an account would unlock is, for the signed-out.
       taste: ALLOWANCE.free.photo,
@@ -721,7 +733,7 @@ app.get('/api/allowance', async (req, res) => {
       admin: await isAdmin(req.device),
       ...(await standingOf(req.device)),
       // The nutritionist's weekly plans, for the planner to say how many are left.
-      weekplans: { used: await weekPlansUsed(req.device), allowance: WEEKPLANS_PER_MONTH },
+      weekplans: { used: await weekPlansUsed(req.device), allowance: WEEKPLANS_PER_WEEK, resets: nextWeek() },
     });
   } catch (error) {
     logFailure('allowance', error);
@@ -1613,7 +1625,8 @@ app.get('/api/admin/heard', requireAdmin, async (_req, res) => {
 app.get('/api/admin/people', requireAdmin, async (req, res) => {
   try {
     const search = typeof req.query.q === 'string' ? req.query.q : '';
-    res.json({ people: await people(search), actions: await actions() });
+    // Only the accounts at a fair-use ceiling on several days this month, when asked.
+    res.json({ people: await people(search, 50, req.query.fair === '1'), actions: await actions() });
   } catch (error) {
     logFailure('admin people', error);
     res.status(503).json({ error: 'unavailable', message: msg('Could not read that just now.') });
@@ -2601,7 +2614,7 @@ async function meterQuestion(req: Request, res: Response, next: NextFunction): P
     const plan = await planFor(req.device);
     const allowance = (await allowanceWithExtras(req.device, plan)).chat;
     if (allowance === 0 || (await usedFor(req.device, 'chat', plan)) > allowance) {
-      res.status(402).json({ error: 'out_of_allowance', plan, kind: 'chat', used: 0, allowance, period: PERIOD[plan], needsAccount: false, resets: null, message: OUT_OF[plan].chat });
+      res.status(402).json({ error: 'out_of_allowance', plan, kind: 'chat', used: 0, allowance, period: PERIOD[plan], needsAccount: false, resets: PERIOD[plan] === 'day' ? nextReset() : null, message: OUT_OF[plan].chat });
       return;
     }
     billedTo(req.device.id, 'chat', next);
@@ -2696,12 +2709,13 @@ app.post('/api/recipe', meter('recipe'), async (req, res) => {
 });
 
 /**
- * This month's weekly plans: those seen, and those on the way (being made, or
- * made and waiting to be seen) — so starting several at once is no way round
- * the cap, and a plan never seen is never one of them for long.
+ * This week's weekly plans (Monday to Sunday): those seen, and those on the
+ * way (being made, or made and waiting to be seen) — so starting several at
+ * once is no way round the cap, and a plan never seen is never one of them
+ * for long.
  */
 async function weekPlansUsed(device: NonNullable<Request['device']>): Promise<number> {
-  return (await usedThisMonth(device, 'weekplan')) + (await plansOnTheWay(device.accountId ?? device.id));
+  return (await usedThisWeek(device, 'weekplan')) + (await plansOnTheWay(device.accountId ?? device.id));
 }
 
 /**
@@ -2722,10 +2736,10 @@ async function weekPlanCap(req: Request, res: Response, next: NextFunction): Pro
       });
       return;
     }
-    if (req.device && plan === 'plus' && (await weekPlansUsed(req.device)) >= WEEKPLANS_PER_MONTH) {
+    if (req.device && plan === 'plus' && (await weekPlansUsed(req.device)) >= WEEKPLANS_PER_WEEK) {
       res.status(429).json({
         error: 'rate_limited',
-        message: `That is this month's ${WEEKPLANS_PER_MONTH} weekly plans. They come back on the 1st — planning meals yourself is unaffected.`,
+        message: `That is this week's ${WEEKPLANS_PER_WEEK} weekly plans. They come back on Monday — planning meals yourself is unaffected.`,
       });
       return;
     }
@@ -3197,7 +3211,7 @@ const server = app.listen(PORT, () => {
   }
   console.log(
     hasDatabase()
-      ? `    Free: a taste of ${ALLOWANCE.free.photo} analyses, once · ${PLUS}: ${ALLOWANCE.plus.photo} a month, ${ALLOWANCE.plus.chat} questions`
+      ? `    Free: a taste of ${ALLOWANCE.free.photo} analyses and ${ALLOWANCE.free.chat} questions, once · ${PLUS}: unlimited, fair use ${ALLOWANCE.plus.photo} analyses and ${ALLOWANCE.plus.chat} questions a day`
       : `    No database — no tiers, no accounts, and nothing counted. Everything is open.`,
   );
   console.log(SERVE_APP ? '    Serving the built app from dist/' : '    API only (run Vite for the app).');

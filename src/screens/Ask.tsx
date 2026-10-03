@@ -257,12 +257,12 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
           {question ? (
             <h2>{t('“{question}” — I can answer that from your diary.', { question })}</h2>
           ) : (
-            <h2>{access.needsAccount ? t('Ask me three questions, free') : t('Your own nutritionist')}</h2>
+            <h2>{access.needsAccount ? t('Ask me {n} questions, free', { n: 5 }) : t('Your own nutritionist')}</h2>
           )}
           <p className="small muted">
             {access.needsAccount
-              ? t('Make a free account and your first three questions are on us.')
-              : t('You have used your free questions. With {plus} it is {n} a month, and a meal plan for your week.', { plus: PLUS, n: 30 })}
+              ? t('Make a free account and your first {n} questions are on us.', { n: 5 })
+              : t('You have used your free questions. With {plus} they are unlimited, with a meal plan for your week.', { plus: PLUS })}
           </p>
           <NutritionistPitch />
           <button type="button" className="btn btn--block" onClick={unlock}>

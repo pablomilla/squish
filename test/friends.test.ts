@@ -105,7 +105,7 @@ when('two days is not three, and days before the invite do not count', async () 
   assert.equal(await settleFriend(friend.id), null);
 });
 
-when('already on Plus — say a yearly plan: extra AI now, and the month saved on the end', async () => {
+when('already on Plus — say a yearly plan: the month saved on the end, and no extra AI to add to an unlimited plan', async () => {
   const inviter = await anAccount();
   await query(`update accounts set plus_until = now() + interval '300 days' where id = $1`, [inviter.id]);
   const device = { id: inviter.device, accountId: inviter.id };
@@ -120,23 +120,17 @@ when('already on Plus — say a yearly plan: extra AI now, and the month saved o
   assert.equal(settled?.referrerKind, 'extended');
   assert.equal(settled?.friendKind, 'started', 'the friend, new, gets Plus switched on');
   assert.ok(Math.abs((await plusDaysLeft(inviter.id)) - 330) < 0.1, 'the month goes on the end');
-  const after = await allowanceWithExtras(device, 'plus');
-  assert.equal(after.photo - before.photo, 20);
-  assert.equal(after.chat - before.chat, 10);
-  assert.equal(after.recipe, before.recipe);
+  assert.deepEqual(await allowanceWithExtras(device, 'plus'), before, 'nothing added to a fair-use ceiling');
+  assert.equal((await query('select 1 from allowance_boosts where account_id = $1', [inviter.id])).length, 0, 'and no boost written');
   assert.deepEqual(await extrasFor(device, 'free'), { photo: 0, chat: 0, recipe: 0 }, 'extras never top up the free taste');
 
   const view = await friendsView(inviter.id);
-  assert.equal(view.extra?.photo, 20);
+  assert.equal(view.extra, null);
   assert.ok(view.plusUntil);
 
-  // The extra runs out.
-  await query(`update allowance_boosts set expires_at = now() - interval '1 second' where account_id = $1`, [inviter.id]);
-  assert.deepEqual(await allowanceWithExtras(device, 'plus'), before);
-
-  const words = rewardWords('extended', 30, new Date('2027-11-03T12:00:00Z'), undefined, undefined, new Date('2027-10-04T12:00:00Z'));
-  assert.match(words, /20 extra photo analyses and 10 extra questions for the nutritionist, until 4 October 2027\./);
-  assert.match(words, /3 November 2027/);
+  const words = rewardWords('extended', 30, new Date('2027-11-03T12:00:00Z'));
+  assert.match(words, /the 30 days are saved for you, added to the end of your current Plus — it now runs until 3 November 2027\./);
+  assert.doesNotMatch(words, /extra/);
 });
 
 when('past the yearly cap the friend is still rewarded; the inviter is not', async () => {
