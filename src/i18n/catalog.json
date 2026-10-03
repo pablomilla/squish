@@ -1,5 +1,5 @@
 {
- "version": "1o0aycw-wtbxic",
+ "version": "1itaynd-uxo34s",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -406,6 +406,13 @@
    ]
   },
   {
+   "id": "025zujn-svahjc",
+   "text": "Spinach and feta omelette",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "02789cx0202ynx",
    "text": "1 dry serving",
    "where": [
@@ -660,6 +667,13 @@
    "text": "Keep it up",
    "where": [
     "src/lib/cheers.ts"
+   ]
+  },
+  {
+   "id": "033wum40kfi1a0",
+   "text": "New potatoes",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -3112,6 +3126,13 @@
    ]
   },
   {
+   "id": "0gks3wt-9xigiq",
+   "text": "1 tablespoon",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "0glva1t0y3lqeq",
    "text": "P{protein} C{carbs} F{fat}",
    "where": [
@@ -3216,6 +3237,13 @@
    "text": "Tempeh",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "0h9ja3u06u8axr",
+   "text": "Chicken and roasted vegetable wrap",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -4020,6 +4048,13 @@
    ]
   },
   {
+   "id": "0kuv8510oe693s",
+   "text": "Porridge with blueberries and honey",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "0kuykz1-a565zi",
    "text": "Squish has been updated.",
    "where": [
@@ -4427,10 +4462,24 @@
    ]
   },
   {
+   "id": "0mjj0rr0w9bjor",
+   "text": "Add the salmon and green beans, top with lemon and herbs, and roast for 12 minutes more.",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "0mjjnz30ayn1u3",
    "text": "Just me",
    "where": [
     "src/components/HouseholdPicker.tsx"
+   ]
+  },
+  {
+   "id": "0mk2n4e0m5f0hb",
+   "text": "Houmous and carrot sticks",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -4543,6 +4592,13 @@
    "text": "The backup, saved {date}",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0n6aqwp0wz8y0x",
+   "text": "Prawn and vegetable noodles",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -4726,6 +4782,7 @@
    "id": "0o47ah0-p9my87",
    "text": "Half",
    "where": [
+    "src/lib/demoDiary.ts",
     "src/screens/Review.tsx"
    ]
   },
@@ -5807,6 +5864,13 @@
    ]
   },
   {
+   "id": "0t5u0v0093qgmw",
+   "text": "Toss the potatoes with the oil, salt and pepper on a tray and roast for 15 minutes.",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "0tcol9100ej246",
    "text": "Rolled oats, dry",
    "where": [
@@ -6049,6 +6113,13 @@
    ]
   },
   {
+   "id": "0ujkn8l-pour69",
+   "text": "Tuna and sweetcorn jacket potato",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "0uky5kz0bteez0",
    "text": "I made this",
    "where": [
@@ -6082,6 +6153,13 @@
    "text": "Strawberry",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "0unmhyo-ixx0lv",
+   "text": "Lemon",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -6309,6 +6387,13 @@
    "other": "{n} new badges — see them on Insights",
    "where": [
     "src/components/AchievementSync.tsx"
+   ]
+  },
+  {
+   "id": "0vlfph6-k982p9",
+   "text": "Falafel wrap with houmous",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -7038,6 +7123,13 @@
    ]
   },
   {
+   "id": "0zkmd3j05oiod4",
+   "text": "Green beans",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "0zltaly0hjqzw1",
    "text": "Last logged {weight} on {date}.",
    "where": [
@@ -7464,6 +7556,13 @@
    ]
   },
   {
+   "id": "11xzc08-kiwusn",
+   "text": "Vegetable stir-fry with tofu and rice",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "11ytjp3-ameq5f",
    "text": "That plan ran long. Try fewer days, or without snacks.",
    "where": [
@@ -7505,6 +7604,7 @@
    "id": "1229zr80awtma3",
    "text": "1 fillet",
    "where": [
+    "src/lib/demoDiary.ts",
     "src/lib/foods.ts"
    ]
   },
@@ -7882,6 +7982,13 @@
    "text": "<link>Privacy policy</link> — what is kept, where it goes, and how to get rid of it.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "13kk6l9-1p7oz5",
+   "text": "Turkey chilli with brown rice",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -8992,6 +9099,13 @@
    ]
   },
   {
+   "id": "18y6bx40am3s5y",
+   "text": "A handful",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "18ygg7i0grizz2",
    "text": "Your targets are needed to plan a week.",
    "where": [
@@ -9541,6 +9655,13 @@
    ]
   },
   {
+   "id": "1bntpcx0p73z7s",
+   "text": "Oat flapjack",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "1boisq4-m86k57",
    "text": "Give a friend {period} of Squish Plus — and get {period} of Plus yourself, saved for after your current Plus.",
    "where": [
@@ -9792,6 +9913,13 @@
    "text": "White bread",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1cxjocv-qpdg63",
+   "text": "Lentil and tomato soup with a roll",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -10253,6 +10381,13 @@
    ]
   },
   {
+   "id": "1f6v8p108qxkxq",
+   "text": "Scrambled eggs on sourdough",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "1fcone80jbpkdf",
    "text": "Logging streak",
    "where": [
@@ -10300,6 +10435,13 @@
    "where": [
     "src/screens/Onboarding.tsx",
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1fivq5n0qlwdbo",
+   "text": "Salmon, new potatoes and green beans",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -10937,6 +11079,13 @@
    ]
   },
   {
+   "id": "1icm63n-6xo9zf",
+   "text": "Lemon and herb salmon traybake",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "1idql43-2hdadq",
    "text": "Paste a recipe from anywhere on the web and I'll work out what one helping of it comes to.",
    "where": [
@@ -10948,6 +11097,13 @@
    "text": "Open your squad",
    "where": [
     "src/components/squad/SquadCard.tsx"
+   ]
+  },
+  {
+   "id": "1ihj36a-t6sanl",
+   "text": "Apple and a handful of almonds",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -11004,6 +11160,13 @@
    "text": "Done shopping — clear ticked",
    "where": [
     "src/components/ShoppingSheet.tsx"
+   ]
+  },
+  {
+   "id": "1isxkyy-epdedo",
+   "text": "6 small",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -11070,6 +11233,13 @@
    "text": "A busy schedule",
    "where": [
     "src/lib/eating.ts"
+   ]
+  },
+  {
+   "id": "1j2dht6-73p6ns",
+   "text": "Greek yoghurt, granola and raspberries",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -11319,6 +11489,13 @@
    "text": "Search foods — rice, salmon, latte…",
    "where": [
     "src/screens/AddFood.tsx"
+   ]
+  },
+  {
+   "id": "1jzlukb03bk3of",
+   "text": "Swap the green beans for asparagus or broccoli — whatever is in season.",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -11758,6 +11935,13 @@
    ]
   },
   {
+   "id": "1m5hj0h-rkj3zu",
+   "text": "Heat the oven to 200°C. Halve the new potatoes and slice the lemon.",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "1m6zyh80u23vlq",
    "text": "Small steps count",
    "where": [
@@ -11980,6 +12164,7 @@
    "id": "1n8pirw-6p9lbh",
    "text": "Olive oil",
    "where": [
+    "src/lib/demoDiary.ts",
     "src/lib/foods.ts"
    ]
   },
@@ -12190,6 +12375,13 @@
    "text": "Make a free account and your first {n} AI meal analyses are on us — snap the plate, or just say what you ate.",
    "where": [
     "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "1o7nmjo-39r7xg",
+   "text": "Overnight oats with berries",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -12635,6 +12827,7 @@
    "id": "1quv4ep-ei2eve",
    "text": "Salmon fillet",
    "where": [
+    "src/lib/demoDiary.ts",
     "src/lib/foods.ts"
    ]
   },
@@ -12650,6 +12843,13 @@
    "text": "Set a time for at least one meal first.",
    "where": [
     "src/lib/reminders.ts"
+   ]
+  },
+  {
+   "id": "1qx23to-ltt3pw",
+   "text": "Chickpea and spinach curry with rice",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -13445,6 +13645,13 @@
    ]
   },
   {
+   "id": "1v5ssdm0gqekdh",
+   "text": "Spaghetti bolognese",
+   "where": [
+    "src/lib/demoDiary.ts"
+   ]
+  },
+  {
    "id": "1v61x2l059z599",
    "text": "Reading your diary",
    "where": [
@@ -13563,6 +13770,13 @@
    "text": "Changed by you",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "1vo6fw8-9tyuiv",
+   "text": "Plate it up with a squeeze of lemon.",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -13690,6 +13904,13 @@
    "text": "6 pieces",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1wddlug0joiyky",
+   "text": "Chicken, avocado and quinoa salad",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {
@@ -13838,6 +14059,13 @@
    "text": "Confirming your email for Squish.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "1x7y5730ilidf9",
+   "text": "Banana and peanut butter toast",
+   "where": [
+    "src/lib/demoDiary.ts"
    ]
   },
   {

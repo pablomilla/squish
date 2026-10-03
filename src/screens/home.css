@@ -99,9 +99,10 @@
 .policy-notice a.btn { text-decoration: none; }
 
 /* Today's meals, planned ones and ideas, as one row of the Today card. */
-.home-strip { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.home-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+/* At least room for a few words of the meals: the ideas go below them rather than squeeze them to a letter. */
 .home-strip-meals {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px;
+  flex: 1 1 280px; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px;
   border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); text-align: left;
 }
 .home-strip-meals svg { flex: none; color: var(--ink-3); }
@@ -110,7 +111,7 @@
 .home-strip-thumb { width: 30px; height: 30px; border-radius: 9px; object-fit: cover; border: 2px solid var(--surface); background: var(--surface); display: grid; place-items: center; font-size: 16px; }
 .home-strip-thumb + .home-strip-thumb { margin-left: -10px; }
 .home-strip-words { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-label); font-weight: 500; }
-.home-ideas-chip { flex: none; }
+.home-ideas-chip { flex: none; margin-inline-start: auto; }
 
 
 /* The greeting and the streak, inside the hero. */

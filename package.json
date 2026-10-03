@@ -30,7 +30,8 @@
     "reset-2fa": "tsx scripts/reset-2fa.ts",
     "build:accessories": "tsx scripts/build-accessories.ts",
     "build:scenes": "tsx scripts/build-scenes.ts",
-    "build:share-art": "tsx scripts/build-share-art.ts"
+    "build:share-art": "tsx scripts/build-share-art.ts",
+    "site:shots": "tsx scripts/site-shots.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -67,8 +68,9 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "oxlint": "^1.81.0",
+    "playwright": "^1.56.1",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   },
-  "description": "Squish — your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
+  "description": "Squish \u2014 your little health buddy. AI food tracking with instant photo nutrition, habits and streaks."
 }

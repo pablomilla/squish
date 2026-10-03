@@ -17,7 +17,7 @@ bench/nutrition5k/
 .data/
 
 # Verification screenshots, taken while working — not the repo's business
-shots/
+/shots/
 
 # Eval output. The scores are NOT derived — they cost real money and the
 # session that produced them is thrown away, so results.jsonl, errors.jsonl

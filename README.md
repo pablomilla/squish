@@ -198,8 +198,11 @@ app with the code after a `#`. The app trades it for the same device with a new 
 — and the account, if they had one — arrives with them. Codes last ten minutes and work once
 (`server/identity.ts`, `site/move.js`).
 
-The screenshots on the website are the real app with made-up meals in it: `scripts/site-shots.mjs`
-retakes them, and `npm run build:site-art` re-exports the mascot and wordmark from the app's artwork.
+The screenshots on the website are the real app with made-up meals in it (`src/lib/demoDiary.ts`),
+one set for each language, the meals in that language too: `npm run site:shots` retakes them from a
+running server (`scripts/site-shots.ts`; the **Website screenshots** workflow on GitHub does every
+language from the live app), and the website shows a language's own set where it has one. `npm run
+build:site-art` re-exports the mascot and wordmark from the app's artwork.
 
 ### Free and Plus
 

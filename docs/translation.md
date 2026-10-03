@@ -151,6 +151,22 @@ start-up.
   the emails'. Opened with neither, it goes by the browser's languages.
 - The screenshots are pictures of the English app.
 
+### The screenshots, in each language
+
+The phones on the website are the real app, photographed in each language
+with a made-up fortnight in it (`src/lib/demoDiary.ts`). The meals are marked
+for translation like the interface, so they arrive in every language's pack,
+and `scripts/site-shots.ts` fills the diary in the language it is
+photographing: the Spanish page shows a Spanish breakfast. It writes
+`site/img/shots/<language>/` (and `en-US/` for American English), and the
+server swaps each `/img/shots/en/…` on a page for the language's own file
+where there is one (`withShots` in `server/site.ts`) — English until then.
+
+The script waits for a language to be completely translated and skips it
+otherwise, so a set is never half English. To retake them all from the live
+app: GitHub → Actions → **Website screenshots** → Run workflow. It commits
+the new sets to the branch it ran on, which redeploys the site.
+
 ## What it costs
 
 About 1,600 interface strings, and about 250 more for the emails, the website

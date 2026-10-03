@@ -331,6 +331,7 @@ async function page(
     ) as Record<Region, string | null>;
     const name = file.slice(SITE_DIR.length + 1).replace(/\.html$/, '');
     const pagePath = name === 'index' ? '' : name;
+    html = withShots(html, pack ?? language);
     html = html
       .replace(/<html lang="[^"]*">/, htmlTag(language, region))
       .replace('<!--languages-->', languageLinks(language, pagePath));
@@ -354,6 +355,20 @@ async function page(
   } catch {
     return null;
   }
+}
+
+/**
+ * The app's screenshots in the page's language (scripts/site-shots.ts writes
+ * site/img/shots/<language>/), each one where that language has it and the
+ * English one where it does not yet. `key` is the language, or the pack for
+ * the country's English (en-US). Pages are cached once whole, so the files are
+ * looked for once a page.
+ */
+export function withShots(html: string, key: string): string {
+  if (key === 'en' || !/^[a-z]{2}(-[A-Z]{2})?$/.test(key)) return html;
+  return html.replace(/\/img\/shots\/en\/([a-z-]+\.jpg)/g, (whole, file: string) =>
+    existsSync(join(SITE_DIR, 'img', 'shots', key, file)) ? `/img/shots/${key}/${file}` : whole,
+  );
 }
 
 /** `/support` → `site/support.html`, `/` → `site/index.html`; nothing outside `site/`. */

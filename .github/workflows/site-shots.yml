@@ -1,0 +1,52 @@
+# The website's screenshots, retaken from the live app in every language.
+#
+# Run it from the Actions tab (Website screenshots → Run workflow) after a
+# deploy that changes how the app looks. It photographs the app at `base`
+# with made-up meals in it (scripts/site-shots.ts), one set per language,
+# and commits them to the branch it ran on, which redeploys the website.
+# A language whose translations are not finished yet is skipped and keeps
+# showing the English screenshots; run it again later for those.
+name: Website screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      languages:
+        description: Languages to photograph (comma-separated codes like es,fr,en-US — or all)
+        default: all
+      base:
+        description: The app to photograph
+        default: https://app.squish.online
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Chromium, and fonts for every script the app is written in
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-core fonts-noto-cjk fonts-noto-color-emoji
+      - name: Take the screenshots
+        run: npx tsx scripts/site-shots.ts
+        env:
+          SHOTS_BASE: ${{ inputs.base }}
+          SHOTS_LANGS: ${{ inputs.languages }}
+          SHOTS_WAIT_S: 900
+      - name: Commit them
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/img/shots
+          if git diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
+          git commit -m "Retake the website's screenshots"
+          git push

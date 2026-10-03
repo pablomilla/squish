@@ -261,3 +261,6 @@ p { margin: 0 0 14px; }
   html { scroll-behavior: auto; }
   .btn { transition: none; }
 }
+
+/* Below the Ask Squish screenshots: what else it does, with room above. */
+.features--more { margin-top: 44px; }
