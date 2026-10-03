@@ -14,6 +14,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preload" href="/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/site.css" />
+  <script src="/menu.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to the content</a>
@@ -22,11 +23,20 @@
     <div class="wrap">
       <a class="brand" href="/" aria-label="Squish home"><picture><source srcset="/img/wordmark-dark.svg" media="(prefers-color-scheme: dark)" /><img src="/img/wordmark.svg" alt="Squish" width="118" height="40" /></picture></a>
       <nav class="nav" aria-label="Main">
-        <a href="#features">Features</a>
-        <a href="#plans">Plans</a>
-        <a href="#privacy">Privacy</a>
+        <a href="/#features">Features</a>
+        <a href="/#plans">Plans</a>
+        <a href="/#privacy">Privacy</a>
         <a href="/help">Help</a>
         <a class="btn btn--small" href="https://app.squish.online">Open Squish</a>
+        <details class="menu">
+          <summary>Menu</summary>
+          <div class="menu-links">
+            <a href="/#features">Features</a>
+            <a href="/#plans">Plans</a>
+            <a href="/#privacy">Privacy</a>
+            <a href="/help">Help</a>
+          </div>
+        </details>
       </nav>
     </div>
   </header>

@@ -113,10 +113,68 @@ p { margin: 0 0 14px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .brand img { height: 40px; width: auto; }
 .nav { display: flex; align-items: center; gap: 22px; }
-.nav a:not(.btn) { color: var(--ink-2); text-decoration: none; font-weight: 500; }
-.nav a:not(.btn):hover { color: var(--ink); }
+.nav > a:not(.btn) { color: var(--ink-2); text-decoration: none; font-weight: 500; }
+.nav > a:not(.btn):hover { color: var(--ink); }
+
+/* On phones the links fold into a Menu button (menu.js closes it again). */
+.menu { display: none; position: relative; }
+.menu summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu summary::-webkit-details-marker { display: none; }
+.menu summary::before {
+  content: '';
+  width: 16px;
+  height: 12px;
+  background:
+    linear-gradient(currentColor 0 0) top / 100% 2px no-repeat,
+    linear-gradient(currentColor 0 0) center / 100% 2px no-repeat,
+    linear-gradient(currentColor 0 0) bottom / 100% 2px no-repeat;
+}
+.menu[open] summary { background: var(--brand-soft); border-color: transparent; }
+.menu-links {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 10px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+.menu-links a { padding: 14px 16px; border-radius: 14px; color: var(--ink); font-size: 17px; font-weight: 500; text-decoration: none; }
+.menu-links a:hover, .menu-links a[aria-current] { background: var(--bg-tint); }
+.menu-links a[aria-current] { font-weight: 600; }
 @media (max-width: 760px) {
-  .nav a:not(.btn) { display: none; }
+  .nav { gap: 10px; }
+  .nav > a:not(.btn) { display: none; }
+  .menu { display: block; }
+}
+@media (max-width: 400px) {
+  .top .wrap { gap: 10px; }
+  .brand img { height: 34px; }
+  .nav .btn--small { padding: 10px 14px; white-space: nowrap; }
+}
+@media (max-width: 360px) {
+  /* Just the three lines; "Menu" is still there for screen readers. */
+  .menu summary { width: 44px; padding: 0; justify-content: center; font-size: 0; }
 }
 
 /* ---------- The moved banner (filled in by move.js) ---------- */
@@ -153,6 +211,10 @@ p { margin: 0 0 14px; }
   .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
   .hero-art { padding-inline-start: 64px; }
   .hero-art .mascot { width: 104px; inset-inline-start: -34px; bottom: 18px; }
+}
+@media (max-width: 400px) {
+  .hero-art { padding-inline-start: 40px; }
+  .hero-art .phone { width: min(78vw, calc(100vw - 72px)); }
 }
 
 /* A phone, drawn in CSS around a real screenshot. */
