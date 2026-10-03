@@ -1,5 +1,5 @@
 {
- "version": "0lo7sqi-txhm95",
+ "version": "0pulmyy-p83h1x",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -431,6 +431,7 @@
    "text": "Meal removed",
    "where": [
     "src/components/PlanCard.tsx",
+    "src/components/QuickSnapsCard.tsx",
     "src/screens/Diary.tsx"
    ]
   },
@@ -1581,14 +1582,6 @@
    ]
   },
   {
-   "id": "08c2xgd0qwuenc",
-   "one": "Waiting for signal to send your snap.",
-   "other": "Waiting for signal to send {n} snaps.",
-   "where": [
-    "src/components/QuickSnapsCard.tsx"
-   ]
-  },
-  {
    "id": "08dg1hj0fht3n0",
    "text": "How was my week?",
    "where": [
@@ -2173,6 +2166,13 @@
    "text": "Keep {meal}",
    "where": [
     "src/components/CookSheet.tsx"
+   ]
+  },
+  {
+   "id": "0btrhmb-xacd8q",
+   "text": "For a snap taken by mistake. It cannot be undone.",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
    ]
   },
   {
@@ -5855,14 +5855,6 @@
    ]
   },
   {
-   "id": "0ubhcql0r3fk1p",
-   "one": "Squish is reading your snap…",
-   "other": "Squish is reading {n} snaps…",
-   "where": [
-    "src/components/QuickSnapsCard.tsx"
-   ]
-  },
-  {
    "id": "0uc0dps-7k9sgc",
    "text": "How do you eat?",
    "where": [
@@ -6185,6 +6177,7 @@
    "id": "0vmlwpb-fvx4tc",
    "text": "Undo",
    "where": [
+    "src/screens/QuickSnap.tsx",
     "src/screens/You.tsx"
    ]
   },
@@ -8730,6 +8723,13 @@
    ]
   },
   {
+   "id": "18kb166-9ptezh",
+   "text": "Waiting for signal to send this.",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
+   ]
+  },
+  {
    "id": "18l84dq0qeejqe",
    "text": "For one, sized to your day. These amounts are what gets logged.",
    "where": [
@@ -8783,6 +8783,13 @@
    "text": "Listening…",
    "where": [
     "src/components/VoiceField.tsx"
+   ]
+  },
+  {
+   "id": "18u43ue0k7f7as",
+   "text": "Squish is reading this…",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
    ]
   },
   {
@@ -9207,6 +9214,7 @@
    "id": "1b1e2ut01bhp5v",
    "text": "Keep it",
    "where": [
+    "src/components/QuickSnapsCard.tsx",
     "src/components/RecipeBoxSheet.tsx",
     "src/components/WeekPlanSheet.tsx"
    ]
@@ -10383,6 +10391,13 @@
    "text": "About you",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1hb98pq0x998fu",
+   "text": "Removed. That one will not be logged.",
+   "where": [
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -13375,6 +13390,13 @@
    "text": "6 pieces",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1wecih70r6e6v9",
+   "text": "Remove {meal} from your diary?",
+   "where": [
+    "src/components/QuickSnapsCard.tsx"
    ]
   },
   {

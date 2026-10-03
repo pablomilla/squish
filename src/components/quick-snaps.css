@@ -2,14 +2,13 @@
 .quick-snaps { display: flex; flex-direction: column; gap: var(--s3); }
 .quick-snaps .card-title { margin-bottom: 0; }
 
-.quick-snaps-reading { display: flex; align-items: center; gap: 12px; }
-.quick-snaps-thumbs { display: flex; flex: none; }
+/* A snap still being read: its picture breathing, what is happening, and a way to let it go. */
+.quick-snaps-reading { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; }
+.quick-snaps-reading + .quick-snaps-reading { padding-top: var(--s3); border-top: 1px solid var(--line); }
 .quick-snaps-thumb {
-  width: 34px; height: 34px; border-radius: 10px; object-fit: cover;
-  border: 2px solid var(--surface); background: var(--surface);
+  width: 46px; height: 46px; border-radius: 12px; object-fit: cover; background: var(--surface);
   animation: quick-snaps-breathe 1.6s ease-in-out infinite;
 }
-.quick-snaps-thumb + .quick-snaps-thumb { margin-left: -12px; }
 @keyframes quick-snaps-breathe { 50% { opacity: 0.55; } }
 
 .quick-snaps-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s3); }
@@ -20,7 +19,12 @@
 .quick-snaps-row-thumb { width: 46px; height: 46px; border-radius: 12px; object-fit: cover; display: grid; place-items: center; font-size: 22px; background: var(--surface-2, var(--line)); }
 .quick-snaps-row-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .quick-snaps-row-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.quick-snaps-row-actions { grid-column: 2; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.quick-snaps-row-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+/* What is happening, or the question asked: said in full, over two lines if it needs them. */
+.quick-snaps-reading .quick-snaps-row-text b,
+.quick-snaps-row.is-asking .quick-snaps-row-text b { white-space: normal; }
+/* Quieter than the two that answer the question, and kept apart from them. */
+.quick-snaps-remove { margin-inline-end: auto; }
 
 .quick-snaps-stuck { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 14px; background: var(--warn-soft); }
 .quick-snaps-stuck-actions { gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }

@@ -11,10 +11,38 @@
 
 /* What happened, in one line, low on the viewfinder where a glance finds it. */
 .quick-snap-status {
-  position: absolute; left: 24px; right: 24px; bottom: 22px;
-  margin: 0 auto; max-width: 320px; padding: 10px 16px; border-radius: 16px;
+  position: absolute; left: 20px; right: 20px; bottom: 22px;
+  margin: 0 auto; max-width: 340px; padding: 10px 16px; border-radius: 16px;
+  display: flex; align-items: center; gap: 12px;
   text-align: center; color: #fff; font-size: var(--text-label); line-height: 1.4;
   background: rgba(20, 16, 30, 0.6); backdrop-filter: blur(6px);
+  animation: quick-snap-pop 0.3s var(--ease, ease-out);
+}
+.quick-snap-words { flex: 1; }
+/* Once there is a snap: its picture, what will happen to it, and a way to take it back. */
+.quick-snap-status.has-snap { text-align: start; padding: 8px 8px 8px 8px; background: rgba(20, 16, 30, 0.78); }
+.quick-snap-last { position: relative; flex: none; }
+.quick-snap-last img { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; display: block; border: 2px solid #fff; }
+.quick-snap-count {
+  position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px;
+  background: var(--mint); color: #13261c; font-size: 12px; font-weight: 700; display: grid; place-items: center;
+}
+.quick-snap-undo {
+  flex: none; min-height: 44px; padding: 0 14px; border-radius: 12px;
+  color: #fff; font-weight: 700; background: rgba(255, 255, 255, 0.14);
+}
+@keyframes quick-snap-pop { from { transform: translateY(6px) scale(0.97); opacity: 0.4; } to { transform: none; opacity: 1; } }
+
+/* The photo just taken, shrinking down into the line below: you see it go. */
+.quick-snap-fly {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none;
+  transform-origin: 18% 96%;
+  animation: quick-snap-fly 0.5s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+@keyframes quick-snap-fly {
+  0% { transform: scale(1); border-radius: 0; opacity: 1; }
+  25% { transform: scale(0.92); border-radius: 24px; opacity: 1; }
+  100% { transform: scale(0.1); border-radius: 60px; opacity: 0.2; }
 }
 
 .quick-snap-done-mark {
@@ -30,5 +58,5 @@
 }
 @keyframes quick-snap-flash { from { opacity: 0.75; } to { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .quick-snap-flash { animation-duration: 0.01s; }
+  .quick-snap-flash, .quick-snap-fly, .quick-snap-status { animation-duration: 0.01s; }
 }

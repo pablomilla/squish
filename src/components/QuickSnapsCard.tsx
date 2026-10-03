@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { MealEntry, QueuedSnap, Route } from '../types';
 import { MealThumb } from './MealCard';
+import { useToast } from './ui';
 import { useSquish } from '../store/useSquish';
 import { dropSnap, retrySnap } from '../lib/snaps';
 import { draftOf } from '../lib/draft';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
+import { slotName } from '../lib/words';
 import { formatEnergy } from '../lib/region';
 import { plural, t } from '../lib/i18n';
 import './quick-snaps.css';
@@ -22,6 +24,8 @@ export default function QuickSnapsCard({ go }: { go: (route: Route) => void }) {
   const snaps = useSquish((s) => s.snaps);
   const meals = useSquish((s) => s.meals);
   const confirmMeal = useSquish((s) => s.confirmMeal);
+  const removeMeal = useSquish((s) => s.removeMeal);
+  const toast = useToast();
   const toCheck = useMemo(() => {
     const since = addDays(isoDate(), -CHECK_DAYS);
     return meals.filter((meal) => meal.quick && meal.date >= since).reverse();
@@ -39,18 +43,23 @@ export default function QuickSnapsCard({ go }: { go: (route: Route) => void }) {
       </div>
 
       {reading.length > 0 && (
-        <div className="quick-snaps-reading">
-          <span className="quick-snaps-thumbs">
-            {reading.slice(0, 4).map((snap) => (
-              <img key={snap.id} src={snap.thumb} alt="" className="quick-snaps-thumb" />
-            ))}
-          </span>
-          <p className="small">
-            {reading.some((snap) => snap.state === 'sent')
-              ? plural(reading.length, { one: 'Squish is reading your snap…', other: 'Squish is reading {n} snaps…' })
-              : plural(reading.length, { one: 'Waiting for signal to send your snap.', other: 'Waiting for signal to send {n} snaps.' })}
-          </p>
-        </div>
+        <ul className="quick-snaps-list">
+          {reading.map((snap) => (
+            <li key={snap.id} className="quick-snaps-reading">
+              <img src={snap.thumb} alt="" className="quick-snaps-thumb" />
+              <span className="quick-snaps-row-text">
+                <b className="small">{snap.state === 'sent' ? t('Squish is reading this…') : t('Waiting for signal to send this.')}</b>
+                <span className="tiny muted">
+                  {slotName(snap.slot)} · {friendlyDate(snap.date)} · {snap.time}
+                </span>
+              </span>
+              {/* Taken by mistake: it goes, and is never logged. */}
+              <button type="button" className="btn--quiet small" onClick={() => void dropSnap(snap.id)}>
+                {t('Remove')}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       {stuck.map((snap) => (
@@ -60,7 +69,16 @@ export default function QuickSnapsCard({ go }: { go: (route: Route) => void }) {
       {toCheck.length > 0 && (
         <ul className="quick-snaps-list">
           {toCheck.map((meal) => (
-            <ToCheck key={meal.id} meal={meal} onRight={() => confirmMeal(meal.id)} onChange={() => go({ name: 'review', draft: draftOf(meal) })} />
+            <ToCheck
+              key={meal.id}
+              meal={meal}
+              onRight={() => confirmMeal(meal.id)}
+              onChange={() => go({ name: 'review', draft: draftOf(meal) })}
+              onRemove={() => {
+                removeMeal(meal.id);
+                toast(t('Meal removed'), '🗑️');
+              }}
+            />
           ))}
         </ul>
       )}
@@ -68,7 +86,27 @@ export default function QuickSnapsCard({ go }: { go: (route: Route) => void }) {
   );
 }
 
-function ToCheck({ meal, onRight, onChange }: { meal: MealEntry; onRight: () => void; onChange: () => void }) {
+function ToCheck({ meal, onRight, onChange, onRemove }: { meal: MealEntry; onRight: () => void; onChange: () => void; onRemove: () => void }) {
+  const [removing, setRemoving] = useState(false);
+  if (removing) {
+    return (
+      <li className="quick-snaps-row is-asking">
+        <MealThumb meal={meal} className="quick-snaps-row-thumb" />
+        <span className="quick-snaps-row-text">
+          <b className="small" dir="auto">{t('Remove {meal} from your diary?', { meal: meal.title })}</b>
+          <span className="tiny muted">{t('For a snap taken by mistake. It cannot be undone.')}</span>
+        </span>
+        <span className="quick-snaps-row-actions">
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => setRemoving(false)}>
+            {t('Keep it')}
+          </button>
+          <button type="button" className="btn btn--sm btn--danger" onClick={onRemove}>
+            {t('Remove')}
+          </button>
+        </span>
+      </li>
+    );
+  }
   return (
     <li className="quick-snaps-row">
       <MealThumb meal={meal} className="quick-snaps-row-thumb" />
@@ -79,6 +117,9 @@ function ToCheck({ meal, onRight, onChange }: { meal: MealEntry; onRight: () => 
         </span>
       </span>
       <span className="quick-snaps-row-actions">
+        <button type="button" className="btn--quiet small quick-snaps-remove" onClick={() => setRemoving(true)}>
+          {t('Remove')}
+        </button>
         <button type="button" className="btn btn--sm btn--ghost" onClick={onChange}>
           {t('Change')}
         </button>

@@ -5,7 +5,8 @@ import { Sheet } from '../components/ui';
 import { CameraIcon, CloseIcon, HelpIcon, ImageIcon } from '../components/icons';
 import { FOOD_TIPS, PLATE_GUIDE } from '../lib/photoTips';
 import { shrinkImage } from '../lib/api';
-import { takeSnap } from '../lib/snaps';
+import { dropSnap, takeSnap } from '../lib/snaps';
+import type { QueuedSnap } from '../types';
 import { finishQuickSnap } from '../lib/launch';
 import { plural, t } from '../lib/i18n';
 import './capture.css';
@@ -42,6 +43,11 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
   const [camera, setCamera] = useState<CameraState>(() => (cameraSupported() ? 'requesting' : 'unsupported'));
   const [taken, setTaken] = useState(0);
   const [flash, setFlash] = useState(0);
+  /** The photo just taken, flying down into its thumbnail: you see it go, so you know it was taken. */
+  const [flying, setFlying] = useState<string | null>(null);
+  /** This time's snaps, newest last: the newest shown by the line below, with a way to take it back. */
+  const [snapped, setSnapped] = useState<QueuedSnap[]>([]);
+  const [undone, setUndone] = useState(false);
   const [tips, setTips] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -83,7 +89,10 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
     setSaving(true);
     setFailed(false);
     try {
-      await takeSnap(dataUrl);
+      setFlying(dataUrl);
+      const snap = await takeSnap(dataUrl);
+      setSnapped((list) => [...list, snap]);
+      setUndone(false);
       setTaken((n) => n + 1);
       setFlash((n) => n + 1);
       // A tap you can feel, where the phone does that: no need to look to know it worked.
@@ -124,6 +133,17 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
     [keep],
   );
 
+  /** Taken by mistake: gone, photo and all, and never logged. */
+  const undo = () => {
+    const last = snapped.at(-1);
+    if (!last) return;
+    void dropSnap(last.id);
+    setSnapped((list) => list.slice(0, -1));
+    setTaken((n) => Math.max(0, n - 1));
+    setUndone(true);
+  };
+  const latest = snapped.at(-1);
+
   const done = () => {
     stream?.getTracks().forEach((track) => track.stop());
     finishQuickSnap(onClose);
@@ -153,6 +173,7 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
           </div>
         )}
         {flash > 0 && <div key={flash} className="quick-snap-flash" aria-hidden="true" />}
+        {flying && <img key={`fly-${flash}`} src={flying} alt="" className="quick-snap-fly" aria-hidden="true" onAnimationEnd={() => setFlying(null)} />}
 
         <div className="capture-top">
           <button type="button" className="capture-round" onClick={done} aria-label={t('Close')}>
@@ -176,13 +197,28 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
           </>
         )}
 
-        <p className="quick-snap-status" role="status" aria-live="polite">
-          {failed
-            ? t('That one did not save. Try again.')
-            : taken
-              ? plural(taken, { one: 'Snapped. Squish will log it — check it later.', other: '{n} snapped. Squish will log them — check them later.' })
-              : t('One tap and put your phone away. Squish logs it for you to check later.')}
-        </p>
+        <div className={`quick-snap-status${latest && !undone && !failed ? ' has-snap' : ''}`} key={`status-${taken}-${undone}`} role="status" aria-live="polite">
+          {latest && !undone && !failed && (
+            <span className="quick-snap-last">
+              <img src={latest.thumb} alt="" />
+              {snapped.length > 1 && <span className="quick-snap-count">{snapped.length}</span>}
+            </span>
+          )}
+          <span className="quick-snap-words">
+            {failed
+              ? t('That one did not save. Try again.')
+              : undone
+                ? t('Removed. That one will not be logged.')
+                : taken
+                  ? plural(taken, { one: 'Snapped. Squish will log it — check it later.', other: '{n} snapped. Squish will log them — check them later.' })
+                  : t('One tap and put your phone away. Squish logs it for you to check later.')}
+          </span>
+          {latest && !undone && !failed && (
+            <button type="button" className="quick-snap-undo" onClick={undo}>
+              {t('Undo')}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="capture-controls">
