@@ -21,6 +21,11 @@ on:
 permissions:
   contents: write
 
+# One run at a time: a second would photograph the same app and race to commit.
+concurrency:
+  group: site-shots-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   shots:
     runs-on: ubuntu-latest
@@ -49,4 +54,14 @@ jobs:
           git add site/img/shots
           if git diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
           git commit -m "Retake the website's screenshots"
-          git push
+          # A run takes the best part of an hour, and the branch usually moves
+          # on meanwhile. Put the screenshots on top of whatever landed (they
+          # only touch site/img/shots, and this run's are the newest, so they
+          # win any clash), then push; try again if it moves once more.
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 5))
+          done
+          echo "Could not push the screenshots after 5 tries."
+          exit 1
