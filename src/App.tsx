@@ -19,6 +19,7 @@ import { isOversized, rehomePhotos } from './lib/rehome';
 import { refreshPlan, watchPlan } from './lib/plan';
 import SquadSync from './components/squad/SquadSync';
 import AchievementSync from './components/AchievementSync';
+import WidgetSync from './components/WidgetSync';
 import SnapSync from './components/SnapSync';
 import { onSnapLink, openedToSnap } from './lib/launch';
 import { openedWithShare, type Shared } from './lib/shareIn';
@@ -294,6 +295,7 @@ function Shell() {
       {keepsData && <SquadSync />}
       <AchievementSync />
       <SnapSync />
+      <WidgetSync />
       <UpdateWatcher quiet={isTab && !adding} />
 
       {isTab && (

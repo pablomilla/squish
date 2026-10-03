@@ -1,5 +1,5 @@
 {
- "version": "1faroxk-ex0j1x",
+ "version": "05jcskt0wx9kdo",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -286,6 +286,13 @@
    "text": "Make a free account below to try {n} AI meal analyses.",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "01ootz8-nr6q1r",
+   "text": "{eaten} of {target} g protein",
+   "where": [
+    "src/lib/widgetData.ts"
    ]
   },
   {
@@ -948,6 +955,14 @@
    ]
   },
   {
+   "id": "04wv7qq0yj6npl",
+   "one": "{n} snap to check",
+   "other": "{n} snaps to check",
+   "where": [
+    "src/lib/widgetData.ts"
+   ]
+  },
+  {
    "id": "04xqqq80hz0wva",
    "text": "porridge with blueberries and a spoon of peanut butter",
    "where": [
@@ -1243,6 +1258,7 @@
    "id": "06aaohs-55bbwy",
    "text": "Quick snap",
    "where": [
+    "src/lib/widgetData.ts",
     "src/screens/QuickSnap.tsx",
     "src/screens/You.tsx"
    ]
@@ -1776,6 +1792,13 @@
    "text": "Invites and squads",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "09dgurc0cjj9h1",
+   "text": "Just Quick snap",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -2625,6 +2648,14 @@
    "text": "Adjust targets",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0e97nsc0e6al1a",
+   "one": "Reading {n} snap…",
+   "other": "Reading {n} snaps…",
+   "where": [
+    "src/lib/widgetData.ts"
    ]
   },
   {
@@ -3915,6 +3946,13 @@
    ]
   },
   {
+   "id": "0ko09k3053yerq",
+   "text": "{n} kcal left",
+   "where": [
+    "src/lib/widgetData.ts"
+   ]
+  },
+  {
    "id": "0koytar0yfzak0",
    "text": "<b>Not set.</b> Squish is judging portions from the photo alone, which is what it has always done.",
    "where": [
@@ -3939,6 +3977,7 @@
    "id": "0kra76q0p8taff",
    "text": "Open Squish",
    "where": [
+    "src/lib/widgetData.ts",
     "src/screens/ResetPassword.tsx"
    ]
   },
@@ -4185,6 +4224,13 @@
    "text": "Theme",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0lusb24-auny37",
+   "text": "Today and Quick snap",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -4823,6 +4869,13 @@
    "text": "The Blueberries",
    "where": [
     "src/lib/cheers.ts"
+   ]
+  },
+  {
+   "id": "0oni0jh0qej7no",
+   "text": "{n} kJ left",
+   "where": [
+    "src/lib/widgetData.ts"
    ]
   },
   {
@@ -7205,6 +7258,13 @@
    ]
   },
   {
+   "id": "10wcuak-3pczp8",
+   "text": "{n} kcal over",
+   "where": [
+    "src/lib/widgetData.ts"
+   ]
+  },
+  {
    "id": "10xcpyn-eh7x27",
    "text": "Holographic",
    "where": [
@@ -8329,6 +8389,13 @@
    ]
   },
   {
+   "id": "16lrtin-optx9u",
+   "text": "{eaten} of {target} kJ",
+   "where": [
+    "src/lib/widgetData.ts"
+   ]
+  },
+  {
    "id": "16mtga00z54qmz",
    "text": "Nothing matching “{query}” yet.",
    "where": [
@@ -8725,6 +8792,13 @@
    "text": "Fix it",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "1893buh0x3ox6j",
+   "text": "On the widget",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {
@@ -9685,6 +9759,13 @@
    ]
   },
   {
+   "id": "1ddkhqb0v05sjy",
+   "text": "The widget shows what is left today, your protein and your streak beside the Quick snap button. The numbers are marked private, so an iPhone can hide them on the Lock Screen while it is locked.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
+   ]
+  },
+  {
    "id": "1df7vmz-n53olg",
    "text": "{field} in pounds",
    "where": [
@@ -9808,6 +9889,14 @@
    "text": "Tap a bar for its figure",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "1dy9yyb0z1y3nx",
+   "one": "{n}-day streak",
+   "other": "{n}-day streak",
+   "where": [
+    "src/lib/widgetData.ts"
    ]
   },
   {
@@ -11057,6 +11146,13 @@
    "text": "The Chickpeas",
    "where": [
     "src/lib/cheers.ts"
+   ]
+  },
+  {
+   "id": "1jlvhvd08iyd5m",
+   "text": "{eaten} of {target} kcal",
+   "where": [
+    "src/lib/widgetData.ts"
    ]
   },
   {
@@ -12557,6 +12653,13 @@
    ]
   },
   {
+   "id": "1rhflri02yc3l0",
+   "text": "{n} kJ over",
+   "where": [
+    "src/lib/widgetData.ts"
+   ]
+  },
+  {
    "id": "1rjm5pm077g69r",
    "text": "The Avocados",
    "where": [
@@ -13132,6 +13235,13 @@
    "text": "Join my Squish squad, {squad}! We cheer each other on. Code {code}:",
    "where": [
     "src/components/squad/SquadSheet.tsx"
+   ]
+  },
+  {
+   "id": "1uncp180j6x08s",
+   "text": "The widget shows only the Quick snap button — for a phone other people see.",
+   "where": [
+    "src/components/QuickSnapHelp.tsx"
    ]
   },
   {

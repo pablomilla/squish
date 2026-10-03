@@ -9,6 +9,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Squish's own plugins, registered before the bridge starts.
+        registerPlugin(WidgetBridgePlugin.class);
         setIntent(asShareLink(getIntent()));
         super.onCreate(savedInstanceState);
     }

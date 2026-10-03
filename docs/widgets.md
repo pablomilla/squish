@@ -5,6 +5,54 @@ rude: one tap on a widget opens Squish's camera, one tap takes the photo, and
 the phone goes back in the pocket. The meal is read in the background and
 turns up in the diary marked **to check**, for when there is a moment.
 
+Beside the button the widget shows **today at a glance**: what is left (or
+over), how far through the day's energy, the protein, and one line worth a
+glance — snaps being read, snaps to check, or the streak.
+
+## What each widget shows
+
+| Widget | Shows | A tap |
+|---|---|---|
+| iPhone small | A ring of the day's energy with the camera in it, and what is left | Quick snap |
+| iPhone medium | What is left, a bar, eaten of target, protein, the one line; a big Quick snap button | The button snaps; the rest opens Squish |
+| iPhone Lock Screen, circular | The same ring, small, round the camera | Quick snap |
+| iPhone Lock Screen, rectangular | Quick snap, and what is left | Quick snap |
+| Android, 4×2 (its usual size) and up | As the iPhone's medium | The button snaps; the rest opens Squish |
+| Android, made smaller | Just the Quick snap button | Quick snap |
+| Control Centre, Action Button | Just Quick snap | Quick snap |
+
+Without a summary from the app — a new install, before Squish has been
+opened — or with the numbers turned off, every widget is just the Quick snap
+button.
+
+### Where the numbers come from
+
+The widgets cannot read the diary, so the app works out a small summary
+(`src/lib/widgetData.ts`): today's energy eaten and target in the person's
+unit, protein, the streak, snaps to check and being read, and the widget's
+words, already in the person's language. `src/components/WidgetSync.tsx`
+sends it to the phone a moment after anything changes and when the app is put
+away, only if it is different (phones ration widget redraws), through a small
+plugin in each native project:
+
+- **iPhone:** `WidgetBridge` in `ios/App/App/SceneDelegate.swift` keeps it in
+  the App Group `group.app.squish.tracker` (the one the share extension
+  uses) and asks WidgetKit to redraw.
+- **Android:** `WidgetBridgePlugin.java` keeps it in the app's own
+  preferences and redraws `SnapWidgetProvider`.
+
+The widgets fill in the numbers themselves (`{n}`, `{eaten}`, `{target}` in
+the words), so they can start a new day on their own: a summary dated
+yesterday means nothing eaten yet today, and the whole target left. The
+iPhone's timeline has an entry at midnight for that; Android sets an alarm
+for just after midnight that does not wake the phone.
+
+**Privacy.** The summary stays on the phone and never has the meals in it.
+Anybody who can see the Home Screen can see the numbers, so **You → Quick
+snap → On the widget** can turn them off ("Just Quick snap"), for that phone.
+On the iPhone the numbers are marked `privacySensitive`, so the Lock Screen
+can hide them while the phone is locked.
+
 ## How it works
 
 Everything opens the same link: **`squish://snap`** in the app, **`/?snap`**
@@ -42,7 +90,7 @@ keep snaps for: the app reads the photo itself, while it is open.
 | iPhone Home Screen | Small widget | `ios/App/SquishWidgets/` |
 | iPhone Lock Screen | Circular and rectangular widgets | `ios/App/SquishWidgets/` |
 | Control Centre, Action Button (iOS 18) | A control | `ios/App/SquishWidgets/` |
-| Android home screen | 2×1 widget, resizable | `android/…/SnapWidgetProvider.java`, `res/layout/widget_snap.xml`, `res/xml/widget_snap_info.xml` |
+| Android home screen | 4×2 widget with today, resizable down to the button alone | `android/…/SnapWidgetProvider.java`, `WidgetBridgePlugin.java`, `res/layout/widget_today.xml`, `res/layout/widget_snap.xml`, `res/xml/widget_snap_info.xml` |
 | Android, touch and hold the icon | Static shortcut | `res/xml/shortcuts.xml` |
 | Web app installed on Android | Manifest shortcut | `public/manifest.webmanifest` |
 | Inside the app | You → Quick snap → Try it now | `src/components/QuickSnapHelp.tsx` |
@@ -58,13 +106,14 @@ not been compiled.** Expect the first build to find something.
 ### Android (Android Studio)
 
 Nothing to set up: the widget, the shortcut and the `squish://snap` link are
-in the manifest already.
+in the manifest already, and the bridge is registered in `MainActivity`.
 
 ```bash
 npm run build && npx cap sync && npx cap open android
 ```
 
 Run it, then touch and hold the home screen → Widgets → Squish → Quick snap.
+It goes in at 4×2 with today showing; resize it smaller for just the button.
 Touch and hold the Squish icon for the shortcut.
 
 ### iPhone (Xcode) — once
@@ -87,9 +136,11 @@ The widget is its own target, which only Xcode can add to the project.
    offer the widget.)
 5. Signing & Capabilities for the extension: the same team as the app. Its
    bundle id should be **`app.squish.tracker.SquishWidgets`**.
-6. Run the **App** scheme on a phone (not the simulator: it has no camera).
-
-No App Group is needed — the widget shares nothing with the app but a link.
+6. **+ Capability → App Groups** on the **SquishWidgets** target, ticking
+   **`group.app.squish.tracker`** — the same group the App and the share
+   extension already have (docs/share-in.md). Without it the widget never
+   sees today's numbers and is just the Quick snap button.
+7. Run the **App** scheme on a phone (not the simulator: it has no camera).
 
 ## What to test on a phone
 
@@ -108,6 +159,16 @@ No App Group is needed — the widget shares nothing with the app but a link.
 6. **Android Done button.** After a snap, Done should drop you back where you
    were (the app minimises). On iOS it goes to Home: no app may close itself.
 
+7. **Today on the widget.** Log a meal, go to the Home Screen: within a few
+   seconds the widget says what is left. Delete it in the app: the widget
+   follows. The next morning, before opening Squish, the widget should show
+   the whole target left.
+8. **Numbers off.** You → Quick snap → Just Quick snap: the widget becomes
+   the plain button. Lock the iPhone with the rectangular Lock Screen widget
+   showing: the number should be hidden.
+9. **Android sizes.** Resize the widget smaller than 4×2: it becomes the
+   plain button; back to 4×2, today comes back.
+
 ## Known unknowns
 
 - The iOS control's `OpenURLIntent` with a custom scheme is the least certain
@@ -116,7 +177,11 @@ No App Group is needed — the widget shares nothing with the app but a link.
 - `App.getLaunchUrl()` on a cold start from a widget is read once per session,
   so a page reload does not reopen the camera. If the camera does *not* open on
   a cold start, the launch URL is arriving later than the app asks for it.
-- Widget text is English for now: see **To do** below.
+- The words with numbers are the app's, translated as usual. The labels the
+  widgets show before the app has sent anything, and the widget picker's
+  name and description, are English for now: see **To do** below.
+- **The Swift has not been compiled** (no Xcode here). The Java compiles
+  against the Android framework.
 
 ## To do once the widgets are running on a phone
 

@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WidgetKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -27,6 +28,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 class SquishViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(ShareInboxPlugin())
+        bridge?.registerPluginInstance(WidgetBridgePlugin())
     }
 }
 
@@ -52,5 +54,30 @@ public class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
         } else {
             call.resolve([:])
         }
+    }
+}
+
+/**
+ * Today, for the Quick snap widget (ios/App/SquishWidgets): the summary the
+ * app works out (src/lib/widgetData.ts), kept in the App Group the widget
+ * reads, and the widget asked to redraw. The app sends it only when it has
+ * changed, so this does not spend the widget's ration of redraws.
+ */
+@objc(WidgetBridgePlugin)
+public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "WidgetBridgePlugin"
+    public let jsName = "WidgetBridge"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "update", returnType: CAPPluginReturnPromise),
+    ]
+
+    @objc func update(_ call: CAPPluginCall) {
+        guard let summary = call.getString("summary") else {
+            call.reject("No summary")
+            return
+        }
+        UserDefaults(suiteName: "group.app.squish.tracker")?.set(summary, forKey: "widgetSummary")
+        WidgetCenter.shared.reloadTimelines(ofKind: "SquishQuickSnap")
+        call.resolve()
     }
 }

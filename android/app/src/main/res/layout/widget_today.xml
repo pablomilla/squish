@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Quick snap widget at its usual size (SnapWidgetProvider): today on the
+  left, opening the app; the Quick snap button on the right. The text here is
+  only for the widget picker's preview: every line is replaced with the app's
+  summary, in the person's language, when the widget is drawn.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_today_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_snap_background"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_today_left"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1,240 kcal left"
+            android:textColor="#FFFFFF"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <ProgressBar
+            android:id="@+id/widget_today_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:max="100"
+            android:progress="40"
+            android:progressTint="#FFFFFF"
+            android:progressBackgroundTint="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/widget_today_of"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="610 of 1,850 kcal"
+            android:textColor="#E6E2FB"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_today_protein"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="38 of 110 g protein"
+            android:textColor="#E6E2FB"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_today_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="12-day streak"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_today_snap"
+        android:layout_width="96dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="14dp"
+        android:background="@drawable/widget_snap_button"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:contentDescription="@string/widget_snap_label">
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/ic_snap_camera"
+            android:tint="#6B5FE0"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/widget_today_snap_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="@string/widget_snap_label"
+            android:textColor="#6B5FE0"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>

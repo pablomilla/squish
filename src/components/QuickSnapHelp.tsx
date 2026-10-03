@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { Segmented } from './ui';
+import { setWidgetNumbersHidden, widgetNumbersHidden } from '../lib/widgets';
 import { t } from '../lib/i18n';
 import './quick-snaps.css';
 
@@ -9,6 +12,7 @@ import './quick-snaps.css';
  */
 export default function QuickSnapHelp({ onTry }: { onTry: () => void }) {
   const platform = Capacitor.getPlatform();
+  const [hidden, setHidden] = useState(widgetNumbersHidden);
   const steps =
     platform === 'ios'
       ? [
@@ -38,6 +42,28 @@ export default function QuickSnapHelp({ onTry }: { onTry: () => void }) {
           </li>
         ))}
       </ol>
+      {platform !== 'web' && (
+        <div className="quick-snap-widget-choice">
+          <h4 className="small">{t('On the widget')}</h4>
+          <Segmented
+            label={t('On the widget')}
+            value={hidden ? 'snap' : 'today'}
+            onChange={(choice) => {
+              setHidden(choice === 'snap');
+              setWidgetNumbersHidden(choice === 'snap');
+            }}
+            options={[
+              { value: 'today' as const, label: t('Today and Quick snap') },
+              { value: 'snap' as const, label: t('Just Quick snap') },
+            ]}
+          />
+          <p className="tiny muted">
+            {hidden
+              ? t('The widget shows only the Quick snap button — for a phone other people see.')
+              : t('The widget shows what is left today, your protein and your streak beside the Quick snap button. The numbers are marked private, so an iPhone can hide them on the Lock Screen while it is locked.')}
+          </p>
+        </div>
+      )}
       <p className="tiny muted">
         {t('The photo goes to Squish to be read and is deleted from the server as soon as it has been — usually within seconds. It counts as one photo read.')}
       </p>

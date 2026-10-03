@@ -34,3 +34,8 @@
 }
 
 .quick-snap-help { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+/* What the home-screen widget shows: its own block, with room above and below. */
+.quick-snap-widget-choice { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.quick-snap-widget-choice h4 { margin: 0; }
+.quick-snap-widget-choice p { margin: 0; }
