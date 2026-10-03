@@ -203,17 +203,70 @@ p { margin: 0 0 14px; }
 .hero .lede { font-size: 21px; color: var(--ink-2); max-width: 34em; }
 .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 12px; }
 .hero .note { font-size: 15px; color: var(--ink-3); }
-.hero-art { position: relative; justify-self: center; }
-/* Beside the phone, peeking round its edge and in front of it — the heart over the frame, never over the screen itself. */
-.hero-art .mascot { position: absolute; z-index: 1; width: 150px; inset-inline-start: -128px; bottom: 26px; filter: drop-shadow(0 12px 18px rgba(53, 38, 72, 0.18)); }
+/*
+ * The phone, centred on a soft glow, with Squish standing in front of its
+ * bottom corner and two little cards floating off its edges. Everything is
+ * placed in proportion to the phone, so the picture holds together at any
+ * width without pushing the phone off-centre.
+ */
+.hero { overflow-x: clip; }
+.hero-art { position: relative; justify-self: center; width: min(310px, 74vw); isolation: isolate; }
+.hero-art .phone { width: 100%; }
+.hero-art::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 6% -26% 2%;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side at 40% 40%, color-mix(in srgb, var(--brand) 32%, transparent), transparent),
+    radial-gradient(closest-side at 64% 70%, color-mix(in srgb, #f4899f 28%, transparent), transparent);
+}
+.hero-art .mascot {
+  position: absolute;
+  z-index: 2;
+  width: 46%;
+  inset-inline-start: -24%;
+  bottom: -6%;
+  filter: drop-shadow(0 14px 18px rgba(53, 38, 72, 0.2));
+}
+.hero-float {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 10px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: hero-float 7s ease-in-out infinite;
+}
+.hero-float .em { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--peach-soft); font-size: 19px; }
+.hero-float b { display: grid; place-items: center; min-width: 36px; height: 36px; border-radius: 12px; background: var(--good); color: var(--surface); font-size: 17px; }
+/* Anchored by their outer edge, so each overlaps the phone by the same sliver whatever its words' length. */
+.hero-float--snap { inset-inline-end: 87%; top: 64%; }
+.hero-float--score { inset-inline-start: 84%; top: 17%; animation-delay: -3.5s; }
+@keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@media (prefers-reduced-motion: reduce) {
+  .hero-float { animation: none; }
+}
 @media (max-width: 900px) {
   .hero { padding-top: 12px; }
-  .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
-  /* The mascot stands in the space before the phone, inside the page's
-     margins, and the phone takes what is left of the width beside it. */
-  .hero-art { padding-inline-start: 72px; }
-  .hero-art .phone { width: min(310px, calc(100vw - 32px - 72px)); }
-  .hero-art .mascot { width: 96px; inset-inline-start: 0; bottom: 18px; }
+  .hero .wrap { grid-template-columns: 1fr; gap: 44px; }
+  .hero-art { width: min(300px, 68vw); margin-bottom: 12px; }
+  .hero-art .mascot { width: 42%; inset-inline-start: -17%; bottom: -5%; }
+  .hero-float { font-size: 14px; padding: 8px 12px 8px 8px; gap: 8px; border-radius: 16px; }
+  .hero-float .em, .hero-float b { width: 30px; min-width: 30px; height: 30px; border-radius: 10px; font-size: 15px; }
+  /* No room beside the phone: just the score, across its top corner. */
+  .hero-float--snap { display: none; }
+  .hero-float--score { inset-inline-start: auto; inset-inline-end: -9%; top: -3%; }
 }
 
 /* A phone, drawn in CSS around a real screenshot. */
