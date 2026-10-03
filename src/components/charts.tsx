@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react';
 import type { MacroKey, Nutrients, Targets } from '../types';
 import { MACROS, MICROS } from '../types';
-import { CEILING_LABEL, MACRO_LABEL, MICRO_LABEL, MICRO_UNIT, OVER, ceilingLimit, isCeiling, overPhrase, pct, round1 } from '../lib/nutrition';
+import { CEILING_LABEL, MACRO_LABEL, MICRO_LABEL, MICRO_UNIT, OVER, ceilingLimit, isCeiling, overPhrase, pct, qualityBand, round1 } from '../lib/nutrition';
 import type { OverTarget } from '../lib/nutrition';
 import type { DaySeriesPoint } from '../lib/selectors';
 import { shortDate, weekdayLetter } from '../lib/date';
@@ -528,7 +528,7 @@ export function StreakDots({ dates, done }: { dates: string[]; done: boolean[] }
  */
 export function ScoreMeter({ score, size = 44, label = size >= 50 }: { score: number; size?: number; label?: boolean }) {
   const scored = score > 0;
-  const band = !scored ? 'none' : score >= 75 ? 'great' : score >= 55 ? 'good' : score >= 38 ? 'soso' : 'room';
+  const band = qualityBand(score);
   return (
     <span
       className={`quality-tile quality-tile--${band}`}

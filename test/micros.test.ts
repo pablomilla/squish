@@ -271,3 +271,11 @@ test('the profile merge keeps what the person actually set', () => {
   assert.equal(merged.goal, 'lose');
   assert.equal(merged.age, DEFAULT_PROFILE.age, 'and only the gap comes from the defaults');
 });
+
+test('a score wears the colour of its label', async () => {
+  const { qualityBand, scoreLabel } = await import('../src/lib/nutrition');
+  assert.deepEqual([90, 75, 74, 55, 54, 38, 37, 1, 0].map(qualityBand), ['great', 'great', 'good', 'good', 'soso', 'soso', 'room', 'room', 'none']);
+  // Green and purple are both "good" words; amber "so-so"; peach "room to improve".
+  assert.equal(scoreLabel(80).tone, 'good');
+  assert.equal(scoreLabel(40).tone, 'warn');
+});

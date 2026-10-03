@@ -102,6 +102,11 @@
 .diary-meal-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .diary-meal-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--text-body); }
 .diary-meal-score { flex: none; min-width: 36px; padding: 6px 8px; border-radius: 10px; text-align: center; font-weight: 700; font-size: 13px; background: var(--brand-soft); color: var(--brand-ink); }
+/* The same colours as the quality tile (charts.css), so a score reads the same everywhere. */
+.diary-meal-score--great { background: var(--good-soft); color: var(--good); }
+.diary-meal-score--soso { background: var(--warn-soft); color: var(--warn); }
+.diary-meal-score--room { background: var(--pink-soft); color: var(--bad); }
+.diary-meal-score--none { background: var(--surface-2); color: var(--ink-3); }
 .diary-slot .diary-plans { margin: 8px 0 0; }
 
 .diary-head { align-items: center; margin-bottom: 0; }

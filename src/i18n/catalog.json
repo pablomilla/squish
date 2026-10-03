@@ -8017,7 +8017,8 @@
    "id": "13r7u1d07op5pr",
    "text": "No calories to score",
    "where": [
-    "src/components/charts.tsx"
+    "src/components/charts.tsx",
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -13945,7 +13946,8 @@
    "id": "1wk5rhq-q3852k",
    "text": "Food quality {score} out of 100",
    "where": [
-    "src/components/charts.tsx"
+    "src/components/charts.tsx",
+    "src/screens/Diary.tsx"
    ]
   },
   {

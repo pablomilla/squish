@@ -491,6 +491,17 @@ export function scoreLabel(score: number): { label: string; tone: Tone } {
   return { label: t('Room to improve'), tone: 'bad' };
 }
 
+/** Which colour a score wears, wherever it is shown: the same bands as its label. */
+export type QualityBand = 'great' | 'good' | 'soso' | 'room' | 'none';
+
+export function qualityBand(score: number): QualityBand {
+  if (score <= UNSCORED) return 'none';
+  if (score >= 75) return 'great';
+  if (score >= 55) return 'good';
+  if (score >= 38) return 'soso';
+  return 'room';
+}
+
 /** The label as it reads about one meal: "Balanced meal", but plain "Room to improve". */
 export const mealLabel = (score: number): string => {
   const { label, tone } = scoreLabel(score);

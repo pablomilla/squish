@@ -25,7 +25,7 @@ import WeekPlanSheet from '../components/WeekPlanSheet';
 import AskLink from '../components/AskLink';
 import { dayScore, mealsOn, totalsOn } from '../lib/selectors';
 import { loadPhoto } from '../lib/photos';
-import { dayVerdict } from '../lib/nutrition';
+import { dayVerdict, qualityBand } from '../lib/nutrition';
 import './diary.css';
 import { describePortion } from '../lib/units';
 import { formatEnergy } from '../lib/region';
@@ -256,7 +256,14 @@ export default function Diary({ go, onEditMeal, startDate }: { go: (route: Route
                       {meal.quick && <span className="badge diary-meal-check">{t('to check')}</span>}
                     </span>
                   </span>
-                  {!essentials && <span className="diary-meal-score">{meal.score}</span>}
+                  {!essentials && (
+                    <span
+                      className={`diary-meal-score diary-meal-score--${qualityBand(meal.score)}`}
+                      aria-label={meal.score > 0 ? t('Food quality {score} out of 100', { score: meal.score }) : t('No calories to score')}
+                    >
+                      {meal.score > 0 ? meal.score : '–'}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

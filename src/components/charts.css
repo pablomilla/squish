@@ -142,4 +142,4 @@
 .quality-tile--great { background: var(--good-soft); color: var(--good); }
 .quality-tile--good { background: var(--brand-soft); color: var(--brand-ink); }
 .quality-tile--soso { background: var(--warn-soft); color: var(--warn); }
-.quality-tile--room { background: var(--peach-soft); color: var(--warn); }
+.quality-tile--room { background: var(--pink-soft); color: var(--bad); }
