@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Squish from '../components/Squish';
-import { CloseIcon, ImageIcon } from '../components/icons';
+import Wordmark from '../components/Wordmark';
+import { Sheet } from '../components/ui';
+import { CameraIcon, CloseIcon, HelpIcon, ImageIcon } from '../components/icons';
+import { FOOD_TIPS, PLATE_GUIDE } from '../lib/photoTips';
 import { shrinkImage } from '../lib/api';
 import { takeSnap } from '../lib/snaps';
 import { finishQuickSnap } from '../lib/launch';
@@ -39,6 +42,7 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
   const [camera, setCamera] = useState<CameraState>(() => (cameraSupported() ? 'requesting' : 'unsupported'));
   const [taken, setTaken] = useState(0);
   const [flash, setFlash] = useState(0);
+  const [tips, setTips] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -154,9 +158,23 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
           <button type="button" className="capture-round" onClick={done} aria-label={t('Close')}>
             <CloseIcon />
           </button>
-          <span className="quick-snap-title">{t('Quick snap')}</span>
-          <span className="capture-round quick-snap-spacer" aria-hidden="true" />
+          <span className="quick-snap-brand">
+            <Wordmark width={84} className="capture-wordmark" />
+            <span className="quick-snap-title">{t('Quick snap')}</span>
+          </span>
+          <button type="button" className="capture-round" onClick={() => setTips(true)} aria-label={t('Photo tips')}>
+            <HelpIcon />
+          </button>
         </div>
+
+        {ready && (
+          <>
+            <div className="capture-frame" aria-hidden="true">
+              <span /><span /><span /><span />
+            </div>
+            <p className="capture-guide quick-snap-guide">{PLATE_GUIDE}</p>
+          </>
+        )}
 
         <p className="quick-snap-status" role="status" aria-live="polite">
           {failed
@@ -192,6 +210,29 @@ export default function QuickSnap({ onClose }: { onClose: () => void }) {
           }}
         />
       </div>
+
+      <Sheet open={tips} onClose={() => setTips(false)} title={t('A good food photo')}>
+        <div className="stack">
+          {FOOD_TIPS.map(([emoji, text]) => (
+            <div className="row" key={text} style={{ alignItems: 'flex-start', gap: 12 }}>
+              <span aria-hidden="true" style={{ fontSize: 22 }}>{emoji}</span>
+              <p className="small">{text}</p>
+            </div>
+          ))}
+          <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
+            {/* Not shrunk to make room for the words beside it. */}
+            <span aria-hidden="true" style={{ flex: 'none', display: 'inline-flex' }}>
+              <CameraIcon size={22} />
+            </span>
+            <p className="small">
+              {t('The photo waits on our server only until Squish has read it — usually a few seconds — and the reading only until you next open Squish. On this device it is kept with the meal.')}
+            </p>
+          </div>
+          <button type="button" className="btn btn--block" onClick={() => setTips(false)}>
+            {t('Got it')}
+          </button>
+        </div>
+      </Sheet>
     </div>
   );
 }

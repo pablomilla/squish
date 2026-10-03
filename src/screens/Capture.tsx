@@ -12,6 +12,7 @@ import { slotForNow } from '../lib/date';
 import './capture.css';
 import { t } from '../lib/i18n';
 import { slotName } from '../lib/words';
+import { FOOD_TIPS, PLATE_GUIDE } from '../lib/photoTips';
 
 interface Props {
   slot?: MealSlot;
@@ -82,7 +83,7 @@ const THINKING_LINES: Record<Shot, string[]> = {
 };
 
 const GUIDE: Record<Shot, string> = {
-  plate: t('Whole plate in the frame — the rim is what Squish measures against.'),
+  plate: PLATE_GUIDE,
   label: t('Fill the frame with the nutrition table.'),
   barcode: t('Hold the barcode steady in the frame.'),
 };
@@ -94,13 +95,6 @@ const LABEL_TIPS = [
   ['🥄', t('Squish reads the per-serving column when there is one, so check the serving it picked.')],
 ];
 
-const TIPS = [
-  ['🔆', t('Good light beats a good camera. Near a window is ideal; overhead kitchen light is fine.')],
-  ['🍽️', t('Get the whole plate in frame. Anything cropped out is nutrition I cannot count.')],
-  ['📐', t('Shoot from slightly above, at an angle — straight down hides how deep a bowl is.')],
-  ['🥄', t('Leave a fork or hand in shot. It tells me the scale, and portions are half the answer.')],
-  ['🫙', t('Dressings, oil and sauces are invisible. Mention them after, and I will add them in.')],
-];
 
 export default function Capture({ slot, date, shot: initialShot = 'plate', onCancel, onAnalysed, go }: Props) {
   const toast = useToast();
@@ -499,14 +493,17 @@ export default function Capture({ slot, date, shot: initialShot = 'plate', onCan
 
       <Sheet open={tips} onClose={() => setTips(false)} title={shot === 'label' ? t('A good label photo') : t('A good food photo')}>
         <div className="stack">
-          {(shot === 'label' ? LABEL_TIPS : TIPS).map(([emoji, text]) => (
+          {(shot === 'label' ? LABEL_TIPS : FOOD_TIPS).map(([emoji, text]) => (
             <div className="row" key={text} style={{ alignItems: 'flex-start', gap: 12 }}>
               <span aria-hidden="true" style={{ fontSize: 22 }}>{emoji}</span>
               <p className="small">{text}</p>
             </div>
           ))}
           <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
-            <CameraIcon size={22} />
+            {/* Not shrunk to make room for the words beside it. */}
+            <span aria-hidden="true" style={{ flex: 'none', display: 'inline-flex' }}>
+              <CameraIcon size={22} />
+            </span>
             <p className="small">
               {t('Nothing is stored. The photo goes to Squish for a few seconds to be read, and is kept only on this device with the meal.')}
             </p>

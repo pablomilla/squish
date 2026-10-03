@@ -1,5 +1,5 @@
 {
- "version": "01wctb30hdeq0d",
+ "version": "0lo7sqi-txhm95",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -871,7 +871,8 @@
    "id": "04ajh8n0322uq9",
    "text": "A good food photo",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/screens/Capture.tsx",
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -3040,7 +3041,8 @@
    "id": "0ghgdjr0fxkio9",
    "text": "Photo tips",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/screens/Capture.tsx",
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -3599,7 +3601,7 @@
    "id": "0jh9z0b-gecp6s",
    "text": "Dressings, oil and sauces are invisible. Mention them after, and I will add them in.",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/lib/photoTips.ts"
    ]
   },
   {
@@ -3983,7 +3985,8 @@
    "text": "Got it",
    "where": [
     "src/components/PolicyNotice.tsx",
-    "src/screens/Capture.tsx"
+    "src/screens/Capture.tsx",
+    "src/screens/QuickSnap.tsx"
    ]
   },
   {
@@ -8917,7 +8920,7 @@
    "id": "19gkefj0crqk3u",
    "text": "Good light beats a good camera. Near a window is ideal; overhead kitchen light is fine.",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/lib/photoTips.ts"
    ]
   },
   {
@@ -9457,6 +9460,13 @@
    ]
   },
   {
+   "id": "1cjin9g-fgm60k",
+   "text": "The photo waits on our server only until Squish has read it — usually a few seconds — and the reading only until you next open Squish. On this device it is kept with the meal.",
+   "where": [
+    "src/screens/QuickSnap.tsx"
+   ]
+  },
+  {
    "id": "1cjmkge0xyv1ou",
    "text": "That email did not go. Try again in a few minutes.",
    "where": [
@@ -9566,7 +9576,7 @@
    "id": "1dbk5ht-2brjo4",
    "text": "Get the whole plate in frame. Anything cropped out is nutrition I cannot count.",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/lib/photoTips.ts"
    ]
   },
   {
@@ -10294,7 +10304,7 @@
    "id": "1gxbo3l-yx0v8e",
    "text": "Whole plate in the frame — the rim is what Squish measures against.",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/lib/photoTips.ts"
    ]
   },
   {
@@ -13526,7 +13536,7 @@
    "id": "1xe2lz40mmusbm",
    "text": "Shoot from slightly above, at an angle — straight down hides how deep a bowl is.",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/lib/photoTips.ts"
    ]
   },
   {
@@ -13733,7 +13743,7 @@
    "id": "1y6geix-rqmrnd",
    "text": "Leave a fork or hand in shot. It tells me the scale, and portions are half the answer.",
    "where": [
-    "src/screens/Capture.tsx"
+    "src/lib/photoTips.ts"
    ]
   },
   {
