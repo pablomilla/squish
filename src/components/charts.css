@@ -137,9 +137,10 @@
   flex: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
   border-radius: 30%; line-height: 1; background: var(--surface-sunk); color: var(--ink-2);
 }
-.quality-tile b { font-weight: 700; color: var(--ink); }
+/* The number wears its band's colour, so the colour is the first thing seen. */
+.quality-tile b { font-weight: 700; color: inherit; }
 .quality-word { font-size: 0.34em; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px; opacity: 0.8; }
-.quality-tile--great { background: var(--good-soft); color: var(--good); }
-.quality-tile--good { background: var(--brand-soft); color: var(--brand-ink); }
+.quality-tile--great { background: var(--good); color: var(--surface); }
+.quality-tile--good { background: var(--good-soft); color: var(--good); }
 .quality-tile--soso { background: var(--warn-soft); color: var(--warn); }
 .quality-tile--room { background: var(--pink-soft); color: var(--bad); }
