@@ -17,7 +17,7 @@ export default function NutritionistPitch({ compact = false }: { compact?: boole
   return (
     <div className={`pitch${compact ? ' pitch--compact' : ''}`}>
       <p className="tiny pitch-label">{t('For example')}</p>
-      <div className="pitch-thread" aria-label={t('An example conversation with the nutritionist')}>
+      <div className="pitch-thread" aria-label={t('An example conversation with Squish')}>
         <p className="pitch-me">{t('Why am I always starving by 11?')}</p>
         <div className="pitch-them">
           <Squish mood="thinking" size={34} bob={false} label="" />

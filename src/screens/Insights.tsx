@@ -281,7 +281,7 @@ export default function Insights({ go }: { go?: (route: Route) => void }) {
         />
         <MenuRow icon="🏆" label={t('Achievements')} value={`${ACHIEVEMENTS.filter((a) => unlocked[a.id]).length}/${ACHIEVEMENTS.length}`} onClick={() => setOpen('badges')} />
         {/* Opens the nutritionist without a question: the chart may be a month or all time, so they say what they want to know. */}
-        {go && <MenuRow icon="💬" label={t('Ask the nutritionist')} value="" onClick={() => go({ name: 'ask' })} />}
+        {go && <MenuRow icon="💬" label={t('Ask Squish')} value="" onClick={() => go({ name: 'ask' })} />}
       </nav>
 
       <Sheet open={open === 'streak'} onClose={() => setOpen(null)} title={t('Streak and this week')}>

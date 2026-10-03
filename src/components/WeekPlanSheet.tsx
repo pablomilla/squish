@@ -6,7 +6,7 @@ import { Segmented, Sheet, useToast } from './ui';
 import { useSquish } from '../store/useSquish';
 import { useStanding, useSubscribed } from './useSubscribed';
 import { addDays, friendlyDate, isoDate } from '../lib/date';
-import { NUTRITIONIST_PLAN_NOTE, likesFrom, replacedOn, standingOn, weekDates } from '../lib/planner';
+import { SQUISH_PLAN_NOTE, likesFrom, replacedOn, standingOn, weekDates } from '../lib/planner';
 import { historyFor } from '../lib/planLearning';
 import { PLUS } from '../lib/plan';
 import {
@@ -167,7 +167,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
           nutrients: meal.nutrients,
           score: meal.score,
           source: 'describe',
-          note: NUTRITIONIST_PLAN_NOTE,
+          note: SQUISH_PLAN_NOTE,
         });
         added += 1;
       });
@@ -183,7 +183,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
       {stage.kind === 'ask' && (
         <div className="week-ask">
           <p className="small muted">
-            {t('The nutritionist plans meals around your targets, the foods you already eat, and anything you have told it — an allergy, a food you avoid. You choose what to keep.')}
+            {t('Squish plans meals around your targets, the foods you already eat, and anything you have told it — an allergy, a food you avoid. You choose what to keep.')}
           </p>
           {!subscribed && <p className="badge badge--plus week-plus">{t('Part of {plus}', { plus: PLUS })}</p>}
           <Learned />
@@ -288,8 +288,8 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
           {replaced.length > 0 && (
             <p className="tiny muted week-replaces">
               {plural(replaced.length, {
-                one: 'This replaces the {n} meal the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.',
-                other: 'This replaces the {n} meals the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.',
+                one: 'This replaces the {n} meal Squish planned for these days before. Meals you kept, and ones you planned yourself, stay.',
+                other: 'This replaces the {n} meals Squish planned for these days before. Meals you kept, and ones you planned yourself, stay.',
               })}
             </p>
           )}

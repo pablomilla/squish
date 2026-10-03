@@ -15,7 +15,7 @@
  */
 import type { MealEntry, MealSlot } from '../types';
 import { addDays } from './date';
-import { NUTRITIONIST_PLAN_NOTE } from './planner';
+import { isSquishPlan } from './planner';
 
 export type Outcome = 'made' | 'skipped' | 'swapped' | 'dropped';
 
@@ -36,7 +36,7 @@ export const LOOK_BACK_DAYS = 28;
 
 const key = (title: string) => title.trim().toLocaleLowerCase();
 
-export const judged = (plan: Pick<MealEntry, 'note'>): boolean => plan.note === NUTRITIONIST_PLAN_NOTE;
+export const judged = (plan: Pick<MealEntry, 'note'>): boolean => isSquishPlan(plan);
 
 /** A plan's outcome, for the log. */
 export const outcomeOf = (plan: Pick<MealEntry, 'title' | 'slot' | 'date'>, outcome: Outcome): PlanOutcome => ({

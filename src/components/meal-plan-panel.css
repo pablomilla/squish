@@ -6,7 +6,8 @@
 .meal-plan-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .meal-plan-head p { margin: 0; }
 .meal-plan-day h3 { margin: 0 0 8px; color: var(--ink-2); }
-.meal-plan-links { gap: 14px; }
+.meal-plan-links { gap: 6px 18px; flex-wrap: wrap; }
+.meal-plan-links .btn--quiet { white-space: nowrap; padding: 8px 2px; gap: 6px; }
 
 /* Changing the whole plan at once. */
 .meal-plan-day-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }

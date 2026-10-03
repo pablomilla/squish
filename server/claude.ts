@@ -1343,7 +1343,7 @@ async function planWeekOn(model: string, req: WeekPlanRequest, signal: AbortSign
       `${usd === null ? 'unpriced' : `$${usd.toFixed(4)}`} ${((Date.now() - startedAt) / 1000).toFixed(1)}s stop=${response.stop_reason}`,
   );
 
-  if (response.stop_reason === 'refusal') throw new WeekPlanError(msg('The nutritionist could not plan that week. Try different preferences.'));
+  if (response.stop_reason === 'refusal') throw new WeekPlanError(msg('Squish could not plan that week. Try different preferences.'));
   if (response.stop_reason === 'max_tokens') throw new WeekPlanError(msg('That plan ran long. Try fewer days, or without snacks.'));
 
   const text = response.content
@@ -1401,7 +1401,7 @@ async function swapOn(model: string, req: SwapRequest, signal: AbortSignal): Pro
     }),
     response.model,
   );
-  if (response.stop_reason === 'refusal') throw new WeekPlanError(msg('The nutritionist could not find another meal for that. Try again in a moment.'));
+  if (response.stop_reason === 'refusal') throw new WeekPlanError(msg('Squish could not find another meal for that. Try again in a moment.'));
   const answer = response.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
@@ -1420,9 +1420,9 @@ export function fitSwap(week: ModelWeek, req: SwapRequest): AnalysisResult {
   // The first day's first meal, whatever slot it came back under: it is going in this one.
   const first = (week.days ?? []).find((d) => d.day === 1 && (d.meals ?? []).some((m) => (m.items ?? []).length)) ?? week.days?.[0];
   const meal = (first?.meals ?? []).find((m) => (m.items ?? []).length);
-  if (!meal) throw new WeekPlanError(msg('The nutritionist could not find another meal for that. Try again in a moment.'));
+  if (!meal) throw new WeekPlanError(msg('Squish could not find another meal for that. Try again in a moment.'));
   const one = toWeekPlan({ days: [{ day: 1, meals: [{ ...meal, slot: req.slot }] }] }, asked);
-  if (!one.days.length) throw new WeekPlanError(msg('The nutritionist could not find another meal for that. Try again in a moment.'));
+  if (!one.days.length) throw new WeekPlanError(msg('Squish could not find another meal for that. Try again in a moment.'));
   const { plan } = fitToTarget(one, req.calories, 0);
   return { ...plan.days[0].meals[0], slot: req.slot };
 }

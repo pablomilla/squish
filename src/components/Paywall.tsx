@@ -34,9 +34,9 @@ import { legalHref } from '../lib/legal';
  */
 const USED: Record<OutOfAllowance['kind'], () => string> = {
   photo: () => t('That is the fair-use ceiling for AI meal analyses today.'),
-  chat: () => t('That is the fair-use ceiling for questions to the nutritionist today.'),
+  chat: () => t('That is the fair-use ceiling for questions to Squish today.'),
   recipe: () => t('That is the fair-use ceiling for recipe imports today.'),
-  weekplan: () => t("You have had this week's weekly plans from the nutritionist."),
+  weekplan: () => t("You have had this week's weekly plans from Squish."),
   // Never counted against a limit; here so every kind has its words.
   swap: () => t('Swapping planned meals comes with {plus}.', { plus: PLUS }),
   cook: () => t('Cooking steps for your planned meals come with {plus}.', { plus: PLUS }),
@@ -44,16 +44,16 @@ const USED: Record<OutOfAllowance['kind'], () => string> = {
 
 const COME_WITH: Record<OutOfAllowance['kind'], () => string> = {
   photo: () => t('AI meal analyses come with {plus}.', { plus: PLUS }),
-  chat: () => t('Questions for the nutritionist come with {plus}.', { plus: PLUS }),
+  chat: () => t('Questions for Squish come with {plus}.', { plus: PLUS }),
   recipe: () => t('Recipe imports come with {plus}.', { plus: PLUS }),
-  weekplan: () => t('Weekly plans from the nutritionist come with {plus}.', { plus: PLUS }),
+  weekplan: () => t('Weekly plans from Squish come with {plus}.', { plus: PLUS }),
   swap: () => t('Swapping planned meals comes with {plus}.', { plus: PLUS }),
   cook: () => t('Cooking steps for your planned meals come with {plus}.', { plus: PLUS }),
 };
 
 const THAT_WAS: Record<OutOfAllowance['kind'], (n: number) => string> = {
   photo: (n) => plural(n, { one: 'That was your {n} free AI meal analysis. From here, they are part of {plus}.', other: 'That was your {n} free AI meal analyses. From here, they are part of {plus}.' }, { plus: PLUS }),
-  chat: (n) => plural(n, { one: 'That was your {n} free question for the nutritionist. From here, they are part of {plus}.', other: 'That was your {n} free questions for the nutritionist. From here, they are part of {plus}.' }, { plus: PLUS }),
+  chat: (n) => plural(n, { one: 'That was your {n} free question for Squish. From here, they are part of {plus}.', other: 'That was your {n} free questions for Squish. From here, they are part of {plus}.' }, { plus: PLUS }),
   recipe: (n) => plural(n, { one: 'That was your {n} free recipe import. From here, they are part of {plus}.', other: 'That was your {n} free recipe imports. From here, they are part of {plus}.' }, { plus: PLUS }),
   weekplan: (n) => plural(n, { one: 'That was your {n} free weekly plan. From here, they are part of {plus}.', other: 'That was your {n} free weekly plans. From here, they are part of {plus}.' }, { plus: PLUS }),
   swap: () => t('Swapping planned meals comes with {plus}.', { plus: PLUS }),
@@ -99,7 +99,7 @@ export default function Paywall({
           <Squish mood="excited" size={84} />
           <p className="small">
             {aboutNutritionist(standing.kind)
-              ? t('Make a free account and ask the nutritionist {n} questions on us — it reads your diary before it answers.', { n: standing.taste ?? 5 })
+              ? t('Make a free account and ask Squish {n} questions on us — it reads your diary before it answers.', { n: standing.taste ?? 5 })
               : t('Make a free account and your first {n} AI meal analyses are on us — snap the plate, or just say what you ate.', { n: standing.taste ?? 10 })}
           </p>
           {aboutNutritionist(standing.kind) && <NutritionistPitch compact />}
@@ -126,7 +126,7 @@ export default function Paywall({
               </p>
               <p className="tiny muted">
                 {standing.kind === 'weekplan'
-                  ? t('A week of meals is the most the nutritionist does at once, so {plus} has two a week. Asking about your meals and planning by hand carry on as normal.', { plus: PLUS })
+                  ? t('A week of meals is the most Squish plans at once, so {plus} has two a week. Asking about your meals and planning by hand carry on as normal.', { plus: PLUS })
                   : t('{plus} is unlimited for one person’s own eating. The daily ceilings sit far past a real day of meals, to keep Squish fast and affordable for everybody.', { plus: PLUS })}
               </p>
             </>
@@ -137,7 +137,7 @@ export default function Paywall({
                 they never had one. "You have used your 0 free questions" is
                 the sort of sentence that makes an app feel written by nobody.
               */}
-              {aboutNutritionist(standing.kind) && <h3 className="paywall-headline">{t('Your own nutritionist')}</h3>}
+              {aboutNutritionist(standing.kind) && <h3 className="paywall-headline">{t('Nutrition help from your own diary')}</h3>}
               <p className="small">
                 {standing.allowance === 0 ? COME_WITH[standing.kind]() : THAT_WAS[standing.kind](standing.allowance)}
               </p>
@@ -146,7 +146,7 @@ export default function Paywall({
 
               <ul className="paywall-list">
                 <li className="paywall-star">
-                  {rich('<b>The nutritionist</b> — unlimited questions about your own diary, and a weekly meal plan with its shopping list', {}, { b: (text) => <b>{text}</b> })}
+                  {rich('<b>Ask Squish</b> — unlimited questions about your own diary, and a weekly meal plan with its shopping list', {}, { b: (text) => <b>{text}</b> })}
                 </li>
                 <li>
                   {rich('<b>Unlimited AI meal analyses</b> — snap the plate, or say or type what you ate', {}, { b: (text) => <b>{text}</b> })}
@@ -171,7 +171,7 @@ export default function Paywall({
               </p>
 
               <Plans />
-              <p className="tiny muted">{t('A year works out at {price} a week — less than a coffee, for a nutritionist who has read your diary.', { price: weeklyPrice() })}</p>
+              <p className="tiny muted">{t('A year works out at {price} a week — less than a coffee, for nutrition help that has read your diary.', { price: weeklyPrice() })}</p>
 
               <NotOnSale />
             </>

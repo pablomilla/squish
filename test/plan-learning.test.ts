@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { checkInDue, historyFor, isNever, lastWeekReview, logged, outcomeOf, reviewOf, stalePlans, toggleNever, LOG_MAX, type PlanOutcome } from '../src/lib/planLearning';
-import { NUTRITIONIST_PLAN_NOTE } from '../src/lib/planner';
+import { SQUISH_PLAN_NOTE } from '../src/lib/planner';
 import { cleanWeekRequest, weekPlanPrompt, WEEKPLAN_SYSTEM } from '../server/weekplan';
 import { toWeekPlan, withoutNever } from '../server/claude';
 import type { MealEntry, MealSlot } from '../src/types';
@@ -15,7 +15,7 @@ const TODAY = '2026-09-29';
 const o = (title: string, date: string, outcome: PlanOutcome['outcome'], slot: MealSlot = 'dinner'): PlanOutcome => ({ title, date, outcome, slot });
 let n = 0;
 const plan = (date: string, title: string, over: Partial<MealEntry> = {}): MealEntry => ({
-  id: `p${n++}`, date, time: '', slot: 'dinner', title, items: [], nutrients: { calories: 500, protein: 30, carbs: 50, fat: 15, fibre: 6 }, score: 70, source: 'describe', note: NUTRITIONIST_PLAN_NOTE, ...over,
+  id: `p${n++}`, date, time: '', slot: 'dinner', title, items: [], nutrients: { calories: 500, protein: 30, carbs: 50, fat: 15, fibre: 6 }, score: 70, source: 'describe', note: SQUISH_PLAN_NOTE, ...over,
 });
 
 test('a plan two days gone without being eaten is skipped — the nutritionist’s are noted, anybody’s leaves the diary', () => {

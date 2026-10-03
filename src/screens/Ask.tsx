@@ -222,9 +222,9 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
     <div className="screen ask">
       <header className="screen-head">
         <div>
-          <h1>{t('Your nutritionist')}</h1>
+          <h1>{t('Ask Squish')}</h1>
           <p>
-            {t('Reads your diary before it answers')}
+            {t('Nutrition help that reads your diary')}
             {access.label ? ` · ${access.label}` : ''}
           </p>
         </div>
@@ -257,7 +257,7 @@ export default function Ask({ onClose, question, draft: startDraft, tab: startTa
           {question ? (
             <h2>{t('“{question}” — I can answer that from your diary.', { question })}</h2>
           ) : (
-            <h2>{access.needsAccount ? t('Ask me {n} questions, free', { n: 5 }) : t('Your own nutritionist')}</h2>
+            <h2>{access.needsAccount ? t('Ask me {n} questions, free', { n: 5 }) : t('Nutrition help from your own diary')}</h2>
           )}
           <p className="small muted">
             {access.needsAccount

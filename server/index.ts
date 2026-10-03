@@ -400,19 +400,19 @@ function meter(kind: Spend) {
  */
 const KIND_WORDS: Record<Billable, string> = {
   photo: 'AI meal analyses',
-  chat: 'questions for the nutritionist',
+  chat: 'questions for Squish',
   recipe: 'recipe imports',
 };
 
 const OUT_OF: Record<Plan, Record<Billable, string>> = {
   free: {
     photo: `That was your free taste of the AI. ${PLUS} has unlimited analyses — and logging by hand, food search and your diary stay free.`,
-    chat: `That was your ${ALLOWANCE.free.chat} free questions for the nutritionist. ${PLUS} has unlimited questions, and weekly meal plans.`,
+    chat: `That was your ${ALLOWANCE.free.chat} free questions for Squish. ${PLUS} has unlimited questions, and weekly meal plans.`,
     recipe: `Recipe imports are part of ${PLUS}.`,
   },
   plus: {
     photo: `That is ${ALLOWANCE.plus.photo} AI meal analyses today, the fair-use ceiling for a day. They come back tomorrow — logging by hand and food search are unaffected.`,
-    chat: `That is ${ALLOWANCE.plus.chat} questions for the nutritionist today, the fair-use ceiling for a day. They come back tomorrow.`,
+    chat: `That is ${ALLOWANCE.plus.chat} questions for Squish today, the fair-use ceiling for a day. They come back tomorrow.`,
     recipe: `That is ${ALLOWANCE.plus.recipe} recipe imports today, the fair-use ceiling for a day. They come back tomorrow.`,
   },
 };
@@ -732,7 +732,7 @@ app.get('/api/allowance', async (req, res) => {
       // And only shows the dashboard to somebody who can use it.
       admin: await isAdmin(req.device),
       ...(await standingOf(req.device)),
-      // The nutritionist's weekly plans, for the planner to say how many are left.
+      // Squish's weekly plans, for the planner to say how many are left.
       weekplans: { used: await weekPlansUsed(req.device), allowance: WEEKPLANS_PER_WEEK, resets: nextWeek() },
     });
   } catch (error) {
@@ -2732,7 +2732,7 @@ async function weekPlanCap(req: Request, res: Response, next: NextFunction): Pro
     if (plan === 'free') {
       res.status(402).json({
         error: 'out_of_allowance', plan, kind: 'weekplan', used: 0, allowance: 0, period: 'ever',
-        needsAccount: false, resets: null, message: `Weekly plans from the nutritionist are part of ${PLUS}.`,
+        needsAccount: false, resets: null, message: `Weekly plans from Squish are part of ${PLUS}.`,
       });
       return;
     }
@@ -2767,7 +2767,7 @@ function weekPlanAsk(req: Request, res: Response, next: NextFunction): void {
   next();
 }
 
-const WEEKPLAN_FAILED = msg('The nutritionist could not plan that just now. Try again in a moment.');
+const WEEKPLAN_FAILED = msg('Squish could not plan that just now. Try again in a moment.');
 const WEEKPLAN_CUT_OFF = msg('That plan was interrupted, so the question has been given back. Try again.');
 
 /** Whoever a plan belongs to: the account, else this browser, else nobody (the id is then the key). */
@@ -2827,7 +2827,7 @@ app.post('/api/weekplan', weekPlanAsk, weekPlanCap, meter('chat'), async (req, r
  * nothing. Counted per day rather than against the month: a swap is one small
  * meal, and a plan that needs a few is the plan working.
  */
-const SWAP_FAILED = msg('The nutritionist could not swap that just now. Try again in a moment.');
+const SWAP_FAILED = msg('Squish could not swap that just now. Try again in a moment.');
 
 app.post('/api/weekplan/swap', async (req, res, next) => {
   const ask = cleanSwapRequest(req.body);

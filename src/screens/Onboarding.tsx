@@ -536,7 +536,7 @@ export default function Onboarding({ accounts = false }: { accounts?: boolean })
                 <h1>{t('How do you eat?')}</h1>
               </Buddy>
               <EatingFields value={draft} onChange={set} />
-              <p className="tiny muted">{t('Meal plans and the nutritionist go by this. Change it any time on You.')}</p>
+              <p className="tiny muted">{t('Meal plans and Ask Squish go by this. Change it any time on You.')}</p>
             </div>
           )}
 

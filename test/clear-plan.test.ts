@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { MealEntry, MealSlot } from '../src/types';
-import { NUTRITIONIST_PLAN_NOTE, currentPlan } from '../src/lib/planner';
+import { OLD_SQUISH_PLAN_NOTE, SQUISH_PLAN_NOTE, currentPlan, isSquishPlan, replaceable, shownNote } from '../src/lib/planner';
+import { judged } from '../src/lib/planLearning';
 import { unlogged, type PlanOutcome } from '../src/lib/planLearning';
 import { useSquish } from '../src/store/useSquish';
 import { isoDate, addDays } from '../src/lib/date';
@@ -12,7 +13,7 @@ import { isoDate, addDays } from '../src/lib/date';
  */
 const nutrients = { calories: 500, protein: 30, carbs: 50, fat: 15, fibre: 5, sugar: 5, sodium: 400 };
 const plan = (id: string, date: string, slot: MealSlot, extra: Partial<MealEntry> = {}): MealEntry =>
-  ({ id, date, time: '', slot, title: `Meal ${id}`, items: [], nutrients, score: 70, source: 'manual', note: NUTRITIONIST_PLAN_NOTE, ...extra }) as MealEntry;
+  ({ id, date, time: '', slot, title: `Meal ${id}`, items: [], nutrients, score: 70, source: 'manual', note: SQUISH_PLAN_NOTE, ...extra }) as MealEntry;
 
 test('the plan as it stands: the nutritionist’s meals from today on, kept ones too', () => {
   const plans = [
@@ -61,4 +62,17 @@ test('clearing the plan, a day or the picked meals, and Undo', () => {
   s().dropPlans(keepKept, false);
   assert.deepEqual(s().plans.map((p) => p.id).sort(), ['mine', 'x3'], 'the kept one, and the one they planned themselves, stay');
   useSquish.setState({ plans: [], planLog: [] });
+});
+
+test('plans saved before Ask Squish had its name are still Squish’s, and read with the new words', () => {
+  const old = plan('o', '2026-10-04', 'dinner', { note: OLD_SQUISH_PLAN_NOTE });
+  const mine = plan('m', '2026-10-04', 'lunch', { note: 'Leftovers' });
+  assert.equal(SQUISH_PLAN_NOTE, 'Planned by Squish');
+  assert.ok(isSquishPlan(old) && isSquishPlan(plan('n', '2026-10-04', 'lunch')));
+  assert.ok(!isSquishPlan(mine));
+  assert.ok(replaceable(old), 'a new week still replaces it');
+  assert.ok(judged(old), 'and what happens to it still teaches the next plan');
+  assert.deepEqual(currentPlan([old, mine], '2026-10-03').map((p) => p.id), ['o']);
+  assert.equal(shownNote(OLD_SQUISH_PLAN_NOTE), 'Planned by Squish');
+  assert.equal(shownNote('Leftovers'), 'Leftovers');
 });

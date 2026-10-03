@@ -122,8 +122,8 @@ export default function MealPlanPanel() {
         <div className="stack meal-plan-clear">
           <p className="small">
             {plural(count, {
-              one: 'This takes the {n} meal the nutritionist planned from today out of your plan and your diary, and its shopping off the list.',
-              other: 'This takes the {n} meals the nutritionist planned from today out of your plan and your diary, and their shopping off the list.',
+              one: 'This takes the {n} meal Squish planned from today out of your plan and your diary, and its shopping off the list.',
+              other: 'This takes the {n} meals Squish planned from today out of your plan and your diary, and their shopping off the list.',
             })}
           </p>
           <p className="tiny muted">{t('Meals you have already eaten stay in your diary, and you can plan a new week whenever you like.')}</p>

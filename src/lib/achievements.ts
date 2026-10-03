@@ -79,7 +79,7 @@ export const ACHIEVEMENTS: Entry[] = [
   a('trying', 'first-scan', t('Beep!'), t('Scan a barcode'), '🏷️'),
   a('trying', 'first-voice', t('Say it'), t('Log a meal by talking'), '🎙️'),
   a('trying', 'first-recipe', t('Home cook'), t('Import a recipe'), '📖'),
-  a('trying', 'first-question', t('Curious mind'), t('Ask the nutritionist a question'), '💬'),
+  a('trying', 'first-question', t('Curious mind'), t('Ask Squish a question'), '💬'),
   a('trying', 'weigh-4', t('Checking in'), t('Weigh in four weeks in a row'), '⚖️'),
   a('trying', 'first-share', t('Show and tell'), t('Share a progress card'), '📣'),
 

@@ -8,7 +8,7 @@ import { useSquish } from '../store/useSquish';
 import { isPaywalled, swapPlannedMeal } from '../lib/api';
 import { findRecipe, recipeFrom } from '../lib/recipes';
 import { aboutOf } from '../lib/eating';
-import { NUTRITIONIST_PLAN_NOTE, servingsFor } from '../lib/planner';
+import { isSquishPlan, servingsFor } from '../lib/planner';
 import { friendlyDate, isoDate } from '../lib/date';
 import { formatEnergy } from '../lib/region';
 import { plural, t } from '../lib/i18n';
@@ -51,7 +51,7 @@ export default function CookSheet({ plan, open, onClose }: { plan: MealEntry; op
   const [cooking, setCooking] = useState(false);
   const [swapping, setSwapping] = useState(false);
   // Keeping means something only for the nutritionist's plans: a new week replaces those, and never theirs.
-  const keepable = plan.note === NUTRITIONIST_PLAN_NOTE;
+  const keepable = isSquishPlan(plan);
   const saved = findRecipe(recipes, plan.title);
 
   const keep = useCallback((steps: CookSteps) => setPlanCook(plan.id, steps), [plan.id, setPlanCook]);
@@ -190,7 +190,7 @@ function SwapPanel({ plan, onDone }: { plan: MealEntry; onDone: () => void }) {
       setSwap({ stage: 'offer', meal });
     } catch (error) {
       if (isPaywalled(error)) onDone();
-      else setSwap({ stage: 'failed', message: error instanceof Error && error.message ? error.message : t('The nutritionist could not swap that just now. Try again in a moment.') });
+      else setSwap({ stage: 'failed', message: error instanceof Error && error.message ? error.message : t('Squish could not swap that just now. Try again in a moment.') });
     }
   }, [plan, plans, profile, nutritionistNotes, notForMe, onDone]);
 

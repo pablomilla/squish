@@ -1,5 +1,5 @@
 {
- "version": "147iskz-yzk3n0",
+ "version": "1o0aycw-wtbxic",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -319,6 +319,13 @@
    ]
   },
   {
+   "id": "01sj41x-qjh5f1",
+   "text": "You have had this week's weekly plans from Squish.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "01vex33-b80168",
    "text": "Backup",
    "where": [
@@ -514,6 +521,13 @@
    ]
   },
   {
+   "id": "02oxr64-g270ni",
+   "text": "Questions for Squish come with {plus}.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "02pcm0x0spshra",
    "text": "If you would like help with eating well, a parent or carer, your school nurse or your doctor is a great place to start. And if food or your body ever feels like a worry, <b>{charity}</b>, an eating disorder charity in {country}, has help for young people at {link}.",
    "where": [
@@ -554,6 +568,14 @@
    "text": "Targets hit, out of seven days",
    "where": [
     "src/screens/Insights.tsx"
+   ]
+  },
+  {
+   "id": "02w874m04vkqfo",
+   "one": "This takes the {n} meal Squish planned from today out of your plan and your diary, and its shopping off the list.",
+   "other": "This takes the {n} meals Squish planned from today out of your plan and your diary, and their shopping off the list.",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {
@@ -1433,13 +1455,6 @@
    ]
   },
   {
-   "id": "07fxfol077al2a",
-   "text": "Plan my week with the nutritionist",
-   "where": [
-    "src/screens/Diary.tsx"
-   ]
-  },
-  {
    "id": "07ggwan-t8scn4",
    "text": "🎯 At this pace, around <b>{when}</b> you could be at <b>{weight}</b>.",
    "where": [
@@ -1967,6 +1982,13 @@
    ]
   },
   {
+   "id": "0ablzsg-lqsnzw",
+   "text": "Ask Squish a question",
+   "where": [
+    "src/lib/achievements.ts"
+   ]
+  },
+  {
    "id": "0acedsd04u227d",
    "text": "Increase",
    "where": [
@@ -2136,13 +2158,6 @@
    "text": "Me and my little health buddy, from today.",
    "where": [
     "src/lib/shareStory.ts"
-   ]
-  },
-  {
-   "id": "0bda8ka004nkjm",
-   "text": "The nutritionist could not find another meal for that. Try again in a moment.",
-   "where": [
-    "server/claude.ts"
    ]
   },
   {
@@ -3032,10 +3047,10 @@
    ]
   },
   {
-   "id": "0g88tuv0bzc45m",
-   "text": "Meal plans and the nutritionist go by this. Change it any time on You.",
+   "id": "0g8mg800zcakv9",
+   "text": "A year works out at {price} a week — less than a coffee, for nutrition help that has read your diary.",
    "where": [
-    "src/screens/Onboarding.tsx"
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -3110,14 +3125,6 @@
    "text": "Semi-skimmed milk",
    "where": [
     "src/lib/foods.ts"
-   ]
-  },
-  {
-   "id": "0gqtje90fg3mob",
-   "text": "The nutritionist could not swap that just now. Try again in a moment.",
-   "where": [
-    "src/components/CookSheet.tsx",
-    "server/index.ts"
    ]
   },
   {
@@ -3615,6 +3622,13 @@
    ]
   },
   {
+   "id": "0j3xj1p-n9ofcj",
+   "text": "Weekly plans from Squish come with {plus}.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "0j45eps03ignar",
    "text": "A new phone is a sign-in, not a fresh start",
    "where": [
@@ -3696,13 +3710,6 @@
    "text": "That code was not one we know. You can try another on the You screen.",
    "where": [
     "src/screens/Onboarding.tsx"
-   ]
-  },
-  {
-   "id": "0ji854c-gdz6c6",
-   "text": "Nutritionist’s notes",
-   "where": [
-    "src/screens/You.tsx"
    ]
   },
   {
@@ -3854,14 +3861,6 @@
    ]
   },
   {
-   "id": "0kby39h-uq0ijq",
-   "text": "Reads your diary before it answers",
-   "where": [
-    "src/components/NutritionistCard.tsx",
-    "src/screens/Ask.tsx"
-   ]
-  },
-  {
    "id": "0kby8rr-a47i5r",
    "text": "{grams} g for each kg you weigh — higher while losing, to help keep muscle.",
    "where": [
@@ -3905,14 +3904,6 @@
    ]
   },
   {
-   "id": "0kibgh608914j7",
-   "one": "This replaces the {n} meal the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.",
-   "other": "This replaces the {n} meals the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
-   ]
-  },
-  {
    "id": "0kipfue02gjqm8",
    "one": "{n} day free, then {price} a year",
    "other": "{n} days free, then {price} a year",
@@ -3951,6 +3942,13 @@
   {
    "id": "0kkirdj-zfypgl",
    "text": "Usual bowl",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0kl94kh-pz9ii7",
+   "text": "Meal plans, Ask Squish and your daily nudge all go by this. Allergies are never planned in.",
    "where": [
     "src/screens/You.tsx"
    ]
@@ -4697,13 +4695,6 @@
    ]
   },
   {
-   "id": "0nuryd8-yjadmm",
-   "text": "Ask the nutritionist a question",
-   "where": [
-    "src/lib/achievements.ts"
-   ]
-  },
-  {
    "id": "0nxk58t-d352gr",
    "text": "Snack",
    "where": [
@@ -4977,6 +4968,13 @@
    "text": "Done — I made this",
    "where": [
     "src/components/cookParts.tsx"
+   ]
+  },
+  {
+   "id": "0oybv8u0ljyj9j",
+   "text": "Squish could not find another meal for that. Try again in a moment.",
+   "where": [
+    "server/claude.ts"
    ]
   },
   {
@@ -5256,13 +5254,6 @@
    ]
   },
   {
-   "id": "0q6d6tb020whlr",
-   "text": "A year works out at {price} a week — less than a coffee, for a nutritionist who has read your diary.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "0q7djkx0us9gdx",
    "text": "more like {meals}",
    "where": [
@@ -5274,6 +5265,14 @@
    "text": "Frame",
    "where": [
     "src/components/ShareSheet.tsx"
+   ]
+  },
+  {
+   "id": "0q88yju-2tpttg",
+   "text": "Nutrition help that reads your diary",
+   "where": [
+    "src/components/NutritionistCard.tsx",
+    "src/screens/Ask.tsx"
    ]
   },
   {
@@ -5475,6 +5474,13 @@
    ]
   },
   {
+   "id": "0rlotoe-jncedy",
+   "text": "Squish could not plan that week. Try different preferences.",
+   "where": [
+    "server/claude.ts"
+   ]
+  },
+  {
    "id": "0rn6psw0-76mo6",
    "text": "How much detail do you want?",
    "where": [
@@ -5515,13 +5521,6 @@
    "text": "1 block",
    "where": [
     "src/lib/foods.ts"
-   ]
-  },
-  {
-   "id": "0ryaggm02zt8x0",
-   "text": "An example conversation with the nutritionist",
-   "where": [
-    "src/components/NutritionistPitch.tsx"
    ]
   },
   {
@@ -5950,6 +5949,13 @@
    ]
   },
   {
+   "id": "0tz00p70sop78w",
+   "text": "That is the fair-use ceiling for questions to Squish today.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "0u28yd6-pbljoj",
    "text": "Home scene",
    "where": [
@@ -6040,13 +6046,6 @@
    "text": "Plan redone — {energy} a day",
    "where": [
     "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "0uk5rkr0sir7cx",
-   "text": "That is the fair-use ceiling for questions to the nutritionist today.",
-   "where": [
-    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -6152,21 +6151,6 @@
    ]
   },
   {
-   "id": "0v0s7pd0jghwpi",
-   "text": "Weekly plans from the nutritionist come with {plus}.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
-   "id": "0v1lmdq-luy2ru",
-   "one": "That was your {n} free question for the nutritionist. From here, they are part of {plus}.",
-   "other": "That was your {n} free questions for the nutritionist. From here, they are part of {plus}.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "0v1mcfh-ziawpj",
    "text": "Could not save that just now.",
    "where": [
@@ -6236,6 +6220,14 @@
    "text": "I already have an account",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "0vastba0vf2x1l",
+   "one": "This replaces the {n} meal Squish planned for these days before. Meals you kept, and ones you planned yourself, stay.",
+   "other": "This replaces the {n} meals Squish planned for these days before. Meals you kept, and ones you planned yourself, stay.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
@@ -6805,13 +6797,6 @@
    ]
   },
   {
-   "id": "0xwiwab0h3cffi",
-   "text": "The nutritionist plans meals around your targets, the foods you already eat, and anything you have told it — an allergy, a food you avoid. You choose what to keep.",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
-   ]
-  },
-  {
    "id": "0xxs0hi-f25rfg",
    "text": "Light blue-top milk",
    "where": [
@@ -7145,6 +7130,13 @@
    ]
   },
   {
+   "id": "1021z3a0ech2lp",
+   "text": "Questions for Squish",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "102tr7g-ypec15",
    "text": "Punjabi",
    "where": [
@@ -7437,13 +7429,6 @@
    ]
   },
   {
-   "id": "11pp9b60gen5k2",
-   "text": "The nutritionist could not plan that week. Try different preferences.",
-   "where": [
-    "server/claude.ts"
-   ]
-  },
-  {
    "id": "11q3s6m05rij0c",
    "text": "Change password",
    "where": [
@@ -7469,13 +7454,6 @@
    "text": "Say it",
    "where": [
     "src/lib/achievements.ts"
-   ]
-  },
-  {
-   "id": "11vl6cw0rptpo6",
-   "text": "Nutritionist questions",
-   "where": [
-    "src/screens/You.tsx"
    ]
   },
   {
@@ -7535,6 +7513,14 @@
    "text": "Watch for glare on shiny packaging. Tilt it away from the light rather than using the flash.",
    "where": [
     "src/screens/Capture.tsx"
+   ]
+  },
+  {
+   "id": "12394p10kqnual",
+   "text": "Squish could not swap that just now. Try again in a moment.",
+   "where": [
+    "src/components/CookSheet.tsx",
+    "server/index.ts"
    ]
   },
   {
@@ -7899,14 +7885,6 @@
    ]
   },
   {
-   "id": "13h95ai-xpa3ve",
-   "text": "Your own nutritionist",
-   "where": [
-    "src/components/Paywall.tsx",
-    "src/screens/Ask.tsx"
-   ]
-  },
-  {
    "id": "13nokqb-jlbuvd",
    "text": "Current password",
    "where": [
@@ -8056,6 +8034,14 @@
    ]
   },
   {
+   "id": "14t8y4u-vg2p5y",
+   "text": "Nutrition help from your own diary",
+   "where": [
+    "src/components/Paywall.tsx",
+    "src/screens/Ask.tsx"
+   ]
+  },
+  {
    "id": "14v6jkg-k3iy5s",
    "text": "125 g",
    "where": [
@@ -8082,6 +8068,13 @@
    "text": "Yesterday",
    "where": [
     "src/lib/date.ts"
+   ]
+  },
+  {
+   "id": "14z8y1d-x9gx25",
+   "text": "Squish’s notes",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {
@@ -8166,6 +8159,13 @@
    "text": "Drinks",
    "where": [
     "src/lib/shopping.ts"
+   ]
+  },
+  {
+   "id": "15grs0d-rziw9g",
+   "text": "Plan my week with Squish",
+   "where": [
+    "src/screens/Diary.tsx"
    ]
   },
   {
@@ -8432,13 +8432,6 @@
   {
    "id": "16j7rhb-w93rk9",
    "text": "{n} free with an account",
-   "where": [
-    "src/screens/You.tsx"
-   ]
-  },
-  {
-   "id": "16k7sko-qh5030",
-   "text": "Meal plans, the nutritionist and your daily nudge all go by this. Allergies are never planned in.",
    "where": [
     "src/screens/You.tsx"
    ]
@@ -8899,13 +8892,6 @@
    ]
   },
   {
-   "id": "18g5jj0-utea5v",
-   "text": "Questions for the nutritionist come with {plus}.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "18hlbtq0qkuye1",
    "text": "Forget: {note}",
    "where": [
@@ -9010,6 +8996,13 @@
    "text": "Your targets are needed to plan a week.",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "18yzr44-mxvxu8",
+   "text": "<b>Ask Squish</b> — unlimited questions about your own diary, and a weekly meal plan with its shopping list",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -9231,6 +9224,16 @@
    "text": "Greek",
    "where": [
     "src/lib/language.ts"
+   ]
+  },
+  {
+   "id": "1a5icfz-7763ae",
+   "text": "Ask Squish",
+   "where": [
+    "src/components/AskLink.tsx",
+    "src/components/NutritionistCard.tsx",
+    "src/screens/Ask.tsx",
+    "src/screens/Insights.tsx"
    ]
   },
   {
@@ -9637,6 +9640,20 @@
    ]
   },
   {
+   "id": "1ccs0rq0r5a9qg",
+   "text": "An example conversation with Squish",
+   "where": [
+    "src/components/NutritionistPitch.tsx"
+   ]
+  },
+  {
+   "id": "1cd8xtr0lop2ug",
+   "text": "Squish plans meals around your targets, the foods you already eat, and anything you have told it — an allergy, a food you avoid. You choose what to keep.",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "1ce62010hvf3du",
    "text": "{plus} is unlimited for one person’s own eating. The daily ceilings sit far past a real day of meals, to keep Squish fast and affordable for everybody.",
    "where": [
@@ -9736,6 +9753,13 @@
    ]
   },
   {
+   "id": "1cnim9z-27lo3c",
+   "text": "Make a free account and ask Squish {n} questions on us — it reads your diary before it answers.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "1cqs9wt028qqrq",
    "text": "Could not load your figures just now.",
    "where": [
@@ -9782,6 +9806,13 @@
    "text": "From {from} now to {to} around {when}",
    "where": [
     "src/screens/Onboarding.tsx"
+   ]
+  },
+  {
+   "id": "1czyiaf0opi5ys",
+   "text": "Planned by Squish",
+   "where": [
+    "src/lib/planner.ts"
    ]
   },
   {
@@ -10742,13 +10773,6 @@
    ]
   },
   {
-   "id": "1hon0ej08d3bin",
-   "text": "<b>The nutritionist</b> — unlimited questions about your own diary, and a weekly meal plan with its shopping list",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "1hp1sdu0tx1sun",
    "text": "From a friend or a partner",
    "where": [
@@ -10830,13 +10854,6 @@
    "text": "Food quality is about what this was made of, out of 100 — not how much.",
    "where": [
     "src/components/MealQuality.tsx"
-   ]
-  },
-  {
-   "id": "1hxvkir-fqzi1u",
-   "text": "Planned by the nutritionist",
-   "where": [
-    "src/lib/planner.ts"
    ]
   },
   {
@@ -11818,14 +11835,6 @@
    ]
   },
   {
-   "id": "1micwi6-jyf3m8",
-   "text": "Your nutritionist",
-   "where": [
-    "src/components/NutritionistCard.tsx",
-    "src/screens/Ask.tsx"
-   ]
-  },
-  {
    "id": "1miioiq-vm3mz9",
    "text": "{squad} is ready — send the link to a friend or two",
    "where": [
@@ -11916,6 +11925,13 @@
    "text": "Use the backup ({meals})",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1n4fmg10yszi75",
+   "text": "A week of meals is the most Squish plans at once, so {plus} has two a week. Asking about your meals and planning by hand carry on as normal.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -12162,13 +12178,6 @@
    ]
   },
   {
-   "id": "1o1ay1t-1wle4u",
-   "text": "The nutritionist could not plan that just now. Try again in a moment.",
-   "where": [
-    "server/index.ts"
-   ]
-  },
-  {
    "id": "1o3wg55-y4stcc",
    "text": "Female",
    "where": [
@@ -12395,14 +12404,6 @@
    ]
   },
   {
-   "id": "1pu7tle-f9zkh3",
-   "one": "This takes the {n} meal the nutritionist planned from today out of your plan and your diary, and its shopping off the list.",
-   "other": "This takes the {n} meals the nutritionist planned from today out of your plan and your diary, and their shopping off the list.",
-   "where": [
-    "src/components/MealPlanPanel.tsx"
-   ]
-  },
-  {
    "id": "1puxlau-73haf3",
    "text": "Chicken salad sandwich",
    "where": [
@@ -12444,20 +12445,6 @@
    "text": "{habit} target met on {n} of 7 days",
    "where": [
     "src/screens/Insights.tsx"
-   ]
-  },
-  {
-   "id": "1q31u44-z899a4",
-   "text": "A week of meals is the most the nutritionist does at once, so {plus} has two a week. Asking about your meals and planning by hand carry on as normal.",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
-   "id": "1q3mb4d0ejcaev",
-   "text": "You have had this week's weekly plans from the nutritionist.",
-   "where": [
-    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -12924,6 +12911,13 @@
    ]
   },
   {
+   "id": "1saa0m5-n4lxat",
+   "text": "Squish could not plan that just now. Try again in a moment.",
+   "where": [
+    "server/index.ts"
+   ]
+  },
+  {
    "id": "1sawk0u-69ywfn",
    "text": "Today",
    "where": [
@@ -13261,13 +13255,6 @@
    ]
   },
   {
-   "id": "1u6nc9b-pf1ah9",
-   "text": "Ask your nutritionist",
-   "where": [
-    "src/components/NutritionistCard.tsx"
-   ]
-  },
-  {
    "id": "1u6touv08r7467",
    "text": "Recipe imports come with {plus}.",
    "where": [
@@ -13448,13 +13435,6 @@
    "text": "The link and a new password, please.",
    "where": [
     "server/index.ts"
-   ]
-  },
-  {
-   "id": "1v3b4jb-5vef3i",
-   "text": "Make a free account and ask the nutritionist {n} questions on us — it reads your diary before it answers.",
-   "where": [
-    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -13839,11 +13819,11 @@
    ]
   },
   {
-   "id": "1x3ey9n-b6du3o",
-   "text": "Ask the nutritionist",
+   "id": "1x6h0su-13ljds",
+   "one": "That was your {n} free question for Squish. From here, they are part of {plus}.",
+   "other": "That was your {n} free questions for Squish. From here, they are part of {plus}.",
    "where": [
-    "src/components/AskLink.tsx",
-    "src/screens/Insights.tsx"
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -13949,6 +13929,13 @@
    "text": "{food} added",
    "where": [
     "src/screens/AddFood.tsx"
+   ]
+  },
+  {
+   "id": "1xnhlpm08p4awn",
+   "text": "Meal plans and Ask Squish go by this. Change it any time on You.",
+   "where": [
+    "src/screens/Onboarding.tsx"
    ]
   },
   {

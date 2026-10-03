@@ -293,9 +293,9 @@ export const EMAILS: Record<EmailKey, EmailDefinition> = {
     placeholders: [
       {
         name: 'reward',
-        about: 'What they got: Plus switched on, or — already on Plus — extra AI now and the month saved for later',
+        about: 'What they got: Plus switched on, or — already on Plus — the days saved for later',
         sample:
-          'As you are already on Plus, you get 20 extra photo analyses and 10 extra questions for the nutritionist, until 4 October 2027. And the 30 days of Plus are saved for you, added to the end of your current Plus — it now runs until 3 November 2027.',
+          'As you are already on Plus, the 30 days are saved for you, added to the end of your current Plus — it now runs until 3 November 2027.',
       },
       APP,
     ],

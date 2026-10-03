@@ -18,7 +18,7 @@ import MealQuality from '../components/MealQuality';
 import { explainDay } from '../lib/dayExplained';
 import { useSquish } from '../store/useSquish';
 import { addDays, friendlyDate, isoDate, lastDays, weekdayLetter } from '../lib/date';
-import { planDays, plansOn } from '../lib/planner';
+import { planDays, plansOn, shownNote } from '../lib/planner';
 import PlanCard from '../components/PlanCard';
 import ShoppingSheet from '../components/ShoppingSheet';
 import WeekPlanSheet from '../components/WeekPlanSheet';
@@ -150,7 +150,7 @@ export default function Diary({ go, onEditMeal, startDate }: { go: (route: Route
           )}
           <div className="row diary-ahead-links">
             <button type="button" className="btn--quiet small row" onClick={() => setWeekPlanning(true)}>
-              <SparkIcon size={15} /> {t('Plan my week with the nutritionist')}
+              <SparkIcon size={15} /> {t('Plan my week with Squish')}
             </button>
             {dayPlans.length > 0 && (
               <button type="button" className="btn--quiet small row" onClick={() => setShopping(true)}>
@@ -342,7 +342,7 @@ export default function Diary({ go, onEditMeal, startDate }: { go: (route: Route
             {selected.coachNote && <p className="speech" dir="auto">{selected.coachNote}</p>}
 
             <SaveRecipeButton meal={selected} />
-            {selected.note && <p className="small muted">"{t(selected.note)}"</p>}
+            {selected.note && <p className="small muted">"{t(shownNote(selected.note))}"</p>}
 
             <div className="row" style={{ gap: 10 }}>
               <button

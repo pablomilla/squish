@@ -68,7 +68,7 @@ misjudge a portion, miss a hidden ingredient, or misread a label, and food
 tables and barcode databases contain mistakes. Squish shows where a figure
 came from and lets you correct it; please do.
 
-**Not medical advice.** Squish, its nutritionist and its meal plans give
+**Not medical advice.** Squish, Ask Squish and its meal plans give
 general information about food. They do not diagnose, treat or manage any
 medical condition, and they are not a substitute for a doctor, a registered
 dietitian or other health professional. Speak to one before changing how you
@@ -117,11 +117,11 @@ your diary and charts, streaks, achievements, the earned colourways, and
 exporting your data are free, and we intend to keep them that way.
 
 **The free taste.** With an account, you get a small one-off number of AI
-meal analyses and nutritionist questions to try, as shown in the app. It is
+meal analyses and questions for Squish to try, as shown in the app. It is
 once per person, not once per account.
 
 **Squish Plus** is a subscription that adds the AI: **unlimited** meal
-analysis, questions to the nutritionist and recipe imports for your own
+analysis, questions to Squish and recipe imports for your own
 eating, under the fair use below, and **two weekly meal plans a week**. We
 may adjust the fair-use ceilings, and will tell you in the app before a
 reduction takes effect. If a change makes Plus materially worse for you, you
@@ -136,7 +136,7 @@ day:
 | Each day | Up to |
 |---|---|
 | AI meal analyses (photo, words or voice) | 40 |
-| Questions to the nutritionist | 50 |
+| Questions to Squish | 50 |
 | Recipe imports | 10 |
 
 They reset every day at midnight UTC (1am UK time in summer). Weekly meal plans
@@ -232,7 +232,7 @@ Please do not:
 - upload photos of other people, or anything that is not yours to share —
   photos are for your food;
 - try to get around the free taste, the fair-use limits, the age check or
-  the safety limits, or to make the nutritionist say something harmful;
+  the safety limits, or to make Squish say something harmful;
 - copy, scrape or resell Squish or what it produces, or use it to build a
   competing service;
 - automate it, overload it, probe it for weaknesses, or try to get into

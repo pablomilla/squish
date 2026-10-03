@@ -169,7 +169,7 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
         <MenuRow icon="📸" label={t('Quick snap')} value={t('Widget')} onClick={() => setOpen('snap')} />
         <MenuRow
           icon="🧠"
-          label={t('Nutritionist’s notes')}
+          label={t('Squish’s notes')}
           value={nutritionistNotes.length ? plural(nutritionistNotes.length, { one: '{n} note', other: '{n} notes' }) : t('None yet')}
           onClick={() => setOpen('notes')}
         />
@@ -555,7 +555,7 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
         />
       </Sheet>
 
-      <Sheet open={open === 'notes'} onClose={close} title={t('Nutritionist’s notes')}>
+      <Sheet open={open === 'notes'} onClose={close} title={t('Squish’s notes')}>
 
         {nutritionistNotes.length === 0 ? (
           <p className="tiny muted">
@@ -1102,7 +1102,7 @@ function PlanCard({ standing }: { standing: Standing }) {
   const plus = standing.plan === 'plus';
   const rows: { label: string; kind: 'photo' | 'chat' | 'recipe' }[] = [
     { label: t('AI meal analyses'), kind: 'photo' },
-    { label: t('Nutritionist questions'), kind: 'chat' },
+    { label: t('Questions for Squish'), kind: 'chat' },
     { label: t('Recipe imports'), kind: 'recipe' },
   ];
 
@@ -1412,7 +1412,7 @@ function FoodAndGoals({ open, onClose }: { open: boolean; onClose: () => void })
   return (
     <Sheet open={open} onClose={onClose} title={t('Food and goals')}>
       <div className="stack">
-        <p className="tiny muted">{t('Meal plans, the nutritionist and your daily nudge all go by this. Allergies are never planned in.')}</p>
+        <p className="tiny muted">{t('Meal plans, Ask Squish and your daily nudge all go by this. Allergies are never planned in.')}</p>
         <EatingFields value={profile} onChange={(patch) => setProfile(patch)} />
         <AimFields value={profile} onChange={(patch) => setProfile(patch)} />
         <button type="button" className="btn" onClick={onClose}>

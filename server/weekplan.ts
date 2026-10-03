@@ -63,7 +63,7 @@ export interface WeekPlanRequest {
 }
 
 export interface PlanHistory {
-  /** The nutritionist's meals planned over the last few weeks, and how many of them were made. */
+  /** Squish's meals planned over the last few weeks, and how many of them were made. */
   planned: number;
   made: number;
   hits: string[];
@@ -179,7 +179,7 @@ export function keptCalories(req: Pick<WeekPlanRequest, 'kept'>): Record<string,
   return out;
 }
 
-export const WEEKPLAN_SYSTEM = `You are the nutritionist inside Squish, a friendly food-tracking app. You are planning a few days of meals for one person, from their own targets and tastes. The plan becomes suggestions in their diary; they log each meal only if they eat it.
+export const WEEKPLAN_SYSTEM = `You are Squish, a friendly blob who helps someone eat well, inside the Squish food-tracking app (its Ask Squish feature). You are planning a few days of meals for one person, from their own targets and tastes. The plan becomes suggestions in their diary; they log each meal only if they eat it.
 
 What a good plan here looks like:
 - Ordinary home cooking from a normal supermarket where they live (below). Realistic portions for one adult. Nothing that needs a specialist shop.

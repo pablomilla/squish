@@ -7,7 +7,7 @@ import { fitSwap, fitToTarget, swapMeal, TEXT_MODEL, toWeekPlan, withoutKept } f
 import { cleanSwapRequest, cleanWeekRequest, keptCalories, seasoningPrompt, swapPrompt, toSeasoning, weekPlanPrompt, SEASONING_SYSTEM, WEEKPLAN_SYSTEM } from '../server/weekplan';
 import type { About } from '../src/lib/eating';
 import { FEATURES } from '../server/routing';
-import { NUTRITIONIST_PLAN_NOTE, likesFrom, replaceable, replacedOn, standingOn, weekDates } from '../src/lib/planner';
+import { SQUISH_PLAN_NOTE, likesFrom, replaceable, replacedOn, standingOn, weekDates } from '../src/lib/planner';
 import type { MealEntry, MealSlot, Nutrients } from '../src/types';
 
 /**
@@ -127,7 +127,7 @@ test('a meal planned into a kept slot is dropped, and each day is fitted to what
 let n = 0;
 const nut = (calories: number): Nutrients => ({ calories, protein: 30, carbs: 40, fat: 15, fibre: 6 });
 const plan = (date: string, slot: MealSlot, title: string, over: Partial<MealEntry> = {}): MealEntry => ({
-  id: `p${n++}`, date, time: '12:00', slot, title, items: [], nutrients: nut(500), score: 70, source: 'describe', note: NUTRITIONIST_PLAN_NOTE, ...over,
+  id: `p${n++}`, date, time: '12:00', slot, title, items: [], nutrients: nut(500), score: 70, source: 'describe', note: SQUISH_PLAN_NOTE, ...over,
 });
 
 test('a new week replaces what the nutritionist planned on its days — not kept meals, and not their own', () => {

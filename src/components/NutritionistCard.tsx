@@ -5,7 +5,7 @@ import { CalendarIcon, SparkIcon } from './icons';
 import { useSquish } from '../store/useSquish';
 import { useNutritionistAccess } from './useSubscribed';
 import { suggestedQuestions } from '../lib/askSuggestions';
-import { NUTRITIONIST_PLAN_NOTE } from '../lib/planner';
+import { isSquishPlan } from '../lib/planner';
 import { addDays, isoDate } from '../lib/date';
 import './nutritionist-card.css';
 import { useEssentials } from './useDetail';
@@ -29,17 +29,17 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
   const plans = useSquish((s) => s.plans);
   const today = isoDate();
   // Whether the nutritionist has a plan on the go, so the button can open it rather than offer a new one.
-  const planned = plans.some((p) => p.note === NUTRITIONIST_PLAN_NOTE && p.date >= today && p.date <= addDays(today, 7));
+  const planned = plans.some((p) => isSquishPlan(p) && p.date >= today && p.date <= addDays(today, 7));
   const suggestion = useMemo(() => suggestedQuestions(meals, targets, today, new Date().getHours(), 1)[0], [meals, targets, today]);
 
   // Just the essentials: one line, the way in, and nothing to read first.
   const essentials = useEssentials();
   if (essentials)
     return (
-      <section className="card nutri-card nutri-card--line" aria-label={t('Your nutritionist')}>
+      <section className="card nutri-card nutri-card--line" aria-label={t('Ask Squish')}>
         <button type="button" className="nutri-ask" onClick={() => go({ name: 'ask' })}>
           <SparkIcon size={16} />
-          <span>{t('Ask your nutritionist')}</span>
+          <span>{t('Ask Squish')}</span>
         </button>
       </section>
     );
@@ -49,9 +49,9 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
       <div className="nutri-head">
         <Squish mood="thinking" size={36} bob={false} label="" />
         <div className="nutri-head-text">
-          <h3 id="nutri-title">{t('Your nutritionist')}</h3>
+          <h3 id="nutri-title">{t('Ask Squish')}</h3>
           {/* On Plus there is no count to show, and "unlimited" would only invite needless questions: what it does instead. */}
-          <p className="tiny">{access.label ?? t('Reads your diary before it answers')}</p>
+          <p className="tiny">{access.label ?? t('Nutrition help that reads your diary')}</p>
         </div>
         <button type="button" className="nutri-plan" onClick={() => go({ name: 'ask', tab: 'plan' })}>
           <CalendarIcon size={16} /> {planned ? t('My meal plan') : t('Plan my week')}

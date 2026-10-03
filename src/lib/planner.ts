@@ -23,7 +23,20 @@ import { EMPTY, addNutrients, qualityScore, ultraProcessedShare } from './nutrit
 import { msg, t } from './i18n';
 
 /** The note on a plan the nutritionist made, which is how its meal plan finds them again. */
-export const NUTRITIONIST_PLAN_NOTE = msg('Planned by the nutritionist');
+export const SQUISH_PLAN_NOTE = msg('Planned by Squish');
+
+/**
+ * What Squish's plans were marked before the feature was called Ask Squish.
+ * Plans and meals saved then keep it — on this phone, in backups and on other
+ * devices — so it still means Squish planned it, and is shown as the new words.
+ */
+export const OLD_SQUISH_PLAN_NOTE = 'Planned by the nutritionist';
+
+/** Whether Squish planned this meal (Ask Squish's meal plan), under either name. */
+export const isSquishPlan = (plan: Pick<MealEntry, 'note'>): boolean => plan.note === SQUISH_PLAN_NOTE || plan.note === OLD_SQUISH_PLAN_NOTE;
+
+/** A meal's note as it should read now: the old mark of a Squish plan in today's words. */
+export const shownNote = (note: string): string => (note === OLD_SQUISH_PLAN_NOTE ? SQUISH_PLAN_NOTE : note);
 
 /** How far ahead the diary lets somebody plan. A week is as far as most people plan food. */
 export const PLAN_DAYS_AHEAD = 7;
@@ -178,10 +191,10 @@ export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: str
  * included — they are still in the plan.
  */
 export function currentPlan(plans: MealEntry[], today: string): MealEntry[] {
-  return plans.filter((p) => p.note === NUTRITIONIST_PLAN_NOTE && p.date >= today);
+  return plans.filter((p) => isSquishPlan(p) && p.date >= today);
 }
 
-export const replaceable = (plan: MealEntry): boolean => plan.note === NUTRITIONIST_PLAN_NOTE && !plan.kept;
+export const replaceable = (plan: MealEntry): boolean => isSquishPlan(plan) && !plan.kept;
 
 /** The dates a plan of `days` days from `startDate` covers. */
 export function weekDates(startDate: string, days: number): string[] {

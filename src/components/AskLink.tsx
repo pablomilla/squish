@@ -9,7 +9,7 @@ import { t } from '../lib/i18n';
  * somebody wonders why is the moment the nutritionist is worth most, and the
  * easiest moment to find out it exists.
  */
-export default function AskLink({ question, onAsk, label = t('Ask the nutritionist') }: { question: string; onAsk: (question: string) => void; label?: string }) {
+export default function AskLink({ question, onAsk, label = t('Ask Squish') }: { question: string; onAsk: (question: string) => void; label?: string }) {
   const access = useNutritionistAccess();
   return (
     <button type="button" className="ask-link" onClick={() => onAsk(question)}>
