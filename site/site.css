@@ -209,12 +209,11 @@ p { margin: 0 0 14px; }
 @media (max-width: 900px) {
   .hero { padding-top: 12px; }
   .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
-  .hero-art { padding-inline-start: 64px; }
-  .hero-art .mascot { width: 104px; inset-inline-start: -34px; bottom: 18px; }
-}
-@media (max-width: 400px) {
-  .hero-art { padding-inline-start: 40px; }
-  .hero-art .phone { width: min(78vw, calc(100vw - 72px)); }
+  /* The mascot stands in the space before the phone, inside the page's
+     margins, and the phone takes what is left of the width beside it. */
+  .hero-art { padding-inline-start: 72px; }
+  .hero-art .phone { width: min(310px, calc(100vw - 32px - 72px)); }
+  .hero-art .mascot { width: 96px; inset-inline-start: 0; bottom: 18px; }
 }
 
 /* A phone, drawn in CSS around a real screenshot. */
