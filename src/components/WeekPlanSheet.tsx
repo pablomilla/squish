@@ -259,7 +259,7 @@ export default function WeekPlanSheet({ open, onClose }: { open: boolean; onClos
               rows={2}
               maxLength={300}
               value={preferences}
-              placeholder={t('Vegetarian, no mushrooms, fish twice a week…')}
+              placeholder={t('Vegetarian, nut allergy, no mushrooms, fish twice a week…')}
               onChange={(e) => setPreferences(e.target.value)}
             />
           </div>

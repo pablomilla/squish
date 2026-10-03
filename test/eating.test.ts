@@ -117,3 +117,8 @@ when('the first answer is kept, and counted by where it led', async () => {
   const after = (await heardCounts()).find((h) => h.heard === 'podcast');
   assert.equal((after?.devices ?? 0) - before, 2);
 });
+
+test('an allergy typed into the weekly plan’s own box is as absolute as one in the profile', async () => {
+  const { WEEKPLAN_SYSTEM } = await import('../server/weekplan');
+  assert.match(WEEKPLAN_SYSTEM, /or their preferences for this plan that is an allergy, intolerance or food they avoid\. Never include it/);
+});

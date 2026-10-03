@@ -1,5 +1,5 @@
 {
- "version": "1itaynd-uxo34s",
+ "version": "1hjteef-cj1nld",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -8642,6 +8642,13 @@
    ]
   },
   {
+   "id": "16vy34v0rf1kb6",
+   "text": "Vegetarian, nut allergy, no mushrooms, fish twice a week…",
+   "where": [
+    "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
    "id": "16w5g6h0pyvlyc",
    "text": "My meal plan",
    "where": [
@@ -12687,13 +12694,6 @@
    "text": "Every habit ticked off. You've got this!",
    "where": [
     "src/lib/selectors.ts"
-   ]
-  },
-  {
-   "id": "1qbv7sa06f8rg3",
-   "text": "Vegetarian, no mushrooms, fish twice a week…",
-   "where": [
-    "src/components/WeekPlanSheet.tsx"
    ]
   },
   {
