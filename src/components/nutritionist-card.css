@@ -37,5 +37,6 @@
 
 .card.nutri-card { padding-block: 14px; }
 /* The title, the allowance and "Plan my week" share one line. */
-.nutri-head h3 { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Wraps rather than cut off: "Pregunta a Squish" is longer than "Ask Squish". */
+.nutri-head h3 { font-size: 17px; overflow-wrap: anywhere; line-height: 1.2; }
 .nutri-head .nutri-plan { padding: 8px 12px; }
