@@ -15,7 +15,8 @@ const OUT = resolve(process.cwd(), 'site/img');
 mkdirSync(OUT, { recursive: true });
 
 const HEART =
-  '<g transform="translate(386 44) scale(4.6)">' +
+  // Inside the frame (the viewBox ends at x 474): further right and its edge is cut off, which reads as tucked behind whatever it sits beside.
+  '<g transform="translate(360 46) scale(4.6)">' +
   '<path d="M12 21.6 3.9 13.3a5.2 5.2 0 0 1 0-7.4 5.2 5.2 0 0 1 7.4 0l.7.7.7-.7a5.2 5.2 0 0 1 7.4 0 5.2 5.2 0 0 1 0 7.4Z" fill="#F4899F"/>' +
   '</g>';
 

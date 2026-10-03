@@ -142,8 +142,8 @@ p { margin: 0 0 14px; }
 .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 12px; }
 .hero .note { font-size: 15px; color: var(--ink-3); }
 .hero-art { position: relative; justify-self: center; }
-/* Beside the phone, peeking round its edge, never over the screen itself. */
-.hero-art .mascot { position: absolute; width: 150px; inset-inline-start: -128px; bottom: 26px; filter: drop-shadow(0 12px 18px rgba(53, 38, 72, 0.18)); }
+/* Beside the phone, peeking round its edge and in front of it — the heart over the frame, never over the screen itself. */
+.hero-art .mascot { position: absolute; z-index: 1; width: 150px; inset-inline-start: -128px; bottom: 26px; filter: drop-shadow(0 12px 18px rgba(53, 38, 72, 0.18)); }
 @media (max-width: 900px) {
   .hero { padding-top: 12px; }
   .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
