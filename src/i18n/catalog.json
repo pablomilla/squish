@@ -1,5 +1,5 @@
 {
- "version": "1hjteef-cj1nld",
+ "version": "1ik9din0uhstk0",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -8865,6 +8865,13 @@
    ]
   },
   {
+   "id": "17tev0n0d8pa4w",
+   "text": "Guide and questions",
+   "where": [
+    "src/screens/You.tsx"
+   ]
+  },
+  {
    "id": "17tlh140vhpo77",
    "text": "Use this address",
    "where": [
@@ -10393,6 +10400,13 @@
    "text": "Scrambled eggs on sourdough",
    "where": [
     "src/lib/demoDiary.ts"
+   ]
+  },
+  {
+   "id": "1f8350a-l348u8",
+   "text": "Help",
+   "where": [
+    "src/screens/You.tsx"
    ]
   },
   {

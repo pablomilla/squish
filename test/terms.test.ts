@@ -48,7 +48,7 @@ test('the policy and the terms point at each other, and both are read at the web
 });
 
 test('the terms are linked wherever somebody commits to something', () => {
-  for (const file of ['site/index.html', 'site/support.html']) assert.match(readFileSync(file, 'utf8'), /href="\/terms"/, file);
+  for (const file of ['site/index.html', 'site/help.html']) assert.match(readFileSync(file, 'utf8'), /href="\/terms"/, file);
   assert.match(readFileSync('src/screens/Onboarding.tsx', 'utf8'), /legalHref\('\/terms'\)/, 'at making an account');
   assert.match(readFileSync('src/components/Paywall.tsx', 'utf8'), /legalHref\('\/terms'\)/, 'on the upgrade screen');
   assert.match(readFileSync('site/sitemap.xml', 'utf8'), /squish\.online\/terms/);

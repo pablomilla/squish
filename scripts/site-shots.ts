@@ -149,6 +149,13 @@ for (const shot of SHOTS) {
     await page.waitForTimeout(2500);
     await snap(page, dir, 'home');
 
+    // The ways to log a meal, behind the + button.
+    await page.locator('.tab-fab').click();
+    await page.waitForTimeout(700);
+    await snap(page, dir, 'add');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
+
     const tab = (i: number) => page.locator('.tabbar button').nth(i);
     await tab(1).click();
     await snap(page, dir, 'diary');

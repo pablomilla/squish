@@ -43,6 +43,7 @@ import { rich } from '../lib/i18n-react';
 import { slotName } from '../lib/words';
 import { BirthdayWheel } from '../components/Dials';
 import { ageOn, startingBirthDate } from '../lib/birthday';
+import { helpHref } from '../lib/legal';
 
 export default function You({ go, opening }: { go: (route: Route) => void; opening?: YouSheet }) {
   const toast = useToast();
@@ -191,6 +192,7 @@ export default function You({ go, opening }: { go: (route: Route) => void; openi
           />
         )}
         <MenuRow icon="📦" label={t('Your data')} value={t('Export, privacy')} onClick={() => setOpen('data')} />
+        <MenuRow icon="💡" label={t('Help')} value={t('Guide and questions')} onClick={() => window.open(helpHref(), '_blank', 'noopener')} />
       </nav>
 
       {/*

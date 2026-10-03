@@ -371,7 +371,17 @@ export function withShots(html: string, key: string): string {
   );
 }
 
-/** `/support` → `site/support.html`, `/` → `site/index.html`; nothing outside `site/`. */
+/**
+ * The Help page on the website, in a language (English when none is said):
+ * where the app's Help link goes. The website's own address where one is
+ * set, squish.online where not.
+ */
+export function helpHref(language: Language | null, hash = ''): string {
+  const origin = siteOrigin()?.origin ?? 'https://squish.online';
+  return `${origin}${language && language !== 'en' ? `/${language}` : ''}/help${hash}`;
+}
+
+/** `/help` → `site/help.html`, `/` → `site/index.html`; nothing outside `site/`. */
 export function pageFor(path: string): string | null {
   let decoded: string;
   try {
@@ -426,6 +436,11 @@ export function siteRouter(appOrigin: () => string, distDir: string) {
     const said = languageOfPath(req.path);
     if (said.language && said.rest === '') {
       res.redirect(301, `/${said.language}/`); // `/es` → `/es/`
+      return;
+    }
+    // Support became part of Help: its questions are there now, in the same language.
+    if (said.rest === '/support' || said.rest === '/support/') {
+      res.redirect(301, `${said.language ? `/${said.language}` : ''}/help#faq`);
       return;
     }
     // Unsaid, the browser's first choice — so the page varies by what it asks.

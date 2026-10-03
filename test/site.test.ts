@@ -34,8 +34,8 @@ test('a port in the configured address does not stop it matching', () => {
 
 test('pages come from site/ and nowhere else', () => {
   assert.equal(pageFor('/'), `${SITE_DIR}/index.html`);
-  assert.equal(pageFor('/support'), `${SITE_DIR}/support.html`);
-  assert.equal(pageFor('/support/'), `${SITE_DIR}/support.html`);
+  assert.equal(pageFor('/help'), `${SITE_DIR}/help.html`);
+  assert.equal(pageFor('/help/'), `${SITE_DIR}/help.html`);
   assert.equal(pageFor('/nope'), null);
   assert.equal(pageFor('/../package'), null);
   assert.equal(pageFor('/%2e%2e/package'), null);
@@ -52,4 +52,18 @@ test('the privacy policy is always read at the website address, never the host�
   assert.equal(privacyRedirect('www.squish.online'), 'https://squish.online/privacy');
   assert.equal(privacyRedirect('squish.online'), null, 'already there: no redirect loop');
   assert.equal(privacyRedirect('Squish.Online'), null);
+});
+
+test('the app’s Help link leads to the website’s Help page, in the app’s language', async () => {
+  const { helpHref } = await import('../server/site');
+  const before = process.env.SQUISH_SITE_ORIGIN;
+  process.env.SQUISH_SITE_ORIGIN = 'https://squish.online';
+  try {
+    assert.equal(helpHref('es'), 'https://squish.online/es/help');
+    assert.equal(helpHref('en'), 'https://squish.online/help');
+    assert.equal(helpHref(null, '#faq'), 'https://squish.online/help#faq');
+  } finally {
+    if (before === undefined) delete process.env.SQUISH_SITE_ORIGIN;
+    else process.env.SQUISH_SITE_ORIGIN = before;
+  }
 });

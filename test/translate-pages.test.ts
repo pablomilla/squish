@@ -131,18 +131,18 @@ test('the browser’s first language Squish has, by its weights', () => {
   assert.equal(acceptLanguage(undefined), 'en');
 });
 
-test('/ko/support is the page in Korean, and every link on it stays in Korean', async () => {
-  const response = await fetch(`${base}/ko/support`);
+test('/ko/help is the page in Korean, and every link on it stays in Korean', async () => {
+  const response = await fetch(`${base}/ko/help`);
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /<html lang="ko" dir="ltr">/);
-  assert.match(html, /<h1>KO:Support<\/h1>/);
+  assert.match(html, /<h1>KO:How Squish works<\/h1>/);
   assert.match(html, /<p>KO:Open <a href="https:\/\/app\.squish\.online\/\?lang=ko">app\.squish\.online<\/a> in any browser/, 'the link inside a sentence kept its address');
-  assert.match(html, /href="\/ko\/support"/);
+  assert.match(html, /href="\/ko\/help"/);
   assert.match(html, /href="\/privacy\?lang=ko"/);
-  assert.match(html, /<link rel="canonical" href="https:\/\/squish\.online\/ko\/support" \/>/);
-  assert.match(html, /hreflang="x-default" href="http:\/\/127\.0\.0\.1\/support"/);
-  assert.match(html, /<a href="\/es\/support" hreflang="es" lang="es">Español<\/a>/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/squish\.online\/ko\/help" \/>/);
+  assert.match(html, /hreflang="x-default" href="http:\/\/127\.0\.0\.1\/help"/);
+  assert.match(html, /<a href="\/es\/help" hreflang="es" lang="es">Español<\/a>/);
   assert.match(html, /aria-current="page">한국어<\/a>/);
   assert.match(html, /href="https:\/\/app\.squish\.online\/partners"/, 'the partner page is for the business, and stays as it was');
 });
@@ -167,10 +167,10 @@ test('/ko is sent to /ko/, and a language with nothing translated yet is English
   assert.equal(bare.headers.get('location'), '/ko/');
 
   setTranslator(null);
-  const irish = await (await fetch(`${base}/ga/support`)).text();
+  const irish = await (await fetch(`${base}/ga/help`)).text();
   setTranslator(korean);
   assert.match(irish, /<html lang="ga" dir="ltr">/);
-  assert.match(irish, /<h1>Support<\/h1>/);
+  assert.match(irish, /<h1>How Squish works<\/h1>/);
 });
 
 test('the privacy policy in Korean says the English is the one that counts', async () => {
@@ -307,7 +307,7 @@ test('the plans show the price in the currency of the country the browser names'
 });
 
 test('a country picked under the plans wins over the browser, in any language', async () => {
-  const irish = unmarked(await (await fetch(`${base}/support?country=ie`, { headers: { 'Accept-Language': 'en-US' } })).text());
+  const irish = unmarked(await (await fetch(`${base}/help?country=ie`, { headers: { 'Accept-Language': 'en-US' } })).text());
   assert.match(irish, /Plus is €57\.99 a year, with the first 3 days free, or €3\.49 a week/);
 
   const korean = unmarked(await (await fetch(`${base}/ko/?country=AU`)).text());
@@ -343,7 +343,7 @@ test('the page carries every country’s prices for the time zone guess, and say
   assert.match(guessed.html, /<span data-price="yearly">\$59\.99<\/span>/);
   assert.match(guessed.html, /<span data-price="weekly">\$3\.49<\/span>/);
 
-  const picked = await read(`${base}/support?country=CA`);
+  const picked = await read(`${base}/help?country=CA`);
   assert.equal(picked.data.picked, true, 'a picked country is left alone');
   assert.equal(picked.data.region, 'CA');
 
@@ -427,7 +427,7 @@ test('the privacy policy is American for the US, says the British counts, and is
 test('every link to the policy says the language, and in English the country', async () => {
   const us = await (await fetch(`${base}/`, { headers: { 'Accept-Language': 'en-US' } })).text();
   assert.match(us, /href="\/privacy\?lang=en&amp;country=US"/);
-  const guessed = await (await fetch(`${base}/support?country=GB&guess`, { headers: { 'Accept-Language': 'en-US' } })).text();
+  const guessed = await (await fetch(`${base}/help?country=GB&guess`, { headers: { 'Accept-Language': 'en-US' } })).text();
   assert.match(guessed, /href="\/privacy\?lang=en&amp;country=GB"/, 'the clock’s guess goes along too');
   assert.match(await (await fetch(`${base}/ko/`)).text(), /href="\/privacy\?lang=ko"/);
 
@@ -453,10 +453,10 @@ test('the stand-in American words pass the same check as a real translation, for
 });
 
 test('the website says family doctor in Canada, and GP where people say GP', async () => {
-  const canada = await (await fetch(`${base}/support?country=CA`)).text();
+  const canada = await (await fetch(`${base}/help?country=CA`)).text();
   assert.match(canada, /please talk to your family doctor before tracking/);
   for (const country of ['GB', 'IE', 'AU', 'NZ']) {
-    assert.match(await (await fetch(`${base}/support?country=${country}`)).text(), /please talk to your GP before tracking/, country);
+    assert.match(await (await fetch(`${base}/help?country=${country}`)).text(), /please talk to your GP before tracking/, country);
   }
   // Only this page has a Canadian word, so only here does the clock's guess of Canada reload.
   const words = (html: string) => JSON.parse(/id="prices-data">([^<]*)</.exec(html)![1]).words as Record<string, string | null>;
@@ -515,4 +515,12 @@ test('the stand-in knows every American word in the app’s own table', () => {
     const word = british === 'gp' || british === 'gps' ? british.toUpperCase().replace('GPS', 'GPs') : british;
     assert.equal(standInAmerican(word), local.US, `the stand-in has no "${british}" → "${local.US}"`);
   }
+});
+
+test('the old Support page leads to the questions on Help, in the same language', async () => {
+  const plain = await fetch(`${base}/support`, { redirect: 'manual' });
+  assert.equal(plain.status, 301);
+  assert.equal(plain.headers.get('location'), '/help#faq');
+  const spanish = await fetch(`${base}/es/support`, { redirect: 'manual' });
+  assert.equal(spanish.headers.get('location'), '/es/help#faq');
 });

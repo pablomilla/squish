@@ -198,6 +198,11 @@ app with the code after a `#`. The app trades it for the same device with a new 
 — and the account, if they had one — arrives with them. Codes last ten minutes and work once
 (`server/identity.ts`, `site/move.js`).
 
+The website's **Help** page (`site/help.html`, `/help`) has an animated tour of the app built from
+those same screenshots (`site/help.js`), a getting-started guide, every feature explained, and the
+questions that used to be on `/support`, which now redirects there. The app's You → Help opens it in
+the app's language, by way of the server's `/help` (it knows where the website is).
+
 The screenshots on the website are the real app with made-up meals in it (`src/lib/demoDiary.ts`),
 one set for each language, the meals in that language too: `npm run site:shots` retakes them from a
 running server (`scripts/site-shots.ts`; the **Website screenshots** workflow on GitHub does every

@@ -101,7 +101,7 @@ markup in it is escaped. `server/site.ts` registers every page's strings at
 start-up.
 
 - `/` is in the browser's first language Squish has (`Vary: Accept-Language`);
-  `/es/`, `/es/support`, `/en/` are fixed, and their links keep the language.
+  `/es/`, `/es/help`, `/en/` are fixed, and their links keep the language.
   The footer lists every language; each page carries `hreflang` alternates.
 - The privacy policy is the same: `/privacy?lang=es`, or the browser's
   language. Translated, it opens by saying the English is the one that counts.

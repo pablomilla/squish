@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Help — Squish</title>
+  <meta name="description" content="How to use Squish: a step-by-step guide, every feature explained, answers to common questions, and how to reach us." />
+  <meta name="theme-color" content="#fdf6ec" />
+  <meta name="squish-app" content="https://app.squish.online" />
+  <link rel="canonical" href="https://squish.online/help" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/squish-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preload" href="/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/site.css" />
+  <script src="/help.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to the content</a>
+
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Squish home"><picture><source srcset="/img/wordmark-dark.svg" media="(prefers-color-scheme: dark)" /><img src="/img/wordmark.svg" alt="Squish" width="118" height="40" /></picture></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/#features">Features</a>
+        <a href="/#plans">Plans</a>
+        <a href="/#privacy">Privacy</a>
+        <a href="/help" aria-current="page">Help</a>
+        <a class="btn btn--small" href="https://app.squish.online">Open Squish</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="help-hero">
+      <div class="wrap">
+        <h1>How Squish works</h1>
+        <p class="lede">A tour of the app in a minute, then everything it does — and answers if you get stuck.</p>
+        <nav class="help-toc" aria-label="On this page">
+          <a href="#tour">The tour</a>
+          <a href="#start">Getting started</a>
+          <a href="#guide">Every feature</a>
+          <a href="#faq">Questions</a>
+          <a href="#contact">Get in touch</a>
+        </nav>
+      </div>
+    </section>
+
+    <section class="section section--tint" id="tour">
+      <div class="wrap guide" data-guide>
+        <div class="guide-stage">
+          <div class="phone guide-phone">
+            <div class="guide-screen">
+              <img class="guide-shot is-on" data-shot="0" src="/img/shots/en/home.jpg" alt="Home: what is left for today, with Squish" width="390" height="844" />
+              <img class="guide-shot" data-shot="1" src="/img/shots/en/add.jpg" alt="Add food: snap, describe, search, saved meals, barcode or a recipe link" width="390" height="844" loading="lazy" />
+              <img class="guide-shot" data-shot="2" src="/img/shots/en/diary.jpg" alt="Diary: the day's food quality, macros and each meal with its score" width="390" height="844" loading="lazy" />
+              <img class="guide-shot" data-shot="3" src="/img/shots/en/plan.jpg" alt="Ask Squish: a week of meals Squish planned" width="390" height="844" loading="lazy" />
+              <img class="guide-shot" data-shot="4" src="/img/shots/en/recipe.jpg" alt="A recipe for a planned meal: ingredients and method" width="390" height="844" loading="lazy" />
+              <img class="guide-shot" data-shot="5" src="/img/shots/en/cook.jpg" alt="Cooking a step at a time, with a picture for each step" width="390" height="844" loading="lazy" />
+              <img class="guide-shot" data-shot="6" src="/img/shots/en/insights.jpg" alt="Insights: a week of calories, a streak and badges" width="390" height="844" loading="lazy" />
+              <span class="guide-tap is-on" data-tap="0" aria-hidden="true"></span>
+            </div>
+          </div>
+          <img class="mascot guide-mascot" src="/img/squish-excited.svg" alt="" width="120" height="120" />
+        </div>
+        <div class="guide-side">
+          <h2 id="tour-title">The tour</h2>
+          <ol class="guide-steps">
+            <li><button type="button" class="guide-step is-on" data-step="0" aria-current="step"><b>Start on Home</b><span>What is left today, your protein, carbs, fat and fibre, and a word from Squish. Tap <b>+</b> to add food.</span><i class="guide-bar" aria-hidden="true"></i></button></li>
+            <li><button type="button" class="guide-step" data-step="1"><b>Log a meal</b><span>Snap it, describe it, search, scan a barcode, pick a saved meal or paste a recipe link. Squish works out the nutrition; you check it and save.</span><i class="guide-bar" aria-hidden="true"></i></button></li>
+            <li><button type="button" class="guide-step" data-step="2"><b>Check your day</b><span>Every meal with its food quality score: green is great, pink has room to improve. Tap a day at the top to look back.</span><i class="guide-bar" aria-hidden="true"></i></button></li>
+            <li><button type="button" class="guide-step" data-step="3"><b>Let Squish plan your week</b><span>Ask Squish, then Meal plan: a week of meals around your targets, with a shopping list to match. Keep, swap or clear as you like.</span><i class="guide-bar" aria-hidden="true"></i></button></li>
+            <li><button type="button" class="guide-step" data-step="4"><b>Open a recipe</b><span>Every planned meal has its ingredients and method, sized for you — or for everyone at the table.</span><i class="guide-bar" aria-hidden="true"></i></button></li>
+            <li><button type="button" class="guide-step" data-step="5"><b>Cook it step by step</b><span>A picture for each step, the ingredients it needs, and a timer when it needs one. Tap <b>I made this</b> and it is logged.</span><i class="guide-bar" aria-hidden="true"></i></button></li>
+            <li><button type="button" class="guide-step" data-step="6"><b>Watch your progress</b><span>Weekly and monthly charts, streaks, badges and your weight, on Insights.</span><i class="guide-bar" aria-hidden="true"></i></button></li>
+          </ol>
+          <div class="guide-controls">
+            <button type="button" class="btn btn--ghost btn--small" data-guide-prev><span aria-hidden="true">‹</span> Back</button>
+            <button type="button" class="btn btn--small" data-guide-play aria-pressed="false"><span class="guide-when-paused">Play the tour</span><span class="guide-when-playing">Pause</span></button>
+            <button type="button" class="btn btn--ghost btn--small" data-guide-next>Next <span aria-hidden="true">›</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="start">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Getting started</h2>
+          <p>Four steps, a couple of minutes.</p>
+        </div>
+        <ol class="start">
+          <li>
+            <h3>Open Squish</h3>
+            <p>Go to <a href="https://app.squish.online">app.squish.online</a> in any browser. On a phone, add it to your Home Screen and it opens like an app. The iPhone and Android apps are on their way.</p>
+          </li>
+          <li>
+            <h3>Answer a few questions</h3>
+            <p>Your goal, how you eat, any allergies and how fast you want to go. Squish works out your daily targets and shows you how. Change them any time on You → Your plan.</p>
+          </li>
+          <li>
+            <h3>Log your first meal</h3>
+            <p>Tap <b>+</b> and snap your plate, or describe it in your own words. Searching, barcodes and logging by hand are free for good.</p>
+          </li>
+          <li>
+            <h3>Make a free account</h3>
+            <p>It is optional, but it keeps a copy of your diary, keeps it in step on your other devices, and comes with 10 AI meal analyses and 5 questions for Squish to try.</p>
+          </li>
+        </ol>
+        <p class="center"><a class="btn" href="https://app.squish.online">Open Squish</a></p>
+      </div>
+    </section>
+
+    <section class="section section--tint" id="guide">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Every feature, explained</h2>
+          <p>Where to find it, and what it does.</p>
+        </div>
+        <div class="help-guide">
+          <article class="help-topic">
+            <h3><span aria-hidden="true">📸</span> Logging a meal</h3>
+            <ul>
+              <li><b>Snap a meal</b> <span class="tag">Plus · try 10 free</span> Photograph your plate. Squish names the food and portions and works out the nutrition — change anything before you save.</li>
+              <li><b>Describe it</b> <span class="tag">Plus · try 10 free</span> Type it or say it: “a bowl of porridge with banana”.</li>
+              <li><b>Search foods</b> and <b>Scan a barcode</b> Everyday foods and packets, free.</li>
+              <li><b>Saved</b> Foods you have on repeat, logged in a tap. Tap the heart beside a food when you log it to save it.</li>
+              <li><b>Recipe from a link</b> <span class="tag">Plus</span> Paste the page you cooked from and get one portion's nutrition.</li>
+              <li><b>Quick snap</b> <span class="tag">Plus</span> One tap to the camera, one tap to snap, phone away — checked later. A widget in the phone apps; try it from You → Quick snap.</li>
+            </ul>
+          </article>
+          <article class="help-topic">
+            <h3><span aria-hidden="true">🏠</span> Your day</h3>
+            <ul>
+              <li><b>Home</b> What is left today, your macros, and ideas for what to eat next. <b>Sugar, salt and more</b> opens the rest.</li>
+              <li><b>Water, steps and weight</b> Tap <b>+</b> on each to add to today.</li>
+              <li><b>Food quality</b> A score out of 100 for what a meal is made of: <span class="q q--great">75+</span> brilliant, <span class="q q--good">55–74</span> balanced, <span class="q q--soso">38–54</span> so-so, <span class="q q--room">under 38</span> room to improve. Tap a meal to see why it scored what it did.</li>
+              <li><b>Diary</b> Every day, every meal. Tap a meal to see what was in it, or to change it.</li>
+              <li><b>Just the essentials</b> Prefer it simple? You → Appearance → How much detail.</li>
+            </ul>
+          </article>
+          <article class="help-topic">
+            <h3><span aria-hidden="true">💬</span> Ask Squish <span class="tag">Plus · try 5 free</span></h3>
+            <ul>
+              <li><b>Questions</b> “Am I getting enough protein?” Squish reads your diary before it answers.</li>
+              <li><b>It remembers</b> An allergy, a food you avoid, what you are training for. See and change what it noted on You → Squish's notes.</li>
+              <li><b>Past chats</b> Pick up where you left off.</li>
+            </ul>
+          </article>
+          <article class="help-topic">
+            <h3><span aria-hidden="true">🗓️</span> Meal plans <span class="tag">Plus</span></h3>
+            <ul>
+              <li><b>Plan my week</b> On Ask Squish → Meal plan. Add anything else in the box — “vegetarian, nut allergy”.</li>
+              <li><b>Keep, swap, clear</b> Keep a meal for next week, swap one you don't fancy, or <b>Edit plan</b> to remove meals or clear a day. Every change has Undo.</li>
+              <li><b>Shopping list</b> Everything the week needs, by aisle. Tick it off as you go.</li>
+              <li><b>Recipes and cook mode</b> Ingredients, method and a picture for every step. Change how many it serves for the household.</li>
+              <li><b>I ate this</b> Logs a planned meal in one tap. Plans you skip are fine — Squish learns from what you made.</li>
+            </ul>
+          </article>
+          <article class="help-topic">
+            <h3><span aria-hidden="true">📈</span> Progress</h3>
+            <ul>
+              <li><b>Insights</b> Weekly, monthly and all-time charts for calories, protein, fibre, sugar, salt and quality.</li>
+              <li><b>Streaks and badges</b> Days logged in a row, and badges for the things you try.</li>
+              <li><b>Weight</b> Log it when you like; your targets learn from how your weight actually moves.</li>
+            </ul>
+          </article>
+          <article class="help-topic">
+            <h3><span aria-hidden="true">👯</span> Friends</h3>
+            <ul>
+              <li><b>Squads</b> Up to five friends cheering each other on, with a goal for the week. They see your streak and badges — never what you ate. You → Friends.</li>
+              <li><b>Invite a friend</b> When they have joined and used Squish on three days, you both get a month of Plus.</li>
+            </ul>
+          </article>
+          <article class="help-topic">
+            <h3><span aria-hidden="true">🎩</span> Make it yours</h3>
+            <ul>
+              <li><b>Squish's look</b> Things to wear, scenes for Home, and finishes like rainbow and gold on Plus.</li>
+              <li><b>Light or dark</b> You → Appearance.</li>
+              <li><b>Language and units</b> 24 languages, metric or imperial, kcal or kJ: You → About you.</li>
+              <li><b>Meal reminders</b> In the phone apps, a gentle nudge when a meal is due: You → Meal reminders.</li>
+            </ul>
+          </article>
+          <article class="help-topic">
+            <h3><span aria-hidden="true">🔒</span> Your account and data</h3>
+            <ul>
+              <li><b>Every device</b> Sign in on each and your diary keeps in step, up to five at once.</li>
+              <li><b>Export or delete</b> You → Your data. Your diary is yours.</li>
+              <li><b>Plus and usage</b> What you have used and what is left: You → Plan and usage.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="wrap help-narrow">
+        <div class="section-head">
+          <h2>Questions</h2>
+          <p>Answers to the things people ask most. If yours is not here, write to us.</p>
+        </div>
+      <div class="faq">
+        <details open>
+          <summary>How do I start?</summary>
+          <p>Open <a href="https://app.squish.online">app.squish.online</a> in any browser, on your phone or your computer. It asks a few questions to set your targets, and you are away. On a phone, add it to your home screen and it opens like an app.</p>
+        </details>
+        <details>
+          <summary>Do I need an account?</summary>
+          <p>No. Your diary lives on your device. An account is for two things: moving to a new phone without starting again, and getting your diary back if this one is lost. Make one on the You screen whenever you like.</p>
+        </details>
+        <details>
+          <summary>I have a new phone. How do I get my diary back?</summary>
+          <p>Open Squish on the new phone and tap <b>I already have an account</b> on the welcome screen. Sign in, and your diary comes straight back.</p>
+        </details>
+        <details>
+          <summary>I have forgotten my password</summary>
+          <p>On the sign-in screen, tap <b>I have forgotten my password</b> and we will email you a link. It works for two hours. If it does not arrive in a few minutes, check your spam folder.</p>
+        </details>
+        <details>
+          <summary>Squish used to be at squish.online. Where has my diary gone?</summary>
+          <p>Squish moved to <a href="https://app.squish.online">app.squish.online</a>. Open <a href="/">squish.online</a> in the same browser you used before and you will see a button that takes your diary with you. If you had an account, you can simply sign in at the new address instead.</p>
+        </details>
+        <details>
+          <summary>How accurate are the photo estimates?</summary>
+          <p>Close enough to guide your choices — they are estimates from a picture, not a laboratory. Squish shows you what it thinks is on the plate and how much, and you can change anything before you save it. For packaged food, scanning the barcode is the most exact.</p>
+        </details>
+        <details>
+          <summary>What do I get with Squish Plus?</summary>
+          <p>The AI, unlimited for your own eating under fair use: meal analyses by photo or description, Ask Squish for questions about your own diary and two weekly meal plans a week, recipe imports — and six wild finishes for Squish — rainbow, holographic, gold, chrome, candy and sunset — and things for Squish to wear, scenes for Home, and frames and stickers for share cards, including seasonal ones. Plus is {yearly} a year, with the first 3 days free, or {weekly} a week, and goes on sale with the iPhone and Android apps. Fair use means daily ceilings far past a real day — 40 analyses, 50 questions and 10 recipe imports — which reset at midnight; <a href="/terms#fair-use">the terms</a> say more. Everything you need to keep a diary stays free.</p>
+        </details>
+        <details>
+          <summary>What is free?</summary>
+          <p>Keeping your diary: logging meals by hand, searching for foods, scanning barcodes, your charts and streaks, reminders and export — for good. To see what the AI can do, a free account comes with 10 AI meal analyses and 5 questions for Squish to try. They are a one-off taste rather than a monthly allowance, because every analysis costs real money to run.</p>
+        </details>
+        <details>
+          <summary>How do I invite a friend?</summary>
+          <p>Open the You tab and tap Invite a friend, or share a progress card — your invite link goes with it. When your friend has made an account, confirmed their email and used Squish on three different days, you both get a month of Squish Plus. Already on Plus? The month is saved on the end of your Plus. You can earn up to twelve a year this way. You see how many friends joined, never who.</p>
+        </details>
+        <details>
+          <summary>What is a squad?</summary>
+          <p>Up to five friends who cheer each other on. Start one or join with a code on the You tab. Your squad sees your first name, your streak, whether you have logged today, your days this week, your badges and your Squish — never your food or your weight. You send each other cheers from a set list, and when everyone logs on five days in a week, you hit it together. You can leave a squad, or block someone, at any time: blocked people never see you or your cheers again.</p>
+        </details>
+        <details>
+          <summary>When are the iPhone and Android apps coming?</summary>
+          <p>Soon. They are being prepared for the App Store and Google Play. Your account works in both, so anything you log in the browser now comes with you.</p>
+        </details>
+        <details>
+          <summary>How do I export or delete my data?</summary>
+          <p>On the You screen: <b>Export</b> saves your whole diary as a file. <b>Delete account</b> removes your account and the copy on our server. <b>Reset</b> clears everything from your device too. The <a href="/privacy">privacy policy</a> explains exactly what is kept and why.</p>
+        </details>
+        <details>
+          <summary>Is Squish medical advice?</summary>
+          <p>No. Squish gives estimates and friendly encouragement to help you make choices. It is for adults, and it is not a substitute for a doctor or dietitian. If you have a medical condition, are pregnant, or have a history of disordered eating, please talk to your GP before tracking what you eat.</p>
+        </details>
+              <details>
+          <summary>What do the colours on the quality scores mean?</summary>
+          <p>Every meal gets a food quality score out of 100, for what it is made of rather than how big it is. <b>Green</b> is brilliant (75 and up), <b>pale green</b> is balanced (55 to 74), <b>amber</b> is so-so (38 to 54), and <b>pink</b> has room to improve. Tap a meal to see what lifted or lowered it.</p>
+        </details>
+        <details>
+          <summary>How do I change or clear Squish's meal plan?</summary>
+          <p>On Ask Squish → Meal plan: tap a meal for its recipe, then <b>Keep</b> to hold on to it for next week or <b>Swap</b> for another. <b>Edit plan</b> lets you pick meals to remove or clear a whole day, and <b>Clear the plan</b> removes the lot. Each comes with Undo.</p>
+        </details>
+        <details>
+          <summary>Will the meal plan avoid my allergies?</summary>
+          <p>Yes. Tell Squish when you set up, on You → Food and goals, or in the box when you plan your week — “nut allergy”, “no shellfish” — and it is never planned in, hidden ingredients included. Always check a label if an allergy is serious: Squish can be wrong.</p>
+        </details>
+        <details>
+          <summary>What is Quick snap?</summary>
+          <p>For when there is no time: one tap opens the camera, one tap takes the photo, and you can put your phone away. Squish reads it in the background and logs it for you to check later — it shows on Home and in the diary as “to check”. In the phone apps it is a widget; you can also try it from You → Quick snap.</p>
+        </details>
+        <details>
+          <summary>Can I use Squish on more than one device?</summary>
+          <p>Yes. Make a free account, sign in on each one, and your diary keeps itself up to date across them within a few seconds. Up to five devices can be signed in at once.</p>
+        </details>
+      </div>
+      <div class="contact" id="contact">
+        <h2>Get in touch</h2>
+        <p>Email <a href="mailto:support@squish.online">support@squish.online</a> and tell us what happened, and on which phone or browser.</p>
+        <p class="small muted">Privacy questions or requests about your data: <a href="mailto:privacy@squish.online">privacy@squish.online</a>.</p>
+      </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div>
+        <p>Squish is made by Industry Logic Limited, registered in England and Wales, company number 08236014.
+          Registered office: 38a Bowes Street, Blyth, Northumberland, NE24 1BE.</p>
+        <p>Squish gives estimates to help you make choices, not medical advice. It is for adults, 18 and over.</p>
+      </div>
+      <nav aria-label="Footer">
+        <a href="https://app.squish.online">Open Squish</a>
+        <a href="/help">Help</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="https://app.squish.online/partners">Partners</a>
+      </nav>
+      <nav class="langs" aria-label="Languages"><!--languages--></nav>
+    </div>
+  </footer>
+</body>
+</html>

@@ -54,7 +54,7 @@ import {
   suggestCode,
 } from './invites';
 import { actions, adminEmail, allowances, returnUse, isAdmin, mailReady, overview, people, recordAdminAction, sendTestMail, setPlan, heardCounts, noteHeard } from './admin';
-import { htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
+import { helpHref, htmlTag, privacyRedirect, registerSiteStrings, siteRouter } from './site';
 import { isLanguage, type Language } from '../src/lib/language';
 import { detectRegion, isRegion, type Region } from '../src/lib/region';
 import {
@@ -3169,6 +3169,11 @@ function legalRoute(path: '/privacy' | '/terms', page: (language: Language, regi
 }
 
 app.get('/privacy', legalRoute('/privacy', privacyPage));
+/** Help, from inside the app: the website's Help page, in the app's language. */
+app.get('/help', (req, res) => {
+  const asked = String(req.query.lang ?? '');
+  res.redirect(302, helpHref(isLanguage(asked) ? asked : null, typeof req.query.at === 'string' && /^[a-z-]+$/.test(req.query.at) ? `#${req.query.at}` : ''));
+});
 /** The terms of use: the same, for the same reasons — both stores want a URL for them too. */
 app.get('/terms', legalRoute('/terms', termsPage));
 
