@@ -404,8 +404,9 @@ export function pageFor(path: string): string | null {
  */
 export function siteRouter(appOrigin: () => string, distDir: string) {
   const files = express.static(SITE_DIR, { maxAge: '1h', index: false, extensions: [] });
-  // The app's icons and manifest, so a browser asking squish.online for a
-  // favicon — or an old home-screen install asking for its icon — gets one.
+  // The website has its own icons in site/ (Squish's face, where the app has
+  // its S). Anything else falls through to the app's files, so an old
+  // home-screen install asking squish.online for its icon still gets one.
   const appFiles = express.static(distDir, { maxAge: '1h', index: false, fallthrough: true });
 
   return (req: Request, res: Response, next: NextFunction): void => {

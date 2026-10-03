@@ -99,6 +99,11 @@ Brand palette for the logo and any background shapes:
 
 ## 2. What I generate from those — the icon set
 
+> **Now:** the icons are made by `scripts/build-icons.mjs` (`node scripts/build-icons.mjs`). The app's
+> icon is the wordmark's S and heart on the brand purple — home screens, the installed web app, the
+> app's tab and emails — and the website's is Squish's face close up, in `site/`, so the two are told
+> apart. The script writes the web, iOS and Android files together; the table below is the original brief.
+
 These go in `public/`. I can produce every one of them from `squish-master.svg` once it exists;
 they are listed so you know what the app actually installs with.
 
