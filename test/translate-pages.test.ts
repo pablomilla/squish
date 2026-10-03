@@ -330,7 +330,7 @@ test('the page carries every country’s prices for the time zone guess, and say
     const html = await (await fetch(url, { headers })).text();
     const block = /<script type="application\/json" id="prices-data">([^<]*)<\/script>/.exec(html);
     assert.ok(block, `no prices data on ${url}`);
-    assert.match(html, /<script src="\/prices\.js" defer><\/script>/);
+    assert.match(html, /<script src="\/prices\.js\?v=[0-9a-f]{8}" defer><\/script>/);
     return { html, data: JSON.parse(block[1]) as { region: string; picked: boolean; words: Record<string, string | null>; prices: Record<string, Record<string, string>>; zones: Record<string, string[]> } };
   };
 

@@ -37,6 +37,7 @@
  * the country its clock is set to, if that is one of the six and nobody
  * picked. Nothing asks where anybody actually is.
  */
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -294,6 +295,27 @@ const guessScript = (): string => {
   return guessCode;
 };
 
+const versions = new Map<string, string | null>();
+
+/**
+ * The website's own stylesheet and scripts, each with a fingerprint of what
+ * is in it: `/site.css?v=1a2b3c4d`. Browsers keep these files for an hour, so
+ * without it a deploy that changes a page and its CSS together shows the new
+ * page with the old CSS until the hour is up. The fingerprint changes when
+ * the file does, which makes the browser fetch it afresh.
+ */
+export function withVersions(html: string): string {
+  return html.replace(/(href|src)="\/([\w-]+\.(?:css|js))"/g, (whole, attribute: string, name: string) => {
+    let version = process.env.NODE_ENV === 'production' ? versions.get(name) : undefined;
+    if (version === undefined) {
+      const file = join(SITE_DIR, name);
+      version = existsSync(file) ? createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 8) : null;
+      versions.set(name, version);
+    }
+    return version ? `${attribute}="/${name}?v=${version}"` : whole;
+  });
+}
+
 const pages = new Map<string, string>();
 
 /**
@@ -347,7 +369,7 @@ async function page(
         return `<link rel="canonical" href="${url.origin}/${language}${url.pathname}" />`;
       });
     }
-    html = (await withPrices(html, region, language, picked, wording)).replaceAll(APP_PLACEHOLDER, appOrigin);
+    html = withVersions((await withPrices(html, region, language, picked, wording)).replaceAll(APP_PLACEHOLDER, appOrigin));
     // Cached for the life of the process once whole: the pages only change
     // with a deploy. One still waiting on translations is made again next time.
     if (process.env.NODE_ENV === 'production' && complete) pages.set(key, html);
