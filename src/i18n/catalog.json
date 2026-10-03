@@ -1,5 +1,5 @@
 {
- "version": "0zutmli0padcay",
+ "version": "1faroxk-ex0j1x",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1213,6 +1213,7 @@
    "id": "0669v120blk31g",
    "text": "Monthly",
    "where": [
+    "src/components/Paywall.tsx",
     "src/screens/Insights.tsx"
    ]
   },
@@ -3171,6 +3172,20 @@
    ]
   },
   {
+   "id": "0has14b-907moq",
+   "text": "Yearly",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "0hbdnr7-4pdqj4",
+   "text": "Best value · save {n}%",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "0hbe9wo0qjr4pq",
    "text": "the {name} look",
    "where": [
@@ -3333,6 +3348,13 @@
    ]
   },
   {
+   "id": "0i3t6um0r4pfnq",
+   "text": "{n}% off your first month",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "0i3ten602kd6zn",
    "text": "logged today",
    "where": [
@@ -3350,6 +3372,7 @@
    "id": "0i64v660cjqkun",
    "text": "Weekly",
    "where": [
+    "src/components/Paywall.tsx",
     "src/screens/Insights.tsx"
    ]
   },
@@ -3379,6 +3402,13 @@
    "text": "Share a card once",
    "where": [
     "src/lib/shareDecor.ts"
+   ]
+  },
+  {
+   "id": "0ic0tu20xjgsy4",
+   "text": "Everything in {plus}. Cancel any time.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -3825,6 +3855,14 @@
    "other": "This replaces the {n} meals the nutritionist planned for these days before. Meals you kept, and ones you planned yourself, stay.",
    "where": [
     "src/components/WeekPlanSheet.tsx"
+   ]
+  },
+  {
+   "id": "0kipfue02gjqm8",
+   "one": "{n} day free, then {price} a year",
+   "other": "{n} days free, then {price} a year",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -4465,6 +4503,13 @@
    "text": "Lose",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "0nap0mf-mygdas",
+   "text": "{price} a week",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -6343,6 +6388,13 @@
    ]
   },
   {
+   "id": "0w3zgfe-kl5bv0",
+   "text": "Cancel before the free days end and you pay nothing.",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
    "id": "0w7dncv0az4xf2",
    "text": "Saving…",
    "where": [
@@ -6609,6 +6661,13 @@
    "other": "{n} snapped. Squish will log them — check them later.",
    "where": [
     "src/screens/QuickSnap.tsx"
+   ]
+  },
+  {
+   "id": "0xl1w1c-co9tm0",
+   "text": "{first} for your first month, then {price} a month",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -7202,13 +7261,6 @@
    ]
   },
   {
-   "id": "119nl8i0cvcxlf",
-   "text": "<b>{monthly}</b> a month, or <b>{yearly}</b> a year",
-   "where": [
-    "src/components/Paywall.tsx"
-   ]
-  },
-  {
    "id": "11bji9a-jqj300",
    "text": "Losing {amount} is very doable",
    "where": [
@@ -7220,6 +7272,13 @@
    "text": "Confirmed — Squish",
    "where": [
     "server/index.ts"
+   ]
+  },
+  {
+   "id": "11dhabm-3vnk9a",
+   "text": "Not ready for a year, and a week feels too short? Try a month instead.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -7681,6 +7740,20 @@
    "text": "logged",
    "where": [
     "src/components/charts.tsx"
+   ]
+  },
+  {
+   "id": "13g1wjf-exu7jh",
+   "text": "No thanks",
+   "where": [
+    "src/components/Paywall.tsx"
+   ]
+  },
+  {
+   "id": "13gt6yp-ofcthc",
+   "text": "Billed every week. Cancel any time.",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {
@@ -11928,6 +12001,13 @@
    "text": "Food and goals",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "1oaazmd-qmckwc",
+   "text": "Before you go",
+   "where": [
+    "src/components/Paywall.tsx"
    ]
   },
   {

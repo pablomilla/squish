@@ -968,6 +968,14 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index fair_use_hits_day on fair_use_hits(day);
     `,
   },
+  {
+    id: 37,
+    sql: `
+      -- Plus by the week as well as the month and the year (src/lib/region.ts).
+      alter table payments drop constraint if exists payments_product_check;
+      alter table payments add constraint payments_product_check check (product in ('weekly', 'monthly', 'yearly'));
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

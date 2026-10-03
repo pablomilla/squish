@@ -116,13 +116,13 @@ export default function Money({ initial, onChanged }: { initial: Finance | null;
                 <span className="tiny muted">Paying now</span>
                 <b>{count(f.paying.accounts)}</b>
                 <span className="tiny muted">
-                  {count(f.paying.monthly)} monthly · {count(f.paying.yearly)} yearly
+                  {count(f.paying.yearly)} yearly · {count(f.paying.weekly)} weekly · {count(f.paying.monthly)} monthly
                 </span>
               </div>
               <div className="glance-item">
                 <span className="tiny muted">Monthly recurring revenue</span>
                 <b>{pounds(f.paying.mrrPence)}</b>
-                <span className="tiny muted">yearly counted as a twelfth</span>
+                <span className="tiny muted">a year counted as a twelfth, a week as 52 twelfths</span>
               </div>
               <div className="glance-item">
                 <span className="tiny muted">{PLUS}, given</span>
@@ -142,7 +142,7 @@ export default function Money({ initial, onChanged }: { initial: Finance | null;
                 If the {count(f.projection.plusAccounts)} people on {PLUS} now were paying at list price, they would bring
                 in about <b>{pounds(f.projection.perMonthPence)}</b> a month after VAT and store fees.
               </p>
-              <p className="tiny muted">Assumes 60% on the yearly plan, as the costing does. Most people given Plus would not pay for it.</p>
+              <p className="tiny muted">Assumes 60% on the yearly plan, 30% weekly and 10% monthly, as the costing does. Most people given Plus would not pay for it.</p>
             </section>
           )}
         </div>
@@ -349,8 +349,9 @@ function CostForm({
 /* ---------------- The numbers the sums use ---------------- */
 
 const FIELDS: { key: keyof FinanceSettings; label: string; hint: string; percent?: boolean }[] = [
-  { key: 'priceMonthly', label: 'Monthly price, £', hint: 'What the stores charge, VAT included' },
-  { key: 'priceYearly', label: 'Yearly price, £', hint: 'VAT included' },
+  { key: 'priceYearly', label: 'Yearly price, £', hint: 'What the stores charge, VAT included' },
+  { key: 'priceWeekly', label: 'Weekly price, £', hint: 'VAT included' },
+  { key: 'priceMonthly', label: 'Monthly price, £', hint: 'The exit offer, after its cheaper first month; VAT included' },
   { key: 'storeCut', label: 'Store fee, %', hint: '15 on the small-business programmes, 30 above $1m a year', percent: true },
   { key: 'vat', label: 'VAT, %', hint: 'Taken off before the store takes its share', percent: true },
   { key: 'usdToGbp', label: 'Pounds to the dollar', hint: 'For AI and hosting, which are billed in dollars' },

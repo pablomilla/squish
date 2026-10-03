@@ -16,10 +16,11 @@
  * gets out of the way. Being shown an upgrade
  * prompt you have already bought is the fastest way to lose somebody.
  */
+import { useState } from 'react';
 import { Sheet } from './ui';
 import Squish from './Squish';
 import { PLUS } from '../lib/plan';
-import { currentRegion, formatPrice, weeklyPrice } from '../lib/region';
+import { TRIAL_DAYS, currentRegion, formatPrice, weeklyPrice, yearlySaving } from '../lib/region';
 import type { OutOfAllowance } from '../lib/api';
 import NutritionistPitch from './NutritionistPitch';
 import './paywall.css';
@@ -81,11 +82,18 @@ export default function Paywall({
   onCreateAccount: () => void;
 }) {
   const paying = standing?.plan === 'plus';
+  // Leaving without a plan is offered a month instead, once a visit; "No thanks" then really closes.
+  const [offering, setOffering] = useState(false);
+  const close = () => {
+    setOffering(false);
+    onClose();
+  };
+  const carryOn = () => (paying ? close() : setOffering(true));
   // Signed out on the free plan: the answer is an account, not a subscription.
   const signUp = Boolean(standing?.needsAccount);
 
   return (
-    <Sheet open={Boolean(standing)} onClose={onClose} title={paying ? t('Fair use') : signUp ? t('Try it free') : PLUS}>
+    <Sheet open={Boolean(standing)} onClose={close} title={paying ? t('Fair use') : signUp ? t('Try it free') : offering ? t('Before you go') : PLUS}>
       {standing && signUp && (
         <div className="stack paywall">
           <Squish mood="excited" size={84} />
@@ -101,12 +109,13 @@ export default function Paywall({
           <button type="button" className="btn btn--block" onClick={onCreateAccount}>
             {t('Make a free account')}
           </button>
-          <button type="button" className="btn btn--quiet btn--block" onClick={onClose}>
+          <button type="button" className="btn btn--quiet btn--block" onClick={close}>
             {t('Not now')}
           </button>
         </div>
       )}
-      {standing && !signUp && (
+      {standing && !signUp && offering && <ExitOffer onClose={close} />}
+      {standing && !signUp && !offering && (
         <div className="stack paywall">
           <Squish mood={paying ? 'calm' : 'excited'} size={84} />
 
@@ -161,24 +170,10 @@ export default function Paywall({
                 })}
               </p>
 
-              <p className="paywall-price">
-                {rich('<b>{monthly}</b> a month, or <b>{yearly}</b> a year', {
-                  monthly: formatPrice(currentRegion().price.monthly),
-                  yearly: formatPrice(currentRegion().price.yearly),
-                }, { b: (text) => <b>{text}</b> })}
-              </p>
+              <Plans />
               <p className="tiny muted">{t('A year works out at {price} a week — less than a coffee, for a nutritionist who has read your diary.', { price: weeklyPrice() })}</p>
 
-              {/*
-                Honest rather than aspirational. There is no way to take money
-                yet — subscriptions have to go through the stores' own billing
-                on a phone, which arrives with the phone app. Pretending
-                otherwise would mean a button that does nothing, which is worse
-                than no button.
-              */}
-              <p className="tiny muted paywall-soon">
-                {t('Not on sale yet. Squish is being tested, and payment arrives with the phone app — so for now this is here to be told whether it is worth it. If you would pay for this, or would not, please say.')}
-              </p>
+              <NotOnSale />
             </>
           )}
 
@@ -201,11 +196,77 @@ export default function Paywall({
             })}
           </p>
 
-          <button type="button" className="btn btn--block" onClick={onClose}>
+          <button type="button" className="btn btn--block" onClick={carryOn}>
             {paying ? t('Right you are') : t('Carry on without it')}
           </button>
         </div>
       )}
     </Sheet>
+  );
+}
+
+/**
+ * The two plans offered: a year, with a few days free first, and a week. A
+ * year is the one shown first and marked, because it is the one most people
+ * are better off with — about a third of what a year of weeks would come to,
+ * and "save" is said against exactly that.
+ */
+function Plans() {
+  const price = currentRegion().price;
+  return (
+    <div className="paywall-plans">
+      <div className="paywall-plan paywall-plan--best">
+        <span className="paywall-plan-badge">{t('Best value · save {n}%', { n: yearlySaving() })}</span>
+        <b className="paywall-plan-name">{t('Yearly')}</b>
+        <span className="paywall-plan-price">{plural(TRIAL_DAYS, { one: '{n} day free, then {price} a year', other: '{n} days free, then {price} a year' }, { price: formatPrice(price.yearly) })}</span>
+        <span className="paywall-plan-note">{t('Cancel before the free days end and you pay nothing.')}</span>
+      </div>
+      <div className="paywall-plan">
+        <b className="paywall-plan-name">{t('Weekly')}</b>
+        <span className="paywall-plan-price">{t('{price} a week', { price: formatPrice(price.weekly) })}</span>
+        <span className="paywall-plan-note">{t('Billed every week. Cancel any time.')}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Somebody leaving without a plan: neither a year nor a week suited them, so
+ * a month is offered, the first one cheaper. Once, and "No thanks" means it —
+ * asking twice is how an app starts to feel like a salesman.
+ */
+function ExitOffer({ onClose }: { onClose: () => void }) {
+  const price = currentRegion().price;
+  return (
+    <div className="stack paywall">
+      <Squish mood="calm" size={84} />
+      <p className="small">{t('Not ready for a year, and a week feels too short? Try a month instead.')}</p>
+      <div className="paywall-plans">
+        <div className="paywall-plan paywall-plan--best">
+          <span className="paywall-plan-badge">{t('{n}% off your first month', { n: Math.floor((1 - price.firstMonth / price.monthly) * 100) })}</span>
+          <b className="paywall-plan-name">{t('Monthly')}</b>
+          <span className="paywall-plan-price">{t('{first} for your first month, then {price} a month', { first: formatPrice(price.firstMonth), price: formatPrice(price.monthly) })}</span>
+          <span className="paywall-plan-note">{t('Everything in {plus}. Cancel any time.', { plus: PLUS })}</span>
+        </div>
+      </div>
+      <NotOnSale />
+      <button type="button" className="btn btn--quiet btn--block" onClick={onClose}>
+        {t('No thanks')}
+      </button>
+    </div>
+  );
+}
+
+/*
+ * Honest rather than aspirational. There is no way to take money yet —
+ * subscriptions have to go through the stores' own billing on a phone, which
+ * arrives with the phone app. Pretending otherwise would mean a button that
+ * does nothing, which is worse than no button.
+ */
+function NotOnSale() {
+  return (
+    <p className="tiny muted paywall-soon">
+      {t('Not on sale yet. Squish is being tested, and payment arrives with the phone app — so for now this is here to be told whether it is worth it. If you would pay for this, or would not, please say.')}
+    </p>
   );
 }

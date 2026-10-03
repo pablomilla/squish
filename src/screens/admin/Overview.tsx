@@ -202,15 +202,14 @@ function Glance({ label, value, note, strong }: { label: string; value: string; 
  * says how far off covering its own costs Squish is.
  */
 export function BreakEven({ finance }: { finance: Finance }) {
-  const s = finance.settings;
-  const perSub = (0.4 * (s.priceMonthly / (1 + s.vat)) * (1 - s.storeCut) + 0.6 * ((s.priceYearly / (1 + s.vat)) * (1 - s.storeCut)) / 12) * 100;
+  const perSub = finance.projection.perSubscriberPence;
   const costs = finance.month.fixedPence + finance.month.aiPence;
   if (perSub <= 0) return null;
   const need = Math.ceil(costs / perSub);
   return (
     <p className="tiny muted admin-note">
       Break-even: about <b>{count(need)}</b> paying subscribers would cover this month's hosting, fees and AI at today's
-      prices (each brings in about {pounds(Math.round(perSub))} a month, with 60% on the yearly plan). Now:{' '}
+      prices (each brings in about {pounds(Math.round(perSub))} a month, with 60% on the yearly plan, 30% weekly and 10% monthly). Now:{' '}
       <b>{count(finance.paying.accounts)}</b>.
     </p>
   );

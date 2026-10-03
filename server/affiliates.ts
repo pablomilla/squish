@@ -152,7 +152,7 @@ export async function listAffiliates(onlyId?: string): Promise<Affiliate[]> {
        (select count(*) from accounts a where a.referred_by = f.id)::text as signups,
        (select count(distinct p.account_id) from payments p join accounts a on a.id = p.account_id
          where a.referred_by = f.id and p.kind <> 'refund'
-           and p.occurred_at + (case when p.product = 'yearly' then interval '12 months' else interval '1 month' end) > now())::text as paying,
+           and p.occurred_at + (case p.product when 'yearly' then interval '12 months' when 'weekly' then interval '7 days' else interval '1 month' end) > now())::text as paying,
        (select coalesce(sum(p.net_pence), 0) from payments p join accounts a on a.id = p.account_id
          where a.referred_by = f.id)::text as revenue,
        (select coalesce(sum(amount_pence), 0) from affiliate_payouts o where o.affiliate_id = f.id)::text as paid,

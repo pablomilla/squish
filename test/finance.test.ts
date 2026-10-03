@@ -12,6 +12,7 @@ import {
   metrics,
   monthPnl,
   netPerMonth,
+  perSubscriber,
   readSettings,
   saveSettings,
   type FixedCost,
@@ -82,6 +83,10 @@ test('a subscriber-month leaves what the costing says it does', () => {
   // £6.99 less VAT (÷1.2) less the store's 15%: £4.95. £49.99 the same way, a twelfth: £2.95.
   assert.equal(Math.round(net.monthly), 495);
   assert.equal(Math.round(net.yearly), 295);
+  // £2.99 a week the same way is £2.12, and 52 of them over 12 months £9.18.
+  assert.equal(Math.round(net.weekly), 918);
+  // 60% yearly, 30% weekly, 10% monthly.
+  assert.equal(Math.round(perSubscriber(DEFAULT_SETTINGS)), Math.round(0.6 * 295.04 + 0.3 * 917.76 + 0.1 * 495.13));
 });
 
 test('months have to look like months', () => {

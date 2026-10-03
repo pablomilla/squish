@@ -15,6 +15,8 @@ import {
   setCurrentRegion,
   toKcal,
   weeklyPrice,
+  yearlySaving,
+  TRIAL_DAYS,
 } from '../src/lib/region';
 import { foodById, searchFoods, toFoodItem } from '../src/lib/foods';
 import { equivalentFor } from '../src/lib/equivalents';
@@ -71,6 +73,21 @@ test('prices are shown in local money', () => {
     // A year is always the better deal, and the prices end in .99 like a shop's.
     assert.ok(region.price.yearly < region.price.monthly * 12, region.id);
     assert.match(region.price.monthly.toFixed(2), /\.99$/);
+  }
+});
+
+test('a year leads, a week is the way in, and a month is the offer to somebody leaving', () => {
+  assert.deepEqual(REGIONS.GB.price, { yearly: 49.99, weekly: 2.99, monthly: 6.99, firstMonth: 3.99 });
+  assert.equal(TRIAL_DAYS, 3);
+  assert.equal(yearlySaving('GB'), 67, '£49.99 against 52 weeks at £2.99');
+  for (const region of Object.values(REGIONS)) {
+    const { yearly, weekly, monthly, firstMonth } = region.price;
+    // A week costs more over a month than a month does, so the month is a real offer and the year a real saving.
+    assert.ok((weekly * 52) / 12 > monthly, region.id);
+    assert.ok(yearly < monthly * 12, region.id);
+    assert.ok(firstMonth < monthly && firstMonth > weekly, region.id);
+    assert.ok(yearlySaving(region.id) >= 60, region.id);
+    for (const price of [weekly, firstMonth]) assert.match(price.toFixed(2), /\.99$|\.49$/, region.id);
   }
 });
 

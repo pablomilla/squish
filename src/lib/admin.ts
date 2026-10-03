@@ -422,6 +422,7 @@ export interface MonthPnl {
 
 export interface FinanceSettings {
   usdToGbp: number;
+  priceWeekly: number;
   priceMonthly: number;
   priceYearly: number;
   storeCut: number;
@@ -443,9 +444,9 @@ export interface Finance {
   history: MonthPnl[];
   settings: FinanceSettings;
   fixed: FixedCost[];
-  paying: { accounts: number; monthly: number; yearly: number; mrrPence: number };
+  paying: { accounts: number; weekly: number; monthly: number; yearly: number; mrrPence: number };
   compedPlus: number;
-  projection: { plusAccounts: number; perMonthPence: number };
+  projection: { plusAccounts: number; perMonthPence: number; perSubscriberPence: number };
   onSale: boolean;
 }
 

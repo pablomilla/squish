@@ -298,29 +298,29 @@ test('the plans show the price in the currency of the country the browser names'
   assert.match(american.headers.get('vary') ?? '', /Accept-Language/);
   const html = unmarked(await american.text());
   assert.match(html, /<p class="price">\$0<\/p>/);
-  assert.match(html, /<p class="price">\$7\.99 <small>a month, or \$59\.99 a year<\/small><\/p>/);
+  assert.match(html, /<p class="price">\$59\.99 <small>a year, with 3 days free first — or \$3\.49 a week<\/small><\/p>/);
   assert.match(html, /<a href="\?country=US#plans" data-country="US" aria-current="true">/);
-  assert.doesNotMatch(html, /\{monthly\}|\{yearly\}|\{free\}|<!--countries-->/);
+  assert.doesNotMatch(html, /\{weekly\}|\{monthly\}|\{yearly\}|\{free\}|<!--countries-->/);
 
   const british = unmarked(await (await fetch(`${base}/`)).text());
-  assert.match(british, /£6\.99 <small>a month, or £49\.99 a year/, 'Britain where the browser names nowhere');
+  assert.match(british, /£49\.99 <small>a year, with 3 days free first — or £2\.99 a week/, 'Britain where the browser names nowhere');
 });
 
 test('a country picked under the plans wins over the browser, in any language', async () => {
   const irish = unmarked(await (await fetch(`${base}/support?country=ie`, { headers: { 'Accept-Language': 'en-US' } })).text());
-  assert.match(irish, /Plus is €7\.99 a month or €57\.99 a year/);
+  assert.match(irish, /Plus is €57\.99 a year, with the first 3 days free, or €3\.49 a week/);
 
   const korean = unmarked(await (await fetch(`${base}/ko/?country=AU`)).text());
-  assert.match(korean, /KO:A\$11\.99 <small>a month, or A\$84\.99 a year<\/small>|KO:AU\$11\.99 <small>a month, or AU\$84\.99 a year<\/small>/);
+  assert.match(korean, /KO:A?U?\$84\.99 <small>a year, with 3 days free first — or A?U?\$4\.99 a week<\/small>/);
   assert.match(korean, /<span aria-hidden="true">🇳🇿<\/span> /, 'every other country is a tap away');
 
   const unknown = unmarked(await (await fetch(`${base}/?country=FR`, { headers: { 'Accept-Language': 'en-CA' } })).text());
-  assert.match(unknown, /<p class="price">\$9\.99 /, 'a country Squish does not sell in is ignored');
+  assert.match(unknown, /<p class="price">\$74\.99 /, 'a country Squish does not sell in is ignored');
 });
 
 test('the price sentences reach the translator with their placeholders, not a currency', () => {
   const site = wanted().filter((e) => e.where.some((w) => w.startsWith('site/')));
-  assert.ok(site.some((e) => e.text === '{monthly} <small>a month, or {yearly} a year</small>'));
+  assert.ok(site.some((e) => e.text === '{yearly} <small>a year, with 3 days free first — or {weekly} a week</small>'));
   assert.ok(!site.some((e) => e.text === '{free}'), 'a bare placeholder is nothing to translate');
   assert.ok(!site.some((e) => /£/.test(e.text ?? '')), 'no pounds left in the pages');
 });
@@ -337,10 +337,11 @@ test('the page carries every country’s prices for the time zone guess, and say
   const guessed = await read(`${base}/`, { 'Accept-Language': 'en-US' });
   assert.equal(guessed.data.region, 'US');
   assert.equal(guessed.data.picked, false);
-  assert.deepEqual(guessed.data.prices.GB, { free: '£0', monthly: '£6.99', yearly: '£49.99' });
-  assert.deepEqual(guessed.data.prices.NZ, { free: '$0', monthly: '$12.99', yearly: '$89.99' });
+  assert.deepEqual(guessed.data.prices.GB, { free: '£0', weekly: '£2.99', monthly: '£6.99', yearly: '£49.99' });
+  assert.deepEqual(guessed.data.prices.NZ, { free: '$0', weekly: '$5.49', monthly: '$12.99', yearly: '$89.99' });
   assert.ok(guessed.data.zones.GB.includes('Europe/London'));
-  assert.match(guessed.html, /<span data-price="monthly">\$7\.99<\/span>/);
+  assert.match(guessed.html, /<span data-price="yearly">\$59\.99<\/span>/);
+  assert.match(guessed.html, /<span data-price="weekly">\$3\.49<\/span>/);
 
   const picked = await read(`${base}/support?country=CA`);
   assert.equal(picked.data.picked, true, 'a picked country is left alone');

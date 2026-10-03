@@ -30,8 +30,8 @@
  * pages in Spanish, and that is all the remembering it needs.
  *
  * Prices are in the visitor's own currency — the same prices the app's
- * paywall shows (src/lib/region.ts). The pages say `{monthly}`, `{yearly}`
- * and `{free}`, filled in for the country the browser's language names
+ * paywall shows (src/lib/region.ts). The pages say `{yearly}`, `{weekly}`,
+ * `{monthly}` and `{free}`, filled in for the country the browser's language names
  * ("en-AU", "es-US"), or the one picked under the plans (`?country=AU`).
  * Britain where neither says. Then, in the browser, site/prices.js swaps in
  * the country its clock is set to, if that is one of the six and nobody
@@ -241,11 +241,12 @@ export function sitePrice(amount: number, region: Region, language: Language): s
 async function withPrices(html: string, region: Region, language: Language, picked: boolean, words: Record<Region, string | null>): Promise<string> {
   const pricesIn = (r: Region) => ({
     free: sitePrice(0, r, language),
+    weekly: sitePrice(REGIONS[r].price.weekly, r, language),
     monthly: sitePrice(REGIONS[r].price.monthly, r, language),
     yearly: sitePrice(REGIONS[r].price.yearly, r, language),
   });
   const shown = pricesIn(region);
-  let filled = html.replace(/\{(free|monthly|yearly)\}/g, (_whole, name: keyof typeof shown) => `<span data-price="${name}">${shown[name]}</span>`);
+  let filled = html.replace(/\{(free|weekly|monthly|yearly)\}/g, (_whole, name: keyof typeof shown) => `<span data-price="${name}">${shown[name]}</span>`);
   if (filled.includes('<!--countries-->')) {
     const { t } = await speakerFor(language);
     const links = REGION_LIST.map(

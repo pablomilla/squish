@@ -44,8 +44,12 @@ export interface RegionInfo {
    * What Plus costs there, for showing. Nothing is sold through the web app —
    * the stores take payment on a phone — so these are the prices the store
    * listings will be set to, kept here so the paywall says the same thing.
+   *
+   * Yearly (with TRIAL_DAYS free) and weekly are the two offered; monthly is
+   * offered only to somebody about to leave without either, with the first
+   * month at firstMonth.
    */
-  price: { monthly: number; yearly: number };
+  price: { yearly: number; weekly: number; monthly: number; firstMonth: number };
   energy: EnergyUnit;
   /** Salt in grams on the front of a packet, or sodium in milligrams. */
   salt: 'salt' | 'sodium';
@@ -68,7 +72,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
     flag: '🇬🇧',
     locale: 'en-GB',
     currency: 'GBP',
-    price: { monthly: 6.99, yearly: 49.99 },
+    price: { yearly: 49.99, weekly: 2.99, monthly: 6.99, firstMonth: 3.99 },
     energy: 'kcal',
     salt: 'salt',
     weight: 'stone',
@@ -84,7 +88,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
     flag: '🇮🇪',
     locale: 'en-IE',
     currency: 'EUR',
-    price: { monthly: 7.99, yearly: 57.99 },
+    price: { yearly: 57.99, weekly: 3.49, monthly: 7.99, firstMonth: 4.49 },
     energy: 'kcal',
     salt: 'salt',
     weight: 'stone',
@@ -100,7 +104,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
     flag: '🇺🇸',
     locale: 'en-US',
     currency: 'USD',
-    price: { monthly: 7.99, yearly: 59.99 },
+    price: { yearly: 59.99, weekly: 3.49, monthly: 7.99, firstMonth: 4.49 },
     energy: 'kcal',
     salt: 'sodium',
     weight: 'pounds',
@@ -116,7 +120,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
     flag: '🇨🇦',
     locale: 'en-CA',
     currency: 'CAD',
-    price: { monthly: 9.99, yearly: 74.99 },
+    price: { yearly: 74.99, weekly: 4.49, monthly: 9.99, firstMonth: 5.49 },
     energy: 'kcal',
     salt: 'sodium',
     weight: 'pounds',
@@ -132,7 +136,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
     flag: '🇦🇺',
     locale: 'en-AU',
     currency: 'AUD',
-    price: { monthly: 11.99, yearly: 84.99 },
+    price: { yearly: 84.99, weekly: 4.99, monthly: 11.99, firstMonth: 6.99 },
     energy: 'kJ',
     salt: 'sodium',
     weight: 'pounds',
@@ -148,7 +152,7 @@ export const REGIONS: Record<Region, RegionInfo> = {
     flag: '🇳🇿',
     locale: 'en-NZ',
     currency: 'NZD',
-    price: { monthly: 12.99, yearly: 89.99 },
+    price: { yearly: 89.99, weekly: 5.49, monthly: 12.99, firstMonth: 6.99 },
     energy: 'kJ',
     salt: 'sodium',
     weight: 'pounds',
@@ -280,9 +284,18 @@ export function formatPrice(amount: number, region: Region = current.region): st
   return new Intl.NumberFormat(locale, { style: 'currency', currency: info.currency }).format(amount);
 }
 
+/** Days free at the start of a yearly Plus, before the first payment. */
+export const TRIAL_DAYS = 3;
+
 /** What a year of Plus comes to each week, for "less than a coffee". */
 export function weeklyPrice(region: Region = current.region): string {
   return formatPrice(Math.ceil((REGIONS[region].price.yearly / 52) * 100) / 100, region);
+}
+
+/** How much less a year costs than a year of weeks, as a whole percentage. */
+export function yearlySaving(region: Region = current.region): number {
+  const { yearly, weekly } = REGIONS[region].price;
+  return Math.floor((1 - yearly / (weekly * 52)) * 100);
 }
 
 // ---- Energy -------------------------------------------------------------------------------

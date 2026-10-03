@@ -109,7 +109,7 @@ start-up.
   with it.
 - A page with strings still untranslated shows them in English and sets the
   language translating in the background, like the app.
-- Prices are placeholders in the pages (`{monthly}`, `{yearly}`, `{free}`),
+- Prices are placeholders in the pages (`{yearly}`, `{weekly}`, `{monthly}`, `{free}`),
   filled in after translating with the country's price from
   `src/lib/region.ts` — the same one the paywall shows — in its currency,
   written the page's language's way. The server picks the country from one

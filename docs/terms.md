@@ -161,12 +161,13 @@ is charged through the Squish website or web app; if that ever changes, these
 terms will say how it works before it does.
 
 **Renewal.** A subscription renews automatically at the end of each period —
-a month or a year — at the then current price, until you cancel. The store
+a week, a month or a year — at the then current price, until you cancel. The store
 charges you within 24 hours before a period ends. We will tell you before
 any price rise applies to you, and you can cancel before it does.
 
-**Free trials and offers.** If a trial or introductory price is offered, the
-store shows what it will cost afterwards and when, before you start it. Unless
+**Free trials and offers.** A yearly Plus may start with a few days free, and
+a monthly one with a lower price for the first month. If a trial or
+introductory price is offered, the store shows what it will cost afterwards and when, before you start it. Unless
 you cancel at least 24 hours before the trial or offer ends, it becomes a
 paid subscription at the normal price.
 

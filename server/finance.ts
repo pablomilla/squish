@@ -36,6 +36,7 @@ const IS_GEMINI = `model like 'gemini-%'`;
 export interface FinanceSettings {
   /** Pounds per dollar. */
   usdToGbp: number;
+  priceWeekly: number;
   priceMonthly: number;
   priceYearly: number;
   /** The store's share of the price after VAT: 0.15 on the small-business programmes, 0.3 otherwise. */
@@ -45,6 +46,7 @@ export interface FinanceSettings {
 
 export const DEFAULT_SETTINGS: FinanceSettings = {
   usdToGbp: 0.78,
+  priceWeekly: 2.99,
   priceMonthly: 6.99,
   priceYearly: 49.99,
   storeCut: 0.15,
@@ -53,6 +55,7 @@ export const DEFAULT_SETTINGS: FinanceSettings = {
 
 const SETTING_RULES: Record<keyof FinanceSettings, [number, number]> = {
   usdToGbp: [0.3, 2],
+  priceWeekly: [0, 100],
   priceMonthly: [0, 100],
   priceYearly: [0, 1000],
   storeCut: [0, 0.5],
@@ -98,9 +101,22 @@ export async function saveSettings(
 }
 
 /** What one subscriber-month on each plan leaves after VAT and the store, in pence. */
-export function netPerMonth(settings: FinanceSettings): { monthly: number; yearly: number } {
+export function netPerMonth(settings: FinanceSettings): { weekly: number; monthly: number; yearly: number } {
   const net = (gross: number) => (gross / (1 + settings.vat)) * (1 - settings.storeCut) * 100;
-  return { monthly: net(settings.priceMonthly), yearly: net(settings.priceYearly) / 12 };
+  return { weekly: (net(settings.priceWeekly) * 52) / 12, monthly: net(settings.priceMonthly), yearly: net(settings.priceYearly) / 12 };
+}
+
+/**
+ * How subscribers are guessed to split between the plans, until there are
+ * real ones to count: most on the year the paywall leads with, a good share
+ * on the week, and a few on the month offered only to somebody leaving.
+ */
+export const PLAN_MIX = { yearly: 0.6, weekly: 0.3, monthly: 0.1 } as const;
+
+/** What an average subscriber brings in a month at that mix, in pence. */
+export function perSubscriber(settings: FinanceSettings): number {
+  const net = netPerMonth(settings);
+  return PLAN_MIX.yearly * net.yearly + PLAN_MIX.weekly * net.weekly + PLAN_MIX.monthly * net.monthly;
 }
 
 /* ---------------- Fixed costs ---------------- */
@@ -295,7 +311,7 @@ export async function commissionIn(from: string, to: string, affiliateId?: strin
 }
 
 /** Subscribers paying right now: a purchase or renewal whose period has not run out, not refunded. */
-async function payingNow(): Promise<{ accounts: number; monthly: number; yearly: number; mrrPence: number }> {
+async function payingNow(): Promise<{ accounts: number; weekly: number; monthly: number; yearly: number; mrrPence: number }> {
   const rows = await query<{ product: string; subs: string; mrr: string }>(
     `with latest as (
        select distinct on (account_id) account_id, product, kind, net_pence, occurred_at
@@ -303,16 +319,17 @@ async function payingNow(): Promise<{ accounts: number; monthly: number; yearly:
         order by account_id, occurred_at desc
      )
      select product, count(*)::text as subs,
-            coalesce(sum(case when product = 'yearly' then net_pence / 12.0 else net_pence end), 0)::text as mrr
+            coalesce(sum(case product when 'yearly' then net_pence / 12.0 when 'weekly' then net_pence * 52 / 12.0 else net_pence end), 0)::text as mrr
        from latest
       where kind <> 'refund'
-        and occurred_at + (case when product = 'yearly' then interval '12 months' else interval '1 month' end) > now()
+        and occurred_at + (case product when 'yearly' then interval '12 months' when 'weekly' then interval '7 days' else interval '1 month' end) > now()
       group by product`,
   );
   const by = Object.fromEntries(rows.map((r) => [r.product, r]));
+  const weekly = Number(by.weekly?.subs ?? 0);
   const monthly = Number(by.monthly?.subs ?? 0);
   const yearly = Number(by.yearly?.subs ?? 0);
-  return { accounts: monthly + yearly, monthly, yearly, mrrPence: Math.round(rows.reduce((s, r) => s + Number(r.mrr), 0)) };
+  return { accounts: weekly + monthly + yearly, weekly, monthly, yearly, mrrPence: Math.round(rows.reduce((s, r) => s + Number(r.mrr), 0)) };
 }
 
 export interface Finance {
@@ -321,11 +338,11 @@ export interface Finance {
   history: MonthPnl[];
   settings: FinanceSettings;
   fixed: FixedCost[];
-  paying: { accounts: number; monthly: number; yearly: number; mrrPence: number };
+  paying: { accounts: number; weekly: number; monthly: number; yearly: number; mrrPence: number };
   /** Plus accounts nobody is paying for: testers, invite codes, grants. */
   compedPlus: number;
   /** What the Plus accounts there are now would bring in at list price — a projection, not revenue. */
-  projection: { plusAccounts: number; perMonthPence: number };
+  projection: { plusAccounts: number; perMonthPence: number; perSubscriberPence: number };
   /** False until the first payment arrives, so the screen can say why revenue is nought. */
   onSale: boolean;
 }
@@ -339,7 +356,7 @@ export async function finance(month: string): Promise<Finance> {
   const plus = await query<{ n: string }>('select count(*)::text as n from accounts where plus_until > now()');
   const anyPayment = await query('select 1 from payments limit 1');
   const plusAccounts = Number(plus[0].n);
-  const net = netPerMonth(settings);
+  const each = perSubscriber(settings);
 
   return {
     month: history[history.length - 1],
@@ -348,8 +365,8 @@ export async function finance(month: string): Promise<Finance> {
     fixed,
     paying,
     compedPlus: Math.max(0, plusAccounts - paying.accounts),
-    // Weighted as the costing assumes: 60% on the yearly plan.
-    projection: { plusAccounts, perMonthPence: Math.round(plusAccounts * (0.4 * net.monthly + 0.6 * net.yearly)) },
+    // Weighted by PLAN_MIX, as the costing assumes.
+    projection: { plusAccounts, perMonthPence: Math.round(plusAccounts * each), perSubscriberPence: Math.round(each) },
     onSale: anyPayment.length > 0,
   };
 }

@@ -35,7 +35,38 @@ paying for them.
 
 ## What to charge
 
-**£6.99 a month, or £49.99 a year.** Until 3 October 2026 Plus had a monthly
+**£49.99 a year with 3 days free, or £2.99 a week — and £6.99 a month, with
+the first month £3.99, only for somebody leaving without either.** Since 3
+October 2026 (before that, £6.99 a month or £49.99 a year, offered side by
+side):
+
+- **The year is the one shown first**, marked "Best value", with a 3-day free
+  trial so the nutritionist can earn it before anybody pays. The trial is on
+  the year only: a free week of a weekly plan is most of what it sells.
+- **The week is the way in for somebody not ready to commit.** £2.99 a week
+  is about £13 a month — dearer than a month on purpose, so the year looks
+  like the bargain it is (the paywall says "save 67%" against 52 weeks), and
+  somebody who stays on weekly pays the most.
+- **The month is the exit offer.** "Carry on without it" on the paywall,
+  once a visit, offers a month instead, the first at £3.99, then £6.99. It is
+  not on the website or the main paywall, so it does not undercut the other
+  two; "No thanks" closes it, and it does not come back until the next time
+  the paywall does.
+
+The stores need each set up: the year as a subscription with a 3-day free
+trial (an introductory offer on the App Store, a free-trial phase on Google
+Play), the week as a plain subscription, and the month with a one-period
+introductory price for the first month. All three in one subscription group,
+so somebody can move between them.
+
+| Price | Squish receives (15% tier) | A month |
+|---|---|---|
+| £2.99 a week | £2.12 | £9.18 |
+| £49.99 a year | £35.41 | £2.95 |
+| £6.99 a month | £4.95 | £4.95 |
+| £3.99 first month | £2.83 | — |
+
+Until 3 October 2026 Plus had a monthly
 allowance (60 analyses, 30 questions, 10 recipe imports), because on Claude a
 heavy user cost £5.65 a month and without one the best customers lost the
 most money. With Gemini as the main AI, Plus is **unlimited under fair use** —
@@ -129,14 +160,17 @@ Squish is set up for six countries, each with its own price in its own
 money (`src/lib/region.ts`). These are what the store listings should be set
 to; the paywall shows them and nothing is charged through the web app.
 
-| Country | A month | A year | A year, a week |
-|---|---|---|---|
-| United Kingdom | £6.99 | £49.99 | £0.97 |
-| Ireland | €7.99 | €57.99 | €1.12 |
-| United States | $7.99 | $59.99 | $1.16 |
-| Canada | C$9.99 | C$74.99 | C$1.45 |
-| Australia | A$11.99 | A$84.99 | A$1.64 |
-| New Zealand | NZ$12.99 | NZ$89.99 | NZ$1.74 |
+| Country | A year | A year, a week | A week | A month | First month |
+|---|---|---|---|---|---|
+| United Kingdom | £49.99 | £0.97 | £2.99 | £6.99 | £3.99 |
+| Ireland | €57.99 | €1.12 | €3.49 | €7.99 | €4.49 |
+| United States | $59.99 | $1.16 | $3.49 | $7.99 | $4.49 |
+| Canada | C$74.99 | C$1.45 | C$4.49 | C$9.99 | C$5.49 |
+| Australia | A$84.99 | A$1.64 | A$4.99 | A$11.99 | A$6.99 |
+| New Zealand | NZ$89.99 | NZ$1.74 | NZ$5.49 | NZ$12.99 | NZ$6.99 |
+
+The week is 42–45% of a month everywhere, and the first month a little
+over half.
 
 They are set by what people pay for apps in each place rather than by the
 exchange rate, and each keeps the same shape as the UK's: the year about 40%
