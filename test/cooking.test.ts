@@ -191,3 +191,31 @@ test('a smoothie follows its food in other languages too, from the blender’s n
   assert.deepEqual(actions(['Beat the butter and sugar in a stand mixer.', 'Fold in the flour.'], ['mix', 'mix']), ['mix', 'mix'], 'a cake mixer is not a blender');
   assert.deepEqual(actions(['Pica la cebolla.', 'Sofríe la cebolla.'], ['prep', 'fry']), ['prep', 'fry']);
 });
+
+test('the sandwich board is for bread: berries over a bowl of porridge are at the bowl', () => {
+  const items = [{ name: 'Rolled oats' }, { name: 'Semi-skimmed milk' }, { name: 'Frozen mixed berries' }];
+  const porridge = [
+    'Put the 40 g of oats and 250 ml of milk in a saucepan.',
+    'Simmer for 5 minutes, stirring, until thick and creamy.',
+    'Spoon into a bowl.',
+    'Scatter the 97 g frozen mixed berries over the top.',
+  ];
+  // As it was labelled before each label was told as its picture.
+  const labelled: StepDetail[] = [{ action: 'boil' }, { action: 'boil', minutes: 5 }, { action: 'serve' }, { action: 'assemble' }];
+  assert.deepEqual(detailsFor(porridge, labelled, items).map((d) => d.action), ['boil', 'boil', 'mix', 'mix'], 'spooned into a bowl and topped: the bowl, not the plate or the board');
+  assert.equal(detailsFor(['Serve on a plate with a bowl of salad.'], [{ action: 'serve' }], items)[0].action, 'serve', 'a plate named stays the plate');
+
+  const sandwich = ['Toast the 2 slices of bread.', 'Spread the hummus over one slice.', 'Layer the chicken and spinach on top.', 'Close it and cut in half.'];
+  const made: StepDetail[] = [{ action: 'toast' }, { action: 'assemble' }, { action: 'assemble' }, { action: 'assemble' }];
+  assert.deepEqual(detailsFor(sandwich, made, items).map((d) => d.action), ['toast', 'assemble', 'assemble', 'assemble'], 'the bread toasted first: the board for the steps after');
+  assert.deepEqual(detailsFor(sandwich.slice(1), made.slice(1), items).map((d) => d.action), ['other', 'other', 'other'], 'no bread named at all: no board');
+  assert.deepEqual(detailsFor(['Lay the wrap flat.', 'Spread the hummus over it.', 'Add the chicken and roll it up.'], [{ action: 'assemble' }, { action: 'assemble' }, { action: 'assemble' }], items).map((d) => d.action),
+    ['assemble', 'assemble', 'assemble'], 'the wrap named once: the board for every step that goes on making it');
+  assert.equal(detailsFor(['Top the yoghurt with the granola.'], [{ action: 'assemble' }], items)[0].action, 'mix');
+});
+
+test('each label is told as what its picture shows, and the board only for bread', () => {
+  assert.match(COOK_SYSTEM, /assemble: a wooden board with a slice of bread and a knife\. Making a sandwich, a wrap or toast with a topping — and nothing else/);
+  assert.match(COOK_SYSTEM, /mix: a bowl with a spoon in it\..*topping porridge/);
+  assert.match(COOK_SYSTEM, /choose other rather than the nearest/);
+});

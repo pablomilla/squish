@@ -123,7 +123,26 @@ export const COOK_SCHEMA = {
 } as const;
 
 /** How each step is labelled for cook mode: written with the method, or afterwards for steps from before. */
-const LABEL_RULES = `- actions: for each step, in order, the one thing it mostly does: prep (chopping, slicing, weighing out), rinse (rinsing, draining), mix (in a mixing bowl), season, boil (boiling, simmering, poaching, steaming in a saucepan), fry, bake (oven), grill, blend, rest (resting, cooling, marinating, waiting on the side), serve, shake (in a shaker bottle or jar with a lid: a protein shake), microwave, toast (in a toaster), airfry (air fryer), chill (in the fridge, overnight oats), assemble (putting a sandwich, wrap, toast topping or layered bowl together on a board or plate), pour (pouring a drink, or milk over cereal, into a glass, mug or bowl; a drink drunk as it is, a shake or a smoothie, is pour, never serve, whose picture is a plate of food), or other when none of these is where it happens. Each is shown as a picture of where the food is, and the wrong picture is worse than none, so choose other rather than the nearest, and follow the food: a sauce simmered in the pan something was fried in is still fry, even a step that only says to add the tomatoes and simmer; boil is a saucepan of water, stock or soup. Putting things into a blender or food processor is blend, as is the blending; putting them into a shaker bottle is shake, as is the shaking: a smoothie whose steps add the berries, then the milk, then blend is blend all through. prep is the knife and board — chopping, slicing, peeling, weighing out — before anything goes anywhere.
+const LABEL_RULES = `- actions: for each step, in order, which picture to show beside it. Each picture shows a place, empty, and the step is shown in it — so choose the one that shows where the step happens, as the cook would see it. If none shows that place, choose other, and no picture is shown: a wrong picture is worse than none, so choose other rather than the nearest.
+  - prep: a chopping board with a knife. Chopping, slicing, peeling, grating, weighing out — before anything goes anywhere.
+  - rinse: a colander. Rinsing, washing, draining.
+  - mix: a bowl with a spoon in it. Stirring, whisking or combining in a bowl, and anything done to food in its bowl: topping porridge, yoghurt or cereal, pouring milk over cereal, scattering berries or seeds over a bowl, dressing a salad in its bowl.
+  - season: a plate with a salt shaker over it. Seasoning with salt, pepper, herbs or spices.
+  - boil: a saucepan on a hob. Boiling, simmering, poaching or steaming in a saucepan of water, stock, milk or soup — porridge made in a pan too.
+  - fry: a frying pan on a hob. Frying, sautéing, searing, scrambling, and anything simmered in that pan.
+  - bake: an oven with a tray inside. Baking and roasting.
+  - grill: a griddle pan over flames. Grilling, griddling, barbecuing.
+  - blend: a blender. Blending, and putting things into a blender or food processor.
+  - rest: a plate with a kitchen timer beside it. Resting, cooling, marinating or waiting on the side.
+  - serve: an empty dinner plate with a knife and fork. Plating up a meal and serving it on a plate.
+  - shake: a protein shaker bottle. Putting things into a shaker bottle or a lidded jar, and shaking it.
+  - microwave: a microwave. Anything cooked or heated in one, porridge or a rice pouch included.
+  - toast: a two-slot toaster. Toasting bread, bagels, crumpets or muffins in a toaster — not oats or seeds toasted in a pan, which is fry.
+  - airfry: an air fryer.
+  - chill: a fridge. Chilling, setting or leaving overnight in the fridge: overnight oats.
+  - assemble: a wooden board with a slice of bread and a knife. Making a sandwich, a wrap or toast with a topping — and nothing else: a bowl of food being topped is mix, a plate being served is serve.
+  - pour: a jug beside a glass. Pouring a drink into a glass or mug; a drink drunk as it is, a shake or a smoothie, is pour, never serve, whose picture is a plate of food.
+  Then follow the food: a step happens where its food is. A sauce simmered in the pan something was fried in is still fry, even a step that only says to add the tomatoes and simmer; boil is a saucepan of water, stock or soup. Putting things into a blender or food processor is blend, as is the blending; putting them into a shaker bottle is shake, as is the shaking: a smoothie whose steps add the berries, then the milk, then blend is blend all through. prep is the knife and board — chopping, slicing, peeling, weighing out — before anything goes anywhere.
 - timers: for each step, in order, the minutes to set a timer for when the step says to leave something for a time ("simmer for 10–12 minutes" is 12), else 0.`;
 
 export const COOK_SYSTEM = `You write the method for a meal somebody has planned, so they can cook it tonight without looking anything up.

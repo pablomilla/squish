@@ -34,9 +34,11 @@ export interface StepDetail {
  * not on the chopping board. 4: more places to be (a shaker bottle, the
  * microwave, the toaster, the air fryer, the fridge, a board where a
  * sandwich is put together, a jug), and other where none of them is right.
+ * 5: each label told as what its picture shows, so a bowl of porridge being
+ * topped is the bowl, not the sandwich board.
  * Steps from before are relabelled when opened.
  */
-export const STEP_LABELS = 4;
+export const STEP_LABELS = 5;
 
 export const isStepAction = (value: unknown): value is StepAction => STEP_ACTIONS.includes(value as StepAction);
 
@@ -87,7 +89,9 @@ export function detailsFor(steps: string[], detail?: StepDetail[], items?: { nam
     const given = detail?.[i];
     return given && isStepAction(given.action) ? given : guessDetail(step);
   });
-  return items?.length ? followTheFood(steps, details, items) : details;
+  const followed = items?.length ? followTheFood(steps, details, items) : details;
+  // However they were labelled, never a picture of somewhere the step plainly is not.
+  return aBowlIsNotAPlate(steps, aBoardIsForBread(steps, aDrinkIsPoured(steps, followed)));
 }
 
 /** Where food cooks, and so what the picture shows it in. */
@@ -112,7 +116,7 @@ function followTheFood(steps: string[], details: StepDetail[], items: { name: st
     if (action === 'fry') fried = true;
     return action === detail.action ? detail : { ...detail, action };
   });
-  return aDrinkIsPoured(steps, intoTheShaker(steps, intoTheBlender(steps, followed)));
+  return intoTheShaker(steps, intoTheBlender(steps, followed));
 }
 
 /**
@@ -251,6 +255,46 @@ const DRINKING = words(
 /** Served as a drink is not served on a plate: the plate is for food. */
 function aDrinkIsPoured(steps: string[], details: StepDetail[]): StepDetail[] {
   return details.map((detail, i) => (detail.action === 'serve' && DRINKING.test(steps[i]) ? { ...detail, action: 'pour' } : detail));
+}
+
+/** Bread and what is made of it, in the main languages the app speaks: what the sandwich board is for. */
+const BREAD = words(
+  'bread', 'toast', 'sandwich\\p{L}*', 'wraps?', 'tortillas?', 'bagels?', 'pitta', 'pita', 'baps?', 'rolls?', 'buns?', 'crumpets?', 'muffins?', 'burgers?', 'baguette', 'ciabatta', 'flatbreads?', 'naan', 'crispbreads?', 'crackers?', 'rice cakes?', 'oatcakes?',
+  'tostadas?', 'bocadillo', 'pain', 'tartines?', 'brot', 'brötchen', 'pane', 'panino', 'piadina', 'pão', 'sanduíche', 'brood', 'boterham', 'chleb', 'kanapk\\p{L}*', 'pâine', 'ekmek',
+);
+/** A bowl of food, and what goes in one: where a step topping it happens. */
+const BOWL = words('bowls?', 'porridge', 'oats', 'overnight oats', 'yogh?urt', 'skyr', 'cereal', 'granola', 'muesli', 'salad', 'açaí', 'acai', 'cuenco', 'bol', 'schüssel', 'ciotola', 'tigela', 'kom', 'miska');
+
+/**
+ * The sandwich board is a board with a slice of bread on it: for a sandwich,
+ * a wrap or toast with a topping. A step labelled so goes by what it names —
+ * bread, or a bowl of food — or else by the nearest step before it that
+ * names one: "spread the hummus over one slice" after the bread was toasted
+ * is the board; berries scattered over the top after the porridge went into
+ * a bowl are the bowl. Neither anywhere: no picture.
+ */
+function aBoardIsForBread(steps: string[], details: StepDetail[]): StepDetail[] {
+  const onto = (i: number): StepAction => {
+    for (let j = i; j >= 0; j--) {
+      if (BREAD.test(steps[j])) return 'assemble';
+      if (BOWL.test(steps[j])) return 'mix';
+    }
+    return 'other';
+  };
+  return details.map((detail, i) => {
+    if (detail.action !== 'assemble') return detail;
+    const action = onto(i);
+    return action === 'assemble' ? detail : { ...detail, action };
+  });
+}
+
+/** The bowl itself, and the plate, by name. */
+const A_BOWL = words('bowls?', 'cuenco', 'bol', 'schüssel', 'schale', 'ciotola', 'tigela', 'kom', 'miska');
+const A_PLATE = words('plates?', 'plate up', 'plato', 'assiette', 'teller', 'piatto', 'prato', 'bord', 'talerz', 'farfurie', 'tabak');
+
+/** Served into a bowl is the bowl: the serving picture is a dinner plate. */
+function aBowlIsNotAPlate(steps: string[], details: StepDetail[]): StepDetail[] {
+  return details.map((detail, i) => (detail.action === 'serve' && A_BOWL.test(steps[i]) && !A_PLATE.test(steps[i]) ? { ...detail, action: 'mix' } : detail));
 }
 
 /** Words that put a step in a saucepan of water, whatever else it says. */
