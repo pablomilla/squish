@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Quick snap widget in the app's own colours (src/styles/tokens.css); values-night has the dark ones. -->
+<resources>
+    <color name="widget_bg">#FDF6EC</color>
+    <color name="widget_ink">#2B2340</color>
+    <color name="widget_ink_2">#6B6480</color>
+    <color name="widget_brand">#6B5FE0</color>
+    <color name="widget_brand_soft">#E6E2FB</color>
+</resources>

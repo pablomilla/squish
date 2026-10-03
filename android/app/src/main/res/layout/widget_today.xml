@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The Quick snap widget at its usual size (SnapWidgetProvider): today on the
-  left, opening the app; the Quick snap button on the right. The text here is
+  The Quick snap widget at its usual size (SnapWidgetProvider), in the app's
+  colours: the wordmark and today on the left, opening the app; the Quick
+  snap button on the right. The text here is
   only for the widget picker's preview: every line is replaced with the app's
   summary, in the person's language, when the widget is drawn.
 -->
@@ -20,12 +21,21 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="18dp"
+            android:layout_marginBottom="8dp"
+            android:adjustViewBounds="true"
+            android:scaleType="fitStart"
+            android:src="@drawable/widget_wordmark"
+            android:contentDescription="@string/app_name" />
+
         <TextView
             android:id="@+id/widget_today_left"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="1,240 kcal left"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/widget_ink"
             android:textSize="19sp"
             android:textStyle="bold"
             android:maxLines="1"
@@ -36,19 +46,20 @@
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="6dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp"
             android:max="100"
             android:progress="40"
-            android:progressTint="#FFFFFF"
-            android:progressBackgroundTint="#FFFFFF" />
+            android:progressTint="@color/widget_brand"
+            android:progressBackgroundTint="@color/widget_brand_soft"
+            android:progressBackgroundTintMode="src_over" />
 
         <TextView
             android:id="@+id/widget_today_of"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="610 of 1,850 kcal"
-            android:textColor="#E6E2FB"
+            android:textColor="@color/widget_ink_2"
             android:textSize="13sp"
             android:maxLines="1"
             android:ellipsize="end" />
@@ -59,7 +70,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:text="38 of 110 g protein"
-            android:textColor="#E6E2FB"
+            android:textColor="@color/widget_ink_2"
             android:textSize="13sp"
             android:maxLines="1"
             android:ellipsize="end" />
@@ -70,7 +81,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="12-day streak"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/widget_brand"
             android:textSize="13sp"
             android:textStyle="bold"
             android:maxLines="1"
@@ -92,7 +103,6 @@
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:src="@drawable/ic_snap_camera"
-            android:tint="#6B5FE0"
             android:importantForAccessibility="no" />
 
         <TextView
@@ -102,7 +112,7 @@
             android:layout_marginTop="6dp"
             android:gravity="center"
             android:text="@string/widget_snap_label"
-            android:textColor="#6B5FE0"
+            android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:textStyle="bold"
             android:maxLines="2"

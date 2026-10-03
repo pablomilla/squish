@@ -1,5 +1,5 @@
 {
- "version": "05jcskt0wx9kdo",
+ "version": "0lr6xyf0bybw7k",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1723,6 +1723,13 @@
    "text": "your body burns",
    "where": [
     "src/screens/You.tsx"
+   ]
+  },
+  {
+   "id": "093nebh03xm70j",
+   "text": "Photograph a meal in one tap. Squish logs it for you to check later.",
+   "where": [
+    "src/lib/widgetData.ts"
    ]
   },
   {

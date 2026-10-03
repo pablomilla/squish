@@ -1,5 +1,6 @@
 import AppIntents
 import SwiftUI
+import UIKit
 import WidgetKit
 
 /*
@@ -27,8 +28,24 @@ private let openURL = URL(string: "squish://home")!
 private let appGroup = "group.app.squish.tracker"
 private let summaryKey = "widgetSummary"
 
-/// Squish's purple, as the app draws it (#6B5FE0).
-private let squishPurple = Color(red: 107 / 255, green: 95 / 255, blue: 224 / 255)
+// MARK: - The app's colours (src/styles/tokens.css), light and dark
+
+private func rgb(_ hex: UInt32) -> UIColor {
+    UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+}
+
+private func themed(_ light: UInt32, _ dark: UInt32) -> Color {
+    Color(UIColor { $0.userInterfaceStyle == .dark ? rgb(dark) : rgb(light) })
+}
+
+/// --bg: the cream (or deep plum) the whole app sits on.
+private let squishBackground = themed(0xFDF6EC, 0x17151F)
+/// --ink and --ink-2.
+private let squishInk = themed(0x2B2340, 0xF4F0FF)
+private let squishInk2 = themed(0x6B6480, 0xB7AFD0)
+/// --brand, and --brand-soft for the track a ring or bar fills.
+private let squishBrand = themed(0x6B5FE0, 0x8B80F5)
+private let squishBrandSoft = themed(0xE6E2FB, 0x2E2A48)
 
 // MARK: - Today, as the app left it
 
@@ -55,6 +72,7 @@ struct DaySummary: Decodable {
         let toCheck: String
         let reading: String
         let openApp: String
+        let tagline: String
     }
 
     let v: Int
@@ -95,7 +113,8 @@ struct DaySummary: Decodable {
             streak: "12-day streak",
             toCheck: "1 snap to check",
             reading: "Reading 1 snap…",
-            openApp: "Open Squish"
+            openApp: "Open Squish",
+            tagline: "Photograph a meal in one tap. Squish logs it for you to check later."
         )
     )
 }
@@ -182,21 +201,94 @@ struct SnapProvider: TimelineProvider {
     }
 }
 
-/// How far through today's energy: a ring, with the camera in the middle, since a tap snaps.
+/// The app's camera (CameraIcon in src/components/icons.tsx): an outline on a 24-point grid, drawn at any size.
+struct SquishCamera: Shape {
+    func path(in rect: CGRect) -> Path {
+        let k = min(rect.width, rect.height) / 24
+        let x = rect.midX - 12 * k
+        let y = rect.midY - 12 * k
+        func p(_ px: CGFloat, _ py: CGFloat) -> CGPoint { CGPoint(x: x + px * k, y: y + py * k) }
+        var path = Path()
+        // The body, with corners of 1.5 and the bump on top: M3 8.5 … z
+        path.move(to: p(3, 8.5))
+        path.addArc(tangent1End: p(3, 7), tangent2End: p(4.5, 7), radius: 1.5 * k)
+        path.addLine(to: p(6.7, 7))
+        path.addLine(to: p(8, 5))
+        path.addLine(to: p(15.9, 5))
+        path.addLine(to: p(17.3, 7))
+        path.addLine(to: p(19.5, 7))
+        path.addArc(tangent1End: p(21, 7), tangent2End: p(21, 8.5), radius: 1.5 * k)
+        path.addLine(to: p(21, 17.5))
+        path.addArc(tangent1End: p(21, 19), tangent2End: p(19.5, 19), radius: 1.5 * k)
+        path.addLine(to: p(4.5, 19))
+        path.addArc(tangent1End: p(3, 19), tangent2End: p(3, 17.5), radius: 1.5 * k)
+        path.closeSubpath()
+        // The lens.
+        path.addEllipse(in: CGRect(origin: p(12 - 3.4, 13 - 3.4), size: CGSize(width: 6.8 * k, height: 6.8 * k)))
+        return path
+    }
+}
+
+/// The camera as the app draws it: stroked, round-ended, 1.9 points in 24.
+struct CameraIcon: View {
+    var size: CGFloat = 22
+
+    var body: some View {
+        SquishCamera()
+            .stroke(style: StrokeStyle(lineWidth: 1.9 * size / 24, lineCap: .round, lineJoin: .round))
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
+/// The Squish wordmark (Assets.xcassets, drawn from site/img/wordmark.svg, with a dark version).
+struct Wordmark: View {
+    var height: CGFloat = 18
+
+    var body: some View {
+        Image("Wordmark")
+            .resizable()
+            .scaledToFit()
+            .frame(height: height)
+            .accessibilityLabel(Text("Squish"))
+    }
+}
+
+/// The Quick snap button as the app draws its main buttons: white on Squish's purple.
+struct SnapButtonFace: View {
+    let label: String
+    var iconSize: CGFloat = 28
+
+    var body: some View {
+        VStack(spacing: 6) {
+            CameraIcon(size: iconSize)
+            Text(label)
+                .font(.caption.weight(.bold))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+        }
+        .foregroundStyle(.white)
+        .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(squishBrand, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+/// How far through today's energy: a ring in the app's purple, with the camera in the middle, since a tap snaps.
 struct DayRing: View {
     let fraction: Double
-    var lineWidth: CGFloat = 7
-    var iconSize: CGFloat = 20
+    var lineWidth: CGFloat = 6
+    var iconSize: CGFloat = 22
 
     var body: some View {
         ZStack {
-            Circle().stroke(.white.opacity(0.28), lineWidth: lineWidth)
+            Circle().stroke(squishBrandSoft, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: fraction)
-                .stroke(.white, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .stroke(squishBrand, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Image(systemName: "camera.fill")
-                .font(.system(size: iconSize, weight: .semibold))
+            CameraIcon(size: iconSize).foregroundStyle(squishBrand)
         }
     }
 }
@@ -216,20 +308,19 @@ struct SnapWidgetView: View {
         case .accessoryCircular:
             if let today = entry.today {
                 Gauge(value: today.fraction) {
-                    Image(systemName: "camera.fill")
+                    CameraIcon(size: 14)
                 } currentValueLabel: {
-                    Image(systemName: "camera.fill").font(.title3.weight(.semibold))
+                    CameraIcon(size: 20)
                 }
                 .gaugeStyle(.accessoryCircularCapacity)
                 .accessibilityLabel(Text(today.words.quickSnap))
             } else {
-                Image(systemName: "camera.fill")
-                    .font(.title2.weight(.semibold))
+                CameraIcon(size: 26)
                     .accessibilityLabel(Text("Quick snap"))
             }
         case .accessoryRectangular:
             HStack(spacing: 8) {
-                Image(systemName: "camera.fill").font(.title3.weight(.semibold))
+                CameraIcon(size: 24)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(entry.today?.words.quickSnap ?? "Quick snap").font(.headline)
                     if let today = entry.today {
@@ -244,7 +335,7 @@ struct SnapWidgetView: View {
             if let today = entry.today {
                 medium(today)
             } else {
-                snapOnly
+                mediumSnapOnly
             }
         default:
             if let today = entry.today {
@@ -255,72 +346,80 @@ struct SnapWidgetView: View {
         }
     }
 
-    /// The whole widget is the button, as it was before it showed anything.
+    private var quickSnapWords: String { entry.summary?.words.quickSnap ?? "Quick snap" }
+
+    /// No numbers: the wordmark, and the whole widget is the button.
     private var snapOnly: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "camera.fill")
-                .font(.system(size: 36, weight: .semibold))
-            Text(entry.summary?.words.quickSnap ?? "Quick snap")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 10) {
+            Wordmark()
+            SnapButtonFace(label: quickSnapWords, iconSize: 34)
         }
-        .foregroundStyle(.white)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// Small: the ring and what is left. Small widgets have one tap, so all of it snaps.
+    private var mediumSnapOnly: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Wordmark(height: 22)
+                Spacer(minLength: 0)
+                Text(entry.summary?.words.tagline ?? "Photograph a meal in one tap. Squish logs it for you to check later.")
+                    .font(.caption)
+                    .foregroundStyle(squishInk2)
+                    .lineLimit(3)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Link(destination: snapURL) { SnapButtonFace(label: quickSnapWords) }
+                .frame(width: 108)
+        }
+    }
+
+    /// Small: the wordmark, the ring and what is left. Small widgets have one tap, so all of it snaps.
     private func small(_ today: Today) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
+            Wordmark()
+            Spacer(minLength: 0)
             DayRing(fraction: today.fraction)
-                .frame(width: 56, height: 56)
+                .frame(width: 54, height: 54)
             Spacer(minLength: 0)
             Text(today.leftLine)
                 .font(.headline)
+                .foregroundStyle(squishInk)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
                 .privacySensitive()
             Text(today.words.quickSnap)
-                .font(.caption.weight(.semibold))
-                .opacity(0.8)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(squishBrand)
         }
-        .foregroundStyle(.white)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    /// Medium: today on the left, opening the app; a big Quick snap button on the right.
+    /// Medium: the wordmark and today on the left, opening the app; the Quick snap button on the right.
     private func medium(_ today: Today) -> some View {
         HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(today.leftLine)
-                    .font(.title3.weight(.bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                ProgressView(value: today.fraction)
-                    .tint(.white)
-                Text(today.ofTargetLine).font(.caption).opacity(0.85)
-                Text(today.proteinLine).font(.caption).opacity(0.85)
-                if let note = today.note {
-                    Text(note).font(.caption.weight(.semibold)).lineLimit(1)
+            VStack(alignment: .leading, spacing: 5) {
+                Wordmark()
+                Spacer(minLength: 0)
+                Group {
+                    Text(today.leftLine)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(squishInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    ProgressView(value: today.fraction)
+                        .tint(squishBrand)
+                    Text(today.ofTargetLine).font(.caption).foregroundStyle(squishInk2)
+                    Text(today.proteinLine).font(.caption).foregroundStyle(squishInk2)
+                    if let note = today.note {
+                        Text(note).font(.caption.weight(.semibold)).foregroundStyle(squishBrand).lineLimit(1)
+                    }
                 }
+                .privacySensitive()
             }
-            .privacySensitive()
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Link(destination: snapURL) {
-                VStack(spacing: 8) {
-                    Image(systemName: "camera.fill").font(.system(size: 28, weight: .semibold))
-                    Text(today.words.quickSnap)
-                        .font(.caption.weight(.bold))
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                }
-                .foregroundStyle(squishPurple)
-                .frame(width: 104)
-                .frame(maxHeight: .infinity)
-                .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
+            Link(destination: snapURL) { SnapButtonFace(label: today.words.quickSnap) }
+                .frame(width: 108)
         }
-        .foregroundStyle(.white)
     }
 
     @ViewBuilder private var background: some View {
@@ -330,7 +429,7 @@ struct SnapWidgetView: View {
         case .accessoryRectangular:
             Color.clear
         default:
-            squishPurple
+            squishBackground
         }
     }
 }
@@ -353,7 +452,8 @@ struct SnapControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "app.squish.tracker.QuickSnapControl") {
             ControlWidgetButton(action: OpenSnapIntent()) {
-                Label("Quick snap", systemImage: "camera.fill")
+                // Controls take only SF Symbols: the outline camera is the nearest to the app's.
+                Label("Quick snap", systemImage: "camera")
             }
         }
         .displayName("Quick snap")

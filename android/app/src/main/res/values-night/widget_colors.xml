@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Quick snap widget in the app's dark colours (src/styles/tokens.css). -->
+<resources>
+    <color name="widget_bg">#17151F</color>
+    <color name="widget_ink">#F4F0FF</color>
+    <color name="widget_ink_2">#B7AFD0</color>
+    <color name="widget_brand">#8B80F5</color>
+    <color name="widget_brand_soft">#2E2A48</color>
+</resources>

@@ -9,16 +9,24 @@ Beside the button the widget shows **today at a glance**: what is left (or
 over), how far through the day's energy, the protein, and one line worth a
 glance — snaps being read, snaps to check, or the streak.
 
+It looks like the app: the app's background (cream, or deep plum in dark
+mode), its ink and purple from `src/styles/tokens.css`, the app's own outline
+camera (`CameraIcon` in `src/components/icons.tsx`, redrawn natively), and
+the Squish wordmark on every Home Screen size. The Lock Screen widgets are
+drawn by iOS in one tint, so they get the camera but no wordmark; Control
+Centre takes only Apple's symbols, so the control uses the outline `camera`,
+the nearest to the app's.
+
 ## What each widget shows
 
 | Widget | Shows | A tap |
 |---|---|---|
-| iPhone small | A ring of the day's energy with the camera in it, and what is left | Quick snap |
-| iPhone medium | What is left, a bar, eaten of target, protein, the one line; a big Quick snap button | The button snaps; the rest opens Squish |
+| iPhone small | The wordmark, a ring of the day's energy with the camera in it, and what is left | Quick snap |
+| iPhone medium | The wordmark, what is left, a bar, eaten of target, protein, the one line; a big Quick snap button | The button snaps; the rest opens Squish |
 | iPhone Lock Screen, circular | The same ring, small, round the camera | Quick snap |
 | iPhone Lock Screen, rectangular | Quick snap, and what is left | Quick snap |
 | Android, 4×2 (its usual size) and up | As the iPhone's medium | The button snaps; the rest opens Squish |
-| Android, made smaller | Just the Quick snap button | Quick snap |
+| Android, made smaller | The camera in a purple circle, the wordmark and "Quick snap" | Quick snap |
 | Control Centre, Action Button | Just Quick snap | Quick snap |
 
 Without a summary from the app — a new install, before Squish has been
@@ -128,7 +136,9 @@ The widget is its own target, which only Xcode can add to the project.
 3. Xcode makes a `SquishWidgets` folder with its own sample files. **Delete
    all of its `.swift` files** (Move to Trash), then drag
    `ios/App/SquishWidgets/SquishWidgets.swift` from Finder into that group,
-   ticking only the **SquishWidgets** target. Use this folder's `Info.plist`
+   ticking only the **SquishWidgets** target. Drag in
+   `ios/App/SquishWidgets/Assets.xcassets` the same way (the wordmark, light
+   and dark), also for **SquishWidgets** only. Use this folder's `Info.plist`
    in place of the generated one, or check the generated one says
    `com.apple.widgetkit-extension`.
 4. Select the **SquishWidgets** target → General → **Minimum Deployments:

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Squish's purple, rounded like the rest of the home screen. -->
+<!-- The app's background (cream, or deep plum at night), rounded like the rest of the home screen. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#6B5FE0" />
+    <solid android:color="@color/widget_bg" />
     <corners android:radius="24dp" />
 </shape>

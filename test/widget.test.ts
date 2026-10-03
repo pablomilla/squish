@@ -58,6 +58,17 @@ test('the native widgets read the same shape the app writes', async () => {
   for (const key of ['quickSnap', 'left', 'over', 'ofTarget', 'protein', 'streak', 'toCheck', 'reading']) {
     assert.match(java, new RegExp(`"${key}"`), `Android reads words.${key}`);
   }
+  // The wordmark the widgets show, light and dark, on both.
+  const { existsSync } = await import('node:fs');
+  for (const file of [
+    'ios/App/SquishWidgets/Assets.xcassets/Wordmark.imageset/wordmark@3x.png',
+    'ios/App/SquishWidgets/Assets.xcassets/Wordmark.imageset/wordmark-dark@3x.png',
+    'android/app/src/main/res/drawable-nodpi/widget_wordmark.png',
+    'android/app/src/main/res/drawable-night-nodpi/widget_wordmark.png',
+  ]) {
+    assert.ok(existsSync(file), file);
+  }
+  assert.match(swift, /Image\("Wordmark"\)/);
   // Both keep it under the same name the bridges write.
   assert.match(swift, /summaryKey = "widgetSummary"/);
   assert.match(await readFile('ios/App/App/SceneDelegate.swift', 'utf8'), /forKey: "widgetSummary"/);

@@ -48,6 +48,8 @@ export interface WidgetSummary {
     toCheck: string;
     reading: string;
     openApp: string;
+    /** What Quick snap is, for a widget with room and no numbers to show. */
+    tagline: string;
   };
 }
 
@@ -85,6 +87,7 @@ export function widgetSummary(state: {
       toCheck: plural(toCheck, { one: '{n} snap to check', other: '{n} snaps to check' }),
       reading: plural(reading, { one: 'Reading {n} snap…', other: 'Reading {n} snaps…' }),
       openApp: t('Open Squish'),
+      tagline: t('Photograph a meal in one tap. Squish logs it for you to check later.'),
     },
   };
 }

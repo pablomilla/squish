@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The Quick snap button on the larger widget: white on Squish's purple. -->
+<!-- The Quick snap button, as the app draws its main buttons: Squish's purple. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#FFFFFF" />
+    <solid android:color="@color/widget_brand" />
     <corners android:radius="18dp" />
 </shape>

@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A camera, drawn: for the widget and the Quick snap shortcut. -->
+<!-- The app's camera (CameraIcon in src/components/icons.tsx): an outline, for the widget and the Quick snap shortcut. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M9.2,4h5.6l1.4,2H19a3,3 0,0 1,3 3v9a3,3 0,0 1,-3 3H5a3,3 0,0 1,-3 -3V9a3,3 0,0 1,3 -3h2.8L9.2,4zM12,9a4.25,4.25 0,1 0,0 8.5A4.25,4.25 0,0 0,12 9zM12,10.8a2.45,2.45 0,1 1,0 4.9a2.45,2.45 0,0 1,0 -4.9z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M3,8.5A1.5,1.5 0,0 1,4.5 7h2.2l1.3,-2h7.9l1.4,2h2.2A1.5,1.5 0,0 1,21 8.5v9A1.5,1.5 0,0 1,19.5 19h-15A1.5,1.5 0,0 1,3 17.5z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M15.4,13a3.4,3.4 0,1 1,-6.8 0a3.4,3.4 0,1 1,6.8 0z" />
 </vector>

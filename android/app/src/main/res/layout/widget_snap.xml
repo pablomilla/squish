@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The Quick snap widget (SnapWidgetProvider): the whole of it is the button. -->
+<!--
+  The Quick snap widget when small, or with no numbers to show
+  (SnapWidgetProvider): the camera in Squish's purple, the wordmark, and
+  "Quick snap". The whole of it is the button.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_snap_root"
     android:layout_width="match_parent"
@@ -10,21 +14,43 @@
     android:padding="12dp"
     android:contentDescription="@string/widget_snap_description">
 
-    <ImageView
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:src="@drawable/ic_snap_camera"
-        android:importantForAccessibility="no" />
+    <FrameLayout
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/widget_snap_circle">
 
-    <TextView
-        android:id="@+id/widget_snap_label"
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_snap_camera"
+            android:importantForAccessibility="no" />
+    </FrameLayout>
+
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:text="@string/widget_snap_label"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="18dp"
+            android:adjustViewBounds="true"
+            android:scaleType="fitStart"
+            android:src="@drawable/widget_wordmark"
+            android:contentDescription="@string/app_name" />
+
+        <TextView
+            android:id="@+id/widget_snap_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="@string/widget_snap_label"
+            android:textColor="@color/widget_ink"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
 </LinearLayout>
