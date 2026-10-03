@@ -50,7 +50,8 @@ export default function NutritionistCard({ go }: { go: (route: Route) => void })
         <Squish mood="thinking" size={36} bob={false} label="" />
         <div className="nutri-head-text">
           <h3 id="nutri-title">{t('Your nutritionist')}</h3>
-          {access.label && <p className="tiny">{access.label}</p>}
+          {/* On Plus there is no count to show, and "unlimited" would only invite needless questions: what it does instead. */}
+          <p className="tiny">{access.label ?? t('Reads your diary before it answers')}</p>
         </div>
         <button type="button" className="nutri-plan" onClick={() => go({ name: 'ask', tab: 'plan' })}>
           <CalendarIcon size={16} /> {planned ? t('My meal plan') : t('Plan my week')}

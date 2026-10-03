@@ -15,7 +15,7 @@ export interface NutritionistAccess {
   locked: boolean;
   /** Signed out: an account would unlock a free taste. */
   needsAccount: boolean;
-  /** A few words for a badge: "3 free questions", "Unlimited", "Plus". */
+  /** A few words for a badge: "3 free questions", "Back tomorrow", "Plus" — or nothing, on Plus. */
   label: string | null;
   standing: Standing;
 }
@@ -29,8 +29,11 @@ export function useNutritionistAccess(): NutritionistAccess {
   const standing = useStanding();
   if (!standing.known || standing.off) return { locked: false, needsAccount: false, label: null, standing };
   const left = standing.left.chat;
-  // Unlimited, with a fair-use ceiling a day that a person never meets; one who has, today, is told when it comes back.
-  if (standing.plan === 'plus') return { locked: false, needsAccount: false, label: left > 0 ? t('Unlimited') : t('Back tomorrow'), standing };
+  // On Plus there is nothing to count, so nothing is said: "Unlimited" beside the
+  // nutritionist reads as an invitation to ask anything at all, and questions are
+  // the dearest thing Squish pays for. One who has reached the fair-use ceiling
+  // today is told when it comes back.
+  if (standing.plan === 'plus') return { locked: false, needsAccount: false, label: left > 0 ? null : t('Back tomorrow'), standing };
   if (standing.needsAccount) return { locked: true, needsAccount: true, label: t('Free to try'), standing };
   if (left > 0) return { locked: false, needsAccount: false, label: plural(left, { one: '{n} free question', other: '{n} free questions' }), standing };
   return { locked: true, needsAccount: false, label: 'Squish Plus', standing };

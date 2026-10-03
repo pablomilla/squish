@@ -2327,7 +2327,6 @@
    "id": "0cj28hs-2es6w8",
    "text": "Unlimited",
    "where": [
-    "src/components/useSubscribed.ts",
     "src/screens/You.tsx"
    ]
   },
@@ -3858,6 +3857,7 @@
    "id": "0kby39h-uq0ijq",
    "text": "Reads your diary before it answers",
    "where": [
+    "src/components/NutritionistCard.tsx",
     "src/screens/Ask.tsx"
    ]
   },
