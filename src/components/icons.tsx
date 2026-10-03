@@ -48,6 +48,12 @@ export const CameraIcon = ({ size = 22, className }: IconProps) => (
   </svg>
 );
 
+export const CheckIcon = ({ size = 22, className }: IconProps) => (
+  <svg {...base(size)} className={className} strokeWidth={2.6}>
+    <path d="M5 12.5 10 17.5 19 7" />
+  </svg>
+);
+
 export const PlusIcon = ({ size = 22, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <path d="M12 5v14M5 12h14" />

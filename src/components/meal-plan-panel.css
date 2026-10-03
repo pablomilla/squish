@@ -7,3 +7,42 @@
 .meal-plan-head p { margin: 0; }
 .meal-plan-day h3 { margin: 0 0 8px; color: var(--ink-2); }
 .meal-plan-links { gap: 14px; }
+
+/* Changing the whole plan at once. */
+.meal-plan-day-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.meal-plan-day-head h3 { margin: 0; }
+.meal-plan-day-head .btn--quiet { padding: 6px 4px; color: var(--bad); }
+.meal-plan-pick {
+  display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer;
+  padding: 12px 14px; border-radius: var(--r-md);
+  border: 1.5px dashed var(--line-strong, var(--line));
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.meal-plan-pick { position: relative; }
+/* The box itself is kept for keyboards and screen readers; the circle is what shows. */
+.meal-plan-pick-box { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.meal-plan-tick {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--line-strong, var(--line)); background: var(--surface); color: #fff;
+}
+.meal-plan-pick--on .meal-plan-tick { background: var(--bad); border-color: var(--bad); }
+.meal-plan-pick:has(.meal-plan-pick-box:focus-visible) { outline: 2px solid var(--brand); outline-offset: 2px; }
+.meal-plan-pick--on { border-style: solid; border-color: var(--bad); background: var(--bad-soft); }
+.meal-plan-pick-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.meal-plan-pick-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meal-plan-edit-bar {
+  position: sticky; bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px)); z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border-radius: var(--r-lg); background: var(--surface);
+  border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(30, 20, 60, 0.12);
+}
+.meal-plan-edit-bar .btn:disabled { opacity: 0.5; }
+.meal-plan-clear-all { color: var(--bad); }
+.meal-plan-clear { gap: 14px; }
+.meal-plan-clear p { margin: 0; line-height: 1.5; }
+.meal-plan-clear p + p { margin-top: 10px; }
+.meal-plan-clear .tiny { margin-bottom: 8px; }
+.meal-plan-undo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px 10px 16px; border-radius: var(--r-lg); background: var(--brand-soft); color: var(--brand-ink);
+}

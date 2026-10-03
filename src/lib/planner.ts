@@ -172,6 +172,15 @@ export function likesFrom(meals: MealEntry[], favourites: FoodItem[], today: str
  * ------------------------------------------------------------------ */
 
 /** A plan a new week from the nutritionist may replace: its own, and not kept. */
+/**
+ * The nutritionist's meal plan as it stands: its meals from today on, the
+ * ones the meal-plan screen shows and "Clear the plan" clears. Kept ones
+ * included — they are still in the plan.
+ */
+export function currentPlan(plans: MealEntry[], today: string): MealEntry[] {
+  return plans.filter((p) => p.note === NUTRITIONIST_PLAN_NOTE && p.date >= today);
+}
+
 export const replaceable = (plan: MealEntry): boolean => plan.note === NUTRITIONIST_PLAN_NOTE && !plan.kept;
 
 /** The dates a plan of `days` days from `startDate` covers. */

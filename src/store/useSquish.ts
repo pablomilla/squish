@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CookSteps, DayLog, Draft, FoodItem, MealEntry, Profile, QueuedSnap, Recipe, Targets } from '../types';
 import { findRecipe } from '../lib/recipes';
-import { judged, logged, outcomeOf, stalePlans, toggleNever, type PlanOutcome } from '../lib/planLearning';
+import { judged, logged, outcomeOf, stalePlans, toggleNever, unlogged, type PlanOutcome } from '../lib/planLearning';
 import {
   CARBS_MAX_SHARE,
   FAT_MAX_SHARE,
@@ -167,6 +167,15 @@ interface SquishState {
   replacePlan: (id: string, meal: Pick<MealEntry, 'title' | 'items' | 'nutrients' | 'score'>) => void;
   /** Take away several plans at once: the ones a new week replaces. */
   removePlans: (ids: string[]) => void;
+  /**
+   * Take away several plans somebody chose to let go, and answer what went,
+   * for Undo. Picked one by one (`judge`), the nutritionist's are noted as
+   * dropped, as a single one is; a whole day or the whole plan cleared says
+   * nothing about the meals, so is not.
+   */
+  dropPlans: (ids: string[], judge: boolean) => MealEntry[];
+  /** Undo dropPlans: the same plans back, and anything it noted taken back. */
+  restorePlans: (plans: MealEntry[], judged: boolean) => void;
   toggleShoppingTick: (key: string) => void;
   addShoppingExtra: (name: string) => void;
   removeShoppingExtra: (id: string) => void;
@@ -494,6 +503,24 @@ export const useSquish = create<SquishState>()(
       removePlans: (ids) => {
         const gone = new Set(ids);
         set({ plans: get().plans.filter((p) => !gone.has(p.id)) });
+      },
+
+      dropPlans: (ids, judge) => {
+        const gone = new Set(ids);
+        const dropped = get().plans.filter((p) => gone.has(p.id));
+        set({
+          plans: get().plans.filter((p) => !gone.has(p.id)),
+          ...(judge ? { planLog: logged(get().planLog, ...dropped.filter(judged).map((p) => outcomeOf(p, 'dropped'))) } : {}),
+        });
+        return dropped;
+      },
+
+      restorePlans: (back, wasJudged) => {
+        const here = new Set(get().plans.map((p) => p.id));
+        set({
+          plans: [...get().plans, ...back.filter((p) => !here.has(p.id))],
+          ...(wasJudged ? { planLog: unlogged(get().planLog, ...back.filter(judged).map((p) => outcomeOf(p, 'dropped'))) } : {}),
+        });
       },
 
       day: (date) => get().days[date] ?? emptyDay(date),

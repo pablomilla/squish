@@ -1,5 +1,5 @@
 {
- "version": "0lr6xyf0bybw7k",
+ "version": "147iskz-yzk3n0",
  "entries": [
   {
    "id": "002e354-48nrsl",
@@ -1790,6 +1790,7 @@
    "id": "09c35st-q5y29e",
    "text": "Remove",
    "where": [
+    "src/components/MealPlanPanel.tsx",
     "src/components/QuickSnapsCard.tsx",
     "src/screens/Review.tsx"
    ]
@@ -2163,6 +2164,14 @@
    "text": "Nothing here yet — add the foods you ate.",
    "where": [
     "src/screens/Review.tsx"
+   ]
+  },
+  {
+   "id": "0bknfey-rh0eee",
+   "one": "Remove {n} meal",
+   "other": "Remove {n} meals",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {
@@ -2777,6 +2786,7 @@
    "text": "Cancel",
    "where": [
     "src/components/CookSheet.tsx",
+    "src/components/MealPlanPanel.tsx",
     "src/components/RecipeBoxSheet.tsx",
     "src/components/squad/SquadSheet.tsx",
     "src/screens/Review.tsx"
@@ -2907,6 +2917,13 @@
    "text": "Privacy policy",
    "where": [
     "server/emailRender.ts"
+   ]
+  },
+  {
+   "id": "0fj6vsg-e0h106",
+   "text": "Clear the plan",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {
@@ -4447,6 +4464,13 @@
    ]
   },
   {
+   "id": "0mobjyh-go7e9z",
+   "text": "Select none",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "0motnij06wlkz1",
    "text": "{date}, logged",
    "where": [
@@ -5791,6 +5815,13 @@
    ]
   },
   {
+   "id": "0tcu6s40s3lfzs",
+   "text": "Clear day",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "0tcz3sx0vmfl3b",
    "one": "For {n}. Your portion is one of them — {energy} — and that is what gets logged.",
    "other": "For {n}. Your portion is one of them — {energy} — and that is what gets logged.",
@@ -5853,6 +5884,13 @@
    "text": "Review",
    "where": [
     "src/screens/AddFood.tsx"
+   ]
+  },
+  {
+   "id": "0to8z8y-4gehto",
+   "text": "Select all",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {
@@ -6292,6 +6330,7 @@
    "id": "0vmlwpb-fvx4tc",
    "text": "Undo",
    "where": [
+    "src/components/MealPlanPanel.tsx",
     "src/screens/QuickSnap.tsx",
     "src/screens/You.tsx"
    ]
@@ -6879,6 +6918,13 @@
    ]
   },
   {
+   "id": "0yowtjg-7ai9ym",
+   "text": "Clear your meal plan?",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "0yp1r4h-il8ucf",
    "text": "Log your very first meal",
    "where": [
@@ -6926,6 +6972,13 @@
    "text": "Confirm your email address, then keep using Squish — your {period} of Plus follows.",
    "where": [
     "src/components/InviteCard.tsx"
+   ]
+  },
+  {
+   "id": "0z5isxo0000m61",
+   "text": "Edit plan",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {
@@ -7797,6 +7850,7 @@
    "text": "Done",
    "where": [
     "src/components/CheckinSheets.tsx",
+    "src/components/MealPlanPanel.tsx",
     "src/components/cookParts.tsx",
     "src/screens/QuickSnap.tsx",
     "src/screens/You.tsx"
@@ -7857,6 +7911,14 @@
    "text": "Current password",
    "where": [
     "src/components/AccountCard.tsx"
+   ]
+  },
+  {
+   "id": "13pvtnc09oeebq",
+   "one": "Clear the {n} meal",
+   "other": "Clear all {n} meals",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {
@@ -9364,6 +9426,13 @@
    ]
   },
   {
+   "id": "1b50qdv-9lphws",
+   "text": "Edit your plan",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "1b5e3cu-yph2q1",
    "text": "Share the list ({n})",
    "where": [
@@ -10580,6 +10649,14 @@
    ]
   },
   {
+   "id": "1hc44z80wx7a1d",
+   "one": "{n} meal removed from your plan",
+   "other": "{n} meals removed from your plan",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "1hez4qk-rprqja",
    "text": "Dairy",
    "where": [
@@ -11770,6 +11847,13 @@
    ]
   },
   {
+   "id": "1mpofgh0gd3v94",
+   "text": "· pick meals to remove, or clear a day",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "1mqfv77-9hpt5g",
    "text": "How we worked this out",
    "where": [
@@ -12253,6 +12337,14 @@
    ]
   },
   {
+   "id": "1pfgukj0qyhyjw",
+   "one": "Clear all but the {n} you kept",
+   "other": "Clear all but the {n} you kept",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
+   ]
+  },
+  {
    "id": "1pfpqf4-ocgau5",
    "text": "Plan and usage",
    "where": [
@@ -12300,6 +12392,14 @@
    "text": "I could not answer just then.",
    "where": [
     "src/screens/Ask.tsx"
+   ]
+  },
+  {
+   "id": "1pu7tle-f9zkh3",
+   "one": "This takes the {n} meal the nutritionist planned from today out of your plan and your diary, and its shopping off the list.",
+   "other": "This takes the {n} meals the nutritionist planned from today out of your plan and your diary, and their shopping off the list.",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {
@@ -12950,6 +13050,13 @@
    "text": "Milk chocolate",
    "where": [
     "src/lib/foods.ts"
+   ]
+  },
+  {
+   "id": "1t57den-93x3qq",
+   "text": "Meals you have already eaten stay in your diary, and you can plan a new week whenever you like.",
+   "where": [
+    "src/components/MealPlanPanel.tsx"
    ]
   },
   {

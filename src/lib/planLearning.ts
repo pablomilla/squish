@@ -46,6 +46,24 @@ export const outcomeOf = (plan: Pick<MealEntry, 'title' | 'slot' | 'date'>, outc
   outcome,
 });
 
+/**
+ * Take back outcomes just logged — "dropped" undone puts the meals back as if
+ * nothing had happened. The newest matching entry goes for each, once.
+ */
+export function unlogged(log: PlanOutcome[], ...taken: PlanOutcome[]): PlanOutcome[] {
+  const out = [...log];
+  for (const o of taken) {
+    for (let i = out.length - 1; i >= 0; i--) {
+      const e = out[i];
+      if (e.title === o.title && e.slot === o.slot && e.date === o.date && e.outcome === o.outcome) {
+        out.splice(i, 1);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 /** Add to the log, newest last, keeping it to its length. */
 export function logged(log: PlanOutcome[], ...more: PlanOutcome[]): PlanOutcome[] {
   return [...log, ...more].slice(-LOG_MAX);
